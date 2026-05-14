@@ -1,6 +1,7 @@
 import { createHashRouter, Navigate } from 'react-router-dom'
 import App from './App'
 import CartoesPage from './features/cartoes/CartoesPage'
+import CategoriasPage from './features/categorias/CategoriasPage'
 
 export const router = createHashRouter([
   {
@@ -8,7 +9,8 @@ export const router = createHashRouter([
     element: <App />,
     children: [
       { index: true, element: <Navigate to="/cartoes" replace /> },
-      { path: 'cartoes', element: <CartoesPage /> }
+      { path: 'cartoes', element: <CartoesPage /> },
+      { path: 'categorias', element: <CategoriasPage /> }
     ]
   }
 ])
