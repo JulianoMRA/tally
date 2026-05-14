@@ -41,5 +41,10 @@ app-update.yml
 *.log
 logs/
 
-# Claude Code
+# Claude Code — arquivos internos de sessão e operação
 .claude/
+CLAUDE.md
+CLAUDE_CODE_STRATEGY.md
+HANDOFF.md
+HANDOFF_PROTOCOL.md
+docs/handoffs/
