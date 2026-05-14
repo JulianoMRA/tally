@@ -1,0 +1,109 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import type Database from 'better-sqlite3'
+import { openInMemoryDatabase } from '../database'
+import { runMigrations } from '../migrations/runner'
+import { FaturaRepository } from '../repositories/fatura-repository'
+
+type CartaoFixture = { id: number; diaFechamento: number; diaVencimento: number }
+
+function inserirCartao(
+  db: Database.Database,
+  nome: string,
+  diaFechamento: number,
+  diaVencimento: number
+): CartaoFixture {
+  const info = db
+    .prepare('INSERT INTO cartao (nome, dia_fechamento, dia_vencimento, cor) VALUES (?, ?, ?, ?)')
+    .run(nome, diaFechamento, diaVencimento, '#000')
+  return { id: Number(info.lastInsertRowid), diaFechamento, diaVencimento }
+}
+
+describe('FaturaRepository.upsertParaCompra', () => {
+  let db: Database.Database
+  let repo: FaturaRepository
+
+  beforeEach(() => {
+    db = openInMemoryDatabase()
+    runMigrations(db)
+    repo = new FaturaRepository(db)
+  })
+
+  it('cria fatura nova alinhada à RN-01 para cartão Inter (F=5/V=12) com compra 07/06/2026', () => {
+    const inter = inserirCartao(db, 'Inter', 5, 12)
+
+    const fatura = repo.upsertParaCompra(inter, '2026-06-07')
+
+    expect(fatura).toMatchObject({
+      cartaoId: inter.id,
+      mesReferencia: '2026-07',
+      dataFechamento: '2026-07-05',
+      dataVencimento: '2026-07-12',
+      status: { kind: 'Aberta' }
+    })
+  })
+
+  it('é idempotente — segunda chamada para a mesma referência devolve a mesma fatura', () => {
+    const inter = inserirCartao(db, 'Inter', 5, 12)
+
+    const primeira = repo.upsertParaCompra(inter, '2026-06-07')
+    const segunda = repo.upsertParaCompra(inter, '2026-06-08')
+
+    expect(segunda.id).toBe(primeira.id)
+    expect(repo.list(inter.id)).toHaveLength(1)
+  })
+
+  it('cria faturas distintas quando a compra cai antes ou depois do fechamento', () => {
+    const inter = inserirCartao(db, 'Inter', 5, 12)
+
+    repo.upsertParaCompra(inter, '2026-06-03') // junho
+    repo.upsertParaCompra(inter, '2026-06-07') // julho
+
+    const faturas = repo.list(inter.id)
+    expect(faturas.map((f) => f.mesReferencia)).toEqual(['2026-06', '2026-07'])
+  })
+
+  it('clampa data_fechamento para o último dia do mês quando dia > dias do mês (F=31 em fevereiro)', () => {
+    const cartao = inserirCartao(db, 'Estranho', 31, 31)
+
+    const fatura = repo.upsertParaCompra(cartao, '2027-02-15')
+
+    expect(fatura.mesReferencia).toBe('2027-02')
+    expect(fatura.dataFechamento).toBe('2027-02-28')
+    expect(fatura.dataVencimento).toBe('2027-02-28')
+  })
+
+  it('clampa para 29 em fevereiro de ano bissexto', () => {
+    const cartao = inserirCartao(db, 'Bissexto', 31, 31)
+
+    const fatura = repo.upsertParaCompra(cartao, '2028-02-15')
+    expect(fatura.dataFechamento).toBe('2028-02-29')
+  })
+
+  it('mapeia status row → discriminated union', () => {
+    const inter = inserirCartao(db, 'Inter', 5, 12)
+    const fatura = repo.upsertParaCompra(inter, '2026-06-03')
+
+    db.prepare("UPDATE fatura SET status = 'Fechada' WHERE id = ?").run(fatura.id)
+    expect(repo.findByCartaoEMesReferencia(inter.id, '2026-06')?.status).toEqual({
+      kind: 'Fechada'
+    })
+
+    db.prepare("UPDATE fatura SET status = 'Paga', data_pagamento = '2026-06-12' WHERE id = ?").run(
+      fatura.id
+    )
+    expect(repo.findByCartaoEMesReferencia(inter.id, '2026-06')?.status).toEqual({
+      kind: 'Paga',
+      pagaEm: '2026-06-12'
+    })
+  })
+
+  it('list() sem filtro retorna faturas de todos os cartões', () => {
+    const inter = inserirCartao(db, 'Inter', 5, 12)
+    const nubank = inserirCartao(db, 'Nubank', 15, 22)
+
+    repo.upsertParaCompra(inter, '2026-06-03')
+    repo.upsertParaCompra(nubank, '2026-06-10')
+
+    expect(repo.list()).toHaveLength(2)
+  })
+})
