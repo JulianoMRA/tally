@@ -5,6 +5,7 @@ import type Database from 'better-sqlite3'
 import { openDatabase } from '../src/persistence/database'
 import { runMigrations } from '../src/persistence/migrations/runner'
 import { registerCartaoHandlers } from './ipc/cartao-handlers'
+import { registerCategoriaHandlers } from './ipc/categoria-handlers'
 
 let db: Database.Database | null = null
 
@@ -39,6 +40,7 @@ function createWindow(): void {
 app.whenReady().then(() => {
   db = inicializarBancoDeDados()
   registerCartaoHandlers(db, ipcMain)
+  registerCategoriaHandlers(db, ipcMain)
   createWindow()
 
   app.on('activate', () => {
