@@ -1,6 +1,6 @@
 {
   "extends": "@electron-toolkit/tsconfig/tsconfig.node.json",
-  "include": ["electron/**/*", "src/shared/**/*"],
+  "include": ["electron/**/*", "src/domain/**/*", "src/persistence/**/*", "src/shared/**/*"],
   "compilerOptions": {
     "composite": true,
     "baseUrl": ".",
