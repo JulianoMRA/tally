@@ -26,6 +26,31 @@ const ENSURE_TABLE_SQL = `
 
 const DEFAULT_SQL_DIR = join(dirname(fileURLToPath(import.meta.url)), 'sql')
 
+/**
+ * Carrega migrations inlinadas pelo Vite no momento do build.
+ * Funciona tanto em Vitest (dev/teste) quanto no bundle CJS do Electron,
+ * dispensando o acesso ao filesystem em runtime.
+ */
+const BUNDLED_SQL = import.meta.glob('./sql/*.sql', {
+  query: '?raw',
+  import: 'default',
+  eager: true
+}) as Record<string, string>
+
+export function loadBundledMigrations(): MigrationFile[] {
+  return Object.entries(BUNDLED_SQL)
+    .map(([path, sql]) => {
+      const filename = path.split('/').pop() ?? path
+      return {
+        version: filename.replace(/\.sql$/, ''),
+        filename,
+        sql,
+        checksum: createHash('sha256').update(sql).digest('hex')
+      }
+    })
+    .sort((a, b) => a.filename.localeCompare(b.filename))
+}
+
 export function loadMigrationFiles(dir: string = DEFAULT_SQL_DIR): MigrationFile[] {
   const entries = readdirSync(dir)
     .filter((name) => name.endsWith('.sql'))
@@ -50,7 +75,7 @@ export function buildMigrationFile(version: string, sql: string): MigrationFile 
 
 export function runMigrations(
   db: Database.Database,
-  files: MigrationFile[] = loadMigrationFiles()
+  files: MigrationFile[] = loadBundledMigrations()
 ): MigrationResult {
   db.exec(ENSURE_TABLE_SQL)
 
