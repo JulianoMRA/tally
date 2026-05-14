@@ -1,20 +1,21 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
+import type Database from 'better-sqlite3'
 import { openDatabase } from '../src/persistence/database'
 import { runMigrations } from '../src/persistence/migrations/runner'
+import { registerCartaoHandlers } from './ipc/cartao-handlers'
 
-function inicializarBancoDeDados(): void {
+let db: Database.Database | null = null
+
+function inicializarBancoDeDados(): Database.Database {
   const dbPath = join(app.getPath('userData'), 'tally.db')
-  const db = openDatabase(dbPath)
-  try {
-    const result = runMigrations(db)
-    if (result.applied.length > 0) {
-      console.log(`[migrations] aplicadas: ${result.applied.join(', ')}`)
-    }
-  } finally {
-    db.close()
+  const database = openDatabase(dbPath)
+  const result = runMigrations(database)
+  if (result.applied.length > 0) {
+    console.log(`[migrations] aplicadas: ${result.applied.join(', ')}`)
   }
+  return database
 }
 
 function createWindow(): void {
@@ -36,7 +37,8 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  inicializarBancoDeDados()
+  db = inicializarBancoDeDados()
+  registerCartaoHandlers(db, ipcMain)
   createWindow()
 
   app.on('activate', () => {
@@ -44,6 +46,10 @@ app.whenReady().then(() => {
       createWindow()
     }
   })
+})
+
+app.on('before-quit', () => {
+  db?.close()
 })
 
 app.on('window-all-closed', () => {

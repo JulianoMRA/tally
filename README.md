@@ -27,18 +27,18 @@ Tally solves these with first-class support for installment plans, recurring sub
 
 ## Tech stack
 
-| Layer | Technology |
-|-------|------------|
-| Runtime | Node.js 20 LTS |
-| Desktop shell | Electron 30+ |
-| Bundler | Vite 5+ |
-| UI | React 18 + TypeScript 5 (strict) |
-| Database | SQLite via better-sqlite3 |
-| Unit testing | Vitest |
-| E2E testing | Playwright |
-| Lint / Format | ESLint + Prettier |
+| Layer          | Technology                       |
+| -------------- | -------------------------------- |
+| Runtime        | Node.js 20 LTS                   |
+| Desktop shell  | Electron 30+                     |
+| Bundler        | Vite 5+                          |
+| UI             | React 18 + TypeScript 5 (strict) |
+| Database       | SQLite via better-sqlite3        |
+| Unit testing   | Vitest                           |
+| E2E testing    | Playwright                       |
+| Lint / Format  | ESLint + Prettier                |
 | Commit hygiene | commitlint + Husky + lint-staged |
-| CI | GitHub Actions |
+| CI             | GitHub Actions                   |
 
 Architecture follows clean separation across four layers: **domain** (pure business rules, zero external dependencies), **persistence** (SQLite repositories), **main process** (Electron lifecycle and IPC), and **renderer** (React UI). See [`CLAUDE.md`](./CLAUDE.md) for full conventions.
 
@@ -65,9 +65,9 @@ This project is in active development. The implementation is being delivered in 
 
 ### Roadmap
 
-- [ ] **Slice 0** — Project setup (Electron + Vite + React + TS + SQLite + test runners + CI)
-- [ ] **Slice 1** — Domain foundation: migrations, base entities, statement-from-purchase-date rule
-- [ ] **Slice 2** — Cards CRUD with closing and due dates
+- [x] **Slice 0** — Project setup (Electron + Vite + React + TS + SQLite + test runners + CI)
+- [x] **Slice 1** — Domain foundation: migrations, base entities, statement-from-purchase-date rule
+- [x] **Slice 2** — Cards CRUD with closing and due dates
 - [ ] **Slice 3** — Categories CRUD
 - [ ] **Slice 4** — One-shot expenses + statement creation
 - [ ] **Slice 5** — Statement lifecycle (Open → Closed → Paid)
@@ -85,7 +85,11 @@ Each merged slice gets a short progress note in the changelog section below.
 
 ### Changelog
 
-_No releases yet._
+**Slice 2** — Cards CRUD (RF-CAR-01, RF-CAR-02). Full create/edit/archive/unarchive flow with color picker, day validation, and typed IPC. Establishes react-router, React Hook Form + Zod, and the IPC handler template for all subsequent slices. RF-CAR-03 indicators (open statement total, next due date) pending Slice 5.
+
+**Slice 1** — Domain foundation. SQLite migrations, all entities defined, RN-01 (`calcularReferenciaFaturaDaCompra`) implemented with full edge-case coverage (leap year, month-end clamp, exact closing-day boundary).
+
+**Slice 0** — Project scaffolding. Electron + Vite + React + TypeScript strict + better-sqlite3 + Vitest + Playwright + ESLint + Prettier + Husky + commitlint + GitHub Actions CI.
 
 ---
 
@@ -106,11 +110,11 @@ npm run dev
 
 ## Project documentation
 
-| Document | Purpose |
-|----------|---------|
-| [`PRD.md`](./PRD.md) | Product requirements, business rules (RN-01..RN-08), data model, full roadmap |
-| [`CLAUDE.md`](./CLAUDE.md) | Operational guide: stack, architecture, conventions, glossary |
-| [`CLAUDE_CODE_STRATEGY.md`](./CLAUDE_CODE_STRATEGY.md) | Per-slice strategy for AI-assisted development (model and effort selection) |
+| Document                                               | Purpose                                                                       |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| [`PRD.md`](./PRD.md)                                   | Product requirements, business rules (RN-01..RN-08), data model, full roadmap |
+| [`CLAUDE.md`](./CLAUDE.md)                             | Operational guide: stack, architecture, conventions, glossary                 |
+| [`CLAUDE_CODE_STRATEGY.md`](./CLAUDE_CODE_STRATEGY.md) | Per-slice strategy for AI-assisted development (model and effort selection)   |
 
 ---
 

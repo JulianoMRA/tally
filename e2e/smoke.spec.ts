@@ -3,7 +3,7 @@ import { join } from 'path'
 
 test('opens app window with title Tally', async () => {
   const app = await electron.launch({
-    args: [join(__dirname, '../out/main/main.cjs')]
+    args: [join(__dirname, '../out/main/index.cjs')]
   })
 
   const window = await app.firstWindow()

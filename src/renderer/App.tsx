@@ -1,5 +1,25 @@
+import { NavLink, Outlet } from 'react-router-dom'
+import styles from './app.module.css'
+
 function App(): React.JSX.Element {
-  return <h1>Hello Tally</h1>
+  return (
+    <div className={styles.shell}>
+      <nav className={styles.sidebar}>
+        <div className={styles.logo}>Tally</div>
+        <NavLink
+          to="/cartoes"
+          className={({ isActive }) =>
+            isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink
+          }
+        >
+          Cartões
+        </NavLink>
+      </nav>
+      <main className={styles.content}>
+        <Outlet />
+      </main>
+    </div>
+  )
 }
 
 export default App
