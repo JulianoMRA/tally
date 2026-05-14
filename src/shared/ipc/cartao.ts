@@ -12,12 +12,12 @@ export const cartaoInputSchema = z.object({
     .min(1, 'Nome é obrigatório')
     .max(60, 'Nome deve ter no máximo 60 caracteres'),
   diaFechamento: z
-    .number({ invalid_type_error: 'Dia de fechamento deve ser um número' })
+    .number({ message: 'Dia de fechamento deve ser um número' })
     .int('Dia de fechamento deve ser inteiro')
     .min(1, 'Dia de fechamento deve ser entre 1 e 31')
     .max(31, 'Dia de fechamento deve ser entre 1 e 31'),
   diaVencimento: z
-    .number({ invalid_type_error: 'Dia de vencimento deve ser um número' })
+    .number({ message: 'Dia de vencimento deve ser um número' })
     .int('Dia de vencimento deve ser inteiro')
     .min(1, 'Dia de vencimento deve ser entre 1 e 31')
     .max(31, 'Dia de vencimento deve ser entre 1 e 31'),
