@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+out/
+release/
+
+# SQLite databases
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Test outputs
+coverage/
+playwright-report/
+test-results/
+.playwright/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/settings.json
+.idea/
+*.suo
+*.user
+
+# Electron
+app-update.yml
+
+# Logs
+*.log
+logs/
+
+# Claude Code
+.claude/

@@ -1,0 +1,26 @@
+{
+  "name": "tally",
+  "version": "0.1.0",
+  "description": "Desktop app for monthly personal finance tracking",
+  "main": "out/main/index.js",
+  "author": "Juliano Melo Rodrigues Alencar",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "e2e": "playwright test",
+    "migrate": "node scripts/migrate.js",
+    "migrate:new": "node scripts/migrate-new.js",
+    "prepare": "husky"
+  },
+  "devDependencies": {}
+}
