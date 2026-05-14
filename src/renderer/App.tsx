@@ -14,6 +14,14 @@ function App(): React.JSX.Element {
         >
           Cartões
         </NavLink>
+        <NavLink
+          to="/categorias"
+          className={({ isActive }) =>
+            isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink
+          }
+        >
+          Categorias
+        </NavLink>
       </nav>
       <main className={styles.content}>
         <Outlet />
