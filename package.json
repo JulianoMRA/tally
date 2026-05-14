@@ -2,7 +2,8 @@
   "name": "tally",
   "version": "0.1.0",
   "description": "Desktop app for monthly personal finance tracking",
-  "main": "out/main/index.js",
+  "type": "module",
+  "main": "out/main/index.cjs",
   "author": "Juliano Melo Rodrigues Alencar",
   "license": "MIT",
   "engines": {
@@ -24,19 +25,38 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@electron-toolkit/tsconfig": "^1.0.1",
     "@electron/rebuild": "^3.7.2",
     "@playwright/test": "^1.60.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/react": "^18.3.28",
     "@types/react-dom": "^18.3.7",
+    "@typescript-eslint/eslint-plugin": "^8.59.3",
+    "@typescript-eslint/parser": "^8.59.3",
     "@vitejs/plugin-react": "^4.7.0",
     "@vitest/coverage-v8": "^2.1.9",
     "electron": "^31.7.7",
     "electron-vite": "^2.3.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.8.3",
     "typescript": "^5.9.3",
     "vite": "^5.4.21",
     "vitest": "^2.1.9"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,html,css}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
