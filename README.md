@@ -68,7 +68,7 @@ This project is in active development. The implementation is being delivered in 
 - [x] **Slice 0** — Project setup (Electron + Vite + React + TS + SQLite + test runners + CI)
 - [x] **Slice 1** — Domain foundation: migrations, base entities, statement-from-purchase-date rule
 - [x] **Slice 2** — Cards CRUD with closing and due dates
-- [ ] **Slice 3** — Categories CRUD
+- [x] **Slice 3** — Categories CRUD
 - [ ] **Slice 4** — One-shot expenses + statement creation
 - [ ] **Slice 5** — Statement lifecycle (Open → Closed → Paid)
 - [ ] **Slice 6** — Installment expenses (new + in-progress migration + advancing parcelas)
@@ -84,6 +84,8 @@ This project is in active development. The implementation is being delivered in 
 Each merged slice gets a short progress note in the changelog section below.
 
 ### Changelog
+
+**Slice 3** — Categories CRUD (RF-CAT-01, RF-CAT-02). Full create/edit/archive/unarchive flow with type selector (Despesa/Renda/Ambos), color picker, and optional free-text icon field. IPC contract includes a `tipo` filter used by future slices when populating expense/income forms. Follows the handler + repository + Zod schema template established in Slice 2.
 
 **Slice 2** — Cards CRUD (RF-CAR-01, RF-CAR-02). Full create/edit/archive/unarchive flow with color picker, day validation, and typed IPC. Establishes react-router, React Hook Form + Zod, and the IPC handler template for all subsequent slices. RF-CAR-03 indicators (open statement total, next due date) pending Slice 5.
 
