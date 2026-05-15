@@ -41,6 +41,9 @@ app-update.yml
 *.log
 logs/
 
+# TypeScript incremental build info
+*.tsbuildinfo
+
 # Claude Code — arquivos internos de sessão e operação
 .claude/
 CLAUDE.md
