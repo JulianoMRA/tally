@@ -1,184 +1,190 @@
-.page {
-  padding: 24px;
-  max-width: 900px;
+.body {
+  padding: 0 32px 32px;
 }
 
-.pageHeader {
-  margin-bottom: 20px;
-}
-
-.pageHeader h1 {
-  font-size: 22px;
-  font-weight: 700;
-  color: #1a1a2e;
-  margin: 0 0 4px;
-}
-
-.pageHeader p {
-  font-size: 13px;
-  color: #666;
-  margin: 0;
-}
-
-/* --- Seletor de cartão --- */
 .cartaoSelect {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
-.cartaoSelect label {
-  font-size: 13px;
+.cartaoLabel {
+  font-size: 12px;
   font-weight: 500;
-  color: #444;
+  color: var(--ink-2);
   white-space: nowrap;
 }
 
-.cartaoSelect select {
-  padding: 7px 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 14px;
-  background: #fafafa;
-  color: #1a1a2e;
-  min-width: 180px;
-}
-
-/* --- Lista de faturas --- */
+/* Lista de faturas */
 .faturaList {
   list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  max-width: 680px;
 }
 
 .faturaItem {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  gap: 12px;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
   padding: 12px 16px;
   cursor: pointer;
-  transition: border-color 0.15s;
+  box-shadow: var(--shadow-1);
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
 }
 
 .faturaItem:hover {
-  border-color: #5b6af7;
+  border-color: var(--rule-strong);
+  box-shadow: var(--shadow-2);
+}
+
+.cardChip {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.faturaInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .faturaMes {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: #1a1a2e;
+  color: var(--ink);
+  letter-spacing: -0.01em;
 }
 
-.faturaStatus {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 20px;
-  font-weight: 500;
-}
-
-.statusAberta {
-  background: #e3f2fd;
-  color: #1565c0;
-}
-
-.statusFechada {
-  background: #fff8e1;
-  color: #e65100;
-}
-
-.statusPaga {
-  background: #e8f5e9;
-  color: #2e7d32;
+.faturaSub {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
 }
 
 .empty {
-  color: #888;
+  color: var(--ink-3);
   font-size: 14px;
   padding: 16px 0;
+  margin: 0;
 }
 
-/* --- Detalhe da fatura --- */
+/* Detalhe */
 .detalhe {
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
-  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 760px;
 }
 
 .detalheHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 20px;
+  gap: 16px;
 }
 
-.detalheHeader h2 {
+.detalheTitle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.detalheTitleText {
   font-size: 18px;
   font-weight: 700;
-  color: #1a1a2e;
-  margin: 0 0 4px;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  margin: 0 0 3px;
 }
 
-.detalheHeader p {
-  font-size: 13px;
-  color: #666;
+.detalheMeta {
+  font-size: 12px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
   margin: 0;
 }
 
-.btnVoltar {
-  padding: 6px 14px;
-  background: transparent;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  color: #444;
-  transition: border-color 0.15s;
+.detalheActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
-.btnVoltar:hover {
-  border-color: #5b6af7;
-  color: #5b6af7;
-}
-
-/* --- Tabela de parcelas --- */
+/* Tabela de parcelas */
 .tabela {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .tabela th {
   text-align: left;
-  padding: 8px 10px;
-  font-size: 12px;
+  padding: 8px 16px;
+  font-size: 11px;
   font-weight: 600;
-  color: #777;
-  border-bottom: 1px solid #e0e0e0;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--bg-sunk);
 }
 
 .tabela td {
-  padding: 10px 10px;
-  border-bottom: 1px solid #f0f0f0;
-  color: #1a1a2e;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink);
 }
 
 .tabela tr:last-child td {
   border-bottom: none;
 }
 
-.totalRow {
-  margin-top: 16px;
+.colId {
+  color: var(--ink-4);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.colValor {
   text-align: right;
-  font-size: 15px;
+}
+
+.totalRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-top: 1px solid var(--rule);
+  background: var(--bg-sunk);
+}
+
+.totalLabel {
+  font-size: 12px;
   font-weight: 600;
-  color: #1a1a2e;
+  color: var(--ink-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+}
+
+.totalValor {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
 }
