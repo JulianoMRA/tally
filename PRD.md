@@ -240,7 +240,7 @@ Quando uma ajuda é marcada como recorrente em uma parcela de despesa parcelada 
 - **Foco**: cálculo de fatura por data de compra, geração de parcelas, adiantamento, ciclo de vida da fatura, replicação de ajuda recorrente, cálculo de líquido e saldo.
 - **TDD obrigatório** no domain layer: teste antes da implementação.
 
-### 8.2 Testes de integração (Vitest + better-sqlite3 em memória)
+### 8.2 Testes de integração (Vitest + node-sqlite3-wasm em memória)
 
 - Repositórios contra SQLite em memória.
 - Fluxos completos: cadastrar despesa parcelada → verificar parcelas geradas → adiantar → verificar faturas recalculadas.

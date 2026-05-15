@@ -33,7 +33,7 @@ Tally solves these with first-class support for installment plans, recurring sub
 | Desktop shell  | Electron 30+                     |
 | Bundler        | Vite 5+                          |
 | UI             | React 18 + TypeScript 5 (strict) |
-| Database       | SQLite via better-sqlite3        |
+| Database       | SQLite via node-sqlite3-wasm     |
 | Unit testing   | Vitest                           |
 | E2E testing    | Playwright                       |
 | Lint / Format  | ESLint + Prettier                |
@@ -98,7 +98,7 @@ Each merged slice gets a short progress note in the changelog section below.
 
 **Slice 1** — Domain foundation. SQLite migrations, all entities defined, RN-01 (`calcularReferenciaFaturaDaCompra`) implemented with full edge-case coverage (leap year, month-end clamp, exact closing-day boundary).
 
-**Slice 0** — Project scaffolding. Electron + Vite + React + TypeScript strict + better-sqlite3 + Vitest + Playwright + ESLint + Prettier + Husky + commitlint + GitHub Actions CI.
+**Slice 0** — Project scaffolding. Electron + Vite + React + TypeScript strict + node-sqlite3-wasm + Vitest + Playwright + ESLint + Prettier + Husky + commitlint + GitHub Actions CI.
 
 ---
 
