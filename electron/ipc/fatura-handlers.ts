@@ -1,11 +1,11 @@
 import type { IpcMain } from 'electron'
-import type Database from 'better-sqlite3'
+import type { Database } from '../../src/persistence/database'
 import { FaturaRepository } from '../../src/persistence/repositories/fatura-repository'
 import { ParcelaRepository } from '../../src/persistence/repositories/parcela-repository'
 import { FATURA_IPC_CHANNELS } from '../../src/shared/ipc/fatura'
 import type { FaturaDetalhada } from '../../src/shared/ipc/fatura'
 
-export function registerFaturaHandlers(db: Database.Database, ipcMain: IpcMain): void {
+export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
   const faturaRepo = new FaturaRepository(db)
   const parcelaRepo = new ParcelaRepository(db)
 

@@ -1,17 +1,17 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import type Database from 'better-sqlite3'
+import type { Database } from '../database'
 import { openInMemoryDatabase } from '../database'
 import { runMigrations } from '../migrations/runner'
 import { DespesaRepository } from '../repositories/despesa-repository'
 
-function inserirCartao(db: Database.Database, nome: string, dF: number, dV: number): number {
+function inserirCartao(db: Database, nome: string, dF: number, dV: number): number {
   const info = db
     .prepare('INSERT INTO cartao (nome, dia_fechamento, dia_vencimento, cor) VALUES (?, ?, ?, ?)')
     .run(nome, dF, dV, '#000')
   return Number(info.lastInsertRowid)
 }
 
-function inserirCategoria(db: Database.Database): number {
+function inserirCategoria(db: Database): number {
   const info = db
     .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Alimentação', 'Despesa', '#aaa')")
     .run()
@@ -19,7 +19,7 @@ function inserirCategoria(db: Database.Database): number {
 }
 
 describe('DespesaRepository.criarUnicaCredito', () => {
-  let db: Database.Database
+  let db: Database
   let repo: DespesaRepository
 
   beforeEach(() => {

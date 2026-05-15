@@ -1,24 +1,24 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import type Database from 'better-sqlite3'
+import type { Database } from '../database'
 import { openInMemoryDatabase } from '../database'
 import { runMigrations } from '../migrations/runner'
 import { ParcelaRepository } from '../repositories/parcela-repository'
 
-function inserirCartao(db: Database.Database, nome: string, dF: number, dV: number): number {
+function inserirCartao(db: Database, nome: string, dF: number, dV: number): number {
   const info = db
     .prepare('INSERT INTO cartao (nome, dia_fechamento, dia_vencimento, cor) VALUES (?, ?, ?, ?)')
     .run(nome, dF, dV, '#000')
   return Number(info.lastInsertRowid)
 }
 
-function inserirCategoria(db: Database.Database): number {
+function inserirCategoria(db: Database): number {
   const info = db
     .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Alimentação', 'Despesa', '#aaa')")
     .run()
   return Number(info.lastInsertRowid)
 }
 
-function inserirFatura(db: Database.Database, cartaoId: number, mes: string): number {
+function inserirFatura(db: Database, cartaoId: number, mes: string): number {
   const info = db
     .prepare(
       "INSERT INTO fatura (cartao_id, mes_referencia, data_fechamento, data_vencimento, status) VALUES (?, ?, ?, ?, 'Aberta')"
@@ -28,7 +28,7 @@ function inserirFatura(db: Database.Database, cartaoId: number, mes: string): nu
 }
 
 function inserirDespesa(
-  db: Database.Database,
+  db: Database,
   categoriaId: number,
   cartaoId: number,
   dataCompra: string,
@@ -44,7 +44,7 @@ function inserirDespesa(
 }
 
 describe('ParcelaRepository', () => {
-  let db: Database.Database
+  let db: Database
   let repo: ParcelaRepository
 
   beforeEach(() => {

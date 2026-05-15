@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3'
+import type { Database } from '../database'
 import type { Categoria, TipoCategoria } from '../../domain/entities/categoria'
 import type { CategoriaInput, ListCategoriaOptions } from '../../shared/ipc/categoria'
 import type { Repository } from './types'
@@ -28,7 +28,7 @@ function mapRow(row: CategoriaRow): Categoria {
 }
 
 export class CategoriaRepository implements Repository {
-  constructor(public readonly db: Database.Database) {}
+  constructor(public readonly db: Database) {}
 
   findById(id: number): Categoria | null {
     const row = this.db.prepare('SELECT * FROM categoria WHERE id = ?').get(id) as

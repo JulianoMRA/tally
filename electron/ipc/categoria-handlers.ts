@@ -1,10 +1,10 @@
 import type { IpcMain } from 'electron'
-import type Database from 'better-sqlite3'
+import type { Database } from '../../src/persistence/database'
 import { CategoriaRepository } from '../../src/persistence/repositories/categoria-repository'
 import { categoriaInputSchema, CATEGORIA_IPC_CHANNELS } from '../../src/shared/ipc/categoria'
 import type { ListCategoriaOptions } from '../../src/shared/ipc/categoria'
 
-export function registerCategoriaHandlers(db: Database.Database, ipcMain: IpcMain): void {
+export function registerCategoriaHandlers(db: Database, ipcMain: IpcMain): void {
   const repo = new CategoriaRepository(db)
 
   ipcMain.handle(CATEGORIA_IPC_CHANNELS.list, (_event, options?: ListCategoriaOptions) => {

@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3'
+import type { Database } from '../database'
 import type { Parcela, StatusParcela } from '../../domain/entities/parcela'
 import type { Repository } from './types'
 
@@ -42,7 +42,7 @@ export type CriarParcelaInput = {
 }
 
 export class ParcelaRepository implements Repository {
-  constructor(public readonly db: Database.Database) {}
+  constructor(public readonly db: Database) {}
 
   criar(input: CriarParcelaInput): Parcela {
     const info = this.db

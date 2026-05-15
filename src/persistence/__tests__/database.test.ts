@@ -11,8 +11,8 @@ describe('openInMemoryDatabase', () => {
 
   it('should enforce foreign keys', () => {
     const db = openInMemoryDatabase()
-    const pragmaResult = db.pragma('foreign_keys', { simple: true })
-    expect(pragmaResult).toBe(1)
+    const row = db.prepare('PRAGMA foreign_keys').get() as { foreign_keys: number }
+    expect(row.foreign_keys).toBe(1)
     db.close()
   })
 })

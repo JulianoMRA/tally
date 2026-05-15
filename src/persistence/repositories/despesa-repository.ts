@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3'
+import type { Database } from '../database'
 import type { Despesa } from '../../domain/entities/despesa'
 import type { Fatura } from '../../domain/entities/fatura'
 import type { Parcela } from '../../domain/entities/parcela'
@@ -54,7 +54,7 @@ export type ResultadoCriarDespesa = {
 }
 
 export class DespesaRepository implements Repository {
-  constructor(public readonly db: Database.Database) {}
+  constructor(public readonly db: Database) {}
 
   criarUnicaCredito(input: CriarDespesaUnicaCreditoInput): ResultadoCriarDespesa {
     const cartaoRepo = new CartaoRepository(this.db)

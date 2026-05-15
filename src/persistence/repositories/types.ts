@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3'
+import type { Database } from '../database'
 
 /**
  * Contrato base de um repositório.
@@ -12,7 +12,7 @@ import type Database from 'better-sqlite3'
  * Implementações recebem o handle do banco por injeção (não abrem o banco).
  */
 export interface Repository {
-  readonly db: Database.Database
+  readonly db: Database
 }
 
 export type RowMapper<TRow, TEntity> = (row: TRow) => TEntity

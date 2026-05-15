@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import type Database from 'better-sqlite3'
+import type { Database } from '../database'
 import { openInMemoryDatabase } from '../database'
 import { runMigrations } from '../migrations/runner'
 import { CategoriaRepository } from '../repositories/categoria-repository'
 
 describe('CategoriaRepository', () => {
-  let db: Database.Database
+  let db: Database
   let repo: CategoriaRepository
 
   beforeEach(() => {
