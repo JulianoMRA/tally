@@ -18,7 +18,7 @@ function inicializarBancoDeDados(): Database {
   const dbPath = join(userDataDir, 'tally.db')
   const database = openDatabase(dbPath)
   const result = runMigrations(database)
-  if (result.applied.length > 0) {
+  if (is.dev && result.applied.length > 0) {
     console.log(`[migrations] aplicadas: ${result.applied.join(', ')}`)
   }
   return database

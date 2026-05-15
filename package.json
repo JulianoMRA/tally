@@ -19,8 +19,6 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
-    "migrate": "node scripts/migrate.js",
-    "migrate:new": "node scripts/migrate-new.js",
     "prepare": "husky"
   },
   "devDependencies": {
