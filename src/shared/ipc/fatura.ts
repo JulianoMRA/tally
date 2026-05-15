@@ -10,9 +10,15 @@ export type FaturaDetalhada = {
 export type FaturaApi = {
   listarPorCartao: (cartaoId: number) => Promise<Fatura[]>
   detalharComParcelas: (faturaId: number) => Promise<FaturaDetalhada | null>
+  fechar: (faturaId: number) => Promise<Fatura>
+  pagar: (faturaId: number, dataPagamento: string) => Promise<Fatura>
+  reabrir: (faturaId: number) => Promise<Fatura>
 }
 
 export const FATURA_IPC_CHANNELS = {
   listarPorCartao: 'fatura:listarPorCartao',
-  detalharComParcelas: 'fatura:detalharComParcelas'
+  detalharComParcelas: 'fatura:detalharComParcelas',
+  fechar: 'fatura:fechar',
+  pagar: 'fatura:pagar',
+  reabrir: 'fatura:reabrir'
 } as const

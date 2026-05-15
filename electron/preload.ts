@@ -35,6 +35,10 @@ contextBridge.exposeInMainWorld('api', {
     listarPorCartao: (cartaoId: number) =>
       ipcRenderer.invoke(FATURA_IPC_CHANNELS.listarPorCartao, cartaoId),
     detalharComParcelas: (faturaId: number) =>
-      ipcRenderer.invoke(FATURA_IPC_CHANNELS.detalharComParcelas, faturaId)
+      ipcRenderer.invoke(FATURA_IPC_CHANNELS.detalharComParcelas, faturaId),
+    fechar: (faturaId: number) => ipcRenderer.invoke(FATURA_IPC_CHANNELS.fechar, faturaId),
+    pagar: (faturaId: number, dataPagamento: string) =>
+      ipcRenderer.invoke(FATURA_IPC_CHANNELS.pagar, faturaId, dataPagamento),
+    reabrir: (faturaId: number) => ipcRenderer.invoke(FATURA_IPC_CHANNELS.reabrir, faturaId)
   }
 })
