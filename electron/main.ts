@@ -6,6 +6,8 @@ import { openDatabase } from '../src/persistence/database'
 import { runMigrations } from '../src/persistence/migrations/runner'
 import { registerCartaoHandlers } from './ipc/cartao-handlers'
 import { registerCategoriaHandlers } from './ipc/categoria-handlers'
+import { registerDespesaHandlers } from './ipc/despesa-handlers'
+import { registerFaturaHandlers } from './ipc/fatura-handlers'
 
 let db: Database.Database | null = null
 
@@ -41,6 +43,8 @@ app.whenReady().then(() => {
   db = inicializarBancoDeDados()
   registerCartaoHandlers(db, ipcMain)
   registerCategoriaHandlers(db, ipcMain)
+  registerDespesaHandlers(db, ipcMain)
+  registerFaturaHandlers(db, ipcMain)
   createWindow()
 
   app.on('activate', () => {
