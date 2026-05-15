@@ -1,0 +1,1381 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tally — Maio 2026</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="tokens.css" />
+    <style>
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+      }
+      body {
+        background: var(--bg);
+        font-family: var(--font-sans);
+        color: var(--ink);
+      }
+      .app {
+        display: grid;
+        grid-template-columns: 232px 1fr;
+        height: 100vh;
+        width: 100%;
+      }
+
+      /* =========================================================
+   SIDEBAR
+   ========================================================= */
+      .sidebar {
+        background: var(--bg-sunk);
+        border-right: 1px solid var(--rule);
+        display: flex;
+        flex-direction: column;
+        padding: 16px 12px;
+        gap: 4px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 10px 18px;
+      }
+      .brand .mk {
+        width: 22px;
+        height: 22px;
+        color: var(--forest);
+      }
+      .brand .wm {
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: -0.03em;
+        color: var(--ink);
+      }
+      .brand .ver {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--ink-3);
+        margin-left: auto;
+        padding: 2px 6px;
+        background: var(--bg);
+        border-radius: 3px;
+        border: 1px solid var(--rule);
+      }
+
+      .nav-group {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin-top: 8px;
+      }
+      .nav-group .label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        padding: 12px 10px 6px;
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 10px;
+        border-radius: 6px;
+        font-size: 13px;
+        color: var(--ink-2);
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+      }
+      .nav-item svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+      }
+      .nav-item:hover {
+        background: var(--bg);
+        color: var(--ink);
+      }
+      .nav-item.active {
+        background: var(--forest);
+        color: var(--bg);
+        font-weight: 500;
+      }
+      .nav-item .count {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--ink-3);
+      }
+      .nav-item.active .count {
+        color: rgba(232, 227, 216, 0.6);
+      }
+      .nav-item .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .sidebar .spacer {
+        flex: 1;
+      }
+      .sidebar-foot {
+        padding: 12px 10px 4px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-top: 1px solid var(--rule);
+        margin-top: 8px;
+      }
+      .avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--bronze);
+        color: var(--bg);
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .sidebar-foot .me {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+      }
+      .sidebar-foot .me .name {
+        font-size: 12px;
+        font-weight: 500;
+      }
+      .sidebar-foot .me .role {
+        font-size: 10px;
+        color: var(--ink-3);
+      }
+
+      /* =========================================================
+   MAIN
+   ========================================================= */
+      .main {
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Header */
+      .topbar {
+        height: 56px;
+        border-bottom: 1px solid var(--rule);
+        display: flex;
+        align-items: center;
+        padding: 0 32px;
+        gap: 16px;
+        background: var(--bg);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .crumbs {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--ink-2);
+      }
+      .crumbs .sep {
+        color: var(--ink-4);
+      }
+      .crumbs strong {
+        font-weight: 500;
+      }
+
+      .month-nav {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        background: var(--bg-sunk);
+        border-radius: 6px;
+        padding: 3px;
+        border: 1px solid var(--rule);
+      }
+      .month-nav button {
+        background: transparent;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        color: var(--ink-2);
+        cursor: pointer;
+        font-family: var(--font-sans);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .month-nav button:hover {
+        background: var(--bg);
+      }
+      .month-nav .current {
+        background: var(--bg);
+        color: var(--ink);
+        font-weight: 500;
+        font-family: var(--font-mono);
+        letter-spacing: 0.02em;
+      }
+      .month-nav svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      .kbd {
+        display: inline-flex;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        background: var(--bg-sunk);
+        border: 1px solid var(--rule);
+        padding: 2px 5px;
+        border-radius: 3px;
+        color: var(--ink-3);
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: var(--font-sans);
+        font-size: 13px;
+        font-weight: 500;
+        padding: 7px 12px;
+        border-radius: 6px;
+        border: 1px solid var(--rule-strong);
+        background: var(--bg);
+        color: var(--ink);
+        cursor: pointer;
+      }
+      .btn:hover {
+        background: var(--bg-elev);
+      }
+      .btn.primary {
+        background: var(--forest);
+        color: var(--bg);
+        border-color: var(--forest);
+      }
+      .btn.primary:hover {
+        background: var(--forest-2);
+      }
+      .btn svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* Content */
+      .content {
+        padding: 28px 32px 64px;
+        max-width: 1280px;
+        width: 100%;
+      }
+
+      /* Page title row */
+      .page-head {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 28px;
+      }
+      .page-head h1 {
+        font-size: 32px;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+        margin: 0 0 6px;
+      }
+      .page-head .sub {
+        font-size: 13px;
+        color: var(--ink-3);
+      }
+
+      /* KPI cards */
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 28px;
+      }
+      .kpi {
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .kpi .label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .kpi .label .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+      }
+      .kpi .value {
+        font-family: var(--font-mono);
+        font-feature-settings: 'ss01', 'tnum', 'zero';
+        font-size: 28px;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+        margin-top: 4px;
+      }
+      .kpi .value .cur {
+        color: var(--ink-3);
+        font-weight: 400;
+        font-size: 16px;
+        margin-right: 4px;
+      }
+      .kpi .delta {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--ink-3);
+        margin-top: 4px;
+      }
+      .kpi .delta.pos {
+        color: var(--income);
+      }
+      .kpi .delta.neg {
+        color: var(--expense);
+      }
+      .kpi .delta.warn {
+        color: var(--pending);
+      }
+
+      /* Two-column layout */
+      .two-col {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      /* Panel */
+      .panel {
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+      }
+      .panel-head {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--rule);
+        display: flex;
+        align-items: center;
+      }
+      .panel-head h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0;
+        letter-spacing: -0.005em;
+      }
+      .panel-head .meta {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--ink-3);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      .panel-head .link {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--ink-3);
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .panel-head .link:hover {
+        color: var(--ink);
+      }
+      .panel-body {
+        padding: 16px 20px;
+      }
+      .panel-body.flush {
+        padding: 0;
+      }
+
+      /* Faturas list */
+      .fatura-row {
+        display: grid;
+        grid-template-columns: 32px 1fr auto auto 80px;
+        align-items: center;
+        gap: 16px;
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--rule);
+        cursor: pointer;
+      }
+      .fatura-row:last-child {
+        border-bottom: none;
+      }
+      .fatura-row:hover {
+        background: var(--bg-sunk);
+      }
+      .fatura-row .card-chip {
+        width: 28px;
+        height: 20px;
+        border-radius: 3px;
+        position: relative;
+      }
+      .fatura-row .card-chip::after {
+        content: '';
+        position: absolute;
+        left: 3px;
+        right: 3px;
+        top: 3px;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 1px;
+      }
+      .fatura-row .name {
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: -0.005em;
+      }
+      .fatura-row .name .sub {
+        display: block;
+        font-size: 11px;
+        color: var(--ink-3);
+        font-weight: 400;
+        margin-top: 2px;
+        font-family: var(--font-mono);
+      }
+      .fatura-row .due {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--ink-3);
+        text-align: right;
+      }
+      .fatura-row .due strong {
+        color: var(--ink-2);
+        font-weight: 500;
+        display: block;
+        font-size: 13px;
+      }
+      .fatura-row .amount {
+        font-family: var(--font-mono);
+        font-feature-settings: 'tnum';
+        font-size: 15px;
+        font-weight: 500;
+        text-align: right;
+      }
+      .fatura-row .amount .cur {
+        color: var(--ink-4);
+        font-size: 11px;
+        font-weight: 400;
+        margin-right: 4px;
+      }
+      .fatura-row .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 7px;
+        border-radius: 4px;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        justify-self: end;
+      }
+      .status.open {
+        background: rgba(168, 123, 44, 0.12);
+        color: var(--pending);
+      }
+      .status.closed {
+        background: rgba(140, 59, 46, 0.12);
+        color: var(--expense);
+      }
+      .status.paid {
+        background: rgba(91, 122, 94, 0.14);
+        color: var(--paid);
+      }
+      .status .dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+
+      /* Mini chart */
+      .chart {
+        padding: 8px 16px 20px;
+      }
+      .chart-axis {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 8px;
+        font-family: var(--font-mono);
+        font-size: 9px;
+        color: var(--ink-3);
+        letter-spacing: 0.05em;
+      }
+      .bars {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 6px;
+        align-items: end;
+        height: 140px;
+      }
+      .bar {
+        background: var(--rule-strong);
+        border-radius: 2px 2px 0 0;
+        position: relative;
+        transition: background 0.15s;
+        min-height: 4px;
+      }
+      .bar:hover {
+        background: var(--sage);
+      }
+      .bar.current {
+        background: var(--forest);
+      }
+      .bar.future {
+        background: transparent;
+        border: 1px dashed var(--rule-strong);
+      }
+
+      /* Contribuidores */
+      .contrib-row {
+        display: grid;
+        grid-template-columns: 32px 1fr auto auto;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--rule);
+      }
+      .contrib-row:last-child {
+        border-bottom: none;
+      }
+      .contrib-row .av {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--bg);
+      }
+      .contrib-row .who {
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .contrib-row .who .desc {
+        display: block;
+        font-size: 11px;
+        color: var(--ink-3);
+        font-weight: 400;
+        margin-top: 1px;
+      }
+      .contrib-row .amt {
+        font-family: var(--font-mono);
+        font-size: 14px;
+        font-weight: 500;
+        text-align: right;
+      }
+      .contrib-row .amt .cur {
+        color: var(--ink-4);
+        font-size: 10px;
+      }
+      .contrib-row .check {
+        width: 24px;
+        height: 24px;
+        border: 1px solid var(--rule-strong);
+        border-radius: 6px;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        color: transparent;
+      }
+      .contrib-row .check:hover {
+        border-color: var(--sage);
+      }
+      .contrib-row.received .check {
+        background: var(--sage);
+        border-color: var(--sage);
+        color: var(--bg);
+      }
+      .contrib-row.received .who,
+      .contrib-row.received .amt {
+        color: var(--ink-3);
+        text-decoration: line-through;
+        text-decoration-color: var(--ink-4);
+      }
+
+      /* Recent activity */
+      .activity-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 12px;
+        align-items: center;
+        padding: 10px 20px;
+        border-bottom: 1px solid var(--rule);
+        font-size: 12px;
+      }
+      .activity-row:last-child {
+        border-bottom: none;
+      }
+      .activity-row .icn {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        background: var(--bg-sunk);
+        display: grid;
+        place-items: center;
+        color: var(--ink-3);
+      }
+      .activity-row .icn svg {
+        width: 14px;
+        height: 14px;
+      }
+      .activity-row .what {
+        color: var(--ink-2);
+      }
+      .activity-row .what strong {
+        color: var(--ink);
+        font-weight: 500;
+      }
+      .activity-row .when {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--ink-3);
+        letter-spacing: 0.04em;
+      }
+
+      /* Right rail summary */
+      .summary-rows {
+        padding: 8px 0;
+      }
+      .sum-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 10px 20px;
+        border-bottom: 1px solid var(--rule);
+        font-size: 13px;
+      }
+      .sum-row:last-child {
+        border-bottom: none;
+      }
+      .sum-row .lbl {
+        color: var(--ink-2);
+      }
+      .sum-row .val {
+        font-family: var(--font-mono);
+        font-feature-settings: 'tnum';
+        font-weight: 500;
+      }
+      .sum-row.total {
+        background: var(--bg-sunk);
+      }
+      .sum-row.total .lbl {
+        font-weight: 600;
+      }
+      .sum-row.total .val {
+        font-size: 16px;
+        color: var(--forest);
+      }
+      .sum-row.total .val .cur {
+        color: var(--ink-3);
+        font-size: 11px;
+      }
+      .sum-row.neg .val {
+        color: var(--expense);
+      }
+      .sum-row.pos .val {
+        color: var(--income);
+      }
+
+      /* Parcela chip */
+      .parc {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--bronze);
+        background: rgba(168, 132, 84, 0.1);
+        padding: 2px 6px;
+        border-radius: 3px;
+        margin-left: 6px;
+        letter-spacing: 0.03em;
+      }
+      .parc.recur {
+        color: var(--sage);
+        background: rgba(91, 122, 94, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <!-- ============== SIDEBAR ============== -->
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="mk" id="brandMark"></span>
+          <span class="wm">Tally</span>
+          <span class="ver">v0.4</span>
+        </div>
+
+        <div class="nav-item active">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="3" width="7" height="9" rx="1" />
+            <rect x="14" y="3" width="7" height="5" rx="1" />
+            <rect x="14" y="12" width="7" height="9" rx="1" />
+            <rect x="3" y="16" width="7" height="5" rx="1" />
+          </svg>
+          Visão do mês
+        </div>
+        <div class="nav-item">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M5 3h11l3 3v15H5z" />
+            <line x1="9" y1="9" x2="16" y2="9" />
+            <line x1="9" y1="13" x2="16" y2="13" />
+            <line x1="9" y1="17" x2="13" y2="17" />
+          </svg>
+          Faturas
+          <span class="count">3</span>
+        </div>
+        <div class="nav-item">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="4" y="14" width="4" height="6" rx="1" />
+            <rect x="10" y="9" width="4" height="11" rx="1" />
+            <rect x="16" y="4" width="4" height="16" rx="1" />
+          </svg>
+          Parcelamentos
+          <span class="count">12</span>
+        </div>
+        <div class="nav-item">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5" />
+          </svg>
+          Assinaturas
+          <span class="count">7</span>
+        </div>
+        <div class="nav-item">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="9" cy="8" r="3" />
+            <path d="M3 19a6 6 0 0 1 12 0" />
+            <circle cx="17" cy="9" r="2.5" />
+            <path d="M14 19a5 5 0 0 1 7-4" />
+          </svg>
+          Ajudas
+          <span class="dot" style="background: var(--pending); margin-left: auto"></span>
+        </div>
+
+        <div class="nav-group">
+          <div class="label">Cadastros</div>
+          <div class="nav-item">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="6" width="18" height="13" rx="2" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            Cartões
+          </div>
+          <div class="nav-item">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+            Categorias
+          </div>
+          <div class="nav-item">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 3v18M16 6H9a3 3 0 0 0 0 6h6a3 3 0 0 1 0 6H7" />
+            </svg>
+            Fontes de renda
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="sidebar-foot">
+          <div class="avatar">J</div>
+          <div class="me">
+            <span class="name">Juliano</span>
+            <span class="role">Local · SQLite</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ============== MAIN ============== -->
+      <main class="main">
+        <div class="topbar">
+          <div class="crumbs">
+            <strong>Visão do mês</strong>
+          </div>
+          <div class="month-nav">
+            <button>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M15 6l-6 6 6 6" />
+              </svg>
+            </button>
+            <button>abr 2026</button>
+            <button class="current">mai 2026</button>
+            <button>jun 2026</button>
+            <button>jul 2026</button>
+            <button>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M9 6l6 6-6 6" />
+              </svg>
+            </button>
+          </div>
+          <button class="btn">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <line x1="21" y1="21" x2="16" y2="16" />
+            </svg>
+            Buscar
+            <span class="kbd">⌘K</span>
+          </button>
+          <button class="btn primary">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Nova despesa
+          </button>
+        </div>
+
+        <div class="content">
+          <div class="page-head">
+            <div>
+              <h1>Maio 2026</h1>
+              <div class="sub">Quarta-feira, 14 de maio · 17 dias para fechar a próxima fatura</div>
+            </div>
+          </div>
+
+          <!-- KPIs -->
+          <div class="kpis">
+            <div class="kpi">
+              <div class="label">
+                <span class="dot" style="background: var(--income)"></span> Entradas
+              </div>
+              <div class="value tnum"><span class="cur">R$</span>3.420,00</div>
+              <div class="delta">2 fontes · bolsa + ajuda</div>
+            </div>
+            <div class="kpi">
+              <div class="label">
+                <span class="dot" style="background: var(--expense)"></span> Saídas previstas
+              </div>
+              <div class="value tnum"><span class="cur">R$</span>3.732,40</div>
+              <div class="delta neg">+R$ 412,00 vs. abril</div>
+            </div>
+            <div class="kpi">
+              <div class="label">
+                <span class="dot" style="background: var(--pending)"></span> A receber (ajudas)
+              </div>
+              <div class="value tnum"><span class="cur">R$</span>247,60</div>
+              <div class="delta warn">3 contribuidores · venc. 10/jun</div>
+            </div>
+            <div
+              class="kpi"
+              style="background: var(--forest); color: var(--bg); border-color: var(--forest)"
+            >
+              <div class="label" style="color: rgba(232, 227, 216, 0.6)">
+                <span class="dot" style="background: var(--bronze-2)"></span> Saldo projetado
+              </div>
+              <div class="value tnum" style="color: var(--bg)">
+                <span class="cur" style="color: rgba(232, 227, 216, 0.5)">R$</span>−312,40
+              </div>
+              <div class="delta" style="color: var(--bronze-2)">Mês fecha negativo · revisar</div>
+            </div>
+          </div>
+
+          <!-- Row: Faturas + Right rail -->
+          <div class="two-col">
+            <!-- Faturas em aberto -->
+            <div class="panel">
+              <div class="panel-head">
+                <h3>Faturas</h3>
+                <span class="meta">3 cartões · maio</span>
+              </div>
+              <div class="panel-body flush">
+                <div class="fatura-row">
+                  <span class="card-chip" style="background: #8b3d9c"></span>
+                  <span class="name"
+                    >Nubank
+                    <span class="sub">FAT-2026-05 · 8 lançamentos · fecha 03/jun</span>
+                  </span>
+                  <span class="due"><strong>10/jun</strong>em 27d</span>
+                  <span class="amount tnum"><span class="cur">R$</span>1.842,30</span>
+                  <span class="status open"><span class="dot"></span>Aberta</span>
+                </div>
+                <div class="fatura-row">
+                  <span class="card-chip" style="background: #f37021"></span>
+                  <span class="name"
+                    >Banco Inter
+                    <span class="sub">FAT-2026-05 · 12 lançamentos · fechada 02/mai</span>
+                  </span>
+                  <span class="due"><strong>15/mai</strong>em 1 dia</span>
+                  <span class="amount tnum"><span class="cur">R$</span>1.247,80</span>
+                  <span class="status closed"><span class="dot"></span>Fechada</span>
+                </div>
+                <div class="fatura-row">
+                  <span class="card-chip" style="background: #5b7a5e"></span>
+                  <span class="name"
+                    >Inter — fatura anterior
+                    <span class="sub">FAT-2026-04 · paga em 15/abr</span>
+                  </span>
+                  <span class="due"><strong>15/abr</strong>há 29d</span>
+                  <span class="amount tnum" style="color: var(--ink-3)"
+                    ><span class="cur">R$</span>1.094,20</span
+                  >
+                  <span class="status paid"><span class="dot"></span>Paga</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Resumo do mês -->
+            <div class="panel">
+              <div class="panel-head">
+                <h3>Resumo</h3>
+                <span class="meta">consolidado</span>
+              </div>
+              <div class="summary-rows">
+                <div class="sum-row pos">
+                  <span class="lbl">Bolsa CNPq</span>
+                  <span class="val tnum">+ 2.800,00</span>
+                </div>
+                <div class="sum-row pos">
+                  <span class="lbl">Ajuda família · maio</span>
+                  <span class="val tnum">+ 620,00</span>
+                </div>
+                <div class="sum-row neg">
+                  <span class="lbl">Faturas (2 cartões)</span>
+                  <span class="val tnum">− 3.090,10</span>
+                </div>
+                <div class="sum-row neg">
+                  <span class="lbl">Assinaturas</span>
+                  <span class="val tnum">− 312,90</span>
+                </div>
+                <div class="sum-row neg">
+                  <span class="lbl">Pix / débito</span>
+                  <span class="val tnum">− 329,40</span>
+                </div>
+                <div class="sum-row total">
+                  <span class="lbl">Saldo de maio</span>
+                  <span class="val tnum"><span class="cur">R$</span>−312,40</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row: Parcelas em andamento + Ajudas -->
+          <div class="two-col">
+            <!-- Evolução -->
+            <div class="panel">
+              <div class="panel-head">
+                <h3>Saídas por mês</h3>
+                <span class="meta">jan → dez 2026 · projetado</span>
+              </div>
+              <div class="chart">
+                <div class="bars">
+                  <div class="bar" style="height: 62%"></div>
+                  <div class="bar" style="height: 58%"></div>
+                  <div class="bar" style="height: 71%"></div>
+                  <div class="bar" style="height: 65%"></div>
+                  <div class="bar current" style="height: 78%"></div>
+                  <div class="bar future" style="height: 72%"></div>
+                  <div class="bar future" style="height: 64%"></div>
+                  <div class="bar future" style="height: 60%"></div>
+                  <div class="bar future" style="height: 56%"></div>
+                  <div class="bar future" style="height: 48%"></div>
+                  <div class="bar future" style="height: 42%"></div>
+                  <div class="bar future" style="height: 36%"></div>
+                </div>
+                <div class="chart-axis">
+                  <span>JAN</span><span>FEV</span><span>MAR</span><span>ABR</span>
+                  <span style="color: var(--forest); font-weight: 600">MAI</span>
+                  <span>JUN</span><span>JUL</span><span>AGO</span> <span>SET</span><span>OUT</span
+                  ><span>NOV</span><span>DEZ</span>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    gap: 18px;
+                    margin-top: 14px;
+                    font-size: 11px;
+                    color: var(--ink-3);
+                    font-family: var(--font-mono);
+                    letter-spacing: 0.05em;
+                  "
+                >
+                  <span style="display: flex; align-items: center; gap: 6px"
+                    ><span
+                      style="
+                        width: 10px;
+                        height: 10px;
+                        background: var(--forest);
+                        border-radius: 2px;
+                      "
+                    ></span
+                    >realizado</span
+                  >
+                  <span style="display: flex; align-items: center; gap: 6px"
+                    ><span
+                      style="
+                        width: 10px;
+                        height: 10px;
+                        border: 1px dashed var(--rule-strong);
+                        border-radius: 2px;
+                      "
+                    ></span
+                    >projeção · parcelas + assinaturas</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Ajudas -->
+            <div class="panel">
+              <div class="panel-head">
+                <h3>A receber</h3>
+                <a class="link">ver todas →</a>
+              </div>
+              <div class="panel-body flush">
+                <div class="contrib-row">
+                  <div class="av" style="background: #5b7a5e">M</div>
+                  <span class="who"
+                    >Mariana
+                    <span class="desc">Netflix · maio</span>
+                  </span>
+                  <span class="amt"><span class="cur">R$ </span>47,90</span>
+                  <div class="check">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                </div>
+                <div class="contrib-row">
+                  <div class="av" style="background: #a88454">R</div>
+                  <span class="who"
+                    >Rafael
+                    <span class="desc">Mercado · parcela 3/6</span>
+                  </span>
+                  <span class="amt"><span class="cur">R$ </span>120,00</span>
+                  <div class="check">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                </div>
+                <div class="contrib-row">
+                  <div class="av" style="background: #8c3b2e">P</div>
+                  <span class="who"
+                    >Paula
+                    <span class="desc">Spotify família · maio</span>
+                  </span>
+                  <span class="amt"><span class="cur">R$ </span>27,80</span>
+                  <div class="check">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                </div>
+                <div class="contrib-row received">
+                  <div class="av" style="background: #91a992">M</div>
+                  <span class="who"
+                    >Mãe
+                    <span class="desc">Notebook · parcela 8/12</span>
+                  </span>
+                  <span class="amt"><span class="cur">R$ </span>180,00</span>
+                  <div class="check">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                </div>
+                <div class="contrib-row received">
+                  <div class="av" style="background: #6b6f66">L</div>
+                  <span class="who"
+                    >Lucas
+                    <span class="desc">iCloud · maio</span>
+                  </span>
+                  <span class="amt"><span class="cur">R$ </span>14,90</span>
+                  <div class="check">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent activity -->
+          <div class="panel" style="margin-top: 16px">
+            <div class="panel-head">
+              <h3>Lançamentos recentes</h3>
+              <span class="meta">últimos 7 dias</span>
+            </div>
+            <div class="panel-body flush">
+              <div class="activity-row">
+                <div class="icn">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="6" width="18" height="13" rx="2" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </div>
+                <div class="what">
+                  <strong>Notebook Lenovo</strong> · Nubank · parcela 8/12
+                  <span class="parc">8/12</span>
+                </div>
+                <div class="when">14/MAI · 09:42</div>
+              </div>
+              <div class="activity-row">
+                <div class="icn">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5" />
+                  </svg>
+                </div>
+                <div class="what">
+                  <strong>Spotify Família</strong> · Nubank · renovação automática
+                  <span class="parc recur">recorr.</span>
+                </div>
+                <div class="when">13/MAI · 02:15</div>
+              </div>
+              <div class="activity-row">
+                <div class="icn">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M12 3v18M16 6H9a3 3 0 0 0 0 6h6a3 3 0 0 1 0 6H7" />
+                  </svg>
+                </div>
+                <div class="what"><strong>Bolsa CNPq</strong> · entrada · maio</div>
+                <div class="when">10/MAI · 06:01</div>
+              </div>
+              <div class="activity-row">
+                <div class="icn">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="4" width="18" height="17" rx="2" />
+                    <line x1="3" y1="9" x2="21" y2="9" />
+                  </svg>
+                </div>
+                <div class="what">
+                  <strong>Compra Mercado Livre</strong> · Inter · em 6×
+                  <span class="parc">1/6</span>
+                </div>
+                <div class="when">09/MAI · 21:08</div>
+              </div>
+              <div class="activity-row">
+                <div class="icn">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M8 12l3 3 5-6" />
+                  </svg>
+                </div>
+                <div class="what">
+                  <strong>Fatura abril Inter</strong> marcada como paga · R$ 1.094,20
+                </div>
+                <div class="when">07/MAI · 14:22</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="marks.js"></script>
+    <script>
+      document.getElementById('brandMark').innerHTML = window.TallyMarks.primary({
+        fill: 'currentColor'
+      })
+
+      // Toggle "received" on click
+      document.querySelectorAll('.contrib-row .check').forEach((el) => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation()
+          el.closest('.contrib-row').classList.toggle('received')
+        })
+      })
+
+      // Nav clicks
+      document.querySelectorAll('.nav-item').forEach((el) => {
+        el.addEventListener('click', () => {
+          document.querySelectorAll('.nav-item').forEach((x) => x.classList.remove('active'))
+          el.classList.add('active')
+        })
+      })
+    </script>
+  </body>
+</html>
