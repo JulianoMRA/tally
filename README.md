@@ -71,7 +71,7 @@ This project is in active development. The implementation is being delivered in 
 - [x] **Slice 3** — Categories CRUD
 - [x] **Slice 4** — One-shot expenses + statement creation
 - [x] **Slice 4.5** — Visual identity: design system (tokens, Geist font, logo, UI primitives), full app restyle
-- [ ] **Slice 5** — Statement lifecycle (Open → Closed → Paid)
+- [x] **Slice 5** — Statement lifecycle (Open → Closed → Paid)
 - [ ] **Slice 6** — Installment expenses (new + in-progress migration + advancing parcelas)
 - [ ] **Slice 7** — Subscriptions with lazy occurrence generation
 - [ ] **Slice 8** — Off-card expenses (debit, Pix, cash)
@@ -85,6 +85,8 @@ This project is in active development. The implementation is being delivered in 
 Each merged slice gets a short progress note in the changelog section below.
 
 ### Changelog
+
+**Slice 5** — Statement lifecycle (RF-FAT-02, RF-FAT-04, RF-FAT-05, RN-06). Auto-closes overdue statements on next list call (DB write, not derived state). Domain service `ciclo-fatura` with pure transition functions (`fecharFatura`, `pagarFatura`, `reabrirFatura`, `precisaAutoFechar`) — TDD with 16 unit tests. `FaturaRepository` gains `fecharVencidas`, `fechar`, `pagar`, `reabrir` methods. Three new typed IPC channels. `FaturaDetalhe` shows contextual action buttons per status: "Fechar fatura" (Aberta), inline date form + "Confirmar pagamento" (Fechada), "Reabrir fatura" (Paga) — all with confirmation.
 
 **Slice 4.5** — Visual identity and design system. `tokens.css` with Cream/Forest dual-theme palette (Forest ready for Slice 14 switcher). Geist + Geist Mono via `@fontsource` (offline-first). Four logo variants (`primary`, `tally`, `stack`, `monogram`) ported to typed React components. Shared UI primitives: `Button`, `Card`, `Panel`, `Badge`, `Input`, `Select`, `Field`, `EmptyState`. New `Sidebar` (232px, nav groups, footer avatar) and `Topbar` (56px, sticky). All four existing feature screens (Cartões, Categorias, Despesas, Faturas) migrated to the new system.
 
