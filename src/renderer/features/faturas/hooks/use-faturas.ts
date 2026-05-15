@@ -2,6 +2,38 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Fatura } from '@domain/entities/fatura'
 import type { FaturaDetalhada } from '@shared/ipc/fatura'
 
+export function useCicloFatura(onSucesso: (fatura: Fatura) => void) {
+  const [loading, setLoading] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+
+  async function executar(acao: () => Promise<Fatura>) {
+    setLoading(true)
+    setErro(null)
+    try {
+      const fatura = await acao()
+      onSucesso(fatura)
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Erro inesperado')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function fechar(faturaId: number) {
+    return executar(() => window.api.fatura.fechar(faturaId))
+  }
+
+  function pagar(faturaId: number, dataPagamento: string) {
+    return executar(() => window.api.fatura.pagar(faturaId, dataPagamento))
+  }
+
+  function reabrir(faturaId: number) {
+    return executar(() => window.api.fatura.reabrir(faturaId))
+  }
+
+  return { fechar, pagar, reabrir, loading, erro }
+}
+
 export function useFaturasPorCartao(cartaoId: number | null) {
   const [faturas, setFaturas] = useState<Fatura[]>([])
   const [loading, setLoading] = useState(false)
@@ -28,17 +60,20 @@ export function useFaturaDetalhe(faturaId: number | null) {
   const [detalhe, setDetalhe] = useState<FaturaDetalhada | null>(null)
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
+  const refetch = useCallback(async () => {
     if (faturaId === null) {
       setDetalhe(null)
       return
     }
     setLoading(true)
-    window.api.fatura.detalharComParcelas(faturaId).then((data) => {
-      setDetalhe(data)
-      setLoading(false)
-    })
+    const data = await window.api.fatura.detalharComParcelas(faturaId)
+    setDetalhe(data)
+    setLoading(false)
   }, [faturaId])
 
-  return { detalhe, loading }
+  useEffect(() => {
+    refetch()
+  }, [refetch])
+
+  return { detalhe, loading, refetch }
 }

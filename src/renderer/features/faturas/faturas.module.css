@@ -125,6 +125,28 @@
   flex-shrink: 0;
 }
 
+/* Ações do ciclo de vida */
+.cicloActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pagarForm {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.erroAcao {
+  font-size: 12px;
+  color: var(--color-danger, #e53e3e);
+  margin: 0;
+  width: 100%;
+}
+
 /* Tabela de parcelas */
 .tabela {
   width: 100%;

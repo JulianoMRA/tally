@@ -79,6 +79,9 @@ export class FaturaRepository implements Repository {
   }
 
   list(cartaoId?: number): Fatura[] {
+    const hoje = new Date().toISOString().slice(0, 10)
+    this.fecharVencidas(hoje)
+
     const rows = (
       cartaoId === undefined
         ? this.db.prepare('SELECT * FROM fatura ORDER BY mes_referencia, cartao_id').all()
@@ -87,6 +90,52 @@ export class FaturaRepository implements Repository {
             .all(cartaoId)
     ) as FaturaRow[]
     return rows.map(mapRow)
+  }
+
+  fecharVencidas(hoje: string): number {
+    const result = this.db
+      .prepare(
+        `UPDATE fatura
+         SET status = 'Fechada', updated_at = datetime('now')
+         WHERE status = 'Aberta' AND data_fechamento <= ?`
+      )
+      .run(hoje)
+    return result.changes
+  }
+
+  fechar(id: number): Fatura {
+    this.db
+      .prepare(`UPDATE fatura SET status = 'Fechada', updated_at = datetime('now') WHERE id = ?`)
+      .run(id)
+    const fatura = this.findById(id)
+    if (!fatura) throw new Error(`fechar: fatura #${id} não encontrada`)
+    return fatura
+  }
+
+  pagar(id: number, dataPagamento: string): Fatura {
+    this.db
+      .prepare(
+        `UPDATE fatura
+         SET status = 'Paga', data_pagamento = ?, updated_at = datetime('now')
+         WHERE id = ?`
+      )
+      .run(dataPagamento, id)
+    const fatura = this.findById(id)
+    if (!fatura) throw new Error(`pagar: fatura #${id} não encontrada`)
+    return fatura
+  }
+
+  reabrir(id: number): Fatura {
+    this.db
+      .prepare(
+        `UPDATE fatura
+         SET status = 'Aberta', data_pagamento = NULL, updated_at = datetime('now')
+         WHERE id = ?`
+      )
+      .run(id)
+    const fatura = this.findById(id)
+    if (!fatura) throw new Error(`reabrir: fatura #${id} não encontrada`)
+    return fatura
   }
 
   /**

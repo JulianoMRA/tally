@@ -1,5 +1,8 @@
+import { useState } from 'react'
+import type { Fatura } from '@domain/entities/fatura'
 import type { FaturaDetalhada } from '@shared/ipc/fatura'
-import { Badge, Button, Panel, EmptyState } from '../../components/ui'
+import { useCicloFatura } from './hooks/use-faturas'
+import { Badge, Button, Panel, EmptyState, Field, Input } from '../../components/ui'
 import styles from './faturas.module.css'
 
 type Props = {
@@ -7,6 +10,7 @@ type Props = {
   cartaoNome: string
   cartaoCor?: string
   onVoltar: () => void
+  onFaturaAtualizada: (fatura: Fatura) => void
 }
 
 function formatBRL(centavos: number): string {
@@ -19,9 +23,38 @@ function statusVariant(kind: string): 'open' | 'closed' | 'paid' {
   return 'paid'
 }
 
-export function FaturaDetalhe({ detalhe, cartaoNome, cartaoCor, onVoltar }: Props) {
+function dataHoje(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+export function FaturaDetalhe({
+  detalhe,
+  cartaoNome,
+  cartaoCor,
+  onVoltar,
+  onFaturaAtualizada
+}: Props) {
   const { fatura, parcelas, totalBrutoCentavos } = detalhe
   const kind = fatura.status.kind
+
+  const [modoPagar, setModoPagar] = useState(false)
+  const [dataPagamento, setDataPagamento] = useState(dataHoje)
+
+  const ciclo = useCicloFatura(onFaturaAtualizada)
+
+  function handleFechar() {
+    if (!window.confirm('Fechar esta fatura? Novas parcelas não poderão ser adicionadas.')) return
+    ciclo.fechar(fatura.id)
+  }
+
+  function handlePagarConfirmar() {
+    ciclo.pagar(fatura.id, dataPagamento).then(() => setModoPagar(false))
+  }
+
+  function handleReabrir() {
+    if (!window.confirm('Reabrir esta fatura? O status voltará para Aberta.')) return
+    ciclo.reabrir(fatura.id)
+  }
 
   return (
     <div className={styles.detalhe}>
@@ -43,6 +76,57 @@ export function FaturaDetalhe({ detalhe, cartaoNome, cartaoCor, onVoltar }: Prop
             ← Voltar
           </Button>
         </div>
+      </div>
+
+      <div className={styles.cicloActions}>
+        {kind === 'Aberta' && (
+          <Button variant="secondary" size="sm" onClick={handleFechar} disabled={ciclo.loading}>
+            Fechar fatura
+          </Button>
+        )}
+        {kind === 'Fechada' && !modoPagar && (
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setModoPagar(true)}
+            disabled={ciclo.loading}
+          >
+            Marcar como paga
+          </Button>
+        )}
+        {kind === 'Fechada' && modoPagar && (
+          <div className={styles.pagarForm}>
+            <Field label="Data de pagamento">
+              <Input
+                type="date"
+                value={dataPagamento}
+                onChange={(e) => setDataPagamento(e.target.value)}
+              />
+            </Field>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handlePagarConfirmar}
+              disabled={ciclo.loading}
+            >
+              Confirmar pagamento
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setModoPagar(false)}
+              disabled={ciclo.loading}
+            >
+              Cancelar
+            </Button>
+          </div>
+        )}
+        {kind === 'Paga' && (
+          <Button variant="ghost" size="sm" onClick={handleReabrir} disabled={ciclo.loading}>
+            Reabrir fatura
+          </Button>
+        )}
+        {ciclo.erro && <p className={styles.erroAcao}>{ciclo.erro}</p>}
       </div>
 
       <Panel
@@ -81,7 +165,7 @@ export function FaturaDetalhe({ detalhe, cartaoNome, cartaoCor, onVoltar }: Prop
               </tbody>
             </table>
             <div className={styles.totalRow}>
-              <span className={styles.totalLabel}>Total bruto</span>
+              <span className={styles.totalLabel}>Total</span>
               <span className={`${styles.totalValor} tnum`}>{formatBRL(totalBrutoCentavos)}</span>
             </div>
           </>

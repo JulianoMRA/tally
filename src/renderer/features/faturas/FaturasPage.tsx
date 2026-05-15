@@ -20,10 +20,16 @@ export default function FaturasPage() {
   const [modo, setModo] = useState<Modo>({ kind: 'lista' })
 
   const { cartoes } = useCartoesAtivos()
-  const { faturas, loading: loadingFaturas } = useFaturasPorCartao(cartaoId)
-  const { detalhe, loading: loadingDetalhe } = useFaturaDetalhe(
-    modo.kind === 'detalhe' ? modo.faturaId : null
-  )
+  const {
+    faturas,
+    loading: loadingFaturas,
+    refetch: refetchFaturas
+  } = useFaturasPorCartao(cartaoId)
+  const {
+    detalhe,
+    loading: loadingDetalhe,
+    refetch: refetchDetalhe
+  } = useFaturaDetalhe(modo.kind === 'detalhe' ? modo.faturaId : null)
 
   const cartaoSelecionado = cartoes.find((c) => c.id === cartaoId)
 
@@ -118,6 +124,10 @@ export default function FaturasPage() {
                 cartaoNome={cartaoSelecionado?.nome ?? ''}
                 cartaoCor={cartaoSelecionado?.cor}
                 onVoltar={handleVoltar}
+                onFaturaAtualizada={() => {
+                  refetchFaturas()
+                  refetchDetalhe()
+                }}
               />
             )}
           </>
