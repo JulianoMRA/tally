@@ -22,6 +22,22 @@ function App(): React.JSX.Element {
         >
           Categorias
         </NavLink>
+        <NavLink
+          to="/despesas"
+          className={({ isActive }) =>
+            isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink
+          }
+        >
+          Nova despesa
+        </NavLink>
+        <NavLink
+          to="/faturas"
+          className={({ isActive }) =>
+            isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink
+          }
+        >
+          Faturas
+        </NavLink>
       </nav>
       <main className={styles.content}>
         <Outlet />
