@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3'
+import type { Database } from '../database'
 import type { Cartao } from '../../domain/entities/cartao'
 import type { CartaoInput, ListCartaoOptions } from '../../shared/ipc/cartao'
 import type { Repository } from './types'
@@ -28,7 +28,7 @@ function mapRow(row: CartaoRow): Cartao {
 }
 
 export class CartaoRepository implements Repository {
-  constructor(public readonly db: Database.Database) {}
+  constructor(public readonly db: Database) {}
 
   findById(id: number): Cartao | null {
     const row = this.db.prepare('SELECT * FROM cartao WHERE id = ?').get(id) as

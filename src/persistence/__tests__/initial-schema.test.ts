@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import type Database from 'better-sqlite3'
+import type { Database } from '../database'
 import { openInMemoryDatabase } from '../database'
 import { runMigrations } from '../migrations/runner'
 
@@ -16,7 +16,7 @@ const EXPECTED_TABLES = [
   'schema_migrations'
 ]
 
-function listTables(db: Database.Database): string[] {
+function listTables(db: Database): string[] {
   return (
     db
       .prepare(
@@ -27,7 +27,7 @@ function listTables(db: Database.Database): string[] {
 }
 
 describe('migration 0001_initial_schema', () => {
-  let db: Database.Database
+  let db: Database
 
   beforeEach(() => {
     db = openInMemoryDatabase()

@@ -1,0 +1,184 @@
+.page {
+  padding: 24px;
+  max-width: 900px;
+}
+
+.pageHeader {
+  margin-bottom: 20px;
+}
+
+.pageHeader h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 4px;
+}
+
+.pageHeader p {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+}
+
+/* --- Seletor de cartão --- */
+.cartaoSelect {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.cartaoSelect label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #444;
+  white-space: nowrap;
+}
+
+.cartaoSelect select {
+  padding: 7px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fafafa;
+  color: #1a1a2e;
+  min-width: 180px;
+}
+
+/* --- Lista de faturas --- */
+.faturaList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.faturaItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.faturaItem:hover {
+  border-color: #5b6af7;
+}
+
+.faturaMes {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.faturaStatus {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.statusAberta {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.statusFechada {
+  background: #fff8e1;
+  color: #e65100;
+}
+
+.statusPaga {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.empty {
+  color: #888;
+  font-size: 14px;
+  padding: 16px 0;
+}
+
+/* --- Detalhe da fatura --- */
+.detalhe {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 24px;
+}
+
+.detalheHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.detalheHeader h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 4px;
+}
+
+.detalheHeader p {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+}
+
+.btnVoltar {
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #444;
+  transition: border-color 0.15s;
+}
+
+.btnVoltar:hover {
+  border-color: #5b6af7;
+  color: #5b6af7;
+}
+
+/* --- Tabela de parcelas --- */
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tabela th {
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #777;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tabela td {
+  padding: 10px 10px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #1a1a2e;
+}
+
+.tabela tr:last-child td {
+  border-bottom: none;
+}
+
+.totalRow {
+  margin-top: 16px;
+  text-align: right;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a2e;
+}

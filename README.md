@@ -69,7 +69,7 @@ This project is in active development. The implementation is being delivered in 
 - [x] **Slice 1** — Domain foundation: migrations, base entities, statement-from-purchase-date rule
 - [x] **Slice 2** — Cards CRUD with closing and due dates
 - [x] **Slice 3** — Categories CRUD
-- [ ] **Slice 4** — One-shot expenses + statement creation
+- [x] **Slice 4** — One-shot expenses + statement creation
 - [ ] **Slice 5** — Statement lifecycle (Open → Closed → Paid)
 - [ ] **Slice 6** — Installment expenses (new + in-progress migration + advancing parcelas)
 - [ ] **Slice 7** — Subscriptions with lazy occurrence generation
@@ -84,6 +84,8 @@ This project is in active development. The implementation is being delivered in 
 Each merged slice gets a short progress note in the changelog section below.
 
 ### Changelog
+
+**Slice 4** — One-shot credit expenses + statement auto-creation (RF-DES-01, RF-FAT-01, RF-FAT-03 partial). `DespesaRepository.criarUnicaCredito` runs an atomic transaction: inserts the expense, upserts the statement via RN-01, inserts parcela 1/1. `FaturaRepository.findById` added. Statement detail page lists parcelas with gross total. Default landing page changed to `/despesas`.
 
 **Slice 3** — Categories CRUD (RF-CAT-01, RF-CAT-02). Full create/edit/archive/unarchive flow with type selector (Despesa/Renda/Ambos), color picker, and optional free-text icon field. IPC contract includes a `tipo` filter used by future slices when populating expense/income forms. Follows the handler + repository + Zod schema template established in Slice 2.
 

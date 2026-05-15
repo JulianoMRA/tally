@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type Database from 'better-sqlite3'
+import type { Database } from '../database'
 
 export type MigrationFile = {
   version: string
@@ -74,7 +74,7 @@ export function buildMigrationFile(version: string, sql: string): MigrationFile 
 }
 
 export function runMigrations(
-  db: Database.Database,
+  db: Database,
   files: MigrationFile[] = loadBundledMigrations()
 ): MigrationResult {
   db.exec(ENSURE_TABLE_SQL)

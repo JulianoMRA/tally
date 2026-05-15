@@ -1,16 +1,21 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
+import { mkdirSync } from 'fs'
 import { is } from '@electron-toolkit/utils'
-import type Database from 'better-sqlite3'
+import type { Database } from '../src/persistence/database'
 import { openDatabase } from '../src/persistence/database'
 import { runMigrations } from '../src/persistence/migrations/runner'
 import { registerCartaoHandlers } from './ipc/cartao-handlers'
 import { registerCategoriaHandlers } from './ipc/categoria-handlers'
+import { registerDespesaHandlers } from './ipc/despesa-handlers'
+import { registerFaturaHandlers } from './ipc/fatura-handlers'
 
-let db: Database.Database | null = null
+let db: Database | null = null
 
-function inicializarBancoDeDados(): Database.Database {
-  const dbPath = join(app.getPath('userData'), 'tally.db')
+function inicializarBancoDeDados(): Database {
+  const userDataDir = app.getPath('userData')
+  mkdirSync(userDataDir, { recursive: true })
+  const dbPath = join(userDataDir, 'tally.db')
   const database = openDatabase(dbPath)
   const result = runMigrations(database)
   if (result.applied.length > 0) {
@@ -41,6 +46,8 @@ app.whenReady().then(() => {
   db = inicializarBancoDeDados()
   registerCartaoHandlers(db, ipcMain)
   registerCategoriaHandlers(db, ipcMain)
+  registerDespesaHandlers(db, ipcMain)
+  registerFaturaHandlers(db, ipcMain)
   createWindow()
 
   app.on('activate', () => {

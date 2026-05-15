@@ -1,10 +1,10 @@
 import type { IpcMain } from 'electron'
-import type Database from 'better-sqlite3'
+import type { Database } from '../../src/persistence/database'
 import { CartaoRepository } from '../../src/persistence/repositories/cartao-repository'
 import { cartaoInputSchema, CARTAO_IPC_CHANNELS } from '../../src/shared/ipc/cartao'
 import type { ListCartaoOptions } from '../../src/shared/ipc/cartao'
 
-export function registerCartaoHandlers(db: Database.Database, ipcMain: IpcMain): void {
+export function registerCartaoHandlers(db: Database, ipcMain: IpcMain): void {
   const repo = new CartaoRepository(db)
 
   ipcMain.handle(CARTAO_IPC_CHANNELS.list, (_event, options?: ListCartaoOptions) => {

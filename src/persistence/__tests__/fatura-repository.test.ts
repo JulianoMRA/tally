@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import type Database from 'better-sqlite3'
+import type { Database } from '../database'
 import { openInMemoryDatabase } from '../database'
 import { runMigrations } from '../migrations/runner'
 import { FaturaRepository } from '../repositories/fatura-repository'
@@ -7,7 +7,7 @@ import { FaturaRepository } from '../repositories/fatura-repository'
 type CartaoFixture = { id: number; diaFechamento: number; diaVencimento: number }
 
 function inserirCartao(
-  db: Database.Database,
+  db: Database,
   nome: string,
   diaFechamento: number,
   diaVencimento: number
@@ -19,7 +19,7 @@ function inserirCartao(
 }
 
 describe('FaturaRepository.upsertParaCompra', () => {
-  let db: Database.Database
+  let db: Database
   let repo: FaturaRepository
 
   beforeEach(() => {

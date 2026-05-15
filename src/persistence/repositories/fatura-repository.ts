@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3'
+import type { Database } from '../database'
 import type { Cartao } from '../../domain/entities/cartao'
 import type { Fatura, StatusFatura } from '../../domain/entities/fatura'
 import {
@@ -62,7 +62,14 @@ function mapRow(row: FaturaRow): Fatura {
 }
 
 export class FaturaRepository implements Repository {
-  constructor(public readonly db: Database.Database) {}
+  constructor(public readonly db: Database) {}
+
+  findById(id: number): Fatura | null {
+    const row = this.db.prepare('SELECT * FROM fatura WHERE id = ?').get(id) as
+      | FaturaRow
+      | undefined
+    return row ? mapRow(row) : null
+  }
 
   findByCartaoEMesReferencia(cartaoId: number, mesReferencia: string): Fatura | null {
     const row = this.db
