@@ -4,6 +4,7 @@ import type { CategoriaInput } from '@shared/ipc/categoria'
 import { useCategorias } from './hooks/use-categorias'
 import { CategoriaForm } from './CategoriaForm'
 import { CategoriaList } from './CategoriaList'
+import { PageHead } from '../../components/layout/PageHead'
 import styles from './categorias.module.css'
 
 type Modo = { kind: 'criar' } | { kind: 'editar'; categoria: Categoria }
@@ -32,18 +33,21 @@ export default function CategoriasPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.pageHeader}>
-        <h1>Categorias</h1>
-        <label className={styles.toggleLabel}>
-          <input
-            type="checkbox"
-            checked={incluirArquivados}
-            onChange={(e) => setIncluirArquivados(e.target.checked)}
-          />
-          Mostrar arquivados
-        </label>
-      </div>
+    <div>
+      <PageHead
+        title="Categorias"
+        subtitle="Organize seus gastos e receitas por categoria."
+        actions={
+          <label className={styles.toggleLabel}>
+            <input
+              type="checkbox"
+              checked={incluirArquivados}
+              onChange={(e) => setIncluirArquivados(e.target.checked)}
+            />
+            Mostrar arquivados
+          </label>
+        }
+      />
 
       <div className={styles.layout}>
         <section className={styles.listSection}>

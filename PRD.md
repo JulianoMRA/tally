@@ -23,6 +23,7 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 ## 3. Escopo
 
 ### 3.1 MVP
+
 - Cadastro configurável de cartões, categorias, contribuidores e fontes de renda
 - Despesas em três modalidades: única, parcelada e assinatura
 - Suporte a despesas fora de cartão (Pix, débito, dinheiro)
@@ -36,12 +37,14 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - Categorização configurável e relatórios visuais (gráficos por categoria, evolução temporal)
 
 ### 3.2 V2 (pós-MVP)
+
 - Orçamento e metas por categoria com alerta de estouro
 - Exportação (CSV, PDF mensal)
 - Backup e sincronização (a definir: arquivo local exportável, nuvem)
 - Tags e notas livres em despesas
 
 ### 3.3 Fora de escopo
+
 - Multi-usuário e autenticação
 - Integração com bancos (Open Finance)
 - Versão mobile ou web
@@ -53,15 +56,18 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 ## 4. Requisitos Funcionais
 
 ### 4.1 Cartões (RF-CAR)
+
 - **RF-CAR-01** — Cadastrar cartão com nome, dia de fechamento (1–31), dia de vencimento (1–31), cor de identificação e flag ativo.
 - **RF-CAR-02** — Editar e arquivar (soft delete) cartões. Cartão arquivado não aparece em formulários de despesa, mas seu histórico permanece visível.
 - **RF-CAR-03** — Listar cartões ativos com indicadores: total da fatura aberta, próximo vencimento.
 
 ### 4.2 Categorias (RF-CAT)
+
 - **RF-CAT-01** — Cadastrar categoria com nome, tipo (Despesa, Renda ou Ambos), cor e ícone opcional.
 - **RF-CAT-02** — Editar e arquivar categorias. Despesas vinculadas a categoria arquivada continuam exibindo a categoria com indicador de inativa.
 
 ### 4.3 Despesas (RF-DES)
+
 - **RF-DES-01** — Cadastrar despesa **única** com: descrição, categoria, forma de pagamento (Crédito, Débito, Pix, Dinheiro), cartão (se crédito), valor, data da compra.
 - **RF-DES-02** — Cadastrar despesa **parcelada** com: campos da única + total de parcelas + valor por parcela. O sistema gera N parcelas e vincula cada uma à fatura correta com base na regra de fechamento do cartão.
 - **RF-DES-03** — Cadastrar despesa parcelada **em andamento** com: número da parcela atual (ex: 7/12). O sistema gera apenas as parcelas restantes (5 no exemplo).
@@ -73,6 +79,7 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - **RF-DES-09** — Excluir despesa: requer confirmação explícita. Se houver parcelas pagas, exclusão é bloqueada (apenas arquivamento).
 
 ### 4.4 Faturas (RF-FAT)
+
 - **RF-FAT-01** — Faturas são geradas automaticamente para cada cartão a cada mês de referência conforme parcelas vão sendo vinculadas.
 - **RF-FAT-02** — Cada fatura tem status `Aberta` (recebendo novas despesas), `Fechada` (passou da data de fechamento, sem novas despesas) e `Paga` (registrada como paga pelo usuário).
 - **RF-FAT-03** — Visualizar fatura com lista de parcelas, total bruto, total de ajudas vinculadas, total líquido a pagar.
@@ -80,6 +87,7 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - **RF-FAT-05** — Reabrir fatura paga (caso de erro): requer confirmação.
 
 ### 4.5 Contribuidores e Ajudas (RF-AJU)
+
 - **RF-AJU-01** — Cadastrar contribuidor com nome, contato opcional e flag ativo.
 - **RF-AJU-02** — Vincular ajuda a uma parcela específica, informando contribuidor, valor e flag recorrente. Uma parcela pode ter N ajudas.
 - **RF-AJU-03** — Quando despesa é assinatura ou parcelada e a ajuda é marcada como recorrente, o vínculo é replicado automaticamente em todas as ocorrências futuras (até cancelamento ou fim das parcelas).
@@ -88,6 +96,7 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - **RF-AJU-06** — Recebimento de ajuda **não** conta como entrada financeira: apenas atualiza o cálculo de líquido da fatura.
 
 ### 4.6 Rendas e Recebimentos (RF-REN)
+
 - **RF-REN-01** — Cadastrar fonte de renda com nome, tipo (Avulsa ou Recorrente), valor padrão, categoria opcional, dia esperado de recebimento (se recorrente) e flag ativo.
 - **RF-REN-02** — Renda recorrente gera recebimentos esperados para os próximos N meses (configurável, default 12).
 - **RF-REN-03** — Marcar recebimento como recebido, com data efetiva.
@@ -95,6 +104,7 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - **RF-REN-05** — Editar valor padrão da fonte recorrente afeta recebimentos futuros ainda não recebidos.
 
 ### 4.7 Visão Mensal e Multi-Mês (RF-VIS)
+
 - **RF-VIS-01** — Mês de referência segue o calendário (Junho/2026 agrupa fatura Inter venc 12/06, fatura Nubank venc 22/06, gastos fora de cartão de 01–30/06 e recebimentos de 01–30/06).
 - **RF-VIS-02** — Tela mensal mostra: faturas do mês, gastos fora de cartão, recebimentos, ajudas a receber, balanço final (entradas − gastos líquidos).
 - **RF-VIS-03** — Navegação entre meses (anterior/próximo) e seletor direto de mês/ano.
@@ -121,34 +131,43 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 Resumo das entidades. Detalhes de tipos e índices ficam na implementação das migrations.
 
 ### Cartao
+
 `id, nome, dia_fechamento (1–31), dia_vencimento (1–31), cor, ativo, created_at, updated_at`
 
 ### Fatura
+
 `id, cartao_id, mes_referencia (yyyy-mm), data_fechamento, data_vencimento, status (Aberta|Fechada|Paga), valor_total_bruto (calculado), valor_total_ajudas (calculado), valor_total_liquido (calculado), data_pagamento, created_at, updated_at`
 
 Unique constraint: `(cartao_id, mes_referencia)`.
 
 ### Categoria
+
 `id, nome, tipo (Despesa|Renda|Ambos), cor, icone, ativo, created_at, updated_at`
 
 ### Despesa
+
 `id, descricao, categoria_id, tipo (Unica|Parcelada|Assinatura), forma_pagamento (Credito|Debito|Pix|Dinheiro), cartao_id (nullable), valor_parcela, total_parcelas (nullable), data_compra, ativa, created_at, updated_at`
 
 Nota: `valor_parcela` é o valor de cada ocorrência. Para única, igual ao valor total. Para parcelada, valor de cada parcela. Para assinatura, valor mensal.
 
 ### Parcela
+
 `id, despesa_id, fatura_id (nullable se forma_pagamento ≠ Credito), numero, total (nullable para assinatura), valor, data_referencia (data esperada, usada para gastos fora de cartão), status (Pendente|Paga), data_pagamento, created_at, updated_at`
 
 ### Contribuidor
+
 `id, nome, contato, ativo, created_at, updated_at`
 
 ### Ajuda
+
 `id, contribuidor_id, parcela_id, valor, status (Pendente|Recebida), data_recebimento, recorrente, created_at, updated_at`
 
 ### Renda
+
 `id, nome, categoria_id (nullable), tipo (Avulsa|Recorrente), valor_padrao, dia_esperado (nullable), ativa, created_at, updated_at`
 
 ### Recebimento
+
 `id, renda_id, valor, data_esperada, data_recebida, status (Esperado|Recebido), created_at, updated_at`
 
 ---
@@ -156,46 +175,59 @@ Nota: `valor_parcela` é o valor de cada ocorrência. Para única, igual ao valo
 ## 7. Regras de Negócio Críticas
 
 ### RN-01 — Cálculo da fatura de uma compra
+
 Dada uma compra com `data_compra` em um cartão com `dia_fechamento = F`:
+
 - Se `dia(data_compra) <= F`: compra entra na fatura cujo `data_fechamento` é F do **mesmo mês**.
 - Se `dia(data_compra) > F`: compra entra na fatura cujo `data_fechamento` é F do **mês seguinte**.
 
 Exemplo Inter (F=05, V=12):
+
 - Compra 03/06 → fatura fecha 05/06, vence 12/06
 - Compra 07/06 → fatura fecha 05/07, vence 12/07
 
 Exemplo Nubank (F=15, V=22):
+
 - Compra 10/06 → fatura fecha 15/06, vence 22/06
 - Compra 20/06 → fatura fecha 15/07, vence 22/07
 
 ### RN-02 — Geração de parcelas
+
 Ao cadastrar despesa parcelada com `total_parcelas = N` e parcela inicial = `K` (default 1):
+
 - Gera `N - K + 1` parcelas numeradas `K/N, K+1/N, ..., N/N`.
 - A primeira parcela é vinculada à fatura calculada via RN-01 a partir da `data_compra`.
 - Cada parcela subsequente é vinculada à fatura do mês seguinte da parcela anterior (mesmo cartão).
 
 ### RN-03 — Adiantamento de parcelas
+
 Ao adiantar M parcelas de uma despesa:
+
 - Identifica as M parcelas pendentes mais futuras (maior numero).
 - Move o `fatura_id` dessas parcelas para a fatura de destino (default: fatura aberta corrente do mesmo cartão).
 - Mantém a numeração original.
 - Recalcula totais das faturas afetadas (origem e destino).
 
 ### RN-04 — Geração de ocorrências de assinatura
+
 Despesa do tipo Assinatura gera ocorrências mês a mês conforme o tempo avança ou conforme o usuário navega para meses futuros (geração preguiçosa). Mantém-se um horizonte de 12 meses adiante.
 
 ### RN-05 — Ajuda recorrente
+
 Quando uma ajuda é marcada como recorrente em uma parcela de despesa parcelada ou assinatura, ela é replicada em todas as parcelas futuras da mesma despesa. Edição posterior da ajuda recorrente em uma parcela específica não propaga (decisão de produto: edição pontual fica isolada).
 
 ### RN-06 — Ciclo de vida da fatura
+
 - `Aberta`: data atual < `data_fechamento`. Aceita novas parcelas.
 - `Fechada`: `data_fechamento <= data atual < data_vencimento` ou usuário fechou manualmente. Não aceita novas parcelas exceto via adiantamento explícito.
 - `Paga`: usuário registrou pagamento. Imutável exceto via reabertura.
 
 ### RN-07 — Cálculo do líquido da fatura
+
 `liquido = soma(valor_parcela) - soma(ajuda.valor onde ajuda.parcela_id ∈ parcelas da fatura)`. Ajudas com status `Pendente` ou `Recebida` ambas contam (a ajuda existe, independente de já ter sido cobrada).
 
 ### RN-08 — Balanço mensal
+
 `saldo = soma(recebimentos do mês) - (soma(faturas do mês líquido) + soma(gastos fora de cartão do mês))`. Recebimentos de ajuda **não** entram no cálculo de entradas (reembolso, não receita).
 
 ---
@@ -203,16 +235,20 @@ Quando uma ajuda é marcada como recorrente em uma parcela de despesa parcelada 
 ## 8. Estratégia de QA
 
 ### 8.1 Testes unitários (Vitest)
+
 - **Cobertura mínima**: 80% no domain layer (regras de negócio RN-01 a RN-08), 60% global.
 - **Foco**: cálculo de fatura por data de compra, geração de parcelas, adiantamento, ciclo de vida da fatura, replicação de ajuda recorrente, cálculo de líquido e saldo.
 - **TDD obrigatório** no domain layer: teste antes da implementação.
 
 ### 8.2 Testes de integração (Vitest + better-sqlite3 em memória)
+
 - Repositórios contra SQLite em memória.
 - Fluxos completos: cadastrar despesa parcelada → verificar parcelas geradas → adiantar → verificar faturas recalculadas.
 
 ### 8.3 Testes E2E (Playwright)
+
 Fluxos críticos cobertos:
+
 - Cadastrar cartão e categoria
 - Cadastrar despesa parcelada nova
 - Cadastrar despesa parcelada em andamento (migração)
@@ -223,7 +259,9 @@ Fluxos críticos cobertos:
 - Navegação entre meses com projeção
 
 ### 8.4 CI/CD (GitHub Actions)
+
 Pipeline em PR e push para main:
+
 1. Install dependencies (com cache)
 2. Lint (ESLint)
 3. Typecheck (tsc --noEmit)
@@ -234,6 +272,7 @@ Pipeline em PR e push para main:
 Branch `main` protegida: PR obrigatório, CI verde obrigatório, conventional commits.
 
 ### 8.5 Documentação de bugs
+
 Bugs encontrados durante desenvolvimento ou uso real são registrados como GitHub Issues seguindo template estruturado (preconditions, steps, expected, actual, severity, evidence). Alinhamento com prática de bug reports do roadmap QA.
 
 ---
@@ -242,23 +281,24 @@ Bugs encontrados durante desenvolvimento ou uso real são registrados como GitHu
 
 Ordem proposta para implementação. Cada slice é uma fatia ponta-a-ponta (UI + lógica + persistência + testes) que entrega valor incremental.
 
-| # | Slice | Entrega principal |
-|---|-------|-------------------|
-| 0 | Setup do projeto | Electron + Vite + React + TS + SQLite + Vitest + Playwright + ESLint + Prettier + Husky + commitlint + GitHub Actions configurado e rodando "Hello World" |
-| 1 | Camada de domínio base | Migrations, entidades, repositórios base, testes da regra RN-01 (cálculo de fatura por data) |
-| 2 | Cartões | CRUD de cartões com data de fechamento/vencimento |
-| 3 | Categorias | CRUD de categorias com tipo (Despesa/Renda/Ambos) |
-| 4 | Despesa única + fatura | Cadastrar gasto avulso em cartão; geração automática de fatura; visualização da fatura |
-| 5 | Fatura: ciclo de vida | Fechamento e pagamento de fatura; cálculo de totais |
-| 6 | Despesa parcelada | Cadastro completo (nova e em andamento); geração de parcelas; adiantamento; cancelamento |
-| 7 | Assinatura | Cadastro de assinatura; geração de ocorrências; cancelamento |
-| 8 | Despesas fora de cartão | Pix, débito, dinheiro vinculados ao mês calendário |
-| 9 | Contribuidores e Ajudas | CRUD de contribuidores; vínculo de ajuda; ajuda recorrente; dashboard "A Receber por Pessoa" |
-| 10 | Rendas e Recebimentos | Fontes recorrentes e avulsas; geração de recebimentos esperados; marcar recebido |
-| 11 | Visão mensal consolidada | Tela do mês com faturas + gastos fora + entradas + saldo + ajudas |
-| 12 | Multi-mês e projeção | Navegação entre meses; projeção 6/12 meses futuros |
-| 13 | Relatórios e gráficos | Pizza por categoria; evolução temporal; comparativos |
-| 14 | Hardening | Polimento de UX, atalhos, validações, mensagens de erro, edge cases dos testes |
+| #   | Slice                    | Entrega principal                                                                                                                                         |
+| --- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0   | Setup do projeto         | Electron + Vite + React + TS + SQLite + Vitest + Playwright + ESLint + Prettier + Husky + commitlint + GitHub Actions configurado e rodando "Hello World" |
+| 1   | Camada de domínio base   | Migrations, entidades, repositórios base, testes da regra RN-01 (cálculo de fatura por data)                                                              |
+| 2   | Cartões                  | CRUD de cartões com data de fechamento/vencimento                                                                                                         |
+| 3   | Categorias               | CRUD de categorias com tipo (Despesa/Renda/Ambos)                                                                                                         |
+| 4   | Despesa única + fatura   | Cadastrar gasto avulso em cartão; geração automática de fatura; visualização da fatura                                                                    |
+| 4.5 | Identidade visual        | Design system (tokens, fontes Geist, logo, primitivos UI); retrofit das telas dos Slices 1–4                                                              |
+| 5   | Fatura: ciclo de vida    | Fechamento e pagamento de fatura; cálculo de totais                                                                                                       |
+| 6   | Despesa parcelada        | Cadastro completo (nova e em andamento); geração de parcelas; adiantamento; cancelamento                                                                  |
+| 7   | Assinatura               | Cadastro de assinatura; geração de ocorrências; cancelamento                                                                                              |
+| 8   | Despesas fora de cartão  | Pix, débito, dinheiro vinculados ao mês calendário                                                                                                        |
+| 9   | Contribuidores e Ajudas  | CRUD de contribuidores; vínculo de ajuda; ajuda recorrente; dashboard "A Receber por Pessoa"                                                              |
+| 10  | Rendas e Recebimentos    | Fontes recorrentes e avulsas; geração de recebimentos esperados; marcar recebido                                                                          |
+| 11  | Visão mensal consolidada | Tela do mês com faturas + gastos fora + entradas + saldo + ajudas                                                                                         |
+| 12  | Multi-mês e projeção     | Navegação entre meses; projeção 6/12 meses futuros                                                                                                        |
+| 13  | Relatórios e gráficos    | Pizza por categoria; evolução temporal; comparativos                                                                                                      |
+| 14  | Hardening                | Polimento de UX, atalhos, validações, mensagens de erro, edge cases dos testes                                                                            |
 
 V2 (orçamento, exportação, backup, tags) entra após o slice 14.
 

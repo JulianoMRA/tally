@@ -1,0 +1,2723 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tally — Manual de Marca</title>
+    <meta name="viewport" content="width=1280" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="tokens.css" />
+    <style>
+      /* ============================================================
+   Page-specific layout
+   ============================================================ */
+      .page {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 0 64px;
+      }
+
+      /* Top bar */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: color-mix(in oklab, var(--bg) 88%, transparent);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--rule);
+      }
+      .topbar-inner {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 14px 64px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+      .topbar .mark {
+        width: 24px;
+        height: 24px;
+      }
+      .topbar .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .topbar nav {
+        display: flex;
+        gap: 22px;
+        font-size: 13px;
+        color: var(--ink-3);
+      }
+      .topbar nav a {
+        color: inherit;
+        text-decoration: none;
+      }
+      .topbar nav a:hover {
+        color: var(--ink);
+      }
+      .topbar .spacer {
+        flex: 1;
+      }
+      .topbar .meta {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--ink-3);
+        display: flex;
+        gap: 16px;
+      }
+      .topbar .meta span:not(:last-child)::after {
+        content: '';
+        display: inline-block;
+        width: 1px;
+        height: 10px;
+        background: var(--rule-strong);
+        margin-left: 16px;
+        vertical-align: middle;
+      }
+      .theme-toggle {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        background: transparent;
+        border: 1px solid var(--rule-strong);
+        color: var(--ink-2);
+        padding: 6px 10px;
+        border-radius: var(--r-1);
+        cursor: pointer;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .theme-toggle:hover {
+        background: var(--bg-sunk);
+      }
+
+      /* Cover */
+      .cover {
+        padding: 80px 0 96px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 80px;
+        align-items: end;
+        border-bottom: 1px solid var(--rule);
+      }
+      .cover-eyebrow {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        margin-bottom: 28px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .cover-eyebrow::before {
+        content: '';
+        width: 24px;
+        height: 1px;
+        background: var(--ink-3);
+      }
+      .cover h1 {
+        font-size: 132px;
+        line-height: 0.88;
+        font-weight: 600;
+        letter-spacing: -0.045em;
+        margin: 0 0 32px;
+        color: var(--ink);
+      }
+      .cover h1 .dot {
+        display: inline-block;
+        color: var(--sage);
+      }
+      .cover .tagline {
+        font-size: 22px;
+        line-height: 1.35;
+        color: var(--ink-2);
+        max-width: 480px;
+        margin: 0;
+        text-wrap: pretty;
+        letter-spacing: -0.01em;
+      }
+      .cover .side {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        padding-bottom: 8px;
+      }
+      .cover .side .label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+      }
+      .cover .side .value {
+        font-size: 14px;
+        color: var(--ink);
+        font-weight: 500;
+      }
+      .cover .side .row {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 16px;
+        padding: 14px 0;
+        border-top: 1px solid var(--rule);
+      }
+      .cover .side .row:last-child {
+        border-bottom: 1px solid var(--rule);
+      }
+
+      /* Section structure */
+      section.s {
+        padding: 96px 0;
+        border-bottom: 1px solid var(--rule);
+      }
+      .s-head {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 64px;
+        margin-bottom: 56px;
+      }
+      .s-num {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--ink-3);
+        letter-spacing: 0.12em;
+      }
+      .s-title {
+        font-size: 44px;
+        line-height: 1;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+        margin: 0 0 16px;
+      }
+      .s-lede {
+        font-size: 17px;
+        line-height: 1.55;
+        color: var(--ink-2);
+        max-width: 64ch;
+        text-wrap: pretty;
+      }
+      .s-head-meta {
+        padding-top: 6px;
+      }
+      .s-head-meta .kicker {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        margin-bottom: 8px;
+      }
+
+      /* Generic card */
+      .card {
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-3);
+      }
+
+      /* Footnote label */
+      .fn {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+      }
+
+      /* ============================================================
+   §01 Logo
+   ============================================================ */
+      .logo-hero {
+        position: relative;
+        height: 520px;
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-4);
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+      .logo-hero .construct-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(to right, var(--rule) 1px, transparent 1px),
+          linear-gradient(to bottom, var(--rule) 1px, transparent 1px);
+        background-size: 32px 32px;
+        opacity: 0.35;
+        pointer-events: none;
+      }
+      .logo-hero .construct-grid::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at center, transparent 30%, var(--bg-elev) 80%);
+      }
+      .logo-hero .mark-xl {
+        width: 280px;
+        height: 280px;
+        color: var(--forest);
+        position: relative;
+      }
+      .logo-hero .construction-line {
+        position: absolute;
+        background: var(--sage);
+        opacity: 0.4;
+      }
+
+      .logo-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+        margin-top: 32px;
+      }
+      .logo-tile {
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-3);
+        padding: 32px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 260px;
+        gap: 24px;
+      }
+      .logo-tile.dark {
+        background: var(--forest);
+        border-color: var(--forest);
+        color: var(--bg);
+      }
+      .logo-tile .swatch {
+        width: 88px;
+        height: 88px;
+        display: grid;
+        place-items: center;
+      }
+      .logo-tile .swatch svg {
+        width: 100%;
+        height: 100%;
+      }
+      .logo-tile .label {
+        text-align: center;
+      }
+      .logo-tile .label .name {
+        font-size: 13px;
+        font-weight: 500;
+        margin-bottom: 4px;
+      }
+      .logo-tile .label .note {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+      }
+      .logo-tile.dark .label .note {
+        color: var(--ink-4);
+      }
+
+      /* Wordmark */
+      .tally-wordmark {
+        font-family: var(--font-sans);
+        font-weight: 600;
+        letter-spacing: -0.04em;
+        color: var(--ink);
+        font-feature-settings: 'ss01';
+        display: inline-block;
+      }
+
+      /* Lockup row */
+      .lockup-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-top: 24px;
+      }
+      .lockup {
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-3);
+        padding: 56px 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        min-height: 200px;
+      }
+      .lockup .mk {
+        width: 56px;
+        height: 56px;
+        color: var(--forest);
+        flex-shrink: 0;
+      }
+      .lockup .tally-wordmark {
+        font-size: 56px;
+      }
+      .lockup.vert {
+        flex-direction: column;
+        gap: 18px;
+      }
+      .lockup.dark {
+        background: var(--forest);
+        color: var(--bg);
+      }
+      .lockup.dark .mk {
+        color: var(--bg);
+      }
+      .lockup.dark .tally-wordmark {
+        color: var(--bg);
+      }
+
+      /* Clearspace diagram */
+      .clearspace {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-top: 56px;
+      }
+      .clearspace .demo {
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-3);
+        padding: 32px;
+        position: relative;
+      }
+      .clearspace .demo-inner {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 56px;
+        border: 1px dashed var(--rule-strong);
+        border-radius: var(--r-2);
+        position: relative;
+      }
+      .clearspace .demo-inner .mk {
+        width: 56px;
+        height: 56px;
+        color: var(--forest);
+      }
+      .clearspace .demo-inner .tally-wordmark {
+        font-size: 56px;
+      }
+      .clearspace .x-label {
+        position: absolute;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        color: var(--ink-3);
+      }
+      .clearspace .x-label.t {
+        top: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .clearspace .x-label.l {
+        left: 18px;
+        top: 50%;
+        transform: translateY(-50%) rotate(-90deg);
+        transform-origin: center;
+      }
+
+      /* Sizing scale row */
+      .size-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 48px;
+        padding: 48px;
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-3);
+        margin-top: 24px;
+        justify-content: space-around;
+      }
+      .size-row .item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        color: var(--forest);
+      }
+      .size-row .item .label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        color: var(--ink-3);
+        text-transform: uppercase;
+      }
+
+      /* Don'ts */
+      .donts {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-top: 32px;
+      }
+      .dont {
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-3);
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        position: relative;
+      }
+      .dont .mark-slot {
+        width: 64px;
+        height: 64px;
+        display: grid;
+        place-items: center;
+      }
+      .dont .mark-slot svg {
+        width: 100%;
+        height: 100%;
+      }
+      .dont .x {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--expense);
+        color: white;
+        font-size: 11px;
+        display: grid;
+        place-items: center;
+        font-weight: 600;
+      }
+      .dont .desc {
+        font-size: 11px;
+        color: var(--ink-3);
+        text-align: center;
+        line-height: 1.4;
+      }
+
+      /* ============================================================
+   §02 Cores
+   ============================================================ */
+      .swatch-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+      }
+      .swatch-card {
+        border-radius: var(--r-3);
+        overflow: hidden;
+        border: 1px solid var(--rule);
+      }
+      .swatch-card .chip {
+        height: 180px;
+        position: relative;
+      }
+      .swatch-card .chip .name {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .swatch-card .info {
+        padding: 16px;
+        background: var(--bg-elev);
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .swatch-card .info .role {
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 4px;
+      }
+      .swatch-card .info .hex {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--ink-3);
+      }
+      .swatch-card .info .hex span {
+        display: inline-block;
+        min-width: 50px;
+        color: var(--ink-3);
+      }
+      .swatch-card .info .hex code {
+        color: var(--ink);
+      }
+
+      .color-section + .color-section {
+        margin-top: 40px;
+      }
+      .color-section h4 {
+        font-size: 14px;
+        font-weight: 500;
+        margin: 0 0 16px;
+        color: var(--ink-2);
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 400;
+      }
+
+      .semantic-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .semantic {
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-3);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .semantic .dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+      }
+      .semantic .role {
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .semantic .use {
+        font-size: 12px;
+        color: var(--ink-3);
+        line-height: 1.4;
+      }
+      .semantic .hex {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--ink-3);
+        margin-top: 4px;
+      }
+
+      /* Ratio bar */
+      .ratio-bar {
+        display: flex;
+        height: 56px;
+        border-radius: var(--r-2);
+        overflow: hidden;
+        margin-top: 32px;
+        border: 1px solid var(--rule);
+      }
+      .ratio-bar div {
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+      }
+
+      /* ============================================================
+   §03 Typography
+   ============================================================ */
+      .type-spec {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 48px;
+        margin-bottom: 56px;
+        padding-bottom: 56px;
+        border-bottom: 1px solid var(--rule);
+      }
+      .type-spec:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-bottom: 0;
+      }
+      .type-spec .meta {
+        padding-top: 6px;
+      }
+      .type-spec .meta .role {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        margin-bottom: 4px;
+      }
+      .type-spec .meta .name {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin-bottom: 16px;
+      }
+      .type-spec .meta .desc {
+        font-size: 13px;
+        color: var(--ink-2);
+        line-height: 1.5;
+        margin-bottom: 16px;
+      }
+      .type-spec .meta .stack {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--ink-3);
+        line-height: 1.6;
+      }
+
+      .type-spec .sample-display {
+        font-size: 96px;
+        line-height: 1;
+        font-weight: 600;
+        letter-spacing: -0.035em;
+        color: var(--ink);
+      }
+      .type-spec .sample-body {
+        font-size: 17px;
+        line-height: 1.55;
+        color: var(--ink-2);
+        max-width: 60ch;
+        margin-top: 24px;
+      }
+      .type-spec .sample-mono {
+        font-family: var(--font-mono);
+        font-feature-settings: 'ss01', 'zero', 'tnum';
+        font-size: 32px;
+        font-weight: 500;
+        color: var(--ink);
+      }
+      .type-spec .sample-mono small {
+        display: block;
+        font-size: 13px;
+        color: var(--ink-3);
+        margin-top: 8px;
+      }
+
+      /* Type scale table */
+      .type-scale {
+        margin-top: 24px;
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .type-scale th,
+      .type-scale td {
+        text-align: left;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--rule);
+        vertical-align: baseline;
+      }
+      .type-scale th {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        font-weight: 400;
+        padding-bottom: 12px;
+      }
+      .type-scale td.token {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--ink-3);
+        width: 100px;
+      }
+      .type-scale td.specs {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--ink-3);
+        width: 200px;
+      }
+      .type-scale td.sample {
+        color: var(--ink);
+        letter-spacing: -0.01em;
+      }
+
+      /* ============================================================
+   §04 Icons
+   ============================================================ */
+      .icon-grid {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 12px;
+        margin-top: 24px;
+      }
+      .icon-cell {
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-2);
+        padding: 20px 12px 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        text-align: center;
+      }
+      .icon-cell svg {
+        width: 28px;
+        height: 28px;
+        color: var(--ink);
+        stroke: currentColor;
+      }
+      .icon-cell .name {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.04em;
+        color: var(--ink-3);
+      }
+
+      .icon-spec {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-top: 32px;
+      }
+      .icon-spec .panel {
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-3);
+        padding: 32px;
+      }
+      .icon-spec h4 {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        margin: 0 0 16px;
+        font-weight: 400;
+      }
+      .icon-spec .construction {
+        display: grid;
+        place-items: center;
+        padding: 24px 0;
+        position: relative;
+      }
+      .icon-spec .grid-bg {
+        width: 192px;
+        height: 192px;
+        background-image:
+          linear-gradient(to right, var(--rule) 1px, transparent 1px),
+          linear-gradient(to bottom, var(--rule) 1px, transparent 1px);
+        background-size: 12px 12px;
+        position: relative;
+      }
+      .icon-spec .grid-bg svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        color: var(--forest);
+      }
+      .icon-spec dl {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 12px 24px;
+        margin: 0;
+        font-size: 13px;
+      }
+      .icon-spec dt {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--ink-3);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .icon-spec dd {
+        margin: 0;
+      }
+
+      /* ============================================================
+   §05 Applications
+   ============================================================ */
+      .apps-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 24px;
+        margin-top: 32px;
+      }
+      .app-card {
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-3);
+        padding: 32px;
+      }
+      .app-card .head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 24px;
+      }
+      .app-card .head .title {
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .app-card .head .size {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--ink-3);
+        letter-spacing: 0.08em;
+      }
+      .app-card .stage {
+        background: var(--bg-sunk);
+        border-radius: var(--r-2);
+        padding: 40px;
+        display: grid;
+        place-items: center;
+        min-height: 240px;
+      }
+
+      /* App icon (macOS rounded square) */
+      .app-icon {
+        width: 160px;
+        height: 160px;
+        border-radius: 36px;
+        background: var(--forest);
+        display: grid;
+        place-items: center;
+        position: relative;
+        box-shadow:
+          0 8px 24px -4px rgba(15, 26, 20, 0.25),
+          inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      }
+      .app-icon svg {
+        width: 88px;
+        height: 88px;
+        color: var(--bg);
+      }
+      .app-icon::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 36px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 30%);
+        pointer-events: none;
+      }
+
+      /* Favicon row */
+      .fav-row {
+        display: flex;
+        align-items: end;
+        gap: 24px;
+        justify-content: center;
+      }
+      .fav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+      .fav-item .fav {
+        background: var(--forest);
+        display: grid;
+        place-items: center;
+        border-radius: 4px;
+      }
+      .fav-item .fav svg {
+        color: var(--bg);
+        width: 60%;
+        height: 60%;
+      }
+      .fav-item .label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--ink-3);
+      }
+
+      /* Splash mock */
+      .splash {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        background: var(--forest);
+        border-radius: var(--r-2);
+        display: grid;
+        place-items: center;
+        color: var(--bg);
+        position: relative;
+        overflow: hidden;
+      }
+      .splash .center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+      }
+      .splash .center svg {
+        width: 64px;
+        height: 64px;
+      }
+      .splash .center .tally-wordmark {
+        font-size: 32px;
+        color: var(--bg);
+      }
+      .splash .loader {
+        position: absolute;
+        bottom: 32px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 120px;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .splash .loader::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 40%;
+        background: var(--sage-2);
+        animation: load 2s infinite ease-in-out;
+      }
+      @keyframes load {
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(350%);
+        }
+      }
+      .splash .ver {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        color: rgba(232, 227, 216, 0.4);
+      }
+
+      /* ============================================================
+   §06 Voice & Tone
+   ============================================================ */
+      .voice-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-top: 32px;
+      }
+      .voice-card {
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-3);
+        padding: 32px;
+      }
+      .voice-card .h {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin-bottom: 8px;
+      }
+      .voice-card .h .ant {
+        color: var(--ink-4);
+        font-weight: 400;
+        font-size: 14px;
+        text-decoration: line-through;
+        letter-spacing: 0;
+        margin-left: 6px;
+      }
+      .voice-card .body {
+        font-size: 14px;
+        line-height: 1.55;
+        color: var(--ink-2);
+      }
+
+      .copy-compare {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 32px;
+      }
+      .copy-compare .col {
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-3);
+        padding: 24px;
+      }
+      .copy-compare .col h5 {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin: 0 0 16px;
+        color: var(--ink-3);
+        font-weight: 400;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .copy-compare .col.good h5::before {
+        content: '✓';
+        color: var(--income);
+        font-size: 14px;
+      }
+      .copy-compare .col.bad h5::before {
+        content: '✗';
+        color: var(--expense);
+        font-size: 14px;
+      }
+      .copy-compare .col ul {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+      }
+      .copy-compare .col li {
+        padding: 14px 0;
+        border-top: 1px solid var(--rule);
+        font-size: 14px;
+        line-height: 1.4;
+        color: var(--ink);
+      }
+      .copy-compare .col li:first-child {
+        border-top: none;
+        padding-top: 0;
+      }
+      .copy-compare .col li::before {
+        content: '';
+        display: inline-block;
+        width: 3px;
+        height: 14px;
+        background: var(--rule-strong);
+        margin-right: 12px;
+        vertical-align: -2px;
+      }
+      .copy-compare .col.good li::before {
+        background: var(--income);
+      }
+      .copy-compare .col.bad li::before {
+        background: var(--expense);
+        opacity: 0.4;
+      }
+
+      /* ============================================================
+   §07 UI Preview
+   ============================================================ */
+      .ui-preview-card {
+        background: var(--bg-elev);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-4);
+        padding: 24px;
+        margin-top: 32px;
+      }
+      .ui-preview-card .browser {
+        background: var(--bg);
+        border-radius: var(--r-3);
+        overflow: hidden;
+        border: 1px solid var(--rule);
+      }
+      .ui-preview-card .chrome {
+        height: 36px;
+        background: var(--bg-sunk);
+        display: flex;
+        align-items: center;
+        padding: 0 14px;
+        gap: 6px;
+        border-bottom: 1px solid var(--rule);
+      }
+      .ui-preview-card .chrome .dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: var(--rule-strong);
+      }
+      .ui-preview-card .chrome .url {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--ink-3);
+        margin-left: 16px;
+        background: var(--bg);
+        padding: 4px 10px;
+        border-radius: var(--r-1);
+        border: 1px solid var(--rule);
+      }
+      .ui-preview-card .open-link {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        color: var(--ink-3);
+        text-transform: uppercase;
+        text-decoration: none;
+        padding: 6px 10px;
+        border-radius: var(--r-1);
+        border: 1px solid var(--rule-strong);
+      }
+      .ui-preview-card .open-link:hover {
+        color: var(--ink);
+        background: var(--bg);
+      }
+      .ui-preview-frame {
+        width: 100%;
+        height: 760px;
+        border: none;
+        display: block;
+        background: var(--bg);
+      }
+
+      /* Footer */
+      .footer {
+        padding: 64px 0 96px;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 48px;
+      }
+      .footer .col h6 {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        margin: 0 0 16px;
+        font-weight: 400;
+      }
+      .footer .col p,
+      .footer .col li {
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--ink-2);
+      }
+      .footer .col ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .footer .col li {
+        padding: 4px 0;
+      }
+      .footer-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+      .footer-brand svg {
+        width: 24px;
+        height: 24px;
+        color: var(--ink);
+      }
+      .footer-brand .tally-wordmark {
+        font-size: 22px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ============================================================
+     TOP BAR
+     ============================================================ -->
+    <div class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <span class="mark" data-mark="primary"></span>
+          <span class="tally-wordmark" style="font-size: 18px">Tally</span>
+        </div>
+        <nav>
+          <a href="#logo">Marca</a>
+          <a href="#cores">Cores</a>
+          <a href="#tipo">Tipografia</a>
+          <a href="#icones">Ícones</a>
+          <a href="#aplicacoes">Aplicações</a>
+          <a href="#voz">Voz</a>
+          <a href="#ui">UI</a>
+        </nav>
+        <div class="spacer"></div>
+        <div class="meta">
+          <span>v1.0</span>
+          <span>mai 2026</span>
+        </div>
+        <button class="theme-toggle" id="themeToggle">Cream</button>
+      </div>
+    </div>
+
+    <!-- ============================================================
+     COVER
+     ============================================================ -->
+    <div class="page">
+      <header class="cover">
+        <div>
+          <div class="cover-eyebrow">Manual de marca · Brand Manual</div>
+          <h1>Tally<span class="dot">.</span></h1>
+          <p class="tagline">
+            Controle financeiro pessoal que faz a aritmética por você — porque virada de mês não
+            devia custar uma tarde.
+          </p>
+        </div>
+        <div class="side">
+          <div class="row">
+            <div class="label">Projeto</div>
+            <div class="value">Aplicativo desktop pessoal</div>
+          </div>
+          <div class="row">
+            <div class="label">Domínio</div>
+            <div class="value">Finanças, parcelamentos, faturas</div>
+          </div>
+          <div class="row">
+            <div class="label">Mercado</div>
+            <div class="value">Brasil · pt-BR · BRL</div>
+          </div>
+          <div class="row">
+            <div class="label">Princípios</div>
+            <div class="value">Confiável · Calmo · Preciso</div>
+          </div>
+          <div class="row">
+            <div class="label">Documento</div>
+            <div class="value mono">brand/v1.0 · mai 2026</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- ============================================================
+     §01 LOGO
+     ============================================================ -->
+      <section class="s" id="logo">
+        <div class="s-head">
+          <div class="s-head-meta">
+            <div class="kicker">01 · Marca</div>
+          </div>
+          <div>
+            <h2 class="s-title">A marca</h2>
+            <p class="s-lede">
+              A marca primária é um <strong>T construído</strong>: uma barra superior representa a
+              fatura fechada — o total que se acumulou — e cinco barras menores empilhadas formam o
+              caule, uma parcela cada. O glifo carrega a mecânica do produto na própria silhueta.
+            </p>
+          </div>
+        </div>
+
+        <!-- Hero with mark on construction grid -->
+        <div class="logo-hero">
+          <div class="construct-grid"></div>
+          <div class="mark-xl" data-mark="primary"></div>
+        </div>
+
+        <!-- Logo system -->
+        <div style="margin-top: 64px">
+          <div class="fn" style="margin-bottom: 20px">Sistema de marcas — quatro variações</div>
+          <div class="logo-grid">
+            <div class="logo-tile">
+              <div class="swatch" data-mark="primary"></div>
+              <div class="label">
+                <div class="name">Marca primária</div>
+                <div class="note">T empilhado</div>
+              </div>
+            </div>
+            <div class="logo-tile">
+              <div class="swatch" data-mark="tally"></div>
+              <div class="label">
+                <div class="name">Tally marks</div>
+                <div class="note">Variante etimológica</div>
+              </div>
+            </div>
+            <div class="logo-tile">
+              <div class="swatch" data-mark="stack"></div>
+              <div class="label">
+                <div class="name">Stack</div>
+                <div class="note">Aplicações editoriais</div>
+              </div>
+            </div>
+            <div class="logo-tile">
+              <div class="swatch" data-mark="monogram"></div>
+              <div class="label">
+                <div class="name">Monograma</div>
+                <div class="note">Favicon · 16–32 px</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lockups -->
+        <div style="margin-top: 64px">
+          <div class="fn" style="margin-bottom: 20px">Lockups horizontal e vertical</div>
+          <div class="lockup-row">
+            <div class="lockup">
+              <span class="mk" data-mark="primary"></span>
+              <span class="tally-wordmark">Tally</span>
+            </div>
+            <div class="lockup dark">
+              <span class="mk" data-mark="primary"></span>
+              <span class="tally-wordmark">Tally</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sizing -->
+        <div style="margin-top: 64px">
+          <div class="fn" style="margin-bottom: 20px">
+            Escala — a marca funciona de 16 px até qualquer tamanho de pôster
+          </div>
+          <div class="size-row">
+            <div class="item">
+              <div data-mark="primary" style="width: 120px; height: 120px"></div>
+              <div class="label">120 px</div>
+            </div>
+            <div class="item">
+              <div data-mark="primary" style="width: 80px; height: 80px"></div>
+              <div class="label">80 px</div>
+            </div>
+            <div class="item">
+              <div data-mark="primary" style="width: 48px; height: 48px"></div>
+              <div class="label">48 px</div>
+            </div>
+            <div class="item">
+              <div data-mark="primary" style="width: 32px; height: 32px"></div>
+              <div class="label">32 px</div>
+            </div>
+            <div class="item">
+              <div data-mark="monogram" style="width: 24px; height: 24px"></div>
+              <div class="label">24 · monograma</div>
+            </div>
+            <div class="item">
+              <div data-mark="monogram" style="width: 16px; height: 16px"></div>
+              <div class="label">16 · favicon</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clearspace -->
+        <div class="clearspace">
+          <div class="demo">
+            <div class="fn" style="margin-bottom: 14px">
+              Clearspace — mínimo igual à altura da barra superior do T (chamada de "x")
+            </div>
+            <div class="demo-inner">
+              <span class="x-label t">x</span>
+              <span class="x-label l">x</span>
+              <span class="mk" data-mark="primary"></span>
+              <span class="tally-wordmark">Tally</span>
+            </div>
+          </div>
+          <div class="demo">
+            <div class="fn" style="margin-bottom: 14px">
+              Tamanho mínimo de uso — abaixo disso, prefira o monograma
+            </div>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 48px;
+                justify-content: center;
+                padding: 48px 0;
+              "
+            >
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+                <div style="display: flex; align-items: center; gap: 8px; color: var(--forest)">
+                  <span data-mark="primary" style="width: 20px; height: 20px"></span>
+                  <span class="tally-wordmark" style="font-size: 20px">Tally</span>
+                </div>
+                <div class="fn">Lockup · ≥ 20 px</div>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+                <div
+                  data-mark="monogram"
+                  style="width: 16px; height: 16px; color: var(--forest)"
+                ></div>
+                <div class="fn">Monograma · ≥ 16 px</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Don'ts -->
+        <div style="margin-top: 64px">
+          <div class="fn" style="margin-bottom: 20px">O que evitar</div>
+          <div class="donts">
+            <div class="dont">
+              <div class="x">✕</div>
+              <div class="mark-slot" style="transform: rotate(15deg)" data-mark="primary"></div>
+              <div class="desc">Não rotacione a marca.</div>
+            </div>
+            <div class="dont">
+              <div class="x">✕</div>
+              <div class="mark-slot" style="transform: scaleX(1.4)" data-mark="primary"></div>
+              <div class="desc">Não distorça as proporções.</div>
+            </div>
+            <div class="dont">
+              <div class="x">✕</div>
+              <div class="mark-slot" style="color: #ff5733" data-mark="primary"></div>
+              <div class="desc">Não use cores fora da paleta.</div>
+            </div>
+            <div class="dont">
+              <div class="x">✕</div>
+              <div
+                class="mark-slot"
+                data-mark="primary"
+                style="filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4))"
+              ></div>
+              <div class="desc">Não adicione sombras ou efeitos.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+     §02 CORES
+     ============================================================ -->
+      <section class="s" id="cores">
+        <div class="s-head">
+          <div class="s-head-meta">
+            <div class="kicker">02 · Cores</div>
+          </div>
+          <div>
+            <h2 class="s-title">Paleta</h2>
+            <p class="s-lede">
+              A paleta nasce do verde-floresta — uma cor que soa séria, estável e brasileira sem
+              cair no azul corporativo de banco. O creme quente substitui o branco frio das telas
+              financeiras tradicionais e cria conforto em sessões longas. O sage e o bronze entram
+              apenas onde o significado pede.
+            </p>
+          </div>
+        </div>
+
+        <div class="color-section">
+          <h4>Primárias</h4>
+          <div class="swatch-row">
+            <div class="swatch-card">
+              <div class="chip" style="background: #0f1a14; color: #e8e3d8">
+                <div class="name">Forest</div>
+              </div>
+              <div class="info">
+                <div class="role">Tinta principal</div>
+                <div class="hex"><span>HEX</span><code>#0F1A14</code></div>
+                <div class="hex"><span>OKLCH</span><code>0.20 0.014 152</code></div>
+              </div>
+            </div>
+            <div class="swatch-card">
+              <div
+                class="chip"
+                style="background: #f1ebdd; color: #0f1a14; border: 1px solid var(--rule)"
+              >
+                <div class="name">Cream</div>
+              </div>
+              <div class="info">
+                <div class="role">Fundo principal</div>
+                <div class="hex"><span>HEX</span><code>#F1EBDD</code></div>
+                <div class="hex"><span>OKLCH</span><code>0.93 0.020 90</code></div>
+              </div>
+            </div>
+            <div class="swatch-card">
+              <div class="chip" style="background: #5b7a5e; color: #f1ebdd">
+                <div class="name">Sage</div>
+              </div>
+              <div class="info">
+                <div class="role">Accent · ação positiva</div>
+                <div class="hex"><span>HEX</span><code>#5B7A5E</code></div>
+                <div class="hex"><span>OKLCH</span><code>0.50 0.045 145</code></div>
+              </div>
+            </div>
+            <div class="swatch-card">
+              <div class="chip" style="background: #a88454; color: #f1ebdd">
+                <div class="name">Bronze</div>
+              </div>
+              <div class="info">
+                <div class="role">Accent · valor / dinheiro</div>
+                <div class="hex"><span>HEX</span><code>#A88454</code></div>
+                <div class="hex"><span>OKLCH</span><code>0.60 0.075 65</code></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="color-section">
+          <h4>Neutros</h4>
+          <div class="swatch-row">
+            <div class="swatch-card">
+              <div
+                class="chip"
+                style="background: #f7f3e8; color: #0f1a14; border: 1px solid var(--rule)"
+              >
+                <div class="name">Bg elev</div>
+              </div>
+              <div class="info">
+                <div class="role">Cards e painéis</div>
+                <div class="hex"><span>HEX</span><code>#F7F3E8</code></div>
+              </div>
+            </div>
+            <div class="swatch-card">
+              <div
+                class="chip"
+                style="background: #e8e1cf; color: #0f1a14; border: 1px solid var(--rule)"
+              >
+                <div class="name">Bg sunk</div>
+              </div>
+              <div class="info">
+                <div class="role">Painéis afundados, cabeçalhos</div>
+                <div class="hex"><span>HEX</span><code>#E8E1CF</code></div>
+              </div>
+            </div>
+            <div class="swatch-card">
+              <div class="chip" style="background: #d9d2bf; color: #0f1a14">
+                <div class="name">Rule</div>
+              </div>
+              <div class="info">
+                <div class="role">Hairlines, divisores</div>
+                <div class="hex"><span>HEX</span><code>#D9D2BF</code></div>
+              </div>
+            </div>
+            <div class="swatch-card">
+              <div class="chip" style="background: #6b6f66; color: #f1ebdd">
+                <div class="name">Ink-3</div>
+              </div>
+              <div class="info">
+                <div class="role">Texto secundário, labels</div>
+                <div class="hex"><span>HEX</span><code>#6B6F66</code></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="color-section">
+          <h4>Semânticas</h4>
+          <div class="semantic-row">
+            <div class="semantic">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <div class="dot" style="background: #3f6e47"></div>
+                <div class="role">Receita / ajuda recebida</div>
+              </div>
+              <div class="use">
+                Entradas, valores recebidos, contribuidores marcados como recebidos.
+              </div>
+              <div class="hex">#3F6E47</div>
+            </div>
+            <div class="semantic">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <div class="dot" style="background: #8c3b2e"></div>
+                <div class="role">Despesa</div>
+              </div>
+              <div class="use">
+                Cobranças, faturas, parcelas. Use com moderação — o produto inteiro é sobre gastos.
+              </div>
+              <div class="hex">#8C3B2E</div>
+            </div>
+            <div class="semantic">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <div class="dot" style="background: #a87b2c"></div>
+                <div class="role">Pendente / a receber</div>
+              </div>
+              <div class="use">
+                Fatura aberta, contribuição não recebida, ações que requerem atenção.
+              </div>
+              <div class="hex">#A87B2C</div>
+            </div>
+            <div class="semantic">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <div class="dot" style="background: #5b7a5e"></div>
+                <div class="role">Pago / concluído</div>
+              </div>
+              <div class="use">Fatura paga, parcela finalizada, status estável.</div>
+              <div class="hex">#5B7A5E</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="color-section">
+          <h4>Proporção de uso — 60/30/10</h4>
+          <div class="ratio-bar">
+            <div style="background: #f1ebdd; color: #0f1a14; flex: 60">60% · Cream (fundo)</div>
+            <div style="background: #0f1a14; color: #f1ebdd; flex: 30">30% · Forest (tinta)</div>
+            <div style="background: #5b7a5e; color: #f1ebdd; flex: 7">7% · Sage</div>
+            <div style="background: #a88454; color: #f1ebdd; flex: 3">3% · Bronze</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+     §03 TIPOGRAFIA
+     ============================================================ -->
+      <section class="s" id="tipo">
+        <div class="s-head">
+          <div class="s-head-meta">
+            <div class="kicker">03 · Tipografia</div>
+          </div>
+          <div>
+            <h2 class="s-title">Tipografia</h2>
+            <p class="s-lede">
+              Geist é o pareamento da marca. O Sans cobre tudo de UI e leitura corrida; o Mono
+              trabalha em números, códigos de fatura, dados tabulares e em qualquer contexto onde
+              alinhamento importa. Os números tabulares do Mono são o que permite olhar uma coluna
+              de totais sem dançar com o olho.
+            </p>
+          </div>
+        </div>
+
+        <div class="type-spec">
+          <div class="meta">
+            <div class="role">Display & UI</div>
+            <div class="name">Geist Sans</div>
+            <div class="desc">
+              Sans-serif geométrica neutra. Funciona em manchete, navegação, formulários e leitura.
+              Pesos 400–700 em produção.
+            </div>
+            <div class="stack">
+              font-family: "Geist", ui-sans-serif, system-ui<br />weights: 300, 400, 500, 600, 700,
+              800<br />features: ss01, cv11
+            </div>
+          </div>
+          <div>
+            <div class="sample-display">Virada de mês,<br />sem dor.</div>
+            <div class="sample-body">
+              A regra da casa é que nada importante deve precisar de aritmética manual. O Tally
+              cuida das parcelas, das datas de fechamento, dos contribuidores que ainda não pagaram
+              — e te entrega o que sobrou do mês em uma tela.
+            </div>
+          </div>
+        </div>
+
+        <div class="type-spec">
+          <div class="meta">
+            <div class="role">Números & dados</div>
+            <div class="name">Geist Mono</div>
+            <div class="desc">
+              Monospace de números tabulares. Use sempre que houver colunas, valores comparáveis,
+              IDs de fatura ou códigos. Nunca em parágrafos.
+            </div>
+            <div class="stack">
+              font-family: "Geist Mono", ui-monospace, "SF Mono"<br />weights: 400, 500, 600<br />features:
+              ss01, zero, tnum
+            </div>
+          </div>
+          <div>
+            <div class="sample-mono tnum">
+              R$ 4.287,53<br />R$ &nbsp;&nbsp;312,90<br />R$ &nbsp;2.105,00
+            </div>
+            <div class="sample-mono" style="font-size: 14px; margin-top: 24px">
+              FAT-2026-05 · NUBANK · venc. 10/jun · 7/12 parcelas
+            </div>
+          </div>
+        </div>
+
+        <!-- Type scale -->
+        <div>
+          <div class="fn" style="margin: 32px 0 16px">Escala tipográfica</div>
+          <table class="type-scale">
+            <thead>
+              <tr>
+                <th>Token</th>
+                <th>Specs</th>
+                <th>Amostra</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="token">display-1</td>
+                <td class="specs">132 · 0.88 · -0.045em · 600</td>
+                <td
+                  class="sample"
+                  style="
+                    font-size: 64px;
+                    line-height: 0.95;
+                    font-weight: 600;
+                    letter-spacing: -0.04em;
+                  "
+                >
+                  Tally
+                </td>
+              </tr>
+              <tr>
+                <td class="token">display-2</td>
+                <td class="specs">96 · 1.0 · -0.035em · 600</td>
+                <td
+                  class="sample"
+                  style="font-size: 48px; line-height: 1; font-weight: 600; letter-spacing: -0.03em"
+                >
+                  Saldo do mês
+                </td>
+              </tr>
+              <tr>
+                <td class="token">title-1</td>
+                <td class="specs">44 · 1.0 · -0.025em · 600</td>
+                <td
+                  class="sample"
+                  style="
+                    font-size: 32px;
+                    line-height: 1.1;
+                    font-weight: 600;
+                    letter-spacing: -0.02em;
+                  "
+                >
+                  Faturas em aberto
+                </td>
+              </tr>
+              <tr>
+                <td class="token">title-2</td>
+                <td class="specs">28 · 1.15 · -0.02em · 600</td>
+                <td
+                  class="sample"
+                  style="
+                    font-size: 24px;
+                    line-height: 1.15;
+                    font-weight: 600;
+                    letter-spacing: -0.015em;
+                  "
+                >
+                  Próximos vencimentos
+                </td>
+              </tr>
+              <tr>
+                <td class="token">body-lg</td>
+                <td class="specs">17 · 1.55 · -0.005em · 400</td>
+                <td class="sample" style="font-size: 17px; line-height: 1.55; font-weight: 400">
+                  Sua fatura do Nubank fecha em 4 dias.
+                </td>
+              </tr>
+              <tr>
+                <td class="token">body</td>
+                <td class="specs">14 · 1.5 · 0 · 400</td>
+                <td class="sample" style="font-size: 14px; font-weight: 400">
+                  Cadastre uma compra parcelada e o Tally gera todas as ocorrências.
+                </td>
+              </tr>
+              <tr>
+                <td class="token">caption</td>
+                <td class="specs">12 · 1.4 · 0 · 400</td>
+                <td class="sample" style="font-size: 12px; color: var(--ink-3)">
+                  Última atualização há 3 minutos
+                </td>
+              </tr>
+              <tr>
+                <td class="token">label</td>
+                <td class="specs">mono · 11 · 0.12em · uppercase</td>
+                <td
+                  class="sample mono"
+                  style="
+                    font-size: 11px;
+                    letter-spacing: 0.12em;
+                    text-transform: uppercase;
+                    color: var(--ink-3);
+                  "
+                >
+                  Fatura · Maio · 2026
+                </td>
+              </tr>
+              <tr>
+                <td class="token">numeric</td>
+                <td class="specs">mono · tabular · 24 · 500</td>
+                <td class="sample mono tnum" style="font-size: 24px; font-weight: 500">
+                  R$ 4.287,53
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============================================================
+     §04 ICONOGRAFIA
+     ============================================================ -->
+      <section class="s" id="icones">
+        <div class="s-head">
+          <div class="s-head-meta">
+            <div class="kicker">04 · Iconografia</div>
+          </div>
+          <div>
+            <h2 class="s-title">Ícones</h2>
+            <p class="s-lede">
+              Sistema de ícones desenhado em uma grade de 24 px, com stroke de 1.5 px e cantos
+              retos. A linguagem é minimalista e literal — um cartão parece um cartão, uma fatura
+              parece um documento. Nada de metáforas obscuras em uma ferramenta financeira.
+            </p>
+          </div>
+        </div>
+
+        <div class="icon-spec">
+          <div class="panel">
+            <h4>Especificação</h4>
+            <div class="construction">
+              <div class="grid-bg">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="3" y="6" width="18" height="13" rx="2" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                  <line x1="7" y1="15" x2="11" y2="15" />
+                </svg>
+              </div>
+            </div>
+            <dl>
+              <dt>Grid</dt>
+              <dd>24 × 24 px</dd>
+              <dt>Padding</dt>
+              <dd>2 px em todos os lados (área útil 20×20)</dd>
+              <dt>Stroke</dt>
+              <dd>1.5 px, linecap round</dd>
+              <dt>Cantos</dt>
+              <dd>raio 2 em formas, junções round</dd>
+              <dt>Estilo</dt>
+              <dd>Outline. Filled apenas em estado ativo.</dd>
+            </dl>
+          </div>
+          <div class="panel">
+            <h4>Pesos & estados</h4>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 16px;
+                margin-top: 24px;
+                text-align: center;
+              "
+            >
+              <div>
+                <div
+                  style="
+                    background: var(--bg-sunk);
+                    border-radius: var(--r-2);
+                    padding: 24px;
+                    margin-bottom: 8px;
+                  "
+                >
+                  <svg
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    style="color: var(--ink-3)"
+                  >
+                    <rect x="3" y="6" width="18" height="13" rx="2" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </div>
+                <div class="fn">Inactive · ink-3</div>
+              </div>
+              <div>
+                <div
+                  style="
+                    background: var(--bg-sunk);
+                    border-radius: var(--r-2);
+                    padding: 24px;
+                    margin-bottom: 8px;
+                  "
+                >
+                  <svg
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    style="color: var(--ink)"
+                  >
+                    <rect x="3" y="6" width="18" height="13" rx="2" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </div>
+                <div class="fn">Hover · ink</div>
+              </div>
+              <div>
+                <div
+                  style="
+                    background: var(--forest);
+                    border-radius: var(--r-2);
+                    padding: 24px;
+                    margin-bottom: 8px;
+                  "
+                >
+                  <svg
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    style="color: var(--bg)"
+                  >
+                    <rect x="3" y="6" width="18" height="13" rx="2" />
+                    <rect x="3" y="8" width="18" height="2" fill="var(--forest)" />
+                  </svg>
+                </div>
+                <div class="fn">Active · filled</div>
+              </div>
+            </div>
+            <p style="font-size: 13px; color: var(--ink-2); margin-top: 24px; line-height: 1.5">
+              O mesmo glifo serve três estados. Não desenhamos versões alternativas — variamos
+              apenas cor, peso e preenchimento.
+            </p>
+          </div>
+        </div>
+
+        <div class="fn" style="margin: 48px 0 16px">Conjunto inicial — 24 ícones</div>
+        <div class="icon-grid">
+          <!-- Cartão -->
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="6" width="18" height="13" rx="2" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+              <line x1="7" y1="15" x2="11" y2="15" />
+            </svg>
+            <span class="name">cartão</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M5 3h11l3 3v15H5z" />
+              <line x1="9" y1="9" x2="16" y2="9" />
+              <line x1="9" y1="13" x2="16" y2="13" />
+              <line x1="9" y1="17" x2="13" y2="17" />
+            </svg>
+            <span class="name">fatura</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="5" width="18" height="16" rx="2" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+              <line x1="8" y1="3" x2="8" y2="7" />
+              <line x1="16" y1="3" x2="16" y2="7" />
+            </svg>
+            <span class="name">vencimento</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="4" y="14" width="4" height="6" rx="1" />
+              <rect x="10" y="9" width="4" height="11" rx="1" />
+              <rect x="16" y="4" width="4" height="16" rx="1" />
+            </svg>
+            <span class="name">parcelas</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="9" cy="8" r="3" />
+              <path d="M3 19a6 6 0 0 1 12 0" />
+              <circle cx="17" cy="9" r="2.5" />
+              <path d="M14 19a5 5 0 0 1 7-4" />
+            </svg>
+            <span class="name">ajudas</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 3v18M16 6H9a3 3 0 0 0 0 6h6a3 3 0 0 1 0 6H7" />
+            </svg>
+            <span class="name">valor</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5" />
+            </svg>
+            <span class="name">recorrente</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 12h4l3-8 4 16 3-8h4" />
+            </svg>
+            <span class="name">extrato</span>
+          </div>
+
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="4" width="18" height="17" rx="2" />
+              <line x1="3" y1="9" x2="21" y2="9" />
+              <line x1="9" y1="14" x2="15" y2="14" />
+              <line x1="12" y1="11" x2="12" y2="17" />
+            </svg>
+            <span class="name">nova despesa</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+            <span class="name">categorias</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7v5l3 2" />
+            </svg>
+            <span class="name">pendente</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M8 12l3 3 5-6" />
+            </svg>
+            <span class="name">paga</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 21l-8-7 8-7 8 7-8 7z" />
+              <path d="M9 14l2 2 4-4" />
+            </svg>
+            <span class="name">confirmar</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"
+              />
+            </svg>
+            <span class="name">arquivar</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M21 11.5a8.4 8.4 0 0 1-9 8.5 8.5 8.5 0 0 1-7.6-12.3L3 4l3.8 1.4A8.5 8.5 0 0 1 21 11.5z"
+              />
+            </svg>
+            <span class="name">mensagem</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <line x1="21" y1="21" x2="16" y2="16" />
+            </svg>
+            <span class="name">buscar</span>
+          </div>
+
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M4 6h16M7 12h10M10 18h4" />
+            </svg>
+            <span class="name">filtros</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 4v16M4 12h16" />
+            </svg>
+            <span class="name">adicionar</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M15 6l-6 6 6 6" />
+            </svg>
+            <span class="name">voltar</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+            <span class="name">avançar</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M19 12a7 7 0 0 0-.2-1.7l2-1.5-2-3.4-2.4 1a7 7 0 0 0-2.9-1.7L13 2h-4l-.5 2.7a7 7 0 0 0-2.9 1.7l-2.4-1-2 3.4 2 1.5A7 7 0 0 0 3 12c0 .6.1 1.1.2 1.7l-2 1.5 2 3.4 2.4-1a7 7 0 0 0 2.9 1.7L9 22h4l.5-2.7a7 7 0 0 0 2.9-1.7l2.4 1 2-3.4-2-1.5c.1-.6.2-1.1.2-1.7z"
+              />
+            </svg>
+            <span class="name">configurações</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7z"
+              />
+              <polyline points="3 7 12 12 21 7" />
+              <line x1="12" y1="22" x2="12" y2="12" />
+            </svg>
+            <span class="name">categoria</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 3v18h18" />
+              <path d="M7 14l4-4 4 3 5-7" />
+            </svg>
+            <span class="name">relatório</span>
+          </div>
+          <div class="icon-cell">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 8v4M12 16h.01" />
+            </svg>
+            <span class="name">aviso</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+     §05 APLICAÇÕES
+     ============================================================ -->
+      <section class="s" id="aplicacoes">
+        <div class="s-head">
+          <div class="s-head-meta">
+            <div class="kicker">05 · Aplicações</div>
+          </div>
+          <div>
+            <h2 class="s-title">Aplicações</h2>
+            <p class="s-lede">
+              Como a marca se comporta nos pontos de contato — do dock até o favicon. Em qualquer
+              aplicação, o glifo primário ou o monograma deve permanecer reconhecível, mesmo quando
+              reduzido a 16 px.
+            </p>
+          </div>
+        </div>
+
+        <div class="apps-grid">
+          <div class="app-card">
+            <div class="head">
+              <span class="title">Ícone do aplicativo</span>
+              <span class="size">1024 × 1024</span>
+            </div>
+            <div class="stage">
+              <div class="app-icon" data-mark="primary"></div>
+            </div>
+          </div>
+          <div class="app-card">
+            <div class="head">
+              <span class="title">Favicon · jogo</span>
+              <span class="size">16 / 32 / 64</span>
+            </div>
+            <div class="stage">
+              <div class="fav-row">
+                <div class="fav-item">
+                  <div class="fav" style="width: 64px; height: 64px" data-mark="monogram"></div>
+                  <div class="label">64 px</div>
+                </div>
+                <div class="fav-item">
+                  <div class="fav" style="width: 32px; height: 32px" data-mark="monogram"></div>
+                  <div class="label">32 px</div>
+                </div>
+                <div class="fav-item">
+                  <div class="fav" style="width: 16px; height: 16px" data-mark="monogram"></div>
+                  <div class="label">16 px</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="app-card">
+            <div class="head">
+              <span class="title">Splash de boot</span>
+              <span class="size">app launch</span>
+            </div>
+            <div class="stage" style="padding: 0; background: transparent">
+              <div class="splash">
+                <span class="ver">v0.4 · ALPHA</span>
+                <div class="center">
+                  <span data-mark="primary" style="color: var(--bg)"></span>
+                  <span class="tally-wordmark">Tally</span>
+                </div>
+                <div class="loader"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Window title bar example -->
+        <div style="margin-top: 24px" class="app-card">
+          <div class="head">
+            <span class="title">Aplicações inline — title bar, badge, notificação</span>
+            <span class="size">contextos do dia a dia</span>
+          </div>
+          <div
+            class="stage"
+            style="display: flex; flex-direction: column; gap: 16px; align-items: stretch"
+          >
+            <!-- Title bar -->
+            <div
+              style="
+                background: var(--bg-elev);
+                border: 1px solid var(--rule);
+                border-radius: 8px;
+                height: 36px;
+                display: flex;
+                align-items: center;
+                padding: 0 14px;
+                gap: 10px;
+              "
+            >
+              <div style="display: flex; gap: 6px">
+                <span
+                  style="width: 11px; height: 11px; border-radius: 50%; background: #e36054"
+                ></span
+                ><span
+                  style="width: 11px; height: 11px; border-radius: 50%; background: #e9a23b"
+                ></span
+                ><span
+                  style="width: 11px; height: 11px; border-radius: 50%; background: #5cb85c"
+                ></span>
+              </div>
+              <div
+                style="
+                  flex: 1;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  gap: 8px;
+                  color: var(--ink-2);
+                  font-size: 12px;
+                  font-weight: 500;
+                "
+              >
+                <span
+                  style="width: 14px; height: 14px; color: var(--forest)"
+                  data-mark="primary"
+                ></span>
+                Tally — Maio 2026
+              </div>
+              <div></div>
+            </div>
+
+            <!-- Notification -->
+            <div
+              style="
+                background: var(--bg-elev);
+                border: 1px solid var(--rule);
+                border-radius: 12px;
+                padding: 14px 18px;
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                box-shadow: var(--shadow-2);
+              "
+            >
+              <div
+                style="
+                  width: 36px;
+                  height: 36px;
+                  border-radius: 8px;
+                  background: var(--forest);
+                  display: grid;
+                  place-items: center;
+                  color: var(--bg);
+                "
+              >
+                <span style="width: 20px; height: 20px" data-mark="primary"></span>
+              </div>
+              <div style="flex: 1">
+                <div style="font-size: 13px; font-weight: 600; margin-bottom: 2px">
+                  Fatura Nubank fecha amanhã
+                </div>
+                <div style="font-size: 12px; color: var(--ink-3)">
+                  R$ 1.842,30 · 8 lançamentos · venc. 10/jun
+                </div>
+              </div>
+              <div
+                style="
+                  font-family: var(--font-mono);
+                  font-size: 10px;
+                  color: var(--ink-3);
+                  letter-spacing: 0.08em;
+                "
+              >
+                AGORA
+              </div>
+            </div>
+
+            <!-- Social card / repo card -->
+            <div
+              style="
+                background: var(--forest);
+                color: var(--bg);
+                border-radius: 12px;
+                padding: 32px;
+                display: grid;
+                grid-template-columns: auto 1fr;
+                gap: 24px;
+                align-items: center;
+              "
+            >
+              <span style="width: 56px; height: 56px; color: var(--bg)" data-mark="primary"></span>
+              <div>
+                <div
+                  style="
+                    font-size: 24px;
+                    font-weight: 600;
+                    letter-spacing: -0.02em;
+                    margin-bottom: 6px;
+                  "
+                >
+                  Tally
+                </div>
+                <div style="font-size: 13px; color: var(--sage-2); max-width: 60ch">
+                  Controle financeiro pessoal desktop · TDD · TypeScript estrito · uma peça de
+                  portfólio que também é meu app de finanças real.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+     §06 VOZ
+     ============================================================ -->
+      <section class="s" id="voz">
+        <div class="s-head">
+          <div class="s-head-meta">
+            <div class="kicker">06 · Voz e tom</div>
+          </div>
+          <div>
+            <h2 class="s-title">Voz e tom</h2>
+            <p class="s-lede">
+              O Tally fala como um colega competente: direto, sem jargão de banco, sem entusiasmo
+              artificial. A regra é "menos palavras, mais clareza". Dinheiro já é assunto pesado — o
+              produto não precisa adicionar peso.
+            </p>
+          </div>
+        </div>
+
+        <div class="voice-grid">
+          <div class="voice-card">
+            <div class="h">Direto<span class="ant">prolixo</span></div>
+            <div class="body">
+              Diga o que tem que ser feito e o que aconteceu. Sem rodeios, sem "como você sabe", sem
+              perguntas retóricas.
+            </div>
+          </div>
+          <div class="voice-card">
+            <div class="h">Calmo<span class="ant">alarmista</span></div>
+            <div class="body">
+              Mesmo avisando de algo importante, o tom é estável. Cobranças e prazos são fatos, não
+              emergências.
+            </div>
+          </div>
+          <div class="voice-card">
+            <div class="h">Preciso<span class="ant">vago</span></div>
+            <div class="body">
+              Números exatos. Datas exatas. "Sua fatura fecha em 4 dias" — não "logo". O produto
+              inteiro depende dessa precisão.
+            </div>
+          </div>
+        </div>
+
+        <div class="copy-compare">
+          <div class="col good">
+            <h5>Use assim</h5>
+            <ul>
+              <li>Fatura do Nubank fecha em 4 dias.</li>
+              <li>Parcela 8 de 12 · Notebook Lenovo</li>
+              <li>Mariana te deve R$ 47,90 da Netflix.</li>
+              <li>Maio fechou em −R$ 312,40.</li>
+              <li>Adiantar parcelas restantes?</li>
+              <li>Pago. Boa.</li>
+            </ul>
+          </div>
+          <div class="col bad">
+            <h5>Evite</h5>
+            <ul>
+              <li>🚨 Atenção! Sua fatura está prestes a fechar!!</li>
+              <li>Parcela número oito do total de doze</li>
+              <li>Lembre-se de cobrar a Mariana 😊</li>
+              <li>Mês finalizado com um pequeno saldo negativo</li>
+              <li>Você gostaria de adiantar as parcelas?</li>
+              <li>Parabéns! Você pagou a fatura! 🎉</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Glossary -->
+        <div style="margin-top: 48px">
+          <div class="fn" style="margin-bottom: 16px">Glossário — termos canônicos do produto</div>
+          <table class="type-scale">
+            <thead>
+              <tr>
+                <th style="width: 180px">Termo</th>
+                <th style="width: 200px">Sinônimos a evitar</th>
+                <th>Definição</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="sample" style="font-weight: 500">Fatura</td>
+                <td class="specs">extrato, conta do cartão</td>
+                <td class="sample" style="font-size: 13px">
+                  Período de cobrança de um cartão. Tem ciclo: Aberta → Fechada → Paga.
+                </td>
+              </tr>
+              <tr>
+                <td class="sample" style="font-weight: 500">Parcela</td>
+                <td class="specs">prestação, mensalidade</td>
+                <td class="sample" style="font-size: 13px">
+                  Uma das ocorrências de uma compra parcelada. Sempre escrita como N/Total.
+                </td>
+              </tr>
+              <tr>
+                <td class="sample" style="font-weight: 500">Assinatura</td>
+                <td class="specs">recorrência, mensalidade</td>
+                <td class="sample" style="font-size: 13px">
+                  Despesa que se renova mensalmente sem fim definido até ser cancelada.
+                </td>
+              </tr>
+              <tr>
+                <td class="sample" style="font-weight: 500">Ajuda</td>
+                <td class="specs">contribuição, divisão</td>
+                <td class="sample" style="font-size: 13px">
+                  Valor que um contribuidor cobre de uma despesa. Termo brasileiro, mantemos.
+                </td>
+              </tr>
+              <tr>
+                <td class="sample" style="font-weight: 500">Contribuidor</td>
+                <td class="specs">devedor, terceiro</td>
+                <td class="sample" style="font-size: 13px">
+                  Pessoa vinculada a uma ajuda. Nunca "devedor" — o tom é gentil.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============================================================
+     §07 UI PREVIEW
+     ============================================================ -->
+      <section class="s" id="ui">
+        <div class="s-head">
+          <div class="s-head-meta">
+            <div class="kicker">07 · Tudo junto</div>
+          </div>
+          <div>
+            <h2 class="s-title">A marca, em uso</h2>
+            <p class="s-lede">
+              Mockup interativo do Tally aplicando a identidade. Quatro telas representativas —
+              dashboard mensal, detalhe de fatura, contribuidores e despesas. Clique em "Abrir em
+              tela cheia" para navegar.
+            </p>
+          </div>
+        </div>
+
+        <div class="ui-preview-card">
+          <div class="browser">
+            <div class="chrome">
+              <span class="dot" style="background: #e36054"></span>
+              <span class="dot" style="background: #e9a23b"></span>
+              <span class="dot" style="background: #5cb85c"></span>
+              <span class="url">tally.local — Maio 2026</span>
+              <a class="open-link" href="Tally App.html" target="_blank">Abrir em tela cheia ↗</a>
+            </div>
+            <iframe
+              class="ui-preview-frame"
+              src="Tally App.html"
+              title="Tally app preview"
+            ></iframe>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+     FOOTER
+     ============================================================ -->
+      <footer class="footer">
+        <div class="col">
+          <div class="footer-brand">
+            <span data-mark="primary" style="width: 24px; height: 24px"></span>
+            <span class="tally-wordmark">Tally</span>
+          </div>
+          <p>
+            Manual de marca v1.0 · 14 mai 2026<br />Documento vivo — versionado em
+            <span class="mono">brand/</span> junto com o código.
+          </p>
+        </div>
+        <div class="col">
+          <h6>Owner</h6>
+          <ul>
+            <li>Juliano Melo Rodrigues Alencar</li>
+            <li>Projeto pessoal · portfólio QA</li>
+          </ul>
+        </div>
+        <div class="col">
+          <h6>Arquivos relacionados</h6>
+          <ul>
+            <li><a href="Tally App.html" style="color: var(--ink-2)">→ Mockup do aplicativo</a></li>
+            <li><a href="tokens.css" style="color: var(--ink-2)">→ tokens.css</a></li>
+            <li><a href="marks.js" style="color: var(--ink-2)">→ marks.js</a></li>
+          </ul>
+        </div>
+      </footer>
+    </div>
+    <!-- /.page -->
+
+    <script src="marks.js"></script>
+    <script>
+      // Inject SVG marks into all [data-mark]
+      document.querySelectorAll('[data-mark]').forEach((el) => {
+        const variant = el.getAttribute('data-mark')
+        const fn = window.TallyMarks[variant]
+        if (fn) el.innerHTML = fn({ fill: 'currentColor' })
+      })
+
+      // Theme toggle
+      const tg = document.getElementById('themeToggle')
+      const root = document.documentElement
+      tg.addEventListener('click', () => {
+        const current = root.getAttribute('data-theme')
+        if (current === 'forest') {
+          root.removeAttribute('data-theme')
+          tg.textContent = 'Cream'
+        } else {
+          root.setAttribute('data-theme', 'forest')
+          tg.textContent = 'Forest'
+        }
+      })
+    </script>
+  </body>
+</html>

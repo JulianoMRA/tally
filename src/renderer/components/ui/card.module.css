@@ -1,0 +1,18 @@
+.card {
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-1);
+}
+
+.p-none {
+  padding: 0;
+}
+
+.p-sm {
+  padding: 12px;
+}
+
+.p-md {
+  padding: 20px;
+}

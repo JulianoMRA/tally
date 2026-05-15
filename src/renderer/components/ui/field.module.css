@@ -1,0 +1,28 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-2);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.required {
+  color: var(--expense);
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.error {
+  font-size: 11px;
+  color: var(--expense);
+}

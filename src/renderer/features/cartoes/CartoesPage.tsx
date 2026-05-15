@@ -4,6 +4,7 @@ import type { CartaoInput } from '@shared/ipc/cartao'
 import { useCartoes } from './hooks/use-cartoes'
 import { CartaoForm } from './CartaoForm'
 import { CartaoList } from './CartaoList'
+import { PageHead } from '../../components/layout/PageHead'
 import styles from './cartoes.module.css'
 
 type Modo = { kind: 'criar' } | { kind: 'editar'; cartao: Cartao }
@@ -32,18 +33,21 @@ export default function CartoesPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.pageHeader}>
-        <h1>Cartões</h1>
-        <label className={styles.toggleLabel}>
-          <input
-            type="checkbox"
-            checked={incluirArquivados}
-            onChange={(e) => setIncluirArquivados(e.target.checked)}
-          />
-          Mostrar arquivados
-        </label>
-      </div>
+    <div>
+      <PageHead
+        title="Cartões"
+        subtitle="Gerencie seus cartões de crédito."
+        actions={
+          <label className={styles.toggleLabel}>
+            <input
+              type="checkbox"
+              checked={incluirArquivados}
+              onChange={(e) => setIncluirArquivados(e.target.checked)}
+            />
+            Mostrar arquivados
+          </label>
+        }
+      />
 
       <div className={styles.layout}>
         <section className={styles.listSection}>

@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { Cartao } from '@domain/entities/cartao'
 import { cartaoInputSchema, type CartaoInput } from '@shared/ipc/cartao'
+import { Button, Field, Input } from '../../components/ui'
 import styles from './cartoes.module.css'
 
 type Props = {
@@ -32,57 +33,42 @@ export function CartaoForm({ mode, cartaoInicial, onSalvar, onCancelar }: Props)
     <form onSubmit={handleSubmit(onSalvar)} className={styles.form}>
       <h2 className={styles.formTitle}>{mode === 'criar' ? 'Novo cartão' : 'Editar cartão'}</h2>
 
-      <div className={styles.field}>
-        <label htmlFor="nome">Nome</label>
-        <input id="nome" type="text" {...register('nome')} placeholder="Ex: Nubank" />
-        {errors.nome && <span className={styles.fieldError}>{errors.nome.message}</span>}
-      </div>
+      <Field label="Nome" error={errors.nome?.message} required>
+        <Input type="text" {...register('nome')} placeholder="Ex: Nubank" error={!!errors.nome} />
+      </Field>
 
       <div className={styles.fieldRow}>
-        <div className={styles.field}>
-          <label htmlFor="diaFechamento">Dia fechamento</label>
-          <input
-            id="diaFechamento"
+        <Field label="Dia de fechamento" error={errors.diaFechamento?.message} required>
+          <Input
             type="number"
             min={1}
             max={31}
             {...register('diaFechamento', { valueAsNumber: true })}
+            error={!!errors.diaFechamento}
           />
-          {errors.diaFechamento && (
-            <span className={styles.fieldError}>{errors.diaFechamento.message}</span>
-          )}
-        </div>
-
-        <div className={styles.field}>
-          <label htmlFor="diaVencimento">Dia vencimento</label>
-          <input
-            id="diaVencimento"
+        </Field>
+        <Field label="Dia de vencimento" error={errors.diaVencimento?.message} required>
+          <Input
             type="number"
             min={1}
             max={31}
             {...register('diaVencimento', { valueAsNumber: true })}
+            error={!!errors.diaVencimento}
           />
-          {errors.diaVencimento && (
-            <span className={styles.fieldError}>{errors.diaVencimento.message}</span>
-          )}
-        </div>
+        </Field>
       </div>
 
-      <div className={styles.field}>
-        <label htmlFor="cor">Cor</label>
-        <div className={styles.colorRow}>
-          <input id="cor" type="color" {...register('cor')} className={styles.colorInput} />
-        </div>
-        {errors.cor && <span className={styles.fieldError}>{errors.cor.message}</span>}
-      </div>
+      <Field label="Cor" error={errors.cor?.message}>
+        <input type="color" {...register('cor')} className={styles.colorInput} />
+      </Field>
 
       <div className={styles.formActions}>
-        <button type="button" onClick={onCancelar} className={styles.btnSecondary}>
+        <Button type="button" variant="ghost" onClick={onCancelar}>
           Cancelar
-        </button>
-        <button type="submit" disabled={isSubmitting} className={styles.btnPrimary}>
+        </Button>
+        <Button type="submit" variant="primary" disabled={isSubmitting}>
           {isSubmitting ? 'Salvando…' : 'Salvar'}
-        </button>
+        </Button>
       </div>
     </form>
   )

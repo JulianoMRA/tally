@@ -1,0 +1,78 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: var(--r-2);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s,
+    opacity 0.12s;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Sizes */
+.sm {
+  font-size: 12px;
+  padding: 4px 10px;
+  height: 28px;
+}
+
+.md {
+  font-size: 13px;
+  padding: 6px 14px;
+  height: 34px;
+}
+
+/* Variants */
+.primary {
+  background: var(--forest);
+  color: var(--bg);
+  border-color: var(--forest);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--forest-2);
+  border-color: var(--forest-2);
+}
+
+.secondary {
+  background: var(--bg-elev);
+  color: var(--ink);
+  border-color: var(--rule-strong);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--bg-sunk);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--ink-2);
+  border-color: transparent;
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--bg-sunk);
+  color: var(--ink);
+}
+
+.danger {
+  background: var(--bg-elev);
+  color: var(--expense);
+  border-color: var(--rule-strong);
+}
+
+.danger:hover:not(:disabled) {
+  background: #fdf0ee;
+  border-color: var(--expense);
+}

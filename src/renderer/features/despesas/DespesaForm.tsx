@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { despesaUnicaCreditoInputSchema, type DespesaUnicaCreditoInput } from '@shared/ipc/despesa'
 import type { Cartao } from '@domain/entities/cartao'
 import type { Categoria } from '@domain/entities/categoria'
+import { Button, Field, Input, Select } from '../../components/ui'
 import styles from './despesas.module.css'
 
 type FormValues = Omit<DespesaUnicaCreditoInput, 'valorCentavos'> & { valorReais: string }
@@ -47,23 +48,23 @@ export function DespesaForm({ cartoes, categorias, onSalvar }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
-      <h2 className={styles.formTitle}>Nova despesa (crédito)</h2>
+      <h2 className={styles.formTitle}>Despesa única · crédito</h2>
 
-      <div className={styles.field}>
-        <label htmlFor="descricao">Descrição</label>
-        <input
-          id="descricao"
+      <Field label="Descrição" error={errors.descricao?.message} required>
+        <Input
           type="text"
           {...register('descricao')}
           placeholder="Ex: Supermercado"
+          error={!!errors.descricao}
         />
-        {errors.descricao && <span className={styles.fieldError}>{errors.descricao.message}</span>}
-      </div>
+      </Field>
 
       <div className={styles.fieldRow}>
-        <div className={styles.field}>
-          <label htmlFor="categoriaId">Categoria</label>
-          <select id="categoriaId" {...register('categoriaId', { valueAsNumber: true })}>
+        <Field label="Categoria" error={errors.categoriaId?.message} required>
+          <Select
+            {...register('categoriaId', { valueAsNumber: true })}
+            error={!!errors.categoriaId}
+          >
             <option value="">Selecione…</option>
             {categorias.map((c) => (
               <option key={c.id} value={c.id}>
@@ -71,54 +72,41 @@ export function DespesaForm({ cartoes, categorias, onSalvar }: Props) {
                 {c.nome}
               </option>
             ))}
-          </select>
-          {errors.categoriaId && (
-            <span className={styles.fieldError}>{errors.categoriaId.message}</span>
-          )}
-        </div>
+          </Select>
+        </Field>
 
-        <div className={styles.field}>
-          <label htmlFor="cartaoId">Cartão</label>
-          <select id="cartaoId" {...register('cartaoId', { valueAsNumber: true })}>
+        <Field label="Cartão" error={errors.cartaoId?.message} required>
+          <Select {...register('cartaoId', { valueAsNumber: true })} error={!!errors.cartaoId}>
             <option value="">Selecione…</option>
             {cartoes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nome}
               </option>
             ))}
-          </select>
-          {errors.cartaoId && <span className={styles.fieldError}>{errors.cartaoId.message}</span>}
-        </div>
+          </Select>
+        </Field>
       </div>
 
       <div className={styles.fieldRow}>
-        <div className={styles.field}>
-          <label htmlFor="valorReais">Valor (R$)</label>
-          <input
-            id="valorReais"
+        <Field label="Valor (R$)" error={errors.valorReais?.message} required>
+          <Input
             type="text"
             inputMode="decimal"
             {...register('valorReais')}
             placeholder="0,00"
+            error={!!errors.valorReais}
           />
-          {errors.valorReais && (
-            <span className={styles.fieldError}>{errors.valorReais.message}</span>
-          )}
-        </div>
+        </Field>
 
-        <div className={styles.field}>
-          <label htmlFor="dataCompra">Data da compra</label>
-          <input id="dataCompra" type="date" {...register('dataCompra')} />
-          {errors.dataCompra && (
-            <span className={styles.fieldError}>{errors.dataCompra.message}</span>
-          )}
-        </div>
+        <Field label="Data da compra" error={errors.dataCompra?.message} required>
+          <Input type="date" {...register('dataCompra')} error={!!errors.dataCompra} />
+        </Field>
       </div>
 
       <div className={styles.formActions}>
-        <button type="submit" disabled={isSubmitting} className={styles.btnPrimary}>
+        <Button type="submit" variant="primary" disabled={isSubmitting}>
           {isSubmitting ? 'Registrando…' : 'Registrar despesa'}
-        </button>
+        </Button>
       </div>
     </form>
   )

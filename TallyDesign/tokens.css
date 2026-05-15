@@ -1,0 +1,95 @@
+/* Tally — Design tokens
+   Two-theme system: Cream (primary, daytime) and Forest (dark, focused)
+   ============================================================== */
+
+:root {
+  /* Primary palette — Cream theme (default) */
+  --bg: #f1ebdd; /* warm paper */
+  --bg-elev: #f7f3e8; /* slightly lighter for cards */
+  --bg-sunk: #e8e1cf; /* sunk panels, table headers */
+  --ink: #0f1a14; /* deep forest, body text */
+  --ink-2: #2b342c; /* secondary text */
+  --ink-3: #6b6f66; /* muted, captions */
+  --ink-4: #a09b8e; /* very muted */
+  --rule: #d9d2bf; /* hairlines */
+  --rule-strong: #b8b19d;
+
+  /* Brand greens */
+  --forest: #0f1a14; /* primary brand */
+  --forest-2: #1b2c22;
+  --sage: #5b7a5e; /* secondary brand, accent */
+  --sage-2: #91a992;
+
+  /* Money / accent — warm bronze (income, positive) */
+  --bronze: #a88454;
+  --bronze-2: #c9a76b;
+
+  /* Semantic */
+  --income: #3f6e47; /* receita, ajuda recebida */
+  --expense: #8c3b2e; /* despesa */
+  --pending: #a87b2c; /* fatura aberta, a receber */
+  --paid: #5b7a5e; /* paga, recebida */
+
+  /* Type */
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Radii */
+  --r-1: 4px;
+  --r-2: 8px;
+  --r-3: 12px;
+  --r-4: 16px;
+  --r-pill: 999px;
+
+  /* Shadows — soft, daylight */
+  --shadow-1: 0 1px 0 rgba(15, 26, 20, 0.04), 0 1px 2px rgba(15, 26, 20, 0.04);
+  --shadow-2: 0 1px 0 rgba(15, 26, 20, 0.04), 0 8px 24px -8px rgba(15, 26, 20, 0.12);
+}
+
+/* Forest theme — dark, focused mode */
+[data-theme='forest'] {
+  --bg: #0b100d;
+  --bg-elev: #131a15;
+  --bg-sunk: #070b08;
+  --ink: #e8e3d8;
+  --ink-2: #c7c2b5;
+  --ink-3: #8e9189;
+  --ink-4: #595d55;
+  --rule: #1f2722;
+  --rule-strong: #2c342e;
+
+  --forest: #e8e3d8; /* invert for dark */
+  --sage: #91a992;
+  --bronze: #c9a76b;
+
+  --shadow-1: 0 1px 0 rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-2: 0 12px 32px -8px rgba(0, 0, 0, 0.5);
+}
+
+/* Reset & base */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--ink);
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  line-height: 1.5;
+}
+.mono {
+  font-family: var(--font-mono);
+  font-feature-settings: 'ss01', 'zero', 'tnum';
+}
+.tnum {
+  font-variant-numeric: tabular-nums;
+}

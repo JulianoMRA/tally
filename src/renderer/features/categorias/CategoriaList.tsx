@@ -1,4 +1,5 @@
 import type { Categoria } from '@domain/entities/categoria'
+import { Badge, Button, EmptyState } from '../../components/ui'
 import styles from './categorias.module.css'
 
 type Props = {
@@ -8,9 +9,16 @@ type Props = {
   onDesarquivar: (id: number) => void
 }
 
+const TIPO_LABEL: Record<string, string> = { Despesa: 'Despesa', Renda: 'Renda', Ambos: 'Ambos' }
+
 export function CategoriaList({ categorias, onEditar, onArquivar, onDesarquivar }: Props) {
   if (categorias.length === 0) {
-    return <p className={styles.empty}>Nenhuma categoria encontrada.</p>
+    return (
+      <EmptyState
+        title="Nenhuma categoria encontrada."
+        description="Crie sua primeira categoria ao lado."
+      />
+    )
   }
 
   return (
@@ -22,32 +30,22 @@ export function CategoriaList({ categorias, onEditar, onArquivar, onDesarquivar 
             <span className={styles.listItemNome}>
               {categoria.icone && <span className={styles.icone}>{categoria.icone}</span>}
               {categoria.nome}
-              {!categoria.ativo && <span className={styles.badgeArquivado}>Arquivado</span>}
             </span>
-            <span className={styles.listItemMeta}>
-              <span className={styles.badgeTipo}>{categoria.tipo}</span>
-            </span>
+            <span className={styles.listItemMeta}>{TIPO_LABEL[categoria.tipo]}</span>
           </div>
           <div className={styles.listItemActions}>
-            <button type="button" onClick={() => onEditar(categoria)} className={styles.btnSmall}>
+            <Badge variant={categoria.ativo ? 'active' : 'archived'} />
+            <Button size="sm" variant="ghost" onClick={() => onEditar(categoria)}>
               Editar
-            </button>
+            </Button>
             {categoria.ativo ? (
-              <button
-                type="button"
-                onClick={() => onArquivar(categoria.id)}
-                className={`${styles.btnSmall} ${styles.btnDanger}`}
-              >
+              <Button size="sm" variant="danger" onClick={() => onArquivar(categoria.id)}>
                 Arquivar
-              </button>
+              </Button>
             ) : (
-              <button
-                type="button"
-                onClick={() => onDesarquivar(categoria.id)}
-                className={`${styles.btnSmall} ${styles.btnSuccess}`}
-              >
+              <Button size="sm" variant="secondary" onClick={() => onDesarquivar(categoria.id)}>
                 Desarquivar
-              </button>
+              </Button>
             )}
           </div>
         </li>

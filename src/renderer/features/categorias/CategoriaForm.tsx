@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { Categoria } from '@domain/entities/categoria'
 import { categoriaInputSchema, type CategoriaInput } from '@shared/ipc/categoria'
+import { Button, Field, Input } from '../../components/ui'
 import styles from './categorias.module.css'
 
 type Props = {
@@ -34,14 +35,11 @@ export function CategoriaForm({ mode, categoriaInicial, onSalvar, onCancelar }: 
         {mode === 'criar' ? 'Nova categoria' : 'Editar categoria'}
       </h2>
 
-      <div className={styles.field}>
-        <label htmlFor="nome">Nome</label>
-        <input id="nome" type="text" {...register('nome')} placeholder="Ex: Mercado" />
-        {errors.nome && <span className={styles.fieldError}>{errors.nome.message}</span>}
-      </div>
+      <Field label="Nome" error={errors.nome?.message} required>
+        <Input type="text" {...register('nome')} placeholder="Ex: Mercado" error={!!errors.nome} />
+      </Field>
 
-      <div className={styles.field}>
-        <label>Tipo</label>
+      <Field label="Tipo" error={errors.tipo?.message} required>
         <div className={styles.radioGroup}>
           {(['Despesa', 'Renda', 'Ambos'] as const).map((tipo) => (
             <label key={tipo} className={styles.radioLabel}>
@@ -50,38 +48,30 @@ export function CategoriaForm({ mode, categoriaInicial, onSalvar, onCancelar }: 
             </label>
           ))}
         </div>
-        {errors.tipo && <span className={styles.fieldError}>{errors.tipo.message}</span>}
-      </div>
+      </Field>
 
       <div className={styles.fieldRow}>
-        <div className={styles.field}>
-          <label htmlFor="cor">Cor</label>
-          <div className={styles.colorRow}>
-            <input id="cor" type="color" {...register('cor')} className={styles.colorInput} />
-          </div>
-          {errors.cor && <span className={styles.fieldError}>{errors.cor.message}</span>}
-        </div>
-
-        <div className={styles.field}>
-          <label htmlFor="icone">Ícone (opcional)</label>
-          <input
-            id="icone"
+        <Field label="Cor" error={errors.cor?.message}>
+          <input type="color" {...register('cor')} className={styles.colorInput} />
+        </Field>
+        <Field label="Ícone (opcional)" error={errors.icone?.message}>
+          <Input
             type="text"
             {...register('icone')}
             placeholder="🛒 ou Mercado"
             maxLength={16}
+            error={!!errors.icone}
           />
-          {errors.icone && <span className={styles.fieldError}>{errors.icone.message}</span>}
-        </div>
+        </Field>
       </div>
 
       <div className={styles.formActions}>
-        <button type="button" onClick={onCancelar} className={styles.btnSecondary}>
+        <Button type="button" variant="ghost" onClick={onCancelar}>
           Cancelar
-        </button>
-        <button type="submit" disabled={isSubmitting} className={styles.btnPrimary}>
+        </Button>
+        <Button type="submit" variant="primary" disabled={isSubmitting}>
           {isSubmitting ? 'Salvando…' : 'Salvar'}
-        </button>
+        </Button>
       </div>
     </form>
   )
