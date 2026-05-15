@@ -3,6 +3,7 @@ import type { DespesaUnicaCreditoInput } from '@shared/ipc/despesa'
 import { DespesaForm } from './DespesaForm'
 import { useCartoesAtivos } from './hooks/use-cartoes-ativos'
 import { useCategoriasDespesa } from './hooks/use-categorias-despesa'
+import { PageHead } from '../../components/layout/PageHead'
 import styles from './despesas.module.css'
 
 type UltimaRegistrada = {
@@ -29,23 +30,22 @@ export default function DespesasPage() {
   const loading = loadingCartoes || loadingCategorias
 
   return (
-    <div className={styles.page}>
-      <div className={styles.pageHeader}>
-        <h1>Nova despesa</h1>
-        <p>Registre um gasto avulso no cartão de crédito.</p>
+    <div>
+      <PageHead title="Nova despesa" subtitle="Registre um gasto avulso no cartão de crédito." />
+
+      <div className={styles.body}>
+        {ultimaRegistrada && (
+          <div className={styles.successBanner}>
+            <strong>{ultimaRegistrada.descricao}</strong> registrada na fatura{' '}
+            <strong>{ultimaRegistrada.mesReferencia}</strong> do cartão{' '}
+            <strong>{ultimaRegistrada.cartaoNome}</strong>.
+          </div>
+        )}
+
+        {!loading && (
+          <DespesaForm cartoes={cartoes} categorias={categorias} onSalvar={handleSalvar} />
+        )}
       </div>
-
-      {ultimaRegistrada && (
-        <div className={styles.successBanner}>
-          <strong>{ultimaRegistrada.descricao}</strong> registrada na fatura{' '}
-          <strong>{ultimaRegistrada.mesReferencia}</strong> do cartão{' '}
-          <strong>{ultimaRegistrada.cartaoNome}</strong>.
-        </div>
-      )}
-
-      {!loading && (
-        <DespesaForm cartoes={cartoes} categorias={categorias} onSalvar={handleSalvar} />
-      )}
     </div>
   )
 }
