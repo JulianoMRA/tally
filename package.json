@@ -58,6 +58,8 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^3.0.0",
+    "@fontsource/geist": "^5.2.8",
+    "@fontsource/geist-mono": "^5.2.7",
     "@hookform/resolvers": "^5.2.2",
     "node-sqlite3-wasm": "^0.8.57",
     "react": "^18.3.1",
