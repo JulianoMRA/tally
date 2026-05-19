@@ -1,0 +1,184 @@
+import { useState } from 'react'
+import type { StatusRecebimento } from '@domain/entities/recebimento'
+import type { CriarRecebimentoAvulsoInput, RecebimentoComContexto } from '@shared/ipc/recebimento'
+import { PageHead } from '../../components/layout/PageHead'
+import { Button, EmptyState, Field, Input } from '../../components/ui'
+import { useRecebimentos } from './hooks/use-recebimentos'
+import { MarcarRecebidoModal } from './MarcarRecebidoModal'
+import { NovoAvulsoModal } from './NovoAvulsoModal'
+import styles from './recebimentos.module.css'
+
+function formatBRL(centavos: number): string {
+  return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function mesAtual(): string {
+  const hoje = new Date()
+  return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`
+}
+
+type StatusFiltro = 'Todos' | StatusRecebimento
+
+export default function RecebimentosPage() {
+  const [mes, setMes] = useState(mesAtual())
+  const [statusFiltro, setStatusFiltro] = useState<StatusFiltro>('Todos')
+  const { recebimentos, loading, erro, recarregar } = useRecebimentos({
+    mesReferencia: mes,
+    status: statusFiltro === 'Todos' ? undefined : statusFiltro
+  })
+  const [alvoMarcar, setAlvoMarcar] = useState<RecebimentoComContexto | null>(null)
+  const [novoAvulso, setNovoAvulso] = useState(false)
+  const [acaoErro, setAcaoErro] = useState<string | null>(null)
+
+  async function handleMarcarRecebido(dataRecebida: string) {
+    if (!alvoMarcar) return
+    await window.api.recebimento.marcarRecebido({
+      recebimentoId: alvoMarcar.id,
+      dataRecebida
+    })
+    setAlvoMarcar(null)
+    await recarregar()
+  }
+
+  async function handleCriarAvulso(input: CriarRecebimentoAvulsoInput) {
+    await window.api.recebimento.criarAvulso(input)
+    setNovoAvulso(false)
+    await recarregar()
+  }
+
+  async function handleExcluir(rec: RecebimentoComContexto) {
+    const ok = window.confirm(
+      `Excluir recebimento de ${formatBRL(rec.valorCentavos)} (${rec.rendaNome ?? 'avulso'})?`
+    )
+    if (!ok) return
+    setAcaoErro(null)
+    try {
+      await window.api.recebimento.excluir({ recebimentoId: rec.id })
+      await recarregar()
+    } catch (e) {
+      setAcaoErro(e instanceof Error ? e.message : 'Erro ao excluir.')
+    }
+  }
+
+  const totalEsperado = recebimentos
+    .filter((r) => r.status === 'Esperado')
+    .reduce((s, r) => s + r.valorCentavos, 0)
+  const totalRecebido = recebimentos
+    .filter((r) => r.status === 'Recebido')
+    .reduce((s, r) => s + r.valorCentavos, 0)
+  const total = totalEsperado + totalRecebido
+
+  return (
+    <div>
+      <PageHead
+        title="Recebimentos"
+        subtitle="Entradas esperadas e recebidas do mês — bolsa, freelas, presentes, etc."
+      />
+
+      <div className={styles.body}>
+        <div className={styles.toolbar}>
+          <Field label="Mês">
+            <Input type="month" value={mes} onChange={(e) => setMes(e.target.value)} />
+          </Field>
+
+          <div className={styles.statusGroup}>
+            {(['Todos', 'Esperado', 'Recebido'] as StatusFiltro[]).map((s) => (
+              <button
+                key={s}
+                type="button"
+                className={`${styles.statusBtn} ${
+                  statusFiltro === s ? styles.statusBtnActive : ''
+                }`}
+                onClick={() => setStatusFiltro(s)}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+
+          <div className={styles.actionsRight}>
+            <Button variant="primary" size="sm" onClick={() => setNovoAvulso(true)}>
+              + Novo avulso
+            </Button>
+          </div>
+        </div>
+
+        {erro && <p className={styles.erro}>{erro}</p>}
+        {acaoErro && <p className={styles.erro}>{acaoErro}</p>}
+
+        {loading ? (
+          <EmptyState title="Carregando…" />
+        ) : recebimentos.length === 0 ? (
+          <EmptyState title="Nenhum recebimento neste filtro." />
+        ) : (
+          <ul className={styles.lista}>
+            {recebimentos.map((r) => (
+              <li key={r.id} className={styles.item}>
+                <div className={styles.info}>
+                  <span className={styles.nome}>{r.rendaNome ?? '—'}</span>
+                  <span className={styles.meta}>
+                    {r.rendaId === null ? 'sem fonte' : 'fonte cadastrada'}
+                  </span>
+                </div>
+                <span className={styles.data}>esperada {r.dataEsperada}</span>
+                <span className={styles.valor}>{formatBRL(r.valorCentavos)}</span>
+                <span className={styles.data}>
+                  {r.status === 'Recebido' ? (
+                    <span className={styles.recebidaInfo}>Recebido {r.dataRecebida}</span>
+                  ) : (
+                    <span>Pendente</span>
+                  )}
+                </span>
+                <div className={styles.acoes}>
+                  {r.status === 'Esperado' && (
+                    <Button size="sm" variant="primary" onClick={() => setAlvoMarcar(r)}>
+                      Marcar recebido
+                    </Button>
+                  )}
+                  <Button size="sm" variant="ghost" onClick={() => handleExcluir(r)}>
+                    Excluir
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {recebimentos.length > 0 && (
+          <div className={styles.totaisRow}>
+            <div className={styles.totalCard}>
+              <div className={styles.totalLabel}>Esperado</div>
+              <div className={styles.totalValor}>{formatBRL(totalEsperado)}</div>
+            </div>
+            <div className={styles.totalCard}>
+              <div className={styles.totalLabel}>Recebido</div>
+              <div className={`${styles.totalValor} ${styles.totalValorIncome}`}>
+                {formatBRL(totalRecebido)}
+              </div>
+            </div>
+            <div className={styles.totalCard}>
+              <div className={styles.totalLabel}>Total do mês</div>
+              <div className={styles.totalValor}>{formatBRL(total)}</div>
+            </div>
+          </div>
+        )}
+
+        {alvoMarcar && (
+          <MarcarRecebidoModal
+            descricao={alvoMarcar.rendaNome ?? `Recebimento #${alvoMarcar.id}`}
+            valorReais={formatBRL(alvoMarcar.valorCentavos)}
+            onConfirmar={handleMarcarRecebido}
+            onCancelar={() => setAlvoMarcar(null)}
+          />
+        )}
+
+        {novoAvulso && (
+          <NovoAvulsoModal
+            onConfirmar={handleCriarAvulso}
+            onCancelar={() => setNovoAvulso(false)}
+          />
+        )}
+      </div>
+    </div>
+  )
+}

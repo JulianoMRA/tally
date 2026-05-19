@@ -28,6 +28,20 @@ import type {
   ListarAjudasPorParcelaInput,
   ListarAjudasAgrupadasInput
 } from '@shared/ipc/ajuda'
+import { RENDA_IPC_CHANNELS } from '@shared/ipc/renda'
+import type {
+  CriarRendaAvulsaInput,
+  CriarRendaRecorrenteInput,
+  UpdateRendaInput,
+  ListRendaOptions
+} from '@shared/ipc/renda'
+import { RECEBIMENTO_IPC_CHANNELS } from '@shared/ipc/recebimento'
+import type {
+  CriarRecebimentoAvulsoInput,
+  MarcarRecebidoInput,
+  ExcluirRecebimentoInput,
+  ListarRecebimentosInput
+} from '@shared/ipc/recebimento'
 
 contextBridge.exposeInMainWorld('api', {
   cartao: {
@@ -103,5 +117,27 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke(AJUDA_IPC_CHANNELS.listarPorParcela, input),
     listarAgrupadoPorContribuidor: (input?: ListarAjudasAgrupadasInput) =>
       ipcRenderer.invoke(AJUDA_IPC_CHANNELS.listarAgrupadoPorContribuidor, input ?? {})
+  },
+  renda: {
+    list: (options?: ListRendaOptions) => ipcRenderer.invoke(RENDA_IPC_CHANNELS.list, options),
+    findById: (id: number) => ipcRenderer.invoke(RENDA_IPC_CHANNELS.findById, id),
+    criarAvulsa: (input: CriarRendaAvulsaInput) =>
+      ipcRenderer.invoke(RENDA_IPC_CHANNELS.criarAvulsa, input),
+    criarRecorrente: (input: CriarRendaRecorrenteInput) =>
+      ipcRenderer.invoke(RENDA_IPC_CHANNELS.criarRecorrente, input),
+    update: (id: number, input: UpdateRendaInput) =>
+      ipcRenderer.invoke(RENDA_IPC_CHANNELS.update, id, input),
+    arquivar: (id: number) => ipcRenderer.invoke(RENDA_IPC_CHANNELS.arquivar, id),
+    desarquivar: (id: number) => ipcRenderer.invoke(RENDA_IPC_CHANNELS.desarquivar, id)
+  },
+  recebimento: {
+    criarAvulso: (input: CriarRecebimentoAvulsoInput) =>
+      ipcRenderer.invoke(RECEBIMENTO_IPC_CHANNELS.criarAvulso, input),
+    listar: (input?: ListarRecebimentosInput) =>
+      ipcRenderer.invoke(RECEBIMENTO_IPC_CHANNELS.listar, input ?? {}),
+    marcarRecebido: (input: MarcarRecebidoInput) =>
+      ipcRenderer.invoke(RECEBIMENTO_IPC_CHANNELS.marcarRecebido, input),
+    excluir: (input: ExcluirRecebimentoInput) =>
+      ipcRenderer.invoke(RECEBIMENTO_IPC_CHANNELS.excluir, input)
   }
 })
