@@ -92,3 +92,38 @@
   color: var(--ink-muted);
   margin: -8px 0 0;
 }
+
+.formaSelector {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-base);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  padding: 3px;
+  width: fit-content;
+}
+
+.formaBtn {
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--r-2) - 2px);
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition:
+    background 120ms,
+    color 120ms;
+}
+
+.formaBtn:hover {
+  background: var(--bg-elev);
+  color: var(--ink);
+}
+
+.formaBtnActive {
+  background: var(--bg-elev);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
