@@ -156,4 +156,246 @@ describe('ParcelaRepository', () => {
       expect(parcelas[0].despesaId).toBe(despesaId)
     })
   })
+
+  describe('adiantar', () => {
+    it('move as N parcelas mais futuras para a fatura destino', () => {
+      const cartaoId = inserirCartao(db, 'Nubank', 15, 22)
+      const catId = inserirCategoria(db)
+      const f1 = inserirFatura(db, cartaoId, '2026-05')
+      const f2 = inserirFatura(db, cartaoId, '2026-06')
+      const f3 = inserirFatura(db, cartaoId, '2026-07')
+      const destino = inserirFatura(db, cartaoId, '2026-04')
+      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-05-01', 3000)
+
+      repo.criar({
+        despesaId,
+        faturaId: f1,
+        numero: 1,
+        total: 3,
+        valorCentavos: 1000,
+        dataReferencia: '2026-05'
+      })
+      repo.criar({
+        despesaId,
+        faturaId: f2,
+        numero: 2,
+        total: 3,
+        valorCentavos: 1000,
+        dataReferencia: '2026-06'
+      })
+      repo.criar({
+        despesaId,
+        faturaId: f3,
+        numero: 3,
+        total: 3,
+        valorCentavos: 1000,
+        dataReferencia: '2026-07'
+      })
+
+      const resultado = repo.adiantar({ despesaId, quantidade: 2, faturaDestinoId: destino })
+
+      expect(resultado.movidas).toHaveLength(2)
+      const numeros = resultado.movidas.map((p) => p.numero).sort((a, b) => a - b)
+      expect(numeros).toEqual([2, 3])
+
+      const parcelas = repo.listarPorDespesa(despesaId)
+      const noDestino = parcelas.filter((p) => p.faturaId === destino)
+      expect(noDestino).toHaveLength(2)
+    })
+
+    it('preserva numero e total das parcelas movidas', () => {
+      const cartaoId = inserirCartao(db, 'Nubank', 15, 22)
+      const catId = inserirCategoria(db)
+      const f1 = inserirFatura(db, cartaoId, '2026-05')
+      const f2 = inserirFatura(db, cartaoId, '2026-06')
+      const destino = inserirFatura(db, cartaoId, '2026-04')
+      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-05-01', 2000)
+
+      repo.criar({
+        despesaId,
+        faturaId: f1,
+        numero: 9,
+        total: 12,
+        valorCentavos: 1000,
+        dataReferencia: '2026-05'
+      })
+      repo.criar({
+        despesaId,
+        faturaId: f2,
+        numero: 10,
+        total: 12,
+        valorCentavos: 1000,
+        dataReferencia: '2026-06'
+      })
+
+      const resultado = repo.adiantar({ despesaId, quantidade: 1, faturaDestinoId: destino })
+
+      expect(resultado.movidas[0].numero).toBe(10)
+      expect(resultado.movidas[0].total).toBe(12)
+      expect(resultado.movidas[0].faturaId).toBe(destino)
+    })
+
+    it('retorna faturasAfetadas com ids das faturas origem e destino', () => {
+      const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+      const catId = inserirCategoria(db)
+      const f1 = inserirFatura(db, cartaoId, '2026-05')
+      const f2 = inserirFatura(db, cartaoId, '2026-06')
+      const destino = inserirFatura(db, cartaoId, '2026-04')
+      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-05-01', 2000)
+
+      repo.criar({
+        despesaId,
+        faturaId: f1,
+        numero: 1,
+        total: 2,
+        valorCentavos: 1000,
+        dataReferencia: '2026-05'
+      })
+      repo.criar({
+        despesaId,
+        faturaId: f2,
+        numero: 2,
+        total: 2,
+        valorCentavos: 1000,
+        dataReferencia: '2026-06'
+      })
+
+      const resultado = repo.adiantar({ despesaId, quantidade: 1, faturaDestinoId: destino })
+
+      expect(resultado.faturasAfetadas).toContain(f2)
+      expect(resultado.faturasAfetadas).toContain(destino)
+    })
+  })
+
+  describe('cancelarPendentes', () => {
+    it('remove parcelas de faturas com status Aberta', () => {
+      const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+      const catId = inserirCategoria(db)
+      const fAberta = inserirFatura(db, cartaoId, '2026-06')
+      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-06-01', 3000)
+
+      repo.criar({
+        despesaId,
+        faturaId: fAberta,
+        numero: 1,
+        total: 3,
+        valorCentavos: 1000,
+        dataReferencia: '2026-06'
+      })
+      repo.criar({
+        despesaId,
+        faturaId: fAberta,
+        numero: 2,
+        total: 3,
+        valorCentavos: 1000,
+        dataReferencia: '2026-07'
+      })
+      repo.criar({
+        despesaId,
+        faturaId: fAberta,
+        numero: 3,
+        total: 3,
+        valorCentavos: 1000,
+        dataReferencia: '2026-08'
+      })
+
+      const resultado = repo.cancelarPendentes(despesaId)
+
+      expect(resultado.canceladas).toHaveLength(3)
+      expect(repo.listarPorDespesa(despesaId)).toHaveLength(0)
+    })
+
+    it('preserva parcelas de faturas Paga', () => {
+      const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+      const catId = inserirCategoria(db)
+      const fPaga = db
+        .prepare(
+          "INSERT INTO fatura (cartao_id, mes_referencia, data_fechamento, data_vencimento, status, data_pagamento) VALUES (?, '2026-05', '2026-05-05', '2026-05-12', 'Paga', '2026-06-01')"
+        )
+        .run(cartaoId).lastInsertRowid as number
+      const fAberta = inserirFatura(db, cartaoId, '2026-06')
+      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-05-01', 2000)
+
+      repo.criar({
+        despesaId,
+        faturaId: fPaga,
+        numero: 1,
+        total: 2,
+        valorCentavos: 1000,
+        dataReferencia: '2026-05'
+      })
+      repo.criar({
+        despesaId,
+        faturaId: fAberta,
+        numero: 2,
+        total: 2,
+        valorCentavos: 1000,
+        dataReferencia: '2026-06'
+      })
+
+      const resultado = repo.cancelarPendentes(despesaId)
+
+      expect(resultado.canceladas).toHaveLength(1)
+      const restantes = repo.listarPorDespesa(despesaId)
+      expect(restantes).toHaveLength(1)
+      expect(restantes[0].numero).toBe(1)
+    })
+
+    it('preserva parcelas de faturas Fechada', () => {
+      const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+      const catId = inserirCategoria(db)
+      const fFechada = db
+        .prepare(
+          "INSERT INTO fatura (cartao_id, mes_referencia, data_fechamento, data_vencimento, status) VALUES (?, '2026-05', '2026-05-05', '2026-05-12', 'Fechada')"
+        )
+        .run(cartaoId).lastInsertRowid as number
+      const fAberta = inserirFatura(db, cartaoId, '2026-06')
+      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-05-01', 2000)
+
+      repo.criar({
+        despesaId,
+        faturaId: fFechada,
+        numero: 1,
+        total: 2,
+        valorCentavos: 1000,
+        dataReferencia: '2026-05'
+      })
+      repo.criar({
+        despesaId,
+        faturaId: fAberta,
+        numero: 2,
+        total: 2,
+        valorCentavos: 1000,
+        dataReferencia: '2026-06'
+      })
+
+      const resultado = repo.cancelarPendentes(despesaId)
+
+      expect(resultado.canceladas).toHaveLength(1)
+      expect(resultado.canceladas[0].numero).toBe(2)
+    })
+
+    it('retorna lista vazia se não há parcelas pendentes', () => {
+      const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+      const catId = inserirCategoria(db)
+      const fPaga = db
+        .prepare(
+          "INSERT INTO fatura (cartao_id, mes_referencia, data_fechamento, data_vencimento, status, data_pagamento) VALUES (?, '2026-05', '2026-05-05', '2026-05-12', 'Paga', '2026-06-01')"
+        )
+        .run(cartaoId).lastInsertRowid as number
+      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-05-01', 1000)
+
+      repo.criar({
+        despesaId,
+        faturaId: fPaga,
+        numero: 1,
+        total: 1,
+        valorCentavos: 1000,
+        dataReferencia: '2026-05'
+      })
+
+      const resultado = repo.cancelarPendentes(despesaId)
+      expect(resultado.canceladas).toHaveLength(0)
+    })
+  })
 })

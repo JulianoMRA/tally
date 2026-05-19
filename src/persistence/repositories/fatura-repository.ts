@@ -139,6 +139,38 @@ export class FaturaRepository implements Repository {
   }
 
   /**
+   * Garante que existe uma fatura para o cartão em um `mesReferencia` já calculado
+   * (formato "YYYY-MM"). Usado ao criar parcelas cujas datas de referência foram
+   * determinadas por gerarParcelas — não re-aplica RN-01.
+   */
+  upsertParaMesReferencia(
+    cartao: Pick<Cartao, 'id' | 'diaFechamento' | 'diaVencimento'>,
+    mesReferencia: string
+  ): Fatura {
+    const [anoStr, mesStr] = mesReferencia.split('-')
+    const ano = Number(anoStr)
+    const mes = Number(mesStr)
+    const dataFechamento = dataDoMes(ano, mes, cartao.diaFechamento)
+    const dataVencimento = dataDoMes(ano, mes, cartao.diaVencimento)
+
+    this.db
+      .prepare(
+        `INSERT INTO fatura (cartao_id, mes_referencia, data_fechamento, data_vencimento, status)
+         VALUES (?, ?, ?, ?, 'Aberta')
+         ON CONFLICT(cartao_id, mes_referencia) DO NOTHING`
+      )
+      .run(cartao.id, mesReferencia, dataFechamento, dataVencimento)
+
+    const fatura = this.findByCartaoEMesReferencia(cartao.id, mesReferencia)
+    if (!fatura) {
+      throw new Error(
+        `upsertParaMesReferencia: falha ao recuperar fatura ${mesReferencia} do cartão ${cartao.id}`
+      )
+    }
+    return fatura
+  }
+
+  /**
    * Garante que existe uma fatura para o cartão na referência calculada via RN-01
    * a partir da `dataCompra`. Idempotente: chamadas repetidas devolvem a mesma fatura.
    */
