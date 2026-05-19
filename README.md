@@ -73,7 +73,7 @@ This project is in active development. The implementation is being delivered in 
 - [x] **Slice 4.5** — Visual identity: design system (tokens, Geist font, logo, UI primitives), full app restyle
 - [x] **Slice 5** — Statement lifecycle (Open → Closed → Paid)
 - [x] **Slice 6** — Installment expenses (new + in-progress migration + advancing parcelas + cancel pending)
-- [ ] **Slice 7** — Subscriptions with lazy occurrence generation
+- [x] **Slice 7** — Subscriptions (register, lazy occurrence generation, cancel, monthly value adjustment)
 - [ ] **Slice 8** — Off-card expenses (debit, Pix, cash)
 - [ ] **Slice 9** — Contributors and shared expenses with "owe me" dashboard
 - [ ] **Slice 10** — Income sources (recurring and one-off)
@@ -85,6 +85,8 @@ This project is in active development. The implementation is being delivered in 
 Each merged slice gets a short progress note in the changelog section below.
 
 ### Changelog
+
+**Slice 7** — Subscriptions (RF-DES-04, RF-DES-07, RF-DES-08, RN-04). Pure domain service `gerarOcorrenciasAssinatura` generates N monthly occurrences from a start date — uses RN-01 for the first reference month and a shared `proxMesReferencia` helper (extracted from `gerar-parcelas.ts`) for the rest. 13 unit tests cover quantity, year boundary, late-cycle starts, and lazy `ocorrenciaInicial` for Slice 12. `DespesaRepository` gains `criarAssinaturaCredito` (12-month horizon, atomic insert of despesa + 12 faturas + 12 parcelas with `total = NULL`), `cancelarAssinatura` (sets `ativa = 0` and deletes parcelas only in `Aberta` statements, preserving `Fechada`/`Paga` history), `reajustarValorMensalAssinatura` (updates value on pending parcelas in open statements only), and `listarAssinaturas` with an optional `ativa` filter. Four new typed IPC channels + Zod schemas. `DespesaForm` gains a fourth tab "Assinatura" with description, category, card, monthly value and start date. New route `/assinaturas` with `AssinaturasPage` lists active/cancelled subscriptions, exposes a "Reajustar" modal and a "Cancelar" button per row. New Sidebar entry between Despesas and Faturas. 218 tests passing, lint and typecheck clean.
 
 **Slice 6** — Installment expenses (RF-DES-02, RF-DES-03, RF-DES-05, RF-DES-06, RN-02, RN-03). Two pure domain services: `gerarParcelas` (generates N installments using RN-01 per slot, distributes remainder centavos to last parcela) and `selecionarParcelasParaAdiantar` (picks N most-future eligible parcelas for a target statement, filters Fechada/Paga, validates destination). 30 unit tests. `DespesaRepository` gains `criarParceladaCredito` and `criarParceladaEmAndamento` (RF-DES-03: only remaining parcelas K/N..N/N created — no retroactive history). `ParcelaRepository` gains `adiantar` (moves parcelas atomically, returns affected statement ids) and `cancelarPendentes` (deletes only Aberta-statement parcelas, preserves Fechada/Paga). `FaturaRepository` gains `upsertParaMesReferencia` (idempotent upsert by pre-computed reference month, bypasses RN-01). 4 new typed IPC channels + Zod schemas. `DespesaForm` split into three sub-forms (Única/Parcelada/Em andamento) with a segmented type selector; "Parcelada" shows live per-installment value. `FaturaDetalhe` gains an "Adiantar parcelas" button (Aberta only) that opens an `AdiantarParcelasModal`. 193 tests passing, lint and typecheck clean.
 

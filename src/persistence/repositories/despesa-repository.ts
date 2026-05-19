@@ -7,6 +7,9 @@ import { CartaoRepository } from './cartao-repository'
 import { FaturaRepository } from './fatura-repository'
 import { ParcelaRepository } from './parcela-repository'
 import { gerarParcelas } from '../../domain/services/gerar-parcelas'
+import { gerarOcorrenciasAssinatura } from '../../domain/services/gerar-ocorrencias-assinatura'
+
+const HORIZONTE_ASSINATURA_MESES = 12
 
 type DespesaRow = {
   id: number
@@ -76,6 +79,29 @@ export type CriarDespesaEmAndamentoInput = {
   parcelaAtual: number
   valorRestanteCentavos: number
   dataCompra: string
+}
+
+export type CriarAssinaturaCreditoInput = {
+  descricao: string
+  categoriaId: number
+  cartaoId: number
+  valorMensalCentavos: number
+  dataInicio: string
+}
+
+export type ResultadoCriarAssinatura = {
+  despesa: Despesa
+  parcelas: Parcela[]
+}
+
+export type ResultadoCancelarAssinatura = {
+  despesa: Despesa
+  canceladas: Parcela[]
+}
+
+export type ResultadoReajusteAssinatura = {
+  despesa: Despesa
+  atualizadas: Parcela[]
 }
 
 export class DespesaRepository implements Repository {
@@ -231,5 +257,175 @@ export class DespesaRepository implements Repository {
 
       return { despesa, parcelas }
     })()
+  }
+
+  criarAssinaturaCredito(input: CriarAssinaturaCreditoInput): ResultadoCriarAssinatura {
+    const cartaoRepo = new CartaoRepository(this.db)
+    const faturaRepo = new FaturaRepository(this.db)
+    const parcelaRepo = new ParcelaRepository(this.db)
+
+    const cartao = cartaoRepo.findById(input.cartaoId)
+    if (!cartao) throw new Error(`Cartão #${input.cartaoId} não encontrado`)
+
+    const planejadas = gerarOcorrenciasAssinatura({
+      cartao,
+      dataInicio: input.dataInicio,
+      valorMensalCentavos: input.valorMensalCentavos,
+      quantidade: HORIZONTE_ASSINATURA_MESES
+    })
+
+    return this.db.transaction(() => {
+      const info = this.db
+        .prepare(
+          `INSERT INTO despesa (descricao, categoria_id, tipo, forma_pagamento, cartao_id, valor_centavos, total_parcelas, data_compra)
+           VALUES (?, ?, 'Assinatura', 'Credito', ?, ?, NULL, ?)`
+        )
+        .run(
+          input.descricao,
+          input.categoriaId,
+          input.cartaoId,
+          input.valorMensalCentavos,
+          input.dataInicio
+        )
+
+      const despesaRow = this.db
+        .prepare('SELECT * FROM despesa WHERE id = ?')
+        .get(Number(info.lastInsertRowid)) as DespesaRow | undefined
+      if (!despesaRow) throw new Error('Falha ao recuperar despesa após criar')
+      const despesa = mapRow(despesaRow)
+
+      const parcelas: Parcela[] = []
+      for (const o of planejadas) {
+        const fatura = faturaRepo.upsertParaMesReferencia(cartao, o.dataReferencia)
+        const parcela = parcelaRepo.criar({
+          despesaId: despesa.id,
+          faturaId: fatura.id,
+          numero: o.numero,
+          total: o.total,
+          valorCentavos: o.valorCentavos,
+          dataReferencia: o.dataReferencia
+        })
+        parcelas.push(parcela)
+      }
+
+      return { despesa, parcelas }
+    })()
+  }
+
+  cancelarAssinatura(despesaId: number): ResultadoCancelarAssinatura {
+    const despesaRow = this.db.prepare('SELECT * FROM despesa WHERE id = ?').get(despesaId) as
+      | DespesaRow
+      | undefined
+    if (!despesaRow) throw new Error(`Despesa #${despesaId} não encontrada`)
+    if (despesaRow.tipo !== 'Assinatura') {
+      throw new Error(`Despesa #${despesaId} não é uma assinatura (tipo=${despesaRow.tipo})`)
+    }
+
+    return this.db.transaction(() => {
+      type ParcelaRow = {
+        id: number
+        despesa_id: number
+        fatura_id: number | null
+        numero: number
+        total: number | null
+        valor_centavos: number
+        data_referencia: string
+        status: 'Pendente' | 'Paga'
+        data_pagamento: string | null
+        created_at: string
+        updated_at: string
+      }
+
+      const rowsParaCancelar = this.db
+        .prepare(
+          `SELECT p.* FROM parcela p
+           INNER JOIN fatura f ON f.id = p.fatura_id
+           WHERE p.despesa_id = ? AND f.status = 'Aberta'`
+        )
+        .all(despesaId) as ParcelaRow[]
+
+      const del = this.db.prepare('DELETE FROM parcela WHERE id = ?')
+      const canceladas: Parcela[] = []
+      for (const row of rowsParaCancelar) {
+        del.run(row.id)
+        canceladas.push({
+          id: row.id,
+          despesaId: row.despesa_id,
+          faturaId: row.fatura_id,
+          numero: row.numero,
+          total: row.total,
+          valorCentavos: row.valor_centavos,
+          dataReferencia: row.data_referencia,
+          status: row.status,
+          dataPagamento: row.data_pagamento,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at
+        })
+      }
+
+      this.db
+        .prepare(`UPDATE despesa SET ativa = 0, updated_at = datetime('now') WHERE id = ?`)
+        .run(despesaId)
+
+      const atualizada = this.db
+        .prepare('SELECT * FROM despesa WHERE id = ?')
+        .get(despesaId) as DespesaRow
+      return { despesa: mapRow(atualizada), canceladas }
+    })()
+  }
+
+  reajustarValorMensalAssinatura(
+    despesaId: number,
+    novoValorCentavos: number
+  ): ResultadoReajusteAssinatura {
+    if (!Number.isInteger(novoValorCentavos) || novoValorCentavos <= 0) {
+      throw new Error(`novoValorCentavos deve ser inteiro > 0, recebido: ${novoValorCentavos}`)
+    }
+
+    const despesaRow = this.db.prepare('SELECT * FROM despesa WHERE id = ?').get(despesaId) as
+      | DespesaRow
+      | undefined
+    if (!despesaRow) throw new Error(`Despesa #${despesaId} não encontrada`)
+    if (despesaRow.tipo !== 'Assinatura') {
+      throw new Error(`Despesa #${despesaId} não é uma assinatura (tipo=${despesaRow.tipo})`)
+    }
+
+    const parcelaRepo = new ParcelaRepository(this.db)
+
+    return this.db.transaction(() => {
+      this.db
+        .prepare(
+          `UPDATE parcela
+           SET valor_centavos = ?, updated_at = datetime('now')
+           WHERE despesa_id = ?
+             AND status = 'Pendente'
+             AND fatura_id IN (SELECT id FROM fatura WHERE status = 'Aberta')`
+        )
+        .run(novoValorCentavos, despesaId)
+
+      this.db
+        .prepare(`UPDATE despesa SET valor_centavos = ?, updated_at = datetime('now') WHERE id = ?`)
+        .run(novoValorCentavos, despesaId)
+
+      const atualizadaRow = this.db
+        .prepare('SELECT * FROM despesa WHERE id = ?')
+        .get(despesaId) as DespesaRow
+      const todasParcelas = parcelaRepo.listarPorDespesa(despesaId)
+      const atualizadas = todasParcelas.filter((p) => p.valorCentavos === novoValorCentavos)
+
+      return { despesa: mapRow(atualizadaRow), atualizadas }
+    })()
+  }
+
+  listarAssinaturas(filtro?: { ativa?: boolean }): Despesa[] {
+    let sql = "SELECT * FROM despesa WHERE tipo = 'Assinatura'"
+    const params: unknown[] = []
+    if (filtro?.ativa !== undefined) {
+      sql += ' AND ativa = ?'
+      params.push(filtro.ativa ? 1 : 0)
+    }
+    sql += ' ORDER BY ativa DESC, descricao ASC'
+    const rows = this.db.prepare(sql).all(...params) as DespesaRow[]
+    return rows.map(mapRow)
   }
 }

@@ -6,17 +6,19 @@ import {
   despesaUnicaCreditoInputSchema,
   despesaParceladaCreditoInputSchema,
   despesaEmAndamentoInputBaseSchema,
+  despesaAssinaturaCreditoInputSchema,
   parcelaAtualNaoExcedeTotal,
   type DespesaUnicaCreditoInput,
   type DespesaParceladaCreditoInput,
-  type DespesaEmAndamentoInput
+  type DespesaEmAndamentoInput,
+  type DespesaAssinaturaCreditoInput
 } from '@shared/ipc/despesa'
 import type { Cartao } from '@domain/entities/cartao'
 import type { Categoria } from '@domain/entities/categoria'
 import { Button, Field, Input, Select } from '../../components/ui'
 import styles from './despesas.module.css'
 
-type TipoDespesa = 'unica' | 'parcelada' | 'em-andamento'
+type TipoDespesa = 'unica' | 'parcelada' | 'em-andamento' | 'assinatura'
 
 // ──── Única ────────────────────────────────────────────────────
 type UniqueValues = Omit<DespesaUnicaCreditoInput, 'valorCentavos'> & { valorReais: string }
@@ -44,12 +46,22 @@ const emAndamentoSchema = despesaEmAndamentoInputBaseSchema
   .extend({ valorReais: z.string().regex(/^\d+([.,]\d{1,2})?$/, 'Valor inválido') })
   .refine(parcelaAtualNaoExcedeTotal.predicate, parcelaAtualNaoExcedeTotal.params)
 
+// ──── Assinatura ────────────────────────────────────────────────
+type AssinaturaValues = Omit<DespesaAssinaturaCreditoInput, 'valorMensalCentavos'> & {
+  valorReais: string
+}
+
+const assinaturaSchema = despesaAssinaturaCreditoInputSchema
+  .omit({ valorMensalCentavos: true })
+  .extend({ valorReais: z.string().regex(/^\d+([.,]\d{1,2})?$/, 'Valor inválido') })
+
 type Props = {
   cartoes: Cartao[]
   categorias: Categoria[]
   onSalvarUnica: (input: DespesaUnicaCreditoInput) => Promise<void>
   onSalvarParcelada: (input: DespesaParceladaCreditoInput) => Promise<void>
   onSalvarEmAndamento: (input: DespesaEmAndamentoInput) => Promise<void>
+  onSalvarAssinatura: (input: DespesaAssinaturaCreditoInput) => Promise<void>
 }
 
 function parseCentavos(reais: string): number {
@@ -320,19 +332,80 @@ function FormEmAndamento({
   )
 }
 
+function FormAssinatura({
+  cartoes,
+  categorias,
+  onSalvar
+}: {
+  cartoes: Cartao[]
+  categorias: Categoria[]
+  onSalvar: Props['onSalvarAssinatura']
+}) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting }
+  } = useForm<AssinaturaValues>({ resolver: zodResolver(assinaturaSchema) })
+
+  async function onSubmit(values: AssinaturaValues) {
+    await onSalvar({
+      descricao: values.descricao,
+      categoriaId: Number(values.categoriaId),
+      cartaoId: Number(values.cartaoId),
+      valorMensalCentavos: parseCentavos(values.valorReais),
+      dataInicio: values.dataInicio
+    })
+    reset()
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className={styles.formInner}>
+      <CamposComuns register={register} errors={errors} cartoes={cartoes} categorias={categorias} />
+
+      <div className={styles.fieldRow}>
+        <Field label="Valor mensal (R$)" error={errors.valorReais?.message} required>
+          <Input
+            type="text"
+            inputMode="decimal"
+            {...register('valorReais')}
+            placeholder="0,00"
+            error={!!errors.valorReais}
+          />
+        </Field>
+        <Field label="Data de início" error={errors.dataInicio?.message} required>
+          <Input type="date" {...register('dataInicio')} error={!!errors.dataInicio} />
+        </Field>
+      </div>
+
+      <p className={styles.valorParcela}>
+        Serão geradas 12 ocorrências a partir da data de início.
+      </p>
+
+      <div className={styles.formActions}>
+        <Button type="submit" variant="primary" disabled={isSubmitting}>
+          {isSubmitting ? 'Registrando…' : 'Registrar assinatura'}
+        </Button>
+      </div>
+    </form>
+  )
+}
+
 export function DespesaForm({
   cartoes,
   categorias,
   onSalvarUnica,
   onSalvarParcelada,
-  onSalvarEmAndamento
+  onSalvarEmAndamento,
+  onSalvarAssinatura
 }: Props) {
   const [tipo, setTipo] = useState<TipoDespesa>('unica')
 
   const tipoLabels: { value: TipoDespesa; label: string }[] = [
     { value: 'unica', label: 'Única' },
     { value: 'parcelada', label: 'Parcelada' },
-    { value: 'em-andamento', label: 'Em andamento' }
+    { value: 'em-andamento', label: 'Em andamento' },
+    { value: 'assinatura', label: 'Assinatura' }
   ]
 
   return (
@@ -360,6 +433,9 @@ export function DespesaForm({
       )}
       {tipo === 'em-andamento' && (
         <FormEmAndamento cartoes={cartoes} categorias={categorias} onSalvar={onSalvarEmAndamento} />
+      )}
+      {tipo === 'assinatura' && (
+        <FormAssinatura cartoes={cartoes} categorias={categorias} onSalvar={onSalvarAssinatura} />
       )}
     </div>
   )

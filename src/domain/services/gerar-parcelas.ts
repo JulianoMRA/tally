@@ -3,6 +3,7 @@ import {
   calcularReferenciaFaturaDaCompra,
   formatarMesReferencia
 } from './calcular-fatura-da-compra'
+import { proxMesReferencia } from './mes-referencia'
 
 export type ParcelaPlanejada = {
   numero: number
@@ -17,14 +18,6 @@ export type GerarParcelasInput = {
   totalParcelas: number
   parcelaInicial?: number
   valorTotalCentavos: number
-}
-
-function proxMesReferencia(atual: string): string {
-  const [anoStr, mesStr] = atual.split('-')
-  const ano = Number(anoStr)
-  const mes = Number(mesStr)
-  if (mes === 12) return `${ano + 1}-01`
-  return `${ano}-${String(mes + 1).padStart(2, '0')}`
 }
 
 function distribuirCentavos(total: number, n: number): number[] {

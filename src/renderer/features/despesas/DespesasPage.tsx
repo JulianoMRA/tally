@@ -2,7 +2,8 @@ import { useState } from 'react'
 import type {
   DespesaUnicaCreditoInput,
   DespesaParceladaCreditoInput,
-  DespesaEmAndamentoInput
+  DespesaEmAndamentoInput,
+  DespesaAssinaturaCreditoInput
 } from '@shared/ipc/despesa'
 import { DespesaForm } from './DespesaForm'
 import { useCartoesAtivos } from './hooks/use-cartoes-ativos'
@@ -56,6 +57,18 @@ export default function DespesasPage() {
     })
   }
 
+  async function handleSalvarAssinatura(input: DespesaAssinaturaCreditoInput) {
+    const resultado = await window.api.despesa.criarAssinaturaCredito(input)
+    const cartao = cartoes.find((c) => c.id === input.cartaoId)
+    const primeira = resultado.parcelas[0]
+    setUltimaRegistrada({
+      descricao: resultado.despesa.descricao,
+      mesReferencia: primeira?.dataReferencia ?? '—',
+      cartaoNome: cartao?.nome ?? String(input.cartaoId),
+      parcelas: resultado.parcelas.length
+    })
+  }
+
   const loading = loadingCartoes || loadingCategorias
 
   return (
@@ -81,6 +94,7 @@ export default function DespesasPage() {
             onSalvarUnica={handleSalvarUnica}
             onSalvarParcelada={handleSalvarParcelada}
             onSalvarEmAndamento={handleSalvarEmAndamento}
+            onSalvarAssinatura={handleSalvarAssinatura}
           />
         )}
       </div>

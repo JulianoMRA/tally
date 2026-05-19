@@ -6,6 +6,10 @@ import {
   despesaUnicaCreditoInputSchema,
   despesaParceladaCreditoInputSchema,
   despesaEmAndamentoInputSchema,
+  despesaAssinaturaCreditoInputSchema,
+  cancelarAssinaturaInputSchema,
+  reajustarAssinaturaInputSchema,
+  listarAssinaturasInputSchema,
   adiantarParcelasInputSchema,
   cancelarPendentesInputSchema,
   DESPESA_IPC_CHANNELS
@@ -38,5 +42,28 @@ export function registerDespesaHandlers(db: Database, ipcMain: IpcMain): void {
   ipcMain.handle(DESPESA_IPC_CHANNELS.cancelarPendentes, (_event, payload: unknown) => {
     const { despesaId } = cancelarPendentesInputSchema.parse(payload)
     return parcelaRepo.cancelarPendentes(despesaId)
+  })
+
+  ipcMain.handle(DESPESA_IPC_CHANNELS.criarAssinaturaCredito, (_event, payload: unknown) => {
+    const input = despesaAssinaturaCreditoInputSchema.parse(payload)
+    return repo.criarAssinaturaCredito(input)
+  })
+
+  ipcMain.handle(DESPESA_IPC_CHANNELS.cancelarAssinatura, (_event, payload: unknown) => {
+    const { despesaId } = cancelarAssinaturaInputSchema.parse(payload)
+    return repo.cancelarAssinatura(despesaId)
+  })
+
+  ipcMain.handle(
+    DESPESA_IPC_CHANNELS.reajustarValorMensalAssinatura,
+    (_event, payload: unknown) => {
+      const { despesaId, novoValorCentavos } = reajustarAssinaturaInputSchema.parse(payload)
+      return repo.reajustarValorMensalAssinatura(despesaId, novoValorCentavos)
+    }
+  )
+
+  ipcMain.handle(DESPESA_IPC_CHANNELS.listarAssinaturas, (_event, payload: unknown) => {
+    const filtro = listarAssinaturasInputSchema.parse(payload ?? {})
+    return repo.listarAssinaturas(filtro)
   })
 }
