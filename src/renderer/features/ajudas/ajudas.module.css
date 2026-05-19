@@ -1,0 +1,182 @@
+.body {
+  padding: 0 32px 32px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.grupos {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 880px;
+}
+
+.grupo {
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  padding: 0;
+  overflow: hidden;
+  box-shadow: var(--shadow-1);
+}
+
+.grupoHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--bg-sunk);
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.grupoTitle {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nome {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.meta {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+}
+
+.totais {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.totalLabel {
+  font-size: 10px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.totalValor {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tabela th {
+  text-align: left;
+  padding: 8px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tabela td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink);
+}
+
+.tabela tr:last-child td {
+  border-bottom: none;
+}
+
+.colValor {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.colAcoes {
+  text-align: right;
+  width: 200px;
+}
+
+.recebidaInfo {
+  font-size: 11px;
+  color: var(--income);
+  font-family: var(--font-mono);
+}
+
+.erro {
+  font-size: 12px;
+  color: var(--color-danger, #e53e3e);
+  margin: 8px 0;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  padding: 24px;
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: var(--shadow-2);
+}
+
+.modalTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.modalDesc {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.modalActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}

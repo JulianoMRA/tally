@@ -128,6 +128,9 @@ export default function FaturasPage() {
                   refetchFaturas()
                   refetchDetalhe()
                 }}
+                onDetalheAtualizado={() => {
+                  refetchDetalhe()
+                }}
               />
             )}
           </>
