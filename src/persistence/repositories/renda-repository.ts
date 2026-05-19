@@ -1,0 +1,189 @@
+import type { Database } from '../database'
+import type { Renda, TipoRenda } from '../../domain/entities/renda'
+import type { Recebimento } from '../../domain/entities/recebimento'
+import type {
+  CriarRendaAvulsaInput,
+  CriarRendaRecorrenteInput,
+  UpdateRendaInput,
+  ListRendaOptions
+} from '../../shared/ipc/renda'
+import type { Repository } from './types'
+import { gerarRecebimentosRecorrentes } from '../../domain/services/gerar-recebimentos-recorrentes'
+
+const HORIZONTE_RECEBIMENTOS_MESES = 12
+
+type RendaRow = {
+  id: number
+  nome: string
+  categoria_id: number | null
+  tipo: TipoRenda
+  valor_padrao_centavos: number
+  dia_esperado: number | null
+  ativa: 0 | 1
+  created_at: string
+  updated_at: string
+}
+
+function mapRow(row: RendaRow): Renda {
+  return {
+    id: row.id,
+    nome: row.nome,
+    categoriaId: row.categoria_id,
+    tipo: row.tipo,
+    valorPadraoCentavos: row.valor_padrao_centavos,
+    diaEsperado: row.dia_esperado,
+    ativa: row.ativa === 1,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }
+}
+
+type RecebimentoRow = {
+  id: number
+  renda_id: number | null
+  valor_centavos: number
+  data_esperada: string
+  data_recebida: string | null
+  status: 'Esperado' | 'Recebido'
+  created_at: string
+  updated_at: string
+}
+
+function mapRecebimentoRow(row: RecebimentoRow): Recebimento {
+  return {
+    id: row.id,
+    rendaId: row.renda_id,
+    valorCentavos: row.valor_centavos,
+    dataEsperada: row.data_esperada,
+    dataRecebida: row.data_recebida,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }
+}
+
+export type ResultadoCriarRecorrente = {
+  renda: Renda
+  recebimentos: Recebimento[]
+}
+
+export class RendaRepository implements Repository {
+  constructor(public readonly db: Database) {}
+
+  findById(id: number): Renda | null {
+    const row = this.db.prepare('SELECT * FROM renda WHERE id = ?').get(id) as RendaRow | undefined
+    return row ? mapRow(row) : null
+  }
+
+  list(options?: ListRendaOptions): Renda[] {
+    const incluirArquivadas = options?.incluirArquivadas ?? false
+    const sql = incluirArquivadas
+      ? 'SELECT * FROM renda ORDER BY ativa DESC, nome ASC'
+      : 'SELECT * FROM renda WHERE ativa = 1 ORDER BY nome ASC'
+    const rows = this.db.prepare(sql).all() as RendaRow[]
+    return rows.map(mapRow)
+  }
+
+  criarAvulsa(input: CriarRendaAvulsaInput): Renda {
+    const info = this.db
+      .prepare(
+        `INSERT INTO renda (nome, categoria_id, tipo, valor_padrao_centavos, dia_esperado)
+         VALUES (?, ?, 'Avulsa', ?, NULL)`
+      )
+      .run(input.nome, input.categoriaId ?? null, input.valorPadraoCentavos)
+    const renda = this.findById(Number(info.lastInsertRowid))
+    if (!renda) throw new Error('Falha ao recuperar renda após criar')
+    return renda
+  }
+
+  criarRecorrente(input: CriarRendaRecorrenteInput): ResultadoCriarRecorrente {
+    const planejados = gerarRecebimentosRecorrentes({
+      dataInicio: input.dataInicio,
+      valorPadraoCentavos: input.valorPadraoCentavos,
+      diaEsperado: input.diaEsperado,
+      quantidade: HORIZONTE_RECEBIMENTOS_MESES
+    })
+
+    return this.db.transaction(() => {
+      const info = this.db
+        .prepare(
+          `INSERT INTO renda (nome, categoria_id, tipo, valor_padrao_centavos, dia_esperado)
+           VALUES (?, ?, 'Recorrente', ?, ?)`
+        )
+        .run(input.nome, input.categoriaId ?? null, input.valorPadraoCentavos, input.diaEsperado)
+
+      const renda = this.findById(Number(info.lastInsertRowid))
+      if (!renda) throw new Error('Falha ao recuperar renda após criar')
+
+      const insert = this.db.prepare(
+        `INSERT INTO recebimento (renda_id, valor_centavos, data_esperada, status)
+         VALUES (?, ?, ?, 'Esperado')`
+      )
+      const recebimentos: Recebimento[] = []
+      for (const p of planejados) {
+        const r = insert.run(renda.id, p.valorCentavos, p.dataEsperada)
+        const row = this.db
+          .prepare('SELECT * FROM recebimento WHERE id = ?')
+          .get(Number(r.lastInsertRowid)) as RecebimentoRow
+        recebimentos.push(mapRecebimentoRow(row))
+      }
+
+      return { renda, recebimentos }
+    })()
+  }
+
+  update(id: number, input: UpdateRendaInput): Renda {
+    const existente = this.findById(id)
+    if (!existente) throw new Error(`Renda #${id} não encontrada`)
+
+    return this.db.transaction(() => {
+      this.db
+        .prepare(
+          `UPDATE renda
+           SET nome = ?, categoria_id = ?, valor_padrao_centavos = ?, updated_at = CURRENT_TIMESTAMP
+           WHERE id = ?`
+        )
+        .run(input.nome, input.categoriaId ?? null, input.valorPadraoCentavos, id)
+
+      // RF-REN-05: reajuste do valor padrão afeta recebimentos futuros ainda Esperado
+      if (
+        existente.tipo === 'Recorrente' &&
+        existente.valorPadraoCentavos !== input.valorPadraoCentavos
+      ) {
+        this.db
+          .prepare(
+            `UPDATE recebimento
+             SET valor_centavos = ?, updated_at = CURRENT_TIMESTAMP
+             WHERE renda_id = ? AND status = 'Esperado'`
+          )
+          .run(input.valorPadraoCentavos, id)
+      }
+
+      const atualizada = this.findById(id)
+      if (!atualizada) throw new Error(`Falha ao recuperar renda #${id} após update`)
+      return atualizada
+    })()
+  }
+
+  arquivar(id: number): Renda {
+    return this.db.transaction(() => {
+      // Apaga recebimentos futuros Esperado, preserva Recebido (histórico)
+      this.db.prepare(`DELETE FROM recebimento WHERE renda_id = ? AND status = 'Esperado'`).run(id)
+      this.db
+        .prepare('UPDATE renda SET ativa = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+        .run(id)
+      const renda = this.findById(id)
+      if (!renda) throw new Error(`Renda #${id} não encontrada`)
+      return renda
+    })()
+  }
+
+  desarquivar(id: number): Renda {
+    this.db
+      .prepare('UPDATE renda SET ativa = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .run(id)
+    const renda = this.findById(id)
+    if (!renda) throw new Error(`Renda #${id} não encontrada`)
+    return renda
+  }
+}
