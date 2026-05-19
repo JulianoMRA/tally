@@ -57,6 +57,21 @@ export type ResultadoCriarDespesa = {
   parcela: Parcela
 }
 
+export type FormaPagamentoForaCartao = 'Debito' | 'Pix' | 'Dinheiro'
+
+export type CriarDespesaUnicaForaCartaoInput = {
+  descricao: string
+  categoriaId: number
+  formaPagamento: FormaPagamentoForaCartao
+  valorCentavos: number
+  dataCompra: string
+}
+
+export type ResultadoCriarUnicaForaCartao = {
+  despesa: Despesa
+  parcela: Parcela
+}
+
 export type CriarDespesaParceladaCreditoInput = {
   descricao: string
   categoriaId: number
@@ -415,6 +430,55 @@ export class DespesaRepository implements Repository {
 
       return { despesa: mapRow(atualizadaRow), atualizadas }
     })()
+  }
+
+  criarUnicaForaCartao(input: CriarDespesaUnicaForaCartaoInput): ResultadoCriarUnicaForaCartao {
+    const parcelaRepo = new ParcelaRepository(this.db)
+
+    return this.db.transaction(() => {
+      const info = this.db
+        .prepare(
+          `INSERT INTO despesa (descricao, categoria_id, tipo, forma_pagamento, cartao_id, valor_centavos, total_parcelas, data_compra)
+           VALUES (?, ?, 'Unica', ?, NULL, ?, 1, ?)`
+        )
+        .run(
+          input.descricao,
+          input.categoriaId,
+          input.formaPagamento,
+          input.valorCentavos,
+          input.dataCompra
+        )
+
+      const despesaRow = this.db
+        .prepare('SELECT * FROM despesa WHERE id = ?')
+        .get(Number(info.lastInsertRowid)) as DespesaRow | undefined
+      if (!despesaRow) throw new Error('Falha ao recuperar despesa após criar')
+      const despesa = mapRow(despesaRow)
+
+      const parcela = parcelaRepo.criar({
+        despesaId: despesa.id,
+        faturaId: null,
+        numero: 1,
+        total: 1,
+        valorCentavos: input.valorCentavos,
+        dataReferencia: input.dataCompra
+      })
+
+      return { despesa, parcela }
+    })()
+  }
+
+  listarGastosForaCartao(filtro?: { mesReferencia?: string }): Despesa[] {
+    let sql =
+      "SELECT * FROM despesa WHERE tipo = 'Unica' AND forma_pagamento != 'Credito' AND ativa = 1"
+    const params: unknown[] = []
+    if (filtro?.mesReferencia) {
+      sql += ' AND substr(data_compra, 1, 7) = ?'
+      params.push(filtro.mesReferencia)
+    }
+    sql += ' ORDER BY data_compra DESC, id DESC'
+    const rows = this.db.prepare(sql).all(...params) as DespesaRow[]
+    return rows.map(mapRow)
   }
 
   listarAssinaturas(filtro?: { ativa?: boolean }): Despesa[] {

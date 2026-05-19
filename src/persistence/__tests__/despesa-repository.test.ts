@@ -546,3 +546,201 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
     })
   })
 })
+
+describe('DespesaRepository — fora de cartão (RF-DES-01)', () => {
+  let db: Database
+  let repo: DespesaRepository
+  let parcelaRepo: ParcelaRepository
+  let catId: number
+
+  beforeEach(() => {
+    db = openInMemoryDatabase()
+    runMigrations(db)
+    repo = new DespesaRepository(db)
+    parcelaRepo = new ParcelaRepository(db)
+    catId = inserirCategoria(db)
+  })
+
+  describe('criarUnicaForaCartao', () => {
+    it('persiste despesa Pix com cartao_id=NULL e parcela 1/1 com fatura_id=NULL', () => {
+      const r = repo.criarUnicaForaCartao({
+        descricao: 'Mercado',
+        categoriaId: catId,
+        formaPagamento: 'Pix',
+        valorCentavos: 3500,
+        dataCompra: '2026-06-10'
+      })
+
+      expect(r.despesa.tipo).toBe('Unica')
+      expect(r.despesa.formaPagamento).toBe('Pix')
+      expect(r.despesa.cartaoId).toBeNull()
+      expect(r.despesa.totalParcelas).toBe(1)
+      expect(r.despesa.valorCentavos).toBe(3500)
+      expect(r.despesa.ativa).toBe(true)
+
+      expect(r.parcela.faturaId).toBeNull()
+      expect(r.parcela.numero).toBe(1)
+      expect(r.parcela.total).toBe(1)
+      expect(r.parcela.valorCentavos).toBe(3500)
+      expect(r.parcela.dataReferencia).toBe('2026-06-10')
+      expect(r.parcela.status).toBe('Pendente')
+    })
+
+    it('aceita Débito e Dinheiro também', () => {
+      const r1 = repo.criarUnicaForaCartao({
+        descricao: 'Débito',
+        categoriaId: catId,
+        formaPagamento: 'Debito',
+        valorCentavos: 1000,
+        dataCompra: '2026-06-10'
+      })
+      const r2 = repo.criarUnicaForaCartao({
+        descricao: 'Cash',
+        categoriaId: catId,
+        formaPagamento: 'Dinheiro',
+        valorCentavos: 500,
+        dataCompra: '2026-06-10'
+      })
+
+      expect(r1.despesa.formaPagamento).toBe('Debito')
+      expect(r2.despesa.formaPagamento).toBe('Dinheiro')
+    })
+
+    it('não cria fatura — apenas despesa + parcela', () => {
+      repo.criarUnicaForaCartao({
+        descricao: 'Pix',
+        categoriaId: catId,
+        formaPagamento: 'Pix',
+        valorCentavos: 1000,
+        dataCompra: '2026-06-10'
+      })
+
+      const faturas = db.prepare('SELECT count(*) as n FROM fatura').get() as { n: number }
+      expect(faturas.n).toBe(0)
+    })
+
+    it('CHECK do schema rejeita Crédito sem cartão', () => {
+      expect(() =>
+        db
+          .prepare(
+            `INSERT INTO despesa (descricao, categoria_id, tipo, forma_pagamento, cartao_id, valor_centavos, total_parcelas, data_compra)
+             VALUES ('X', ?, 'Unica', 'Credito', NULL, 1000, 1, '2026-06-10')`
+          )
+          .run(catId)
+      ).toThrow()
+    })
+
+    it('CHECK do schema rejeita Pix com cartão', () => {
+      const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+      expect(() =>
+        db
+          .prepare(
+            `INSERT INTO despesa (descricao, categoria_id, tipo, forma_pagamento, cartao_id, valor_centavos, total_parcelas, data_compra)
+             VALUES ('X', ?, 'Unica', 'Pix', ?, 1000, 1, '2026-06-10')`
+          )
+          .run(catId, cartaoId)
+      ).toThrow()
+    })
+
+    it('é atômica — categoria inexistente reverte tudo', () => {
+      expect(() =>
+        repo.criarUnicaForaCartao({
+          descricao: 'X',
+          categoriaId: 9999,
+          formaPagamento: 'Pix',
+          valorCentavos: 1000,
+          dataCompra: '2026-06-10'
+        })
+      ).toThrow()
+
+      const n = (db.prepare('SELECT count(*) as n FROM despesa').get() as { n: number }).n
+      expect(n).toBe(0)
+      const np = (db.prepare('SELECT count(*) as n FROM parcela').get() as { n: number }).n
+      expect(np).toBe(0)
+    })
+  })
+
+  describe('listarGastosForaCartao', () => {
+    it('retorna apenas despesas fora de cartão', () => {
+      const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+      repo.criarUnicaCredito({
+        descricao: 'Compra crédito',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 2000,
+        dataCompra: '2026-06-10'
+      })
+      repo.criarUnicaForaCartao({
+        descricao: 'Pix mercado',
+        categoriaId: catId,
+        formaPagamento: 'Pix',
+        valorCentavos: 3500,
+        dataCompra: '2026-06-10'
+      })
+
+      const lista = repo.listarGastosForaCartao()
+      expect(lista).toHaveLength(1)
+      expect(lista[0].descricao).toBe('Pix mercado')
+    })
+
+    it('filtra por mês de referência (YYYY-MM)', () => {
+      repo.criarUnicaForaCartao({
+        descricao: 'Junho',
+        categoriaId: catId,
+        formaPagamento: 'Pix',
+        valorCentavos: 1000,
+        dataCompra: '2026-06-10'
+      })
+      repo.criarUnicaForaCartao({
+        descricao: 'Julho',
+        categoriaId: catId,
+        formaPagamento: 'Pix',
+        valorCentavos: 2000,
+        dataCompra: '2026-07-15'
+      })
+
+      const junho = repo.listarGastosForaCartao({ mesReferencia: '2026-06' })
+      expect(junho).toHaveLength(1)
+      expect(junho[0].descricao).toBe('Junho')
+
+      const julho = repo.listarGastosForaCartao({ mesReferencia: '2026-07' })
+      expect(julho.map((g) => g.descricao)).toEqual(['Julho'])
+
+      const agosto = repo.listarGastosForaCartao({ mesReferencia: '2026-08' })
+      expect(agosto).toHaveLength(0)
+    })
+
+    it('ordena por data_compra desc', () => {
+      repo.criarUnicaForaCartao({
+        descricao: 'A',
+        categoriaId: catId,
+        formaPagamento: 'Pix',
+        valorCentavos: 1000,
+        dataCompra: '2026-06-05'
+      })
+      repo.criarUnicaForaCartao({
+        descricao: 'B',
+        categoriaId: catId,
+        formaPagamento: 'Pix',
+        valorCentavos: 1000,
+        dataCompra: '2026-06-20'
+      })
+
+      const lista = repo.listarGastosForaCartao({ mesReferencia: '2026-06' })
+      expect(lista.map((g) => g.descricao)).toEqual(['B', 'A'])
+    })
+  })
+
+  it('ParcelaRepository.criar aceita faturaId=null', () => {
+    const r = repo.criarUnicaForaCartao({
+      descricao: 'Smoke',
+      categoriaId: catId,
+      formaPagamento: 'Pix',
+      valorCentavos: 1000,
+      dataCompra: '2026-06-10'
+    })
+    const parcelas = parcelaRepo.listarPorDespesa(r.despesa.id)
+    expect(parcelas).toHaveLength(1)
+    expect(parcelas[0].faturaId).toBeNull()
+  })
+})
