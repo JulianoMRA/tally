@@ -1,0 +1,137 @@
+.body {
+  padding: 0 32px 32px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.toolbarLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 760px;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 12px 1fr auto 90px 96px;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-1);
+}
+
+.chip {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chipPix {
+  background: var(--income, #2f9e44);
+}
+
+.chipDebito {
+  background: #3b82f6;
+}
+
+.chipDinheiro {
+  background: var(--ink-muted, #9ca3af);
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.descricao {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+}
+
+.forma {
+  font-size: 11px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.valor {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.data {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  text-align: right;
+}
+
+.totalRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  margin-top: 8px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  max-width: 760px;
+}
+
+.totalLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+}
+
+.totalValor {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.erro {
+  font-size: 12px;
+  color: var(--color-danger, #e53e3e);
+  margin: 8px 0;
+}
