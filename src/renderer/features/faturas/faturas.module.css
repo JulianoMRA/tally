@@ -210,3 +210,52 @@
   font-weight: 700;
   color: var(--ink);
 }
+
+/* Modal de adiantamento */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  padding: 24px;
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: var(--shadow-2);
+}
+
+.modalTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.modalDesc {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.modalFields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modalActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
