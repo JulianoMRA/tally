@@ -5,7 +5,8 @@ import { z } from 'zod'
 import {
   despesaUnicaCreditoInputSchema,
   despesaParceladaCreditoInputSchema,
-  despesaEmAndamentoInputSchema,
+  despesaEmAndamentoInputBaseSchema,
+  parcelaAtualNaoExcedeTotal,
   type DespesaUnicaCreditoInput,
   type DespesaParceladaCreditoInput,
   type DespesaEmAndamentoInput
@@ -38,9 +39,10 @@ type EmAndamentoValues = Omit<DespesaEmAndamentoInput, 'valorRestanteCentavos'> 
   valorReais: string
 }
 
-const emAndamentoSchema = despesaEmAndamentoInputSchema
+const emAndamentoSchema = despesaEmAndamentoInputBaseSchema
   .omit({ valorRestanteCentavos: true })
   .extend({ valorReais: z.string().regex(/^\d+([.,]\d{1,2})?$/, 'Valor inválido') })
+  .refine(parcelaAtualNaoExcedeTotal.predicate, parcelaAtualNaoExcedeTotal.params)
 
 type Props = {
   cartoes: Cartao[]

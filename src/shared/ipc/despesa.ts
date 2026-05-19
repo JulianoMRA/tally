@@ -59,7 +59,9 @@ export const despesaParceladaCreditoInputSchema = z.object({
 
 export type DespesaParceladaCreditoInput = z.infer<typeof despesaParceladaCreditoInputSchema>
 
-export const despesaEmAndamentoInputSchema = despesaParceladaCreditoInputSchema
+// Objeto base sem refine: pode ser estendido com .omit/.extend pelo renderer.
+// Zod não permite .omit() em ZodEffects (resultado de .refine).
+export const despesaEmAndamentoInputBaseSchema = despesaParceladaCreditoInputSchema
   .omit({ valorTotalCentavos: true })
   .extend({
     parcelaAtual: z.number().int().min(1, 'Parcela atual deve ser >= 1'),
@@ -68,10 +70,20 @@ export const despesaEmAndamentoInputSchema = despesaParceladaCreditoInputSchema
       .int()
       .min(1, 'Valor deve ser maior que zero')
   })
-  .refine((d) => d.parcelaAtual <= d.totalParcelas, {
+
+export const parcelaAtualNaoExcedeTotal = {
+  predicate: (d: { parcelaAtual: number; totalParcelas: number }): boolean =>
+    d.parcelaAtual <= d.totalParcelas,
+  params: {
     message: 'Parcela atual não pode ser maior que total de parcelas',
-    path: ['parcelaAtual']
-  })
+    path: ['parcelaAtual'] as const
+  }
+}
+
+export const despesaEmAndamentoInputSchema = despesaEmAndamentoInputBaseSchema.refine(
+  parcelaAtualNaoExcedeTotal.predicate,
+  parcelaAtualNaoExcedeTotal.params
+)
 
 export type DespesaEmAndamentoInput = z.infer<typeof despesaEmAndamentoInputSchema>
 
