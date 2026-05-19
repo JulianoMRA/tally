@@ -1,5 +1,8 @@
 import { test, expect, _electron as electron } from '@playwright/test'
-import { join } from 'path'
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 test('opens app window with title Tally', async () => {
   const app = await electron.launch({
