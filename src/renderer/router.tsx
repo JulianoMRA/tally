@@ -10,13 +10,15 @@ import ContribuidoresPage from './features/contribuidores/ContribuidoresPage'
 import AjudasPage from './features/ajudas/AjudasPage'
 import RendasPage from './features/rendas/RendasPage'
 import RecebimentosPage from './features/recebimentos/RecebimentosPage'
+import VisaoMensalPage from './features/visao-mensal/VisaoMensalPage'
 
 export const router = createHashRouter([
   {
     path: '/',
     element: <App />,
     children: [
-      { index: true, element: <Navigate to="/despesas" replace /> },
+      { index: true, element: <Navigate to="/mensal" replace /> },
+      { path: 'mensal', element: <VisaoMensalPage /> },
       { path: 'cartoes', element: <CartoesPage /> },
       { path: 'categorias', element: <CategoriasPage /> },
       { path: 'despesas', element: <DespesasPage /> },

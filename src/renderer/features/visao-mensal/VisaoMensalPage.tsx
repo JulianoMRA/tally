@@ -1,0 +1,269 @@
+import { useState } from 'react'
+import { mesReferenciaAnterior, proxMesReferencia } from '@domain/services/mes-referencia'
+import { PageHead } from '../../components/layout/PageHead'
+import { EmptyState, Field, Input, Panel } from '../../components/ui'
+import { useVisaoMensal } from './hooks/use-visao-mensal'
+import styles from './visao-mensal.module.css'
+
+function formatBRL(centavos: number): string {
+  return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function mesAtual(): string {
+  const hoje = new Date()
+  return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`
+}
+
+function rotuloMes(mes: string): string {
+  const [ano, m] = mes.split('-').map(Number)
+  const data = new Date(ano, m - 1, 1)
+  const formatador = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' })
+  return formatador.format(data)
+}
+
+export default function VisaoMensalPage() {
+  const [mes, setMes] = useState(mesAtual())
+  const { detalhe, loading, erro } = useVisaoMensal(mes)
+
+  function irAnterior() {
+    setMes(mesReferenciaAnterior(mes))
+  }
+  function irProximo() {
+    setMes(proxMesReferencia(mes))
+  }
+
+  return (
+    <div>
+      <PageHead title="Visão mensal" subtitle="Faturas, gastos, recebimentos e saldo do mês." />
+
+      <div className={styles.body}>
+        <div className={styles.header}>
+          <button
+            type="button"
+            className={styles.navBtn}
+            onClick={irAnterior}
+            aria-label="Mês anterior"
+          >
+            ←
+          </button>
+          <Field label="Mês">
+            <Input
+              type="month"
+              value={mes}
+              onChange={(e) => setMes(e.target.value)}
+              className={styles.mesInput}
+            />
+          </Field>
+          <button
+            type="button"
+            className={styles.navBtn}
+            onClick={irProximo}
+            aria-label="Próximo mês"
+          >
+            →
+          </button>
+          <span className={styles.mesLabel}>{rotuloMes(mes)}</span>
+        </div>
+
+        {erro && <p className={styles.erro}>{erro}</p>}
+
+        {loading ? (
+          <EmptyState title="Carregando…" />
+        ) : detalhe ? (
+          <>
+            <div className={styles.cards}>
+              <div className={styles.card}>
+                <span className={styles.cardLabel}>Entradas</span>
+                <span className={`${styles.cardValor} ${styles.cardValorIncome}`}>
+                  {formatBRL(detalhe.totais.totalEntradasProjetadasCentavos)}
+                </span>
+                <span className={styles.cardMeta}>
+                  {formatBRL(detalhe.totais.totalEntradasRecebidasCentavos)} recebidas
+                </span>
+              </div>
+
+              <div className={styles.card}>
+                <span className={styles.cardLabel}>Faturas (líquido)</span>
+                <span className={`${styles.cardValor} ${styles.cardValorExpense}`}>
+                  {formatBRL(detalhe.faturas.reduce((s, f) => s + f.totalLiquidoCentavos, 0))}
+                </span>
+                <span className={styles.cardMeta}>
+                  {detalhe.faturas.length} cartão{detalhe.faturas.length !== 1 ? 'ões' : ''}
+                </span>
+              </div>
+
+              <div className={styles.card}>
+                <span className={styles.cardLabel}>Gastos fora de cartão</span>
+                <span className={`${styles.cardValor} ${styles.cardValorExpense}`}>
+                  {formatBRL(detalhe.gastosForaCartao.reduce((s, g) => s + g.valorCentavos, 0))}
+                </span>
+                <span className={styles.cardMeta}>
+                  {detalhe.gastosForaCartao.length} lançamento
+                  {detalhe.gastosForaCartao.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+
+              <div className={styles.card}>
+                <span className={styles.cardLabel}>A receber em ajudas</span>
+                <span className={styles.cardValor}>
+                  {formatBRL(
+                    detalhe.ajudasPendentes.reduce((s, a) => s + a.totalPendenteCentavos, 0)
+                  )}
+                </span>
+                <span className={styles.cardMeta}>
+                  {detalhe.ajudasPendentes.length === 0
+                    ? 'nenhum contribuidor pendente'
+                    : detalhe.ajudasPendentes.map((a) => a.contribuidorNome).join(' · ')}
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.saldoCard}>
+              <div>
+                <div className={styles.saldoLabel}>Saldo do mês</div>
+                <div className={styles.saldoSub}>
+                  Realizado{' '}
+                  <span
+                    className={
+                      detalhe.totais.saldoRealizadoCentavos >= 0 ? styles.positivo : styles.negativo
+                    }
+                  >
+                    {formatBRL(detalhe.totais.saldoRealizadoCentavos)}
+                  </span>
+                </div>
+              </div>
+              <div
+                className={`${styles.saldoBig} ${
+                  detalhe.totais.saldoProjetadoCentavos >= 0 ? styles.positivo : styles.negativo
+                }`}
+              >
+                {formatBRL(detalhe.totais.saldoProjetadoCentavos)}
+              </div>
+            </div>
+
+            <Panel
+              title="Faturas"
+              meta={`${detalhe.faturas.length} cartão${detalhe.faturas.length !== 1 ? 'ões' : ''}`}
+              flush
+              className={styles.panel}
+            >
+              {detalhe.faturas.length === 0 ? (
+                <EmptyState title="Nenhuma fatura neste mês." />
+              ) : (
+                <table className={styles.tabela}>
+                  <thead>
+                    <tr>
+                      <th>Cartão</th>
+                      <th>Vencimento</th>
+                      <th className={styles.colValor}>Bruto</th>
+                      <th className={styles.colValor}>Ajudas</th>
+                      <th className={styles.colValor}>Líquido</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detalhe.faturas.map((f) => (
+                      <tr key={f.fatura.id}>
+                        <td>
+                          <span className={styles.cardChip} style={{ background: f.cartaoCor }} />
+                          {f.cartaoNome}
+                        </td>
+                        <td className="mono">{f.fatura.dataVencimento}</td>
+                        <td className={`${styles.colValor} tnum`}>
+                          {formatBRL(f.totalBrutoCentavos)}
+                        </td>
+                        <td className={`${styles.colValor} tnum`}>
+                          {f.totalAjudasCentavos > 0
+                            ? `− ${formatBRL(f.totalAjudasCentavos)}`
+                            : '—'}
+                        </td>
+                        <td className={`${styles.colValor} tnum`}>
+                          <strong>{formatBRL(f.totalLiquidoCentavos)}</strong>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </Panel>
+
+            <Panel
+              title="Recebimentos"
+              meta={`${detalhe.recebimentos.length} entrada${
+                detalhe.recebimentos.length !== 1 ? 's' : ''
+              }`}
+              flush
+              className={styles.panel}
+            >
+              {detalhe.recebimentos.length === 0 ? (
+                <EmptyState title="Nenhum recebimento neste mês." />
+              ) : (
+                <table className={styles.tabela}>
+                  <thead>
+                    <tr>
+                      <th>Fonte</th>
+                      <th>Esperada</th>
+                      <th className={styles.colValor}>Valor</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detalhe.recebimentos.map((r) => (
+                      <tr key={r.id}>
+                        <td>{r.rendaNome ?? '—'}</td>
+                        <td className="mono">{r.dataEsperada}</td>
+                        <td className={`${styles.colValor} tnum`}>{formatBRL(r.valorCentavos)}</td>
+                        <td>
+                          {r.status === 'Recebido' ? (
+                            <span className={styles.recebimentoStatusBadgeRecebido}>
+                              Recebido {r.dataRecebida}
+                            </span>
+                          ) : (
+                            <span className={styles.recebimentoStatusBadgePendente}>Esperado</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </Panel>
+
+            <Panel
+              title="Gastos fora de cartão"
+              meta={`${detalhe.gastosForaCartao.length} lançamento${
+                detalhe.gastosForaCartao.length !== 1 ? 's' : ''
+              }`}
+              flush
+              className={styles.panel}
+            >
+              {detalhe.gastosForaCartao.length === 0 ? (
+                <EmptyState title="Nenhum gasto fora de cartão neste mês." />
+              ) : (
+                <table className={styles.tabela}>
+                  <thead>
+                    <tr>
+                      <th>Descrição</th>
+                      <th>Forma</th>
+                      <th>Data</th>
+                      <th className={styles.colValor}>Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detalhe.gastosForaCartao.map((g) => (
+                      <tr key={g.id}>
+                        <td>{g.descricao}</td>
+                        <td className="mono">{g.formaPagamento}</td>
+                        <td className="mono">{g.dataCompra}</td>
+                        <td className={`${styles.colValor} tnum`}>{formatBRL(g.valorCentavos)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </Panel>
+          </>
+        ) : null}
+      </div>
+    </div>
+  )
+}

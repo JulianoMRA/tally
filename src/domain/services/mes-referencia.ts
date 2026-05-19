@@ -10,6 +10,18 @@ export function proxMesReferencia(atual: string): string {
   return `${ano}-${String(mes + 1).padStart(2, '0')}`
 }
 
+/**
+ * Retrocede um mês de referência no formato "YYYY-MM".
+ * Ex.: "2026-01" → "2025-12"; "2026-06" → "2026-05".
+ */
+export function mesReferenciaAnterior(atual: string): string {
+  const [anoStr, mesStr] = atual.split('-')
+  const ano = Number(anoStr)
+  const mes = Number(mesStr)
+  if (mes === 1) return `${ano - 1}-12`
+  return `${ano}-${String(mes - 1).padStart(2, '0')}`
+}
+
 export function diasNoMes(ano: number, mes: number): number {
   if (mes === 2) {
     const bissexto = (ano % 4 === 0 && ano % 100 !== 0) || ano % 400 === 0
