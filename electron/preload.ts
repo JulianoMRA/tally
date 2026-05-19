@@ -4,7 +4,13 @@ import type { CartaoInput, ListCartaoOptions } from '@shared/ipc/cartao'
 import { CATEGORIA_IPC_CHANNELS } from '@shared/ipc/categoria'
 import type { CategoriaInput, ListCategoriaOptions } from '@shared/ipc/categoria'
 import { DESPESA_IPC_CHANNELS } from '@shared/ipc/despesa'
-import type { DespesaUnicaCreditoInput } from '@shared/ipc/despesa'
+import type {
+  DespesaUnicaCreditoInput,
+  DespesaParceladaCreditoInput,
+  DespesaEmAndamentoInput,
+  AdiantarParcelasInput,
+  CancelarPendentesInput
+} from '@shared/ipc/despesa'
 import { FATURA_IPC_CHANNELS } from '@shared/ipc/fatura'
 
 contextBridge.exposeInMainWorld('api', {
@@ -29,7 +35,15 @@ contextBridge.exposeInMainWorld('api', {
   },
   despesa: {
     criarUnicaCredito: (input: DespesaUnicaCreditoInput) =>
-      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.criarUnicaCredito, input)
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.criarUnicaCredito, input),
+    criarParceladaCredito: (input: DespesaParceladaCreditoInput) =>
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.criarParceladaCredito, input),
+    criarParceladaEmAndamento: (input: DespesaEmAndamentoInput) =>
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.criarParceladaEmAndamento, input),
+    adiantarParcelas: (input: AdiantarParcelasInput) =>
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.adiantarParcelas, input),
+    cancelarPendentes: (input: CancelarPendentesInput) =>
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.cancelarPendentes, input)
   },
   fatura: {
     listarPorCartao: (cartaoId: number) =>
