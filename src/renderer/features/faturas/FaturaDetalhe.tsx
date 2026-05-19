@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Fatura } from '@domain/entities/fatura'
 import type { FaturaDetalhada } from '@shared/ipc/fatura'
 import { useCicloFatura } from './hooks/use-faturas'
+import { AdiantarParcelasModal } from './AdiantarParcelasModal'
 import { Badge, Button, Panel, EmptyState, Field, Input } from '../../components/ui'
 import styles from './faturas.module.css'
 
@@ -39,8 +40,16 @@ export function FaturaDetalhe({
 
   const [modoPagar, setModoPagar] = useState(false)
   const [dataPagamento, setDataPagamento] = useState(dataHoje)
+  const [modoAdiantar, setModoAdiantar] = useState(false)
 
   const ciclo = useCicloFatura(onFaturaAtualizada)
+
+  async function handleAdiantar(despesaId: number, quantidade: number) {
+    await window.api.despesa.adiantarParcelas({ despesaId, quantidade, faturaDestinoId: fatura.id })
+    setModoAdiantar(false)
+    const atualizada = await window.api.fatura.detalharComParcelas(fatura.id)
+    if (atualizada) onFaturaAtualizada(atualizada.fatura)
+  }
 
   function handleFechar() {
     if (!window.confirm('Fechar esta fatura? Novas parcelas não poderão ser adicionadas.')) return
@@ -80,9 +89,19 @@ export function FaturaDetalhe({
 
       <div className={styles.cicloActions}>
         {kind === 'Aberta' && (
-          <Button variant="secondary" size="sm" onClick={handleFechar} disabled={ciclo.loading}>
-            Fechar fatura
-          </Button>
+          <>
+            <Button variant="secondary" size="sm" onClick={handleFechar} disabled={ciclo.loading}>
+              Fechar fatura
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setModoAdiantar(true)}
+              disabled={ciclo.loading}
+            >
+              Adiantar parcelas
+            </Button>
+          </>
         )}
         {kind === 'Fechada' && !modoPagar && (
           <Button
@@ -128,6 +147,14 @@ export function FaturaDetalhe({
         )}
         {ciclo.erro && <p className={styles.erroAcao}>{ciclo.erro}</p>}
       </div>
+
+      {modoAdiantar && (
+        <AdiantarParcelasModal
+          faturaDestinoId={fatura.id}
+          onConfirmar={handleAdiantar}
+          onCancelar={() => setModoAdiantar(false)}
+        />
+      )}
 
       <Panel
         title="Parcelas"

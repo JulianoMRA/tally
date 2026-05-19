@@ -72,7 +72,7 @@ This project is in active development. The implementation is being delivered in 
 - [x] **Slice 4** — One-shot expenses + statement creation
 - [x] **Slice 4.5** — Visual identity: design system (tokens, Geist font, logo, UI primitives), full app restyle
 - [x] **Slice 5** — Statement lifecycle (Open → Closed → Paid)
-- [ ] **Slice 6** — Installment expenses (new + in-progress migration + advancing parcelas)
+- [x] **Slice 6** — Installment expenses (new + in-progress migration + advancing parcelas + cancel pending)
 - [ ] **Slice 7** — Subscriptions with lazy occurrence generation
 - [ ] **Slice 8** — Off-card expenses (debit, Pix, cash)
 - [ ] **Slice 9** — Contributors and shared expenses with "owe me" dashboard
@@ -85,6 +85,8 @@ This project is in active development. The implementation is being delivered in 
 Each merged slice gets a short progress note in the changelog section below.
 
 ### Changelog
+
+**Slice 6** — Installment expenses (RF-DES-02, RF-DES-03, RF-DES-05, RF-DES-06, RN-02, RN-03). Two pure domain services: `gerarParcelas` (generates N installments using RN-01 per slot, distributes remainder centavos to last parcela) and `selecionarParcelasParaAdiantar` (picks N most-future eligible parcelas for a target statement, filters Fechada/Paga, validates destination). 30 unit tests. `DespesaRepository` gains `criarParceladaCredito` and `criarParceladaEmAndamento` (RF-DES-03: only remaining parcelas K/N..N/N created — no retroactive history). `ParcelaRepository` gains `adiantar` (moves parcelas atomically, returns affected statement ids) and `cancelarPendentes` (deletes only Aberta-statement parcelas, preserves Fechada/Paga). `FaturaRepository` gains `upsertParaMesReferencia` (idempotent upsert by pre-computed reference month, bypasses RN-01). 4 new typed IPC channels + Zod schemas. `DespesaForm` split into three sub-forms (Única/Parcelada/Em andamento) with a segmented type selector; "Parcelada" shows live per-installment value. `FaturaDetalhe` gains an "Adiantar parcelas" button (Aberta only) that opens an `AdiantarParcelasModal`. 193 tests passing, lint and typecheck clean.
 
 **Slice 5** — Statement lifecycle (RF-FAT-02, RF-FAT-04, RF-FAT-05, RN-06). Auto-closes overdue statements on next list call (DB write, not derived state). Domain service `ciclo-fatura` with pure transition functions (`fecharFatura`, `pagarFatura`, `reabrirFatura`, `precisaAutoFechar`) — TDD with 16 unit tests. `FaturaRepository` gains `fecharVencidas`, `fechar`, `pagar`, `reabrir` methods. Three new typed IPC channels. `FaturaDetalhe` shows contextual action buttons per status: "Fechar fatura" (Aberta), inline date form + "Confirmar pagamento" (Fechada), "Reabrir fatura" (Paga) — all with confirmation.
 

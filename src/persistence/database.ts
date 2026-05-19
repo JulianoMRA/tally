@@ -95,6 +95,7 @@ export class Database {
 
 export function openDatabase(path: string): Database {
   const db = new Database(path)
+  db.pragma('busy_timeout = 5000')
   db.pragma('foreign_keys = ON')
   return db
 }
