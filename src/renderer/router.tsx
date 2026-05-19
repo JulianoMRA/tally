@@ -6,6 +6,7 @@ import DespesasPage from './features/despesas/DespesasPage'
 import FaturasPage from './features/faturas/FaturasPage'
 import AssinaturasPage from './features/assinaturas/AssinaturasPage'
 import GastosPage from './features/gastos/GastosPage'
+import ContribuidoresPage from './features/contribuidores/ContribuidoresPage'
 
 export const router = createHashRouter([
   {
@@ -18,7 +19,8 @@ export const router = createHashRouter([
       { path: 'despesas', element: <DespesasPage /> },
       { path: 'faturas', element: <FaturasPage /> },
       { path: 'assinaturas', element: <AssinaturasPage /> },
-      { path: 'gastos', element: <GastosPage /> }
+      { path: 'gastos', element: <GastosPage /> },
+      { path: 'contribuidores', element: <ContribuidoresPage /> }
     ]
   }
 ])
