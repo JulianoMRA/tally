@@ -297,3 +297,252 @@ describe('DespesaRepository.criarParceladaEmAndamento (RF-DES-03)', () => {
     expect(r.despesa.totalParcelas).toBe(10)
   })
 })
+
+describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-04)', () => {
+  let db: Database
+  let repo: DespesaRepository
+  let parcelaRepo: ParcelaRepository
+  let cartaoId: number
+  let catId: number
+
+  beforeEach(() => {
+    db = openInMemoryDatabase()
+    runMigrations(db)
+    repo = new DespesaRepository(db)
+    parcelaRepo = new ParcelaRepository(db)
+    cartaoId = inserirCartao(db, 'Inter', 5, 12)
+    catId = db
+      .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Streaming', 'Despesa', '#bbb')")
+      .run().lastInsertRowid as number
+  })
+
+  describe('criarAssinaturaCredito', () => {
+    it('persiste despesa com tipo Assinatura, total_parcelas NULL e ativa=true', () => {
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 2190,
+        dataInicio: '2026-06-03'
+      })
+
+      expect(r.despesa.tipo).toBe('Assinatura')
+      expect(r.despesa.totalParcelas).toBeNull()
+      expect(r.despesa.valorCentavos).toBe(2190)
+      expect(r.despesa.ativa).toBe(true)
+      expect(r.despesa.formaPagamento).toBe('Credito')
+    })
+
+    it('gera 12 ocorrências em 12 faturas distintas, todas com total=null', () => {
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 2190,
+        dataInicio: '2026-06-03'
+      })
+
+      expect(r.parcelas).toHaveLength(12)
+      for (const p of r.parcelas) {
+        expect(p.total).toBeNull()
+        expect(p.valorCentavos).toBe(2190)
+      }
+
+      const faturas = r.parcelas.map((p) => p.faturaId)
+      expect(new Set(faturas).size).toBe(12)
+    })
+
+    it('primeira ocorrência usa RN-01 (dia <= fechamento → mês corrente)', () => {
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 1000,
+        dataInicio: '2026-06-03'
+      })
+
+      const primeiraFatura = db
+        .prepare('SELECT mes_referencia FROM fatura WHERE id = ?')
+        .get(r.parcelas[0].faturaId) as { mes_referencia: string }
+      expect(primeiraFatura.mes_referencia).toBe('2026-06')
+    })
+
+    it('é atômica — cartão inexistente reverte tudo', () => {
+      expect(() =>
+        repo.criarAssinaturaCredito({
+          descricao: 'X',
+          categoriaId: catId,
+          cartaoId: 9999,
+          valorMensalCentavos: 1000,
+          dataInicio: '2026-06-03'
+        })
+      ).toThrow()
+
+      const n = (db.prepare('SELECT count(*) as n FROM despesa').get() as { n: number }).n
+      expect(n).toBe(0)
+    })
+  })
+
+  describe('cancelarAssinatura (RF-DES-07)', () => {
+    it('marca despesa como ativa=0 e deleta parcelas em faturas Aberta', () => {
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 2190,
+        dataInicio: '2026-06-03'
+      })
+
+      const cancelamento = repo.cancelarAssinatura(r.despesa.id)
+
+      expect(cancelamento.despesa.ativa).toBe(false)
+      expect(cancelamento.canceladas).toHaveLength(12)
+
+      const restantes = parcelaRepo.listarPorDespesa(r.despesa.id)
+      expect(restantes).toHaveLength(0)
+    })
+
+    it('preserva parcelas em faturas Fechada ou Paga', () => {
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 2190,
+        dataInicio: '2026-06-03'
+      })
+
+      // Marca as duas primeiras faturas como Fechada/Paga manualmente
+      const faturaIds = r.parcelas.map((p) => p.faturaId)
+      db.prepare("UPDATE fatura SET status = 'Fechada' WHERE id = ?").run(faturaIds[0])
+      db.prepare(
+        "UPDATE fatura SET status = 'Paga', data_pagamento = '2026-06-12' WHERE id = ?"
+      ).run(faturaIds[1])
+
+      const cancelamento = repo.cancelarAssinatura(r.despesa.id)
+
+      expect(cancelamento.canceladas).toHaveLength(10)
+      const restantes = parcelaRepo.listarPorDespesa(r.despesa.id)
+      expect(restantes).toHaveLength(2)
+      expect(restantes.map((p) => p.faturaId).sort()).toEqual([faturaIds[0], faturaIds[1]].sort())
+    })
+
+    it('rejeita despesa que não é assinatura', () => {
+      const r = repo.criarUnicaCredito({
+        descricao: 'Compra',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 1000,
+        dataCompra: '2026-06-03'
+      })
+
+      expect(() => repo.cancelarAssinatura(r.despesa.id)).toThrow(/não é uma assinatura/)
+    })
+  })
+
+  describe('reajustarValorMensalAssinatura (RF-DES-08)', () => {
+    it('atualiza valor_centavos da despesa e das parcelas em faturas Aberta', () => {
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 2190,
+        dataInicio: '2026-06-03'
+      })
+
+      const r2 = repo.reajustarValorMensalAssinatura(r.despesa.id, 2490)
+
+      expect(r2.despesa.valorCentavos).toBe(2490)
+      expect(r2.atualizadas).toHaveLength(12)
+
+      const todas = parcelaRepo.listarPorDespesa(r.despesa.id)
+      for (const p of todas) {
+        expect(p.valorCentavos).toBe(2490)
+      }
+    })
+
+    it('não toca em parcelas de faturas Fechada/Paga', () => {
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 2190,
+        dataInicio: '2026-06-03'
+      })
+      const faturaIds = r.parcelas.map((p) => p.faturaId)
+      db.prepare("UPDATE fatura SET status = 'Fechada' WHERE id = ?").run(faturaIds[0])
+
+      repo.reajustarValorMensalAssinatura(r.despesa.id, 2490)
+
+      const todas = parcelaRepo.listarPorDespesa(r.despesa.id)
+      const parcelaFechada = todas.find((p) => p.faturaId === faturaIds[0])!
+      expect(parcelaFechada.valorCentavos).toBe(2190)
+      const parcelaAberta = todas.find((p) => p.faturaId === faturaIds[1])!
+      expect(parcelaAberta.valorCentavos).toBe(2490)
+    })
+
+    it('valor inválido lança erro', () => {
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 2190,
+        dataInicio: '2026-06-03'
+      })
+
+      expect(() => repo.reajustarValorMensalAssinatura(r.despesa.id, 0)).toThrow()
+      expect(() => repo.reajustarValorMensalAssinatura(r.despesa.id, -100)).toThrow()
+    })
+  })
+
+  describe('listarAssinaturas', () => {
+    it('retorna só despesas tipo Assinatura', () => {
+      repo.criarUnicaCredito({
+        descricao: 'Compra',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 1000,
+        dataCompra: '2026-06-03'
+      })
+      repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 2190,
+        dataInicio: '2026-06-03'
+      })
+
+      const lista = repo.listarAssinaturas()
+      expect(lista).toHaveLength(1)
+      expect(lista[0].descricao).toBe('Spotify')
+    })
+
+    it('filtra por ativa=true exclui canceladas', () => {
+      const r1 = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 2190,
+        dataInicio: '2026-06-03'
+      })
+      repo.criarAssinaturaCredito({
+        descricao: 'Netflix',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 5500,
+        dataInicio: '2026-06-03'
+      })
+      repo.cancelarAssinatura(r1.despesa.id)
+
+      const ativas = repo.listarAssinaturas({ ativa: true })
+      expect(ativas).toHaveLength(1)
+      expect(ativas[0].descricao).toBe('Netflix')
+
+      const canceladas = repo.listarAssinaturas({ ativa: false })
+      expect(canceladas).toHaveLength(1)
+      expect(canceladas[0].descricao).toBe('Spotify')
+
+      const todas = repo.listarAssinaturas()
+      expect(todas).toHaveLength(2)
+    })
+  })
+})
