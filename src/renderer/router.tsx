@@ -8,6 +8,8 @@ import AssinaturasPage from './features/assinaturas/AssinaturasPage'
 import GastosPage from './features/gastos/GastosPage'
 import ContribuidoresPage from './features/contribuidores/ContribuidoresPage'
 import AjudasPage from './features/ajudas/AjudasPage'
+import RendasPage from './features/rendas/RendasPage'
+import RecebimentosPage from './features/recebimentos/RecebimentosPage'
 
 export const router = createHashRouter([
   {
@@ -22,7 +24,9 @@ export const router = createHashRouter([
       { path: 'assinaturas', element: <AssinaturasPage /> },
       { path: 'gastos', element: <GastosPage /> },
       { path: 'contribuidores', element: <ContribuidoresPage /> },
-      { path: 'ajudas', element: <AjudasPage /> }
+      { path: 'ajudas', element: <AjudasPage /> },
+      { path: 'rendas', element: <RendasPage /> },
+      { path: 'recebimentos', element: <RecebimentosPage /> }
     ]
   }
 ])
