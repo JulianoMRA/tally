@@ -5,6 +5,8 @@ export type FaturaDetalhada = {
   fatura: Fatura
   parcelas: Parcela[]
   totalBrutoCentavos: number
+  totalAjudasCentavos: number
+  totalLiquidoCentavos: number
 }
 
 export type FaturaApi = {
