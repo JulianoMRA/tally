@@ -87,6 +87,45 @@ export const despesaEmAndamentoInputSchema = despesaEmAndamentoInputBaseSchema.r
 
 export type DespesaEmAndamentoInput = z.infer<typeof despesaEmAndamentoInputSchema>
 
+export const despesaAssinaturaCreditoInputSchema = z.object({
+  descricao: z
+    .string()
+    .trim()
+    .min(1, 'Descrição é obrigatória')
+    .max(120, 'Descrição deve ter no máximo 120 caracteres'),
+  categoriaId: z
+    .number({ message: 'Categoria é obrigatória' })
+    .int()
+    .positive('Categoria inválida'),
+  cartaoId: z.number({ message: 'Cartão é obrigatório' }).int().positive('Cartão inválido'),
+  valorMensalCentavos: z
+    .number({ message: 'Valor mensal é obrigatório' })
+    .int()
+    .min(1, 'Valor deve ser maior que zero'),
+  dataInicio: dataBRSchema
+})
+
+export type DespesaAssinaturaCreditoInput = z.infer<typeof despesaAssinaturaCreditoInputSchema>
+
+export const cancelarAssinaturaInputSchema = z.object({
+  despesaId: z.number().int().positive()
+})
+
+export type CancelarAssinaturaInput = z.infer<typeof cancelarAssinaturaInputSchema>
+
+export const reajustarAssinaturaInputSchema = z.object({
+  despesaId: z.number().int().positive(),
+  novoValorCentavos: z.number().int().min(1, 'Valor deve ser maior que zero')
+})
+
+export type ReajustarAssinaturaInput = z.infer<typeof reajustarAssinaturaInputSchema>
+
+export const listarAssinaturasInputSchema = z.object({
+  ativa: z.boolean().optional()
+})
+
+export type ListarAssinaturasInput = z.infer<typeof listarAssinaturasInputSchema>
+
 export const adiantarParcelasInputSchema = z.object({
   despesaId: z.number().int().positive(),
   quantidade: z.number().int().min(1, 'Quantidade deve ser >= 1'),
@@ -115,12 +154,35 @@ export type ResultadoCancelamento = {
   canceladas: Parcela[]
 }
 
+export type ResultadoCriarAssinatura = {
+  despesa: Despesa
+  parcelas: Parcela[]
+}
+
+export type ResultadoCancelarAssinatura = {
+  despesa: Despesa
+  canceladas: Parcela[]
+}
+
+export type ResultadoReajusteAssinatura = {
+  despesa: Despesa
+  atualizadas: Parcela[]
+}
+
 export type DespesaApi = {
   criarUnicaCredito: (input: DespesaUnicaCreditoInput) => Promise<ResultadoCriarDespesa>
   criarParceladaCredito: (input: DespesaParceladaCreditoInput) => Promise<ResultadoCriarParcelada>
   criarParceladaEmAndamento: (input: DespesaEmAndamentoInput) => Promise<ResultadoCriarParcelada>
   adiantarParcelas: (input: AdiantarParcelasInput) => Promise<ResultadoAdiantamento>
   cancelarPendentes: (input: CancelarPendentesInput) => Promise<ResultadoCancelamento>
+  criarAssinaturaCredito: (
+    input: DespesaAssinaturaCreditoInput
+  ) => Promise<ResultadoCriarAssinatura>
+  cancelarAssinatura: (input: CancelarAssinaturaInput) => Promise<ResultadoCancelarAssinatura>
+  reajustarValorMensalAssinatura: (
+    input: ReajustarAssinaturaInput
+  ) => Promise<ResultadoReajusteAssinatura>
+  listarAssinaturas: (input?: ListarAssinaturasInput) => Promise<Despesa[]>
 }
 
 export const DESPESA_IPC_CHANNELS = {
@@ -128,5 +190,9 @@ export const DESPESA_IPC_CHANNELS = {
   criarParceladaCredito: 'despesa:criar-parcelada-credito',
   criarParceladaEmAndamento: 'despesa:criar-parcelada-em-andamento',
   adiantarParcelas: 'despesa:adiantar-parcelas',
-  cancelarPendentes: 'despesa:cancelar-pendentes'
+  cancelarPendentes: 'despesa:cancelar-pendentes',
+  criarAssinaturaCredito: 'despesa:criar-assinatura-credito',
+  cancelarAssinatura: 'despesa:cancelar-assinatura',
+  reajustarValorMensalAssinatura: 'despesa:reajustar-valor-mensal-assinatura',
+  listarAssinaturas: 'despesa:listar-assinaturas'
 } as const
