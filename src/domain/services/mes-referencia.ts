@@ -41,3 +41,14 @@ export function clampDiaNoMes(ano: number, mes: number, dia: number): string {
     .toString()
     .padStart(2, '0')}`
 }
+
+/**
+ * Diferença em meses entre dois meses de referência (b − a).
+ * Ex.: diferencaEmMeses('2026-05', '2026-08') === 3
+ *      diferencaEmMeses('2026-08', '2026-05') === -3
+ */
+export function diferencaEmMeses(a: string, b: string): number {
+  const [anoA, mesA] = a.split('-').map(Number)
+  const [anoB, mesB] = b.split('-').map(Number)
+  return (anoB - anoA) * 12 + (mesB - mesA)
+}
