@@ -42,6 +42,8 @@ import type {
   ExcluirRecebimentoInput,
   ListarRecebimentosInput
 } from '@shared/ipc/recebimento'
+import { VISAO_MENSAL_IPC_CHANNELS } from '@shared/ipc/visao-mensal'
+import type { DetalharMesInput } from '@shared/ipc/visao-mensal'
 
 contextBridge.exposeInMainWorld('api', {
   cartao: {
@@ -139,5 +141,9 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke(RECEBIMENTO_IPC_CHANNELS.marcarRecebido, input),
     excluir: (input: ExcluirRecebimentoInput) =>
       ipcRenderer.invoke(RECEBIMENTO_IPC_CHANNELS.excluir, input)
+  },
+  visaoMensal: {
+    detalhar: (input: DetalharMesInput) =>
+      ipcRenderer.invoke(VISAO_MENSAL_IPC_CHANNELS.detalhar, input)
   }
 })
