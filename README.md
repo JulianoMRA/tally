@@ -74,7 +74,7 @@ This project is in active development. The implementation is being delivered in 
 - [x] **Slice 5** — Statement lifecycle (Open → Closed → Paid)
 - [x] **Slice 6** — Installment expenses (new + in-progress migration + advancing parcelas + cancel pending)
 - [x] **Slice 7** — Subscriptions (register, lazy occurrence generation, cancel, monthly value adjustment)
-- [ ] **Slice 8** — Off-card expenses (debit, Pix, cash)
+- [x] **Slice 8** — Off-card expenses (debit, Pix, cash) with month-grouped listing
 - [ ] **Slice 9** — Contributors and shared expenses with "owe me" dashboard
 - [ ] **Slice 10** — Income sources (recurring and one-off)
 - [ ] **Slice 11** — Monthly consolidated view
@@ -85,6 +85,8 @@ This project is in active development. The implementation is being delivered in 
 Each merged slice gets a short progress note in the changelog section below.
 
 ### Changelog
+
+**Slice 8** — Off-card expenses (RF-DES-01, RF-VIS-01 partial). `DespesaRepository.criarUnicaForaCartao` persists Pix/Débito/Dinheiro expenses atomically with `cartao_id = NULL` and a single parcela 1/1 with `fatura_id = NULL` — no statement is generated since RN-01 doesn't apply. `listarGastosForaCartao({ mesReferencia })` queries by calendar month via `substr(data_compra, 1, 7)`. Schema CHECK already enforced the invariant; tests verify both forward (Pix without card) and reverse (Credito without card / Pix with card) cases. Two new typed IPC channels + Zod schemas (`despesaUnicaForaCartaoInputSchema`, `listarGastosForaCartaoInputSchema`). The "Única" tab in `DespesaForm` gains a secondary payment-method selector (Crédito / Pix / Débito / Dinheiro); when non-Crédito, the card field is hidden and a separate `FormUnicaForaCartao` subform routes to the new IPC. `CamposComuns` refactored with a `mostrarCartao` flag instead of duplication. New route `/gastos` with `GastosPage` that takes a `<input type="month">` filter, shows colour-chipped lines (Pix green, Débito blue, Dinheiro neutral) and a month total in the footer. New Sidebar item "Gastos" in the Finanças group between Despesas and Assinaturas. 228 tests passing, lint and typecheck clean.
 
 **Slice 7** — Subscriptions (RF-DES-04, RF-DES-07, RF-DES-08, RN-04). Pure domain service `gerarOcorrenciasAssinatura` generates N monthly occurrences from a start date — uses RN-01 for the first reference month and a shared `proxMesReferencia` helper (extracted from `gerar-parcelas.ts`) for the rest. 13 unit tests cover quantity, year boundary, late-cycle starts, and lazy `ocorrenciaInicial` for Slice 12. `DespesaRepository` gains `criarAssinaturaCredito` (12-month horizon, atomic insert of despesa + 12 faturas + 12 parcelas with `total = NULL`), `cancelarAssinatura` (sets `ativa = 0` and deletes parcelas only in `Aberta` statements, preserving `Fechada`/`Paga` history), `reajustarValorMensalAssinatura` (updates value on pending parcelas in open statements only), and `listarAssinaturas` with an optional `ativa` filter. Four new typed IPC channels + Zod schemas. `DespesaForm` gains a fourth tab "Assinatura" with description, category, card, monthly value and start date. New route `/assinaturas` with `AssinaturasPage` lists active/cancelled subscriptions, exposes a "Reajustar" modal and a "Cancelar" button per row. New Sidebar entry between Despesas and Faturas. 218 tests passing, lint and typecheck clean.
 
