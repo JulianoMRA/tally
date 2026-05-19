@@ -46,6 +46,23 @@ const NAV: NavGroup[] = [
         )
       },
       {
+        to: '/gastos',
+        label: 'Gastos',
+        icon: (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M4 7h16M4 12h16M4 17h10" />
+            <circle cx="18" cy="17" r="2" />
+          </svg>
+        )
+      },
+      {
         to: '/assinaturas',
         label: 'Assinaturas',
         icon: (

@@ -12,6 +12,8 @@ import {
   listarAssinaturasInputSchema,
   adiantarParcelasInputSchema,
   cancelarPendentesInputSchema,
+  despesaUnicaForaCartaoInputSchema,
+  listarGastosForaCartaoInputSchema,
   DESPESA_IPC_CHANNELS
 } from '../../src/shared/ipc/despesa'
 
@@ -65,5 +67,15 @@ export function registerDespesaHandlers(db: Database, ipcMain: IpcMain): void {
   ipcMain.handle(DESPESA_IPC_CHANNELS.listarAssinaturas, (_event, payload: unknown) => {
     const filtro = listarAssinaturasInputSchema.parse(payload ?? {})
     return repo.listarAssinaturas(filtro)
+  })
+
+  ipcMain.handle(DESPESA_IPC_CHANNELS.criarUnicaForaCartao, (_event, payload: unknown) => {
+    const input = despesaUnicaForaCartaoInputSchema.parse(payload)
+    return repo.criarUnicaForaCartao(input)
+  })
+
+  ipcMain.handle(DESPESA_IPC_CHANNELS.listarGastosForaCartao, (_event, payload: unknown) => {
+    const filtro = listarGastosForaCartaoInputSchema.parse(payload ?? {})
+    return repo.listarGastosForaCartao(filtro)
   })
 }

@@ -28,6 +28,37 @@ export const despesaUnicaCreditoInputSchema = z.object({
 
 export type DespesaUnicaCreditoInput = z.infer<typeof despesaUnicaCreditoInputSchema>
 
+export const despesaUnicaForaCartaoInputSchema = z.object({
+  descricao: z
+    .string()
+    .trim()
+    .min(1, 'Descrição é obrigatória')
+    .max(120, 'Descrição deve ter no máximo 120 caracteres'),
+  categoriaId: z
+    .number({ message: 'Categoria é obrigatória' })
+    .int()
+    .positive('Categoria inválida'),
+  formaPagamento: z.enum(['Debito', 'Pix', 'Dinheiro'], {
+    message: 'Forma de pagamento inválida'
+  }),
+  valorCentavos: z
+    .number({ message: 'Valor é obrigatório' })
+    .int()
+    .min(1, 'Valor deve ser maior que zero'),
+  dataCompra: dataBRSchema
+})
+
+export type DespesaUnicaForaCartaoInput = z.infer<typeof despesaUnicaForaCartaoInputSchema>
+
+export const listarGastosForaCartaoInputSchema = z.object({
+  mesReferencia: z
+    .string()
+    .regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Mês deve estar no formato YYYY-MM')
+    .optional()
+})
+
+export type ListarGastosForaCartaoInput = z.infer<typeof listarGastosForaCartaoInputSchema>
+
 export type ResultadoCriarDespesa = {
   despesa: Despesa
   fatura: Fatura
@@ -169,6 +200,11 @@ export type ResultadoReajusteAssinatura = {
   atualizadas: Parcela[]
 }
 
+export type ResultadoCriarUnicaForaCartao = {
+  despesa: Despesa
+  parcela: Parcela
+}
+
 export type DespesaApi = {
   criarUnicaCredito: (input: DespesaUnicaCreditoInput) => Promise<ResultadoCriarDespesa>
   criarParceladaCredito: (input: DespesaParceladaCreditoInput) => Promise<ResultadoCriarParcelada>
@@ -183,6 +219,10 @@ export type DespesaApi = {
     input: ReajustarAssinaturaInput
   ) => Promise<ResultadoReajusteAssinatura>
   listarAssinaturas: (input?: ListarAssinaturasInput) => Promise<Despesa[]>
+  criarUnicaForaCartao: (
+    input: DespesaUnicaForaCartaoInput
+  ) => Promise<ResultadoCriarUnicaForaCartao>
+  listarGastosForaCartao: (input?: ListarGastosForaCartaoInput) => Promise<Despesa[]>
 }
 
 export const DESPESA_IPC_CHANNELS = {
@@ -194,5 +234,7 @@ export const DESPESA_IPC_CHANNELS = {
   criarAssinaturaCredito: 'despesa:criar-assinatura-credito',
   cancelarAssinatura: 'despesa:cancelar-assinatura',
   reajustarValorMensalAssinatura: 'despesa:reajustar-valor-mensal-assinatura',
-  listarAssinaturas: 'despesa:listar-assinaturas'
+  listarAssinaturas: 'despesa:listar-assinaturas',
+  criarUnicaForaCartao: 'despesa:criar-unica-fora-cartao',
+  listarGastosForaCartao: 'despesa:listar-gastos-fora-cartao'
 } as const

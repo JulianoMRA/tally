@@ -13,7 +13,9 @@ import type {
   ReajustarAssinaturaInput,
   ListarAssinaturasInput,
   AdiantarParcelasInput,
-  CancelarPendentesInput
+  CancelarPendentesInput,
+  DespesaUnicaForaCartaoInput,
+  ListarGastosForaCartaoInput
 } from '@shared/ipc/despesa'
 import { FATURA_IPC_CHANNELS } from '@shared/ipc/fatura'
 
@@ -55,7 +57,11 @@ contextBridge.exposeInMainWorld('api', {
     reajustarValorMensalAssinatura: (input: ReajustarAssinaturaInput) =>
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.reajustarValorMensalAssinatura, input),
     listarAssinaturas: (input?: ListarAssinaturasInput) =>
-      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.listarAssinaturas, input ?? {})
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.listarAssinaturas, input ?? {}),
+    criarUnicaForaCartao: (input: DespesaUnicaForaCartaoInput) =>
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.criarUnicaForaCartao, input),
+    listarGastosForaCartao: (input?: ListarGastosForaCartaoInput) =>
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.listarGastosForaCartao, input ?? {})
   },
   fatura: {
     listarPorCartao: (cartaoId: number) =>

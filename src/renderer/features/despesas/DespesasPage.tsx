@@ -3,7 +3,8 @@ import type {
   DespesaUnicaCreditoInput,
   DespesaParceladaCreditoInput,
   DespesaEmAndamentoInput,
-  DespesaAssinaturaCreditoInput
+  DespesaAssinaturaCreditoInput,
+  DespesaUnicaForaCartaoInput
 } from '@shared/ipc/despesa'
 import { DespesaForm } from './DespesaForm'
 import { useCartoesAtivos } from './hooks/use-cartoes-ativos'
@@ -16,6 +17,7 @@ type UltimaRegistrada = {
   mesReferencia: string
   cartaoNome: string
   parcelas?: number
+  formaForaCartao?: 'Pix' | 'Debito' | 'Dinheiro'
 }
 
 export default function DespesasPage() {
@@ -57,6 +59,16 @@ export default function DespesasPage() {
     })
   }
 
+  async function handleSalvarUnicaForaCartao(input: DespesaUnicaForaCartaoInput) {
+    const resultado = await window.api.despesa.criarUnicaForaCartao(input)
+    setUltimaRegistrada({
+      descricao: resultado.despesa.descricao,
+      mesReferencia: resultado.parcela.dataReferencia,
+      cartaoNome: '—',
+      formaForaCartao: input.formaPagamento
+    })
+  }
+
   async function handleSalvarAssinatura(input: DespesaAssinaturaCreditoInput) {
     const resultado = await window.api.despesa.criarAssinaturaCredito(input)
     const cartao = cartoes.find((c) => c.id === input.cartaoId)
@@ -73,17 +85,27 @@ export default function DespesasPage() {
 
   return (
     <div>
-      <PageHead title="Nova despesa" subtitle="Registre um gasto no cartão de crédito." />
+      <PageHead title="Nova despesa" subtitle="Registre um gasto no cartão ou fora dele." />
 
       <div className={styles.body}>
         {ultimaRegistrada && (
           <div className={styles.successBanner}>
             <strong>{ultimaRegistrada.descricao}</strong>
-            {ultimaRegistrada.parcelas
-              ? ` registrada com ${ultimaRegistrada.parcelas} parcelas a partir de `
-              : ' registrada na fatura '}
-            <strong>{ultimaRegistrada.mesReferencia}</strong> · cartão{' '}
-            <strong>{ultimaRegistrada.cartaoNome}</strong>.
+            {ultimaRegistrada.formaForaCartao ? (
+              <>
+                {' '}
+                registrada via <strong>{ultimaRegistrada.formaForaCartao}</strong> em{' '}
+                <strong>{ultimaRegistrada.mesReferencia}</strong>.
+              </>
+            ) : (
+              <>
+                {ultimaRegistrada.parcelas
+                  ? ` registrada com ${ultimaRegistrada.parcelas} parcelas a partir de `
+                  : ' registrada na fatura '}
+                <strong>{ultimaRegistrada.mesReferencia}</strong> · cartão{' '}
+                <strong>{ultimaRegistrada.cartaoNome}</strong>.
+              </>
+            )}
           </div>
         )}
 
@@ -92,6 +114,7 @@ export default function DespesasPage() {
             cartoes={cartoes}
             categorias={categorias}
             onSalvarUnica={handleSalvarUnica}
+            onSalvarUnicaForaCartao={handleSalvarUnicaForaCartao}
             onSalvarParcelada={handleSalvarParcelada}
             onSalvarEmAndamento={handleSalvarEmAndamento}
             onSalvarAssinatura={handleSalvarAssinatura}

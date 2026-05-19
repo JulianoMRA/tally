@@ -7,11 +7,13 @@ import {
   despesaParceladaCreditoInputSchema,
   despesaEmAndamentoInputBaseSchema,
   despesaAssinaturaCreditoInputSchema,
+  despesaUnicaForaCartaoInputSchema,
   parcelaAtualNaoExcedeTotal,
   type DespesaUnicaCreditoInput,
   type DespesaParceladaCreditoInput,
   type DespesaEmAndamentoInput,
-  type DespesaAssinaturaCreditoInput
+  type DespesaAssinaturaCreditoInput,
+  type DespesaUnicaForaCartaoInput
 } from '@shared/ipc/despesa'
 import type { Cartao } from '@domain/entities/cartao'
 import type { Categoria } from '@domain/entities/categoria'
@@ -55,14 +57,26 @@ const assinaturaSchema = despesaAssinaturaCreditoInputSchema
   .omit({ valorMensalCentavos: true })
   .extend({ valorReais: z.string().regex(/^\d+([.,]\d{1,2})?$/, 'Valor inválido') })
 
+// ──── Única fora de cartão ──────────────────────────────────────
+type UnicaForaCartaoValues = Omit<DespesaUnicaForaCartaoInput, 'valorCentavos'> & {
+  valorReais: string
+}
+
+const unicaForaCartaoSchema = despesaUnicaForaCartaoInputSchema
+  .omit({ valorCentavos: true })
+  .extend({ valorReais: z.string().regex(/^\d+([.,]\d{1,2})?$/, 'Valor inválido') })
+
 type Props = {
   cartoes: Cartao[]
   categorias: Categoria[]
   onSalvarUnica: (input: DespesaUnicaCreditoInput) => Promise<void>
+  onSalvarUnicaForaCartao: (input: DespesaUnicaForaCartaoInput) => Promise<void>
   onSalvarParcelada: (input: DespesaParceladaCreditoInput) => Promise<void>
   onSalvarEmAndamento: (input: DespesaEmAndamentoInput) => Promise<void>
   onSalvarAssinatura: (input: DespesaAssinaturaCreditoInput) => Promise<void>
 }
+
+type FormaPagamento = 'Credito' | 'Pix' | 'Debito' | 'Dinheiro'
 
 function parseCentavos(reais: string): number {
   return Math.round(parseFloat(reais.replace(',', '.')) * 100)
@@ -72,12 +86,14 @@ function CamposComuns({
   register,
   errors,
   cartoes,
-  categorias
+  categorias,
+  mostrarCartao = true
 }: {
   register: ReturnType<typeof useForm>['register']
   errors: Record<string, { message?: string } | undefined>
   cartoes: Cartao[]
   categorias: Categoria[]
+  mostrarCartao?: boolean
 }) {
   return (
     <>
@@ -106,22 +122,24 @@ function CamposComuns({
           </Select>
         </Field>
 
-        <Field label="Cartão" error={errors.cartaoId?.message} required>
-          <Select {...register('cartaoId', { valueAsNumber: true })} error={!!errors.cartaoId}>
-            <option value="">Selecione…</option>
-            {cartoes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome}
-              </option>
-            ))}
-          </Select>
-        </Field>
+        {mostrarCartao && (
+          <Field label="Cartão" error={errors.cartaoId?.message} required>
+            <Select {...register('cartaoId', { valueAsNumber: true })} error={!!errors.cartaoId}>
+              <option value="">Selecione…</option>
+              {cartoes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nome}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
       </div>
     </>
   )
 }
 
-function FormUnica({
+function FormUnicaCredito({
   cartoes,
   categorias,
   onSalvar
@@ -173,6 +191,124 @@ function FormUnica({
         </Button>
       </div>
     </form>
+  )
+}
+
+function FormUnicaForaCartao({
+  categorias,
+  formaPagamento,
+  onSalvar
+}: {
+  categorias: Categoria[]
+  formaPagamento: 'Pix' | 'Debito' | 'Dinheiro'
+  onSalvar: Props['onSalvarUnicaForaCartao']
+}) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting }
+  } = useForm<UnicaForaCartaoValues>({
+    resolver: zodResolver(unicaForaCartaoSchema),
+    values: {
+      formaPagamento,
+      descricao: '',
+      categoriaId: 0 as unknown as number,
+      valorReais: '',
+      dataCompra: ''
+    }
+  })
+
+  async function onSubmit(values: UnicaForaCartaoValues) {
+    await onSalvar({
+      descricao: values.descricao,
+      categoriaId: Number(values.categoriaId),
+      formaPagamento,
+      valorCentavos: parseCentavos(values.valorReais),
+      dataCompra: values.dataCompra
+    })
+    reset()
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className={styles.formInner}>
+      <CamposComuns
+        register={register}
+        errors={errors}
+        cartoes={[]}
+        categorias={categorias}
+        mostrarCartao={false}
+      />
+
+      <div className={styles.fieldRow}>
+        <Field label="Valor (R$)" error={errors.valorReais?.message} required>
+          <Input
+            type="text"
+            inputMode="decimal"
+            {...register('valorReais')}
+            placeholder="0,00"
+            error={!!errors.valorReais}
+          />
+        </Field>
+        <Field label="Data da compra" error={errors.dataCompra?.message} required>
+          <Input type="date" {...register('dataCompra')} error={!!errors.dataCompra} />
+        </Field>
+      </div>
+
+      <div className={styles.formActions}>
+        <Button type="submit" variant="primary" disabled={isSubmitting}>
+          {isSubmitting ? 'Registrando…' : `Registrar ${formaPagamento.toLowerCase()}`}
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+function FormUnica({
+  cartoes,
+  categorias,
+  onSalvarCredito,
+  onSalvarForaCartao
+}: {
+  cartoes: Cartao[]
+  categorias: Categoria[]
+  onSalvarCredito: Props['onSalvarUnica']
+  onSalvarForaCartao: Props['onSalvarUnicaForaCartao']
+}) {
+  const [forma, setForma] = useState<FormaPagamento>('Credito')
+
+  const formaLabels: { value: FormaPagamento; label: string }[] = [
+    { value: 'Credito', label: 'Crédito' },
+    { value: 'Pix', label: 'Pix' },
+    { value: 'Debito', label: 'Débito' },
+    { value: 'Dinheiro', label: 'Dinheiro' }
+  ]
+
+  return (
+    <div className={styles.formInner}>
+      <div className={styles.formaSelector}>
+        {formaLabels.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            className={`${styles.formaBtn} ${forma === value ? styles.formaBtnActive : ''}`}
+            onClick={() => setForma(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {forma === 'Credito' ? (
+        <FormUnicaCredito cartoes={cartoes} categorias={categorias} onSalvar={onSalvarCredito} />
+      ) : (
+        <FormUnicaForaCartao
+          categorias={categorias}
+          formaPagamento={forma}
+          onSalvar={onSalvarForaCartao}
+        />
+      )}
+    </div>
   )
 }
 
@@ -395,6 +531,7 @@ export function DespesaForm({
   cartoes,
   categorias,
   onSalvarUnica,
+  onSalvarUnicaForaCartao,
   onSalvarParcelada,
   onSalvarEmAndamento,
   onSalvarAssinatura
@@ -410,7 +547,7 @@ export function DespesaForm({
 
   return (
     <div className={styles.form}>
-      <h2 className={styles.formTitle}>Nova despesa · crédito</h2>
+      <h2 className={styles.formTitle}>Nova despesa</h2>
 
       <div className={styles.tipoSelector}>
         {tipoLabels.map(({ value, label }) => (
@@ -426,7 +563,12 @@ export function DespesaForm({
       </div>
 
       {tipo === 'unica' && (
-        <FormUnica cartoes={cartoes} categorias={categorias} onSalvar={onSalvarUnica} />
+        <FormUnica
+          cartoes={cartoes}
+          categorias={categorias}
+          onSalvarCredito={onSalvarUnica}
+          onSalvarForaCartao={onSalvarUnicaForaCartao}
+        />
       )}
       {tipo === 'parcelada' && (
         <FormParcelada cartoes={cartoes} categorias={categorias} onSalvar={onSalvarParcelada} />
