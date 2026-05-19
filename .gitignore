@@ -51,3 +51,6 @@ CLAUDE_CODE_STRATEGY.md
 HANDOFF.md
 HANDOFF_PROTOCOL.md
 docs/handoffs/
+
+# Notas internas de investigação de bugs (não versionar)
+BUGS-INVESTIGADOS.md
