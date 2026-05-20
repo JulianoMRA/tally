@@ -68,8 +68,8 @@ test.describe('Despesa única + Fatura', () => {
     await expect(page.getByText('1/1')).toBeVisible()
     await expect(page.getByText('R$ 50,00')).toBeVisible()
 
-    // Total bruto
-    await expect(page.getByText(/Total bruto/)).toBeVisible()
+    // Total da fatura
+    await expect(page.getByText(/^Total$/)).toBeVisible()
 
     await app.close()
   })
