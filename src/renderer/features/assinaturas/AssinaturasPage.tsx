@@ -43,6 +43,21 @@ export default function AssinaturasPage() {
     }
   }
 
+  async function handleExcluir(assinatura: Despesa) {
+    const ok = window.confirm(
+      `Excluir definitivamente a assinatura "${assinatura.descricao}" e TODAS as parcelas pendentes? ` +
+        'Esta ação é irreversível. Bloqueia se houver parcela já paga.'
+    )
+    if (!ok) return
+    setAcaoErro(null)
+    try {
+      await window.api.despesa.excluir({ despesaId: assinatura.id })
+      await recarregar()
+    } catch (e) {
+      setAcaoErro(e instanceof Error ? e.message : 'Erro ao excluir assinatura.')
+    }
+  }
+
   async function handleReajustarConfirmar(novoValorCentavos: number) {
     if (!reajustando) return
     await window.api.despesa.reajustarValorMensalAssinatura({
@@ -118,16 +133,21 @@ export default function AssinaturasPage() {
                     variant={a.ativa ? 'active' : 'archived'}
                     label={a.ativa ? 'Ativa' : 'Cancelada'}
                   />
-                  {a.ativa && (
-                    <div className={styles.actions}>
-                      <Button variant="ghost" size="sm" onClick={() => setReajustando(a)}>
-                        Reajustar
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleCancelar(a)}>
-                        Cancelar
-                      </Button>
-                    </div>
-                  )}
+                  <div className={styles.actions}>
+                    {a.ativa && (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={() => setReajustando(a)}>
+                          Reajustar
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleCancelar(a)}>
+                          Cancelar
+                        </Button>
+                      </>
+                    )}
+                    <Button variant="danger" size="sm" onClick={() => handleExcluir(a)}>
+                      Excluir
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>

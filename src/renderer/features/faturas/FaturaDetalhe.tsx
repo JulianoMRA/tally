@@ -60,6 +60,20 @@ export function FaturaDetalhe({
     await recarregarDetalhe()
   }
 
+  async function handleExcluirDespesa(despesaId: number) {
+    const ok = window.confirm(
+      `Excluir a despesa #${despesaId} e TODAS as suas parcelas pendentes? ` +
+        'Esta ação é irreversível. Bloqueia se houver parcela paga.'
+    )
+    if (!ok) return
+    try {
+      await window.api.despesa.excluir({ despesaId })
+      await recarregarDetalhe()
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : 'Erro ao excluir despesa.')
+    }
+  }
+
   function handleFechar() {
     if (!window.confirm('Fechar esta fatura? Novas parcelas não poderão ser adicionadas.')) return
     ciclo.fechar(fatura.id)
@@ -182,6 +196,7 @@ export function FaturaDetalhe({
                   <th>Data</th>
                   <th className={styles.colValor}>Valor</th>
                   <th>Status</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -195,6 +210,21 @@ export function FaturaDetalhe({
                     <td className={`${styles.colValor} tnum`}>{formatBRL(p.valorCentavos)}</td>
                     <td>
                       <Badge variant={p.status === 'Paga' ? 'paid' : 'pending'} />
+                    </td>
+                    <td>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleExcluirDespesa(p.despesaId)}
+                        disabled={p.status === 'Paga'}
+                        title={
+                          p.status === 'Paga'
+                            ? 'Não é possível excluir uma despesa com parcela paga'
+                            : 'Excluir despesa inteira'
+                        }
+                      >
+                        Excluir
+                      </Button>
                     </td>
                   </tr>
                 ))}
