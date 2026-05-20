@@ -205,6 +205,17 @@ export type ResultadoCriarUnicaForaCartao = {
   parcela: Parcela
 }
 
+export const excluirDespesaInputSchema = z.object({
+  despesaId: z.number().int().positive()
+})
+
+export type ExcluirDespesaInput = z.infer<typeof excluirDespesaInputSchema>
+
+export type ResultadoExcluirDespesa = {
+  despesaExcluida: number
+  parcelasExcluidas: number
+}
+
 export type DespesaApi = {
   criarUnicaCredito: (input: DespesaUnicaCreditoInput) => Promise<ResultadoCriarDespesa>
   criarParceladaCredito: (input: DespesaParceladaCreditoInput) => Promise<ResultadoCriarParcelada>
@@ -223,6 +234,7 @@ export type DespesaApi = {
     input: DespesaUnicaForaCartaoInput
   ) => Promise<ResultadoCriarUnicaForaCartao>
   listarGastosForaCartao: (input?: ListarGastosForaCartaoInput) => Promise<Despesa[]>
+  excluir: (input: ExcluirDespesaInput) => Promise<ResultadoExcluirDespesa>
 }
 
 export const DESPESA_IPC_CHANNELS = {
@@ -236,5 +248,6 @@ export const DESPESA_IPC_CHANNELS = {
   reajustarValorMensalAssinatura: 'despesa:reajustar-valor-mensal-assinatura',
   listarAssinaturas: 'despesa:listar-assinaturas',
   criarUnicaForaCartao: 'despesa:criar-unica-fora-cartao',
-  listarGastosForaCartao: 'despesa:listar-gastos-fora-cartao'
+  listarGastosForaCartao: 'despesa:listar-gastos-fora-cartao',
+  excluir: 'despesa:excluir'
 } as const
