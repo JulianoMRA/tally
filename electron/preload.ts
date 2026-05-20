@@ -18,16 +18,6 @@ import type {
   ListarGastosForaCartaoInput
 } from '@shared/ipc/despesa'
 import { FATURA_IPC_CHANNELS } from '@shared/ipc/fatura'
-import { CONTRIBUIDOR_IPC_CHANNELS } from '@shared/ipc/contribuidor'
-import type { ContribuidorInput, ListContribuidorOptions } from '@shared/ipc/contribuidor'
-import { AJUDA_IPC_CHANNELS } from '@shared/ipc/ajuda'
-import type {
-  CriarAjudaInput,
-  MarcarAjudaRecebidaInput,
-  ExcluirAjudaInput,
-  ListarAjudasPorParcelaInput,
-  ListarAjudasAgrupadasInput
-} from '@shared/ipc/ajuda'
 import { RENDA_IPC_CHANNELS } from '@shared/ipc/renda'
 import type {
   CriarRendaAvulsaInput,
@@ -98,27 +88,6 @@ contextBridge.exposeInMainWorld('api', {
     pagar: (faturaId: number, dataPagamento: string) =>
       ipcRenderer.invoke(FATURA_IPC_CHANNELS.pagar, faturaId, dataPagamento),
     reabrir: (faturaId: number) => ipcRenderer.invoke(FATURA_IPC_CHANNELS.reabrir, faturaId)
-  },
-  contribuidor: {
-    list: (options?: ListContribuidorOptions) =>
-      ipcRenderer.invoke(CONTRIBUIDOR_IPC_CHANNELS.list, options),
-    findById: (id: number) => ipcRenderer.invoke(CONTRIBUIDOR_IPC_CHANNELS.findById, id),
-    create: (input: ContribuidorInput) =>
-      ipcRenderer.invoke(CONTRIBUIDOR_IPC_CHANNELS.create, input),
-    update: (id: number, input: ContribuidorInput) =>
-      ipcRenderer.invoke(CONTRIBUIDOR_IPC_CHANNELS.update, id, input),
-    arquivar: (id: number) => ipcRenderer.invoke(CONTRIBUIDOR_IPC_CHANNELS.arquivar, id),
-    desarquivar: (id: number) => ipcRenderer.invoke(CONTRIBUIDOR_IPC_CHANNELS.desarquivar, id)
-  },
-  ajuda: {
-    criar: (input: CriarAjudaInput) => ipcRenderer.invoke(AJUDA_IPC_CHANNELS.criar, input),
-    marcarRecebida: (input: MarcarAjudaRecebidaInput) =>
-      ipcRenderer.invoke(AJUDA_IPC_CHANNELS.marcarRecebida, input),
-    excluir: (input: ExcluirAjudaInput) => ipcRenderer.invoke(AJUDA_IPC_CHANNELS.excluir, input),
-    listarPorParcela: (input: ListarAjudasPorParcelaInput) =>
-      ipcRenderer.invoke(AJUDA_IPC_CHANNELS.listarPorParcela, input),
-    listarAgrupadoPorContribuidor: (input?: ListarAjudasAgrupadasInput) =>
-      ipcRenderer.invoke(AJUDA_IPC_CHANNELS.listarAgrupadoPorContribuidor, input ?? {})
   },
   renda: {
     list: (options?: ListRendaOptions) => ipcRenderer.invoke(RENDA_IPC_CHANNELS.list, options),
