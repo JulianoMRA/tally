@@ -545,6 +545,146 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
       expect(todas).toHaveLength(2)
     })
   })
+
+  describe('estenderHorizonteAssinaturas (RF-VIS-04, RN-04)', () => {
+    function mesesGerados(despesaId: number): string[] {
+      type Row = { mes: string }
+      const rows = db
+        .prepare(
+          `SELECT f.mes_referencia AS mes FROM parcela p
+           INNER JOIN fatura f ON f.id = p.fatura_id
+           WHERE p.despesa_id = ?
+           ORDER BY f.mes_referencia ASC`
+        )
+        .all(despesaId) as Row[]
+      return rows.map((r) => r.mes)
+    }
+
+    it('não cria nada quando o mes alvo está dentro do horizonte pré-gerado', () => {
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 1000,
+        dataInicio: '2026-06-03'
+      })
+
+      const antes = mesesGerados(r.despesa.id)
+      const resultado = repo.estenderHorizonteAssinaturas('2026-12')
+      const depois = mesesGerados(r.despesa.id)
+
+      expect(resultado.parcelasCriadas).toBe(0)
+      expect(resultado.faturasCriadas).toBe(0)
+      expect(depois).toEqual(antes)
+    })
+
+    it('estende em N meses quando o mes alvo está além do horizonte', () => {
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 1000,
+        dataInicio: '2026-06-03'
+      })
+
+      // horizonte inicial: 2026-06 .. 2027-05 (12 meses)
+      const resultado = repo.estenderHorizonteAssinaturas('2027-11')
+
+      expect(resultado.parcelasCriadas).toBe(6)
+      expect(resultado.faturasCriadas).toBe(6)
+
+      const meses = mesesGerados(r.despesa.id)
+      expect(meses).toHaveLength(18)
+      expect(meses[meses.length - 1]).toBe('2027-11')
+
+      const parcelas = parcelaRepo.listarPorDespesa(r.despesa.id)
+      const numeros = parcelas.map((p) => p.numero).sort((a, b) => a - b)
+      expect(numeros).toEqual(Array.from({ length: 18 }, (_, i) => i + 1))
+      for (const p of parcelas) {
+        expect(p.valorCentavos).toBe(1000)
+        expect(p.total).toBeNull()
+      }
+    })
+
+    it('é idempotente: chamar duas vezes para o mesmo mes não duplica', () => {
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 1000,
+        dataInicio: '2026-06-03'
+      })
+
+      repo.estenderHorizonteAssinaturas('2027-10')
+      const segunda = repo.estenderHorizonteAssinaturas('2027-10')
+
+      expect(segunda.parcelasCriadas).toBe(0)
+      expect(segunda.faturasCriadas).toBe(0)
+
+      const meses = mesesGerados(r.despesa.id)
+      expect(new Set(meses).size).toBe(meses.length)
+      expect(meses).toHaveLength(17)
+    })
+
+    it('não retroage: mes alvo no passado relativo ao último existente é ignorado', () => {
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 1000,
+        dataInicio: '2026-06-03'
+      })
+
+      const resultado = repo.estenderHorizonteAssinaturas('2026-01')
+
+      expect(resultado.parcelasCriadas).toBe(0)
+      expect(resultado.faturasCriadas).toBe(0)
+      expect(mesesGerados(r.despesa.id)).toHaveLength(12)
+    })
+
+    it('ignora assinaturas canceladas (ativa=0)', () => {
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 1000,
+        dataInicio: '2026-06-03'
+      })
+
+      repo.cancelarAssinatura(r.despesa.id)
+      const mesesAntes = mesesGerados(r.despesa.id)
+
+      const resultado = repo.estenderHorizonteAssinaturas('2028-01')
+
+      expect(resultado.parcelasCriadas).toBe(0)
+      expect(mesesGerados(r.despesa.id)).toEqual(mesesAntes)
+    })
+
+    it('estende múltiplas assinaturas ativas em uma única chamada', () => {
+      const cartao2 = inserirCartao(db, 'Nubank', 15, 22)
+
+      const a = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 2000,
+        dataInicio: '2026-06-03'
+      })
+      const b = repo.criarAssinaturaCredito({
+        descricao: 'Netflix',
+        categoriaId: catId,
+        cartaoId: cartao2,
+        valorMensalCentavos: 5000,
+        dataInicio: '2026-06-10'
+      })
+
+      const resultado = repo.estenderHorizonteAssinaturas('2027-08')
+
+      expect(resultado.parcelasCriadas).toBe(6)
+      expect(mesesGerados(a.despesa.id)).toHaveLength(15)
+      expect(mesesGerados(b.despesa.id)).toHaveLength(15)
+    })
+  })
 })
 
 describe('DespesaRepository — fora de cartão (RF-DES-01)', () => {

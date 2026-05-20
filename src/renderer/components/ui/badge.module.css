@@ -89,3 +89,12 @@
 .archived .dot {
   background: var(--ink-4);
 }
+
+.projection {
+  color: #5a4a8a;
+  background: #f0edf8;
+  border-color: #cfc8e8;
+}
+.projection .dot {
+  background: #5a4a8a;
+}

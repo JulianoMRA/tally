@@ -8,6 +8,7 @@ import type {
   ListRendaOptions
 } from '../../shared/ipc/renda'
 import type { Repository } from './types'
+import { calcularExtensaoNecessaria } from '../../domain/services/calcular-extensao-horizonte'
 import { gerarRecebimentosRecorrentes } from '../../domain/services/gerar-recebimentos-recorrentes'
 
 const HORIZONTE_RECEBIMENTOS_MESES = 12
@@ -185,5 +186,60 @@ export class RendaRepository implements Repository {
     const renda = this.findById(id)
     if (!renda) throw new Error(`Renda #${id} não encontrada`)
     return renda
+  }
+
+  /**
+   * RF-VIS-04, RN-04 — estende preguiçosamente o horizonte de recebimentos
+   * das rendas recorrentes ativas até alcançar `mesAlvo`. Idempotente,
+   * forward-only. Avulsas e arquivadas são ignoradas.
+   */
+  estenderHorizonteRecorrentes(mesAlvo: string): { recebimentosCriados: number } {
+    type RecorrenteRow = RendaRow & {
+      ultimo_mes: string | null
+      total_existentes: number
+    }
+    const recorrentes = this.db
+      .prepare(
+        `SELECT r.*,
+                (SELECT MAX(substr(data_esperada, 1, 7)) FROM recebimento
+                   WHERE renda_id = r.id) AS ultimo_mes,
+                (SELECT COUNT(*) FROM recebimento WHERE renda_id = r.id) AS total_existentes
+         FROM renda r
+         WHERE r.tipo = 'Recorrente' AND r.ativa = 1`
+      )
+      .all() as RecorrenteRow[]
+
+    return this.db.transaction(() => {
+      let recebimentosCriados = 0
+      const insert = this.db.prepare(
+        `INSERT INTO recebimento (renda_id, valor_centavos, data_esperada, status)
+         VALUES (?, ?, ?, 'Esperado')`
+      )
+
+      for (const r of recorrentes) {
+        if (r.dia_esperado === null) continue
+
+        const extensao = calcularExtensaoNecessaria({
+          mesAlvo,
+          ultimoMesExistente: r.ultimo_mes,
+          ultimoNumeroExistente: r.ultimo_mes === null ? null : r.total_existentes
+        })
+        if (!extensao) continue
+
+        const planejados = gerarRecebimentosRecorrentes({
+          dataInicio: `${extensao.mesReferenciaInicial}-01`,
+          valorPadraoCentavos: r.valor_padrao_centavos,
+          diaEsperado: r.dia_esperado,
+          quantidade: extensao.quantidade
+        })
+
+        for (const p of planejados) {
+          insert.run(r.id, p.valorCentavos, p.dataEsperada)
+          recebimentosCriados++
+        }
+      }
+
+      return { recebimentosCriados }
+    })()
   }
 }

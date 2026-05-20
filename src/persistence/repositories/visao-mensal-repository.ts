@@ -9,10 +9,19 @@ import type {
 } from '../../shared/ipc/visao-mensal'
 import type { Repository } from './types'
 import { calcularBalancoMensal } from '../../domain/services/calcular-balanco-mensal'
+import { diferencaEmMeses } from '../../domain/services/mes-referencia'
 import { AjudaRepository } from './ajuda-repository'
 import { DespesaRepository } from './despesa-repository'
 import { ParcelaRepository } from './parcela-repository'
 import { RecebimentoRepository } from './recebimento-repository'
+import { RendaRepository } from './renda-repository'
+
+const HORIZONTE_PROJECAO_MAX_MESES = 24
+
+function mesAtualReferencia(): string {
+  const hoje = new Date()
+  return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`
+}
 
 type FaturaRow = {
   id: number
@@ -91,6 +100,8 @@ export class VisaoMensalRepository implements Repository {
   constructor(public readonly db: Database) {}
 
   detalhar(mesReferencia: string): VisaoMensalDetalhada {
+    this.estenderHorizonteSeNecessario(mesReferencia)
+
     const ajudaRepo = new AjudaRepository(this.db)
     const despesaRepo = new DespesaRepository(this.db)
     const parcelaRepo = new ParcelaRepository(this.db)
@@ -161,6 +172,23 @@ export class VisaoMensalRepository implements Repository {
       ajudasPendentes,
       totais
     }
+  }
+
+  /**
+   * RF-VIS-04, RN-04 — dispara geração preguiçosa de parcelas de assinaturas
+   * e recebimentos recorrentes até o `mesAlvo`, com cap defensivo de 24 meses
+   * adiante do mês atual. Forward-only (não retroage).
+   */
+  private estenderHorizonteSeNecessario(mesAlvo: string): void {
+    const hoje = mesAtualReferencia()
+    const mesesAdiante = diferencaEmMeses(hoje, mesAlvo)
+    if (mesesAdiante <= 0) return
+    if (mesesAdiante > HORIZONTE_PROJECAO_MAX_MESES) return
+
+    const despesaRepo = new DespesaRepository(this.db)
+    const rendaRepo = new RendaRepository(this.db)
+    despesaRepo.estenderHorizonteAssinaturas(mesAlvo)
+    rendaRepo.estenderHorizonteRecorrentes(mesAlvo)
   }
 
   private agregarAjudasPendentesDoMes(mesReferencia: string): AjudaPendentePorContribuidor[] {

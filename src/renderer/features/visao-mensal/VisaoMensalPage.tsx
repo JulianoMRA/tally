@@ -1,7 +1,11 @@
 import { useState } from 'react'
-import { mesReferenciaAnterior, proxMesReferencia } from '@domain/services/mes-referencia'
+import {
+  diferencaEmMeses,
+  mesReferenciaAnterior,
+  proxMesReferencia
+} from '@domain/services/mes-referencia'
 import { PageHead } from '../../components/layout/PageHead'
-import { EmptyState, Field, Input, Panel } from '../../components/ui'
+import { Badge, EmptyState, Field, Input, Panel } from '../../components/ui'
 import { useVisaoMensal } from './hooks/use-visao-mensal'
 import styles from './visao-mensal.module.css'
 
@@ -31,6 +35,9 @@ export default function VisaoMensalPage() {
   function irProximo() {
     setMes(proxMesReferencia(mes))
   }
+
+  const mesesAdiante = diferencaEmMeses(mesAtual(), mes)
+  const ehProjecao = mesesAdiante > 0
 
   return (
     <div>
@@ -63,6 +70,14 @@ export default function VisaoMensalPage() {
             →
           </button>
           <span className={styles.mesLabel}>{rotuloMes(mes)}</span>
+          {ehProjecao && (
+            <span className={styles.headerBadges}>
+              <Badge variant="projection" />
+              {mesesAdiante > 12 && (
+                <span className={styles.distanteBadge}>{`${mesesAdiante} meses adiante`}</span>
+              )}
+            </span>
+          )}
         </div>
 
         {erro && <p className={styles.erro}>{erro}</p>}

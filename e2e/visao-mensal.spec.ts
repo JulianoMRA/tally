@@ -71,4 +71,74 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
 
     await app.close()
   })
+
+  test('projeção: navegar além do horizonte estende parcelas e recebimentos (RF-VIS-04, RN-04)', async () => {
+    const app = await electron.launch({
+      args: [join(__dirname, '../out/main/index.cjs')]
+    })
+
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+
+    // Setup: cartão e categoria
+    await page.getByRole('link', { name: 'Cartões' }).click()
+    await page.getByLabel('Nome').fill('Inter Projecao E2E')
+    await page.getByLabel('Dia de fechamento').fill('5')
+    await page.getByLabel('Dia de vencimento').fill('12')
+    await page.getByRole('button', { name: 'Salvar' }).click()
+    await expect(page.getByText('Inter Projecao E2E')).toBeVisible()
+
+    await page.getByRole('link', { name: 'Categorias' }).click()
+    await page.getByLabel('Nome').fill('Streaming Projecao E2E')
+    await page.getByRole('radio', { name: 'Despesa' }).check()
+    await page.getByRole('button', { name: 'Salvar' }).click()
+
+    await page.getByLabel('Nome').fill('Bolsa Projecao E2E')
+    await page.getByRole('radio', { name: 'Renda' }).check()
+    await page.getByRole('button', { name: 'Salvar' }).click()
+    await expect(page.getByText('Bolsa Projecao E2E')).toBeVisible()
+
+    // Assinatura mensal de R$ 30,00 começando hoje
+    const hoje = new Date()
+    const isoHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
+    await page.getByRole('link', { name: 'Assinaturas' }).click()
+    await page.getByRole('link', { name: 'Nova assinatura' }).click()
+    await page.getByLabel('Descrição').fill('Spotify Projecao E2E')
+    await page.getByLabel('Categoria').selectOption({ label: 'Streaming Projecao E2E' })
+    await page.getByLabel('Cartão').selectOption({ label: 'Inter Projecao E2E' })
+    await page.getByLabel('Valor mensal (R$)').fill('30,00')
+    await page.getByLabel('Início').fill(isoHoje)
+    await page.getByRole('button', { name: 'Registrar assinatura' }).click()
+    await expect(page.getByText('Spotify Projecao E2E')).toBeVisible()
+
+    // Renda recorrente R$ 800,00 dia 5
+    await page.getByRole('link', { name: 'Rendas' }).click()
+    await page.getByRole('radio', { name: 'Recorrente' }).check()
+    await page.getByLabel('Nome').fill('Bolsa Mensal E2E')
+    await page.getByLabel('Categoria').selectOption({ label: 'Bolsa Projecao E2E' })
+    await page.getByLabel('Valor padrão (R$)').fill('800,00')
+    await page.getByLabel('Dia esperado').fill('5')
+    await page.getByLabel('Início').fill(isoHoje)
+    await page.getByRole('button', { name: 'Salvar' }).click()
+    await expect(page.getByText('Bolsa Mensal E2E')).toBeVisible()
+
+    // Navega para 15 meses adiante (além do horizonte pré-gerado de 12)
+    const alvo = new Date(hoje.getFullYear(), hoje.getMonth() + 15, 1)
+    const mesAlvo = `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, '0')}`
+
+    await page.getByRole('link', { name: 'Visão mensal' }).click()
+    await page.getByLabel('Mês').fill(mesAlvo)
+
+    // Badge "Projeção" visível
+    await expect(page.getByText('Projeção')).toBeVisible()
+
+    // Fatura projetada da assinatura aparece
+    await expect(page.getByText('Inter Projecao E2E')).toBeVisible()
+    await expect(page.getByText('R$ 30,00').first()).toBeVisible()
+
+    // Recebimento projetado
+    await expect(page.getByText('R$ 800,00').first()).toBeVisible()
+
+    await app.close()
+  })
 })

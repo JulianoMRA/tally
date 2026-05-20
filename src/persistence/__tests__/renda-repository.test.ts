@@ -204,4 +204,133 @@ describe('RendaRepository', () => {
       expect(d.ativa).toBe(true)
     })
   })
+
+  describe('estenderHorizonteRecorrentes (RF-VIS-04, RN-04)', () => {
+    function mesesGerados(rendaId: number): string[] {
+      type Row = { mes: string }
+      const rows = db
+        .prepare(
+          `SELECT substr(data_esperada, 1, 7) AS mes FROM recebimento
+           WHERE renda_id = ?
+           ORDER BY data_esperada ASC`
+        )
+        .all(rendaId) as Row[]
+      return rows.map((r) => r.mes)
+    }
+
+    it('não cria nada quando o mes alvo está dentro do horizonte pré-gerado', () => {
+      const r = repo.criarRecorrente({
+        nome: 'Bolsa',
+        valorPadraoCentavos: 100000,
+        diaEsperado: 5,
+        dataInicio: '2026-06-01'
+      })
+
+      const antes = mesesGerados(r.renda.id)
+      const resultado = repo.estenderHorizonteRecorrentes('2027-03')
+      const depois = mesesGerados(r.renda.id)
+
+      expect(resultado.recebimentosCriados).toBe(0)
+      expect(depois).toEqual(antes)
+    })
+
+    it('estende em N meses quando alvo está além do horizonte', () => {
+      const r = repo.criarRecorrente({
+        nome: 'Bolsa',
+        valorPadraoCentavos: 100000,
+        diaEsperado: 5,
+        dataInicio: '2026-06-01'
+      })
+
+      // horizonte inicial: jun/2026 .. mai/2027
+      const resultado = repo.estenderHorizonteRecorrentes('2027-11')
+
+      expect(resultado.recebimentosCriados).toBe(6)
+
+      const meses = mesesGerados(r.renda.id)
+      expect(meses).toHaveLength(18)
+      expect(meses[meses.length - 1]).toBe('2027-11')
+
+      const rows = db
+        .prepare(
+          "SELECT valor_centavos, status FROM recebimento WHERE renda_id = ? AND substr(data_esperada, 1, 7) > '2027-05'"
+        )
+        .all(r.renda.id) as { valor_centavos: number; status: string }[]
+      for (const row of rows) {
+        expect(row.valor_centavos).toBe(100000)
+        expect(row.status).toBe('Esperado')
+      }
+    })
+
+    it('clampa diaEsperado em meses curtos (fev 31 → fev 28/29)', () => {
+      const r = repo.criarRecorrente({
+        nome: 'Bolsa',
+        valorPadraoCentavos: 100000,
+        diaEsperado: 31,
+        dataInicio: '2026-06-01'
+      })
+
+      // horizonte inicial cobre até mai/2027; estendemos até fev/2028 (bissexto)
+      repo.estenderHorizonteRecorrentes('2028-02')
+
+      const datas = db
+        .prepare(
+          "SELECT data_esperada FROM recebimento WHERE renda_id = ? AND substr(data_esperada, 1, 7) IN ('2028-02', '2027-11', '2027-09')"
+        )
+        .all(r.renda.id) as { data_esperada: string }[]
+      const map = new Map(datas.map((d) => [d.data_esperada.slice(0, 7), d.data_esperada]))
+      expect(map.get('2028-02')).toBe('2028-02-29')
+      expect(map.get('2027-11')).toBe('2027-11-30')
+      expect(map.get('2027-09')).toBe('2027-09-30')
+    })
+
+    it('é idempotente: chamar duas vezes para o mesmo mes não duplica', () => {
+      const r = repo.criarRecorrente({
+        nome: 'Bolsa',
+        valorPadraoCentavos: 100000,
+        diaEsperado: 5,
+        dataInicio: '2026-06-01'
+      })
+
+      repo.estenderHorizonteRecorrentes('2027-10')
+      const segunda = repo.estenderHorizonteRecorrentes('2027-10')
+
+      expect(segunda.recebimentosCriados).toBe(0)
+      const meses = mesesGerados(r.renda.id)
+      expect(new Set(meses).size).toBe(meses.length)
+    })
+
+    it('não retroage: mes alvo no passado é ignorado', () => {
+      const r = repo.criarRecorrente({
+        nome: 'Bolsa',
+        valorPadraoCentavos: 100000,
+        diaEsperado: 5,
+        dataInicio: '2026-06-01'
+      })
+
+      const resultado = repo.estenderHorizonteRecorrentes('2026-01')
+      expect(resultado.recebimentosCriados).toBe(0)
+      expect(mesesGerados(r.renda.id)).toHaveLength(12)
+    })
+
+    it('ignora rendas arquivadas e rendas Avulsa', () => {
+      const recorrenteArquivada = repo.criarRecorrente({
+        nome: 'Antiga',
+        valorPadraoCentavos: 100000,
+        diaEsperado: 5,
+        dataInicio: '2026-06-01'
+      })
+      repo.arquivar(recorrenteArquivada.renda.id)
+
+      const avulsa = repo.criarAvulsa({ nome: 'Freela', valorPadraoCentavos: 50000 })
+
+      const resultado = repo.estenderHorizonteRecorrentes('2028-01')
+
+      expect(resultado.recebimentosCriados).toBe(0)
+      const recebAvulsa = db
+        .prepare('SELECT COUNT(*) as n FROM recebimento WHERE renda_id = ?')
+        .get(avulsa.id) as { n: number }
+      expect(recebAvulsa.n).toBe(0)
+    })
+  })
 })

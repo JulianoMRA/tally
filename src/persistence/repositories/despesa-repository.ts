@@ -6,6 +6,7 @@ import type { Repository } from './types'
 import { CartaoRepository } from './cartao-repository'
 import { FaturaRepository } from './fatura-repository'
 import { ParcelaRepository } from './parcela-repository'
+import { calcularExtensaoNecessaria } from '../../domain/services/calcular-extensao-horizonte'
 import { gerarParcelas } from '../../domain/services/gerar-parcelas'
 import { gerarOcorrenciasAssinatura } from '../../domain/services/gerar-ocorrencias-assinatura'
 
@@ -491,5 +492,79 @@ export class DespesaRepository implements Repository {
     sql += ' ORDER BY ativa DESC, descricao ASC'
     const rows = this.db.prepare(sql).all(...params) as DespesaRow[]
     return rows.map(mapRow)
+  }
+
+  /**
+   * RF-VIS-04, RN-04 — estende preguiçosamente o horizonte de parcelas das
+   * assinaturas ativas até alcançar `mesAlvo`. Idempotente: chamadas para
+   * meses já cobertos são no-op. Não retroage.
+   */
+  estenderHorizonteAssinaturas(mesAlvo: string): {
+    parcelasCriadas: number
+    faturasCriadas: number
+  } {
+    const cartaoRepo = new CartaoRepository(this.db)
+    const faturaRepo = new FaturaRepository(this.db)
+    const parcelaRepo = new ParcelaRepository(this.db)
+
+    type AssinaturaRow = DespesaRow & {
+      ultimo_mes: string | null
+      ultimo_numero: number | null
+    }
+    const assinaturas = this.db
+      .prepare(
+        `SELECT d.*,
+                (SELECT MAX(f.mes_referencia) FROM parcela p
+                   INNER JOIN fatura f ON f.id = p.fatura_id
+                   WHERE p.despesa_id = d.id) AS ultimo_mes,
+                (SELECT MAX(p.numero) FROM parcela p
+                   WHERE p.despesa_id = d.id) AS ultimo_numero
+         FROM despesa d
+         WHERE d.tipo = 'Assinatura' AND d.ativa = 1`
+      )
+      .all() as AssinaturaRow[]
+
+    return this.db.transaction(() => {
+      let parcelasCriadas = 0
+      let faturasCriadas = 0
+
+      for (const a of assinaturas) {
+        if (a.cartao_id === null) continue
+        const cartao = cartaoRepo.findById(a.cartao_id)
+        if (!cartao) continue
+
+        const extensao = calcularExtensaoNecessaria({
+          mesAlvo,
+          ultimoMesExistente: a.ultimo_mes,
+          ultimoNumeroExistente: a.ultimo_numero
+        })
+        if (!extensao) continue
+
+        const novasOcorrencias = gerarOcorrenciasAssinatura({
+          cartao,
+          dataInicio: `${extensao.mesReferenciaInicial}-01`,
+          valorMensalCentavos: a.valor_centavos,
+          quantidade: extensao.quantidade,
+          ocorrenciaInicial: extensao.ocorrenciaInicial
+        })
+
+        for (const o of novasOcorrencias) {
+          const existente = faturaRepo.findByCartaoEMesReferencia(cartao.id, o.dataReferencia)
+          const fatura = faturaRepo.upsertParaMesReferencia(cartao, o.dataReferencia)
+          if (!existente) faturasCriadas++
+          parcelaRepo.criar({
+            despesaId: a.id,
+            faturaId: fatura.id,
+            numero: o.numero,
+            total: o.total,
+            valorCentavos: o.valorCentavos,
+            dataReferencia: o.dataReferencia
+          })
+          parcelasCriadas++
+        }
+      }
+
+      return { parcelasCriadas, faturasCriadas }
+    })()
   }
 }
