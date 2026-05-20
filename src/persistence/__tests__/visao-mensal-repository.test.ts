@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Database } from '../database'
 import { openInMemoryDatabase } from '../database'
 import { runMigrations } from '../migrations/runner'
@@ -209,5 +209,130 @@ describe('VisaoMensalRepository.detalhar (RF-VIS-01/02 + RN-08)', () => {
     expect(result.totais.totalEntradasRecebidasCentavos).toBe(100000)
     expect(result.totais.totalEntradasProjetadasCentavos).toBe(100000)
     expect(result.totais.saldoRealizadoCentavos).toBe(100000)
+  })
+})
+
+describe('VisaoMensalRepository.detalhar — extensão de horizonte (RF-VIS-04, RN-04)', () => {
+  let db: Database
+  let repo: VisaoMensalRepository
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-05-19T12:00:00Z'))
+    db = openInMemoryDatabase()
+    runMigrations(db)
+    repo = new VisaoMensalRepository(db)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('mês passado/presente: não estende, nem afeta dados', () => {
+    const rendaRepo = new RendaRepository(db)
+    const r = rendaRepo.criarRecorrente({
+      nome: 'Bolsa',
+      valorPadraoCentavos: 100000,
+      diaEsperado: 5,
+      dataInicio: '2026-06-01'
+    })
+
+    repo.detalhar('2026-05') // mês atual
+
+    const total = db
+      .prepare('SELECT COUNT(*) as n FROM recebimento WHERE renda_id = ?')
+      .get(r.renda.id) as { n: number }
+    expect(total.n).toBe(12)
+  })
+
+  it('mês futuro além do horizonte: gera parcelas e recebimentos faltantes', () => {
+    const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+    const catId = inserirCategoria(db)
+    const despesaRepo = new DespesaRepository(db)
+    const rendaRepo = new RendaRepository(db)
+
+    despesaRepo.criarAssinaturaCredito({
+      descricao: 'Spotify',
+      categoriaId: catId,
+      cartaoId,
+      valorMensalCentavos: 2000,
+      dataInicio: '2026-06-03'
+    })
+    rendaRepo.criarRecorrente({
+      nome: 'Bolsa',
+      valorPadraoCentavos: 100000,
+      diaEsperado: 5,
+      dataInicio: '2026-06-01'
+    })
+
+    // hoje=2026-05; alvo=2027-08 → 15 meses adiante (dentro do cap de 24).
+    // horizonte inicial da assinatura: 2026-06..2027-05.
+    const result = repo.detalhar('2027-08')
+
+    expect(result.faturas).toHaveLength(1)
+    expect(result.faturas[0].totalBrutoCentavos).toBe(2000)
+
+    expect(result.recebimentos).toHaveLength(1)
+    expect(result.recebimentos[0].valorCentavos).toBe(100000)
+    expect(result.recebimentos[0].status).toBe('Esperado')
+
+    expect(result.totais.totalEntradasProjetadasCentavos).toBe(100000)
+    expect(result.totais.totalEntradasRecebidasCentavos).toBe(0)
+  })
+
+  it('respeita o cap de 24 meses adiante de hoje: além disso não estende', () => {
+    const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+    const catId = inserirCategoria(db)
+    const despesaRepo = new DespesaRepository(db)
+
+    despesaRepo.criarAssinaturaCredito({
+      descricao: 'Spotify',
+      categoriaId: catId,
+      cartaoId,
+      valorMensalCentavos: 2000,
+      dataInicio: '2026-06-03'
+    })
+
+    // hoje=2026-05; alvo=2029-01 → 32 meses adiante, acima do cap (24)
+    const result = repo.detalhar('2029-01')
+
+    expect(result.faturas).toEqual([])
+    expect(result.recebimentos).toEqual([])
+  })
+
+  it('idempotente: detalhar duas vezes para o mesmo mês futuro não duplica', () => {
+    const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+    const catId = inserirCategoria(db)
+    const despesaRepo = new DespesaRepository(db)
+    const rendaRepo = new RendaRepository(db)
+
+    despesaRepo.criarAssinaturaCredito({
+      descricao: 'Spotify',
+      categoriaId: catId,
+      cartaoId,
+      valorMensalCentavos: 2000,
+      dataInicio: '2026-06-03'
+    })
+    rendaRepo.criarRecorrente({
+      nome: 'Bolsa',
+      valorPadraoCentavos: 100000,
+      diaEsperado: 5,
+      dataInicio: '2026-06-01'
+    })
+
+    repo.detalhar('2027-09')
+    repo.detalhar('2027-09')
+
+    const parcelas = db
+      .prepare("SELECT COUNT(*) AS n FROM parcela WHERE data_referencia LIKE '2027-09%'")
+      .get() as { n: number }
+    const recebimentos = db
+      .prepare(
+        "SELECT COUNT(*) AS n FROM recebimento WHERE substr(data_esperada, 1, 7) = '2027-09'"
+      )
+      .get() as { n: number }
+
+    expect(parcelas.n).toBe(1)
+    expect(recebimentos.n).toBe(1)
   })
 })
