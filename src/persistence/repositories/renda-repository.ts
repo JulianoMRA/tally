@@ -16,7 +16,6 @@ const HORIZONTE_RECEBIMENTOS_MESES = 12
 type RendaRow = {
   id: number
   nome: string
-  categoria_id: number | null
   tipo: TipoRenda
   valor_padrao_centavos: number
   dia_esperado: number | null
@@ -29,7 +28,6 @@ function mapRow(row: RendaRow): Renda {
   return {
     id: row.id,
     nome: row.nome,
-    categoriaId: row.categoria_id,
     tipo: row.tipo,
     valorPadraoCentavos: row.valor_padrao_centavos,
     diaEsperado: row.dia_esperado,
@@ -88,10 +86,10 @@ export class RendaRepository implements Repository {
   criarAvulsa(input: CriarRendaAvulsaInput): Renda {
     const info = this.db
       .prepare(
-        `INSERT INTO renda (nome, categoria_id, tipo, valor_padrao_centavos, dia_esperado)
-         VALUES (?, ?, 'Avulsa', ?, NULL)`
+        `INSERT INTO renda (nome, tipo, valor_padrao_centavos, dia_esperado)
+         VALUES (?, 'Avulsa', ?, NULL)`
       )
-      .run(input.nome, input.categoriaId ?? null, input.valorPadraoCentavos)
+      .run(input.nome, input.valorPadraoCentavos)
     const renda = this.findById(Number(info.lastInsertRowid))
     if (!renda) throw new Error('Falha ao recuperar renda após criar')
     return renda
@@ -108,10 +106,10 @@ export class RendaRepository implements Repository {
     return this.db.transaction(() => {
       const info = this.db
         .prepare(
-          `INSERT INTO renda (nome, categoria_id, tipo, valor_padrao_centavos, dia_esperado)
-           VALUES (?, ?, 'Recorrente', ?, ?)`
+          `INSERT INTO renda (nome, tipo, valor_padrao_centavos, dia_esperado)
+           VALUES (?, 'Recorrente', ?, ?)`
         )
-        .run(input.nome, input.categoriaId ?? null, input.valorPadraoCentavos, input.diaEsperado)
+        .run(input.nome, input.valorPadraoCentavos, input.diaEsperado)
 
       const renda = this.findById(Number(info.lastInsertRowid))
       if (!renda) throw new Error('Falha ao recuperar renda após criar')
@@ -141,10 +139,10 @@ export class RendaRepository implements Repository {
       this.db
         .prepare(
           `UPDATE renda
-           SET nome = ?, categoria_id = ?, valor_padrao_centavos = ?, updated_at = CURRENT_TIMESTAMP
+           SET nome = ?, valor_padrao_centavos = ?, updated_at = CURRENT_TIMESTAMP
            WHERE id = ?`
         )
-        .run(input.nome, input.categoriaId ?? null, input.valorPadraoCentavos, id)
+        .run(input.nome, input.valorPadraoCentavos, id)
 
       // RF-REN-05: reajuste do valor padrão afeta recebimentos futuros ainda Esperado
       if (

@@ -1,16 +1,10 @@
 import type { Database } from '../database'
 import type { Cartao } from '../../domain/entities/cartao'
-import type { Contribuidor } from '../../domain/entities/contribuidor'
 import type { Fatura, StatusFatura } from '../../domain/entities/fatura'
-import type {
-  AjudaPendentePorContribuidor,
-  FaturaResumida,
-  VisaoMensalDetalhada
-} from '../../shared/ipc/visao-mensal'
+import type { FaturaResumida, VisaoMensalDetalhada } from '../../shared/ipc/visao-mensal'
 import type { Repository } from './types'
 import { calcularBalancoMensal } from '../../domain/services/calcular-balanco-mensal'
 import { diferencaEmMeses } from '../../domain/services/mes-referencia'
-import { AjudaRepository } from './ajuda-repository'
 import { DespesaRepository } from './despesa-repository'
 import { ParcelaRepository } from './parcela-repository'
 import { RecebimentoRepository } from './recebimento-repository'
@@ -46,15 +40,6 @@ type CartaoRow = {
   updated_at: string
 }
 
-type ContribuidorRow = {
-  id: number
-  nome: string
-  contato: string | null
-  ativo: 0 | 1
-  created_at: string
-  updated_at: string
-}
-
 function mapFatura(row: FaturaRow): Fatura {
   let status: StatusFatura
   if (row.status === 'Paga') status = { kind: 'Paga', pagaEm: row.data_pagamento ?? '' }
@@ -85,29 +70,16 @@ function mapCartao(row: CartaoRow): Cartao {
   }
 }
 
-function mapContribuidor(row: ContribuidorRow): Contribuidor {
-  return {
-    id: row.id,
-    nome: row.nome,
-    contato: row.contato,
-    ativo: row.ativo === 1,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
-  }
-}
-
 export class VisaoMensalRepository implements Repository {
   constructor(public readonly db: Database) {}
 
   detalhar(mesReferencia: string): VisaoMensalDetalhada {
     this.estenderHorizonteSeNecessario(mesReferencia)
 
-    const ajudaRepo = new AjudaRepository(this.db)
     const despesaRepo = new DespesaRepository(this.db)
     const parcelaRepo = new ParcelaRepository(this.db)
     const recebimentoRepo = new RecebimentoRepository(this.db)
 
-    // Faturas do mês com cartão
     const faturaRows = this.db
       .prepare(
         'SELECT * FROM fatura WHERE mes_referencia = ? ORDER BY data_vencimento ASC, cartao_id ASC'
@@ -128,27 +100,20 @@ export class VisaoMensalRepository implements Repository {
       const fatura = mapFatura(row)
       const cartao = cartoesById.get(fatura.cartaoId)
       const parcelas = parcelaRepo.listarPorFatura(fatura.id)
-      const totalBrutoCentavos = parcelas.reduce((s, p) => s + p.valorCentavos, 0)
-      const { totalAjudasCentavos } = ajudaRepo.totaisPorFatura(fatura.id)
-      const totalLiquidoCentavos = totalBrutoCentavos - totalAjudasCentavos
+      const totalCentavos = parcelas.reduce((s, p) => s + p.valorCentavos, 0)
 
       return {
         fatura,
         cartaoNome: cartao?.nome ?? `#${fatura.cartaoId}`,
         cartaoCor: cartao?.cor ?? '#999',
-        totalBrutoCentavos,
-        totalAjudasCentavos,
-        totalLiquidoCentavos
+        totalCentavos
       }
     })
 
     const gastosForaCartao = despesaRepo.listarGastosForaCartao({ mesReferencia })
     const recebimentos = recebimentoRepo.listar({ mesReferencia })
 
-    // Ajudas pendentes agrupadas por contribuidor (apenas das faturas deste mês)
-    const ajudasPendentes = this.agregarAjudasPendentesDoMes(mesReferencia)
-
-    const totalFaturasLiquidoCentavos = faturas.reduce((s, f) => s + f.totalLiquidoCentavos, 0)
+    const totalFaturasCentavos = faturas.reduce((s, f) => s + f.totalCentavos, 0)
     const totalGastosForaCartaoCentavos = gastosForaCartao.reduce((s, g) => s + g.valorCentavos, 0)
     const totalRecebidoCentavos = recebimentos
       .filter((r) => r.status === 'Recebido')
@@ -158,7 +123,7 @@ export class VisaoMensalRepository implements Repository {
       .reduce((s, r) => s + r.valorCentavos, 0)
 
     const totais = calcularBalancoMensal({
-      totalFaturasLiquidoCentavos,
+      totalFaturasCentavos,
       totalGastosForaCartaoCentavos,
       totalRecebidoCentavos,
       totalEsperadoCentavos
@@ -169,7 +134,6 @@ export class VisaoMensalRepository implements Repository {
       faturas,
       gastosForaCartao,
       recebimentos,
-      ajudasPendentes,
       totais
     }
   }
@@ -189,40 +153,5 @@ export class VisaoMensalRepository implements Repository {
     const rendaRepo = new RendaRepository(this.db)
     despesaRepo.estenderHorizonteAssinaturas(mesAlvo)
     rendaRepo.estenderHorizonteRecorrentes(mesAlvo)
-  }
-
-  private agregarAjudasPendentesDoMes(mesReferencia: string): AjudaPendentePorContribuidor[] {
-    type AgRow = {
-      contribuidor_id: number
-      total: number
-    }
-    const rows = this.db
-      .prepare(
-        `SELECT a.contribuidor_id, SUM(a.valor_centavos) AS total
-         FROM ajuda a
-         INNER JOIN parcela p ON p.id = a.parcela_id
-         INNER JOIN fatura f ON f.id = p.fatura_id
-         WHERE f.mes_referencia = ? AND a.status = 'Pendente'
-         GROUP BY a.contribuidor_id`
-      )
-      .all(mesReferencia) as AgRow[]
-
-    if (rows.length === 0) return []
-
-    const ids = rows.map((r) => r.contribuidor_id)
-    const placeholders = ids.map(() => '?').join(',')
-    const contribRows = this.db
-      .prepare(`SELECT * FROM contribuidor WHERE id IN (${placeholders})`)
-      .all(...ids) as ContribuidorRow[]
-    const porId = new Map<number, Contribuidor>()
-    for (const c of contribRows) porId.set(c.id, mapContribuidor(c))
-
-    return rows
-      .map((r) => ({
-        contribuidorId: r.contribuidor_id,
-        contribuidorNome: porId.get(r.contribuidor_id)?.nome ?? `#${r.contribuidor_id}`,
-        totalPendenteCentavos: r.total
-      }))
-      .sort((a, b) => a.contribuidorNome.localeCompare(b.contribuidorNome))
   }
 }

@@ -14,15 +14,7 @@ export type FaturaResumida = {
   fatura: Fatura
   cartaoNome: string
   cartaoCor: string
-  totalBrutoCentavos: number
-  totalAjudasCentavos: number
-  totalLiquidoCentavos: number
-}
-
-export type AjudaPendentePorContribuidor = {
-  contribuidorId: number
-  contribuidorNome: string
-  totalPendenteCentavos: number
+  totalCentavos: number
 }
 
 export type VisaoMensalDetalhada = {
@@ -30,7 +22,6 @@ export type VisaoMensalDetalhada = {
   faturas: FaturaResumida[]
   gastosForaCartao: Despesa[]
   recebimentos: RecebimentoComContexto[]
-  ajudasPendentes: AjudaPendentePorContribuidor[]
   totais: BalancoMensal
 }
 

@@ -17,7 +17,6 @@ export const criarRecebimentoAvulsoInputSchema = z.object({
     .trim()
     .min(1, 'Descrição é obrigatória')
     .max(80, 'Descrição deve ter no máximo 80 caracteres'),
-  categoriaId: z.number().int().positive().nullable().optional(),
   valorCentavos: valorSchema,
   dataEsperada: dataBRSchema,
   dataRecebida: dataBRSchema.optional()
@@ -50,7 +49,6 @@ export type ListarRecebimentosInput = z.infer<typeof listarRecebimentosInputSche
 
 export type RecebimentoComContexto = Recebimento & {
   rendaNome: string | null
-  categoriaId: number | null
 }
 
 export type ResultadoCriarRecebimentoAvulso = {

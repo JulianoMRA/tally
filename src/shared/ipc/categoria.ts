@@ -9,14 +9,7 @@ export const categoriaInputSchema = z.object({
     .min(1, 'Nome é obrigatório')
     .max(60, 'Nome deve ter no máximo 60 caracteres'),
   tipo: z.enum(['Despesa', 'Renda', 'Ambos'], { message: 'Tipo inválido' }),
-  cor: corHexSchema,
-  icone: z
-    .string()
-    .trim()
-    .max(16, 'Ícone deve ter no máximo 16 caracteres')
-    .nullable()
-    .optional()
-    .transform((v) => (v && v.length > 0 ? v : null))
+  cor: corHexSchema
 })
 
 export type CategoriaInput = z.infer<typeof categoriaInputSchema>

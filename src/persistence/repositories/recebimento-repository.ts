@@ -78,10 +78,10 @@ export class RecebimentoRepository implements Repository {
     return this.db.transaction(() => {
       const rendaInfo = this.db
         .prepare(
-          `INSERT INTO renda (nome, categoria_id, tipo, valor_padrao_centavos, dia_esperado)
-           VALUES (?, ?, 'Avulsa', ?, NULL)`
+          `INSERT INTO renda (nome, tipo, valor_padrao_centavos, dia_esperado)
+           VALUES (?, 'Avulsa', ?, NULL)`
         )
-        .run(input.nome, input.categoriaId ?? null, input.valorCentavos)
+        .run(input.nome, input.valorCentavos)
       const rendaId = Number(rendaInfo.lastInsertRowid)
 
       return this.criar({
@@ -96,14 +96,12 @@ export class RecebimentoRepository implements Repository {
   listar(input?: ListarRecebimentosInput): RecebimentoComContexto[] {
     type Row = RecebimentoRow & {
       renda_nome: string | null
-      categoria_id_renda: number | null
     }
 
     let sql = `
       SELECT
         r.*,
-        rd.nome AS renda_nome,
-        rd.categoria_id AS categoria_id_renda
+        rd.nome AS renda_nome
       FROM recebimento r
       LEFT JOIN renda rd ON rd.id = r.renda_id
     `
@@ -123,8 +121,7 @@ export class RecebimentoRepository implements Repository {
     const rows = this.db.prepare(sql).all(...params) as Row[]
     return rows.map((r) => ({
       ...mapRow(r),
-      rendaNome: r.renda_nome,
-      categoriaId: r.categoria_id_renda
+      rendaNome: r.renda_nome
     }))
   }
 

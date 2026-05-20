@@ -22,20 +22,6 @@ describe('RendaRepository', () => {
       expect(r.diaEsperado).toBeNull()
       expect(r.valorPadraoCentavos).toBe(50000)
       expect(r.ativa).toBe(true)
-      expect(r.categoriaId).toBeNull()
-    })
-
-    it('aceita categoriaId opcional', () => {
-      const catId = db
-        .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Freela', 'Renda', '#000')")
-        .run().lastInsertRowid as number
-
-      const r = repo.criarAvulsa({
-        nome: 'Freela',
-        categoriaId: catId,
-        valorPadraoCentavos: 30000
-      })
-      expect(r.categoriaId).toBe(catId)
     })
   })
 
@@ -114,7 +100,6 @@ describe('RendaRepository', () => {
 
       repo.update(r.renda.id, {
         nome: 'Bolsa',
-        categoriaId: null,
         valorPadraoCentavos: 130000
       })
 
@@ -142,7 +127,6 @@ describe('RendaRepository', () => {
 
       repo.update(r.renda.id, {
         nome: 'Bolsa',
-        categoriaId: null,
         valorPadraoCentavos: 130000
       })
 
@@ -157,16 +141,13 @@ describe('RendaRepository', () => {
       const r = repo.criarAvulsa({ nome: 'X', valorPadraoCentavos: 1000 })
       const u = repo.update(r.id, {
         nome: 'X',
-        categoriaId: null,
         valorPadraoCentavos: 2000
       })
       expect(u.valorPadraoCentavos).toBe(2000)
     })
 
     it('lança erro para id inexistente', () => {
-      expect(() =>
-        repo.update(9999, { nome: 'X', categoriaId: null, valorPadraoCentavos: 1000 })
-      ).toThrow()
+      expect(() => repo.update(9999, { nome: 'X', valorPadraoCentavos: 1000 })).toThrow()
     })
   })
 

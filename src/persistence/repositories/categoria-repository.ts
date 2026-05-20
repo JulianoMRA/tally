@@ -8,7 +8,6 @@ type CategoriaRow = {
   nome: string
   tipo: TipoCategoria
   cor: string
-  icone: string | null
   ativo: 0 | 1
   created_at: string
   updated_at: string
@@ -20,7 +19,6 @@ function mapRow(row: CategoriaRow): Categoria {
     nome: row.nome,
     tipo: row.tipo,
     cor: row.cor,
-    icone: row.icone,
     ativo: row.ativo === 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -61,8 +59,8 @@ export class CategoriaRepository implements Repository {
 
   create(input: CategoriaInput): Categoria {
     const info = this.db
-      .prepare('INSERT INTO categoria (nome, tipo, cor, icone) VALUES (?, ?, ?, ?)')
-      .run(input.nome, input.tipo, input.cor, input.icone ?? null)
+      .prepare('INSERT INTO categoria (nome, tipo, cor) VALUES (?, ?, ?)')
+      .run(input.nome, input.tipo, input.cor)
     const categoria = this.findById(Number(info.lastInsertRowid))
     if (!categoria) throw new Error('Falha ao recuperar categoria após create')
     return categoria
@@ -72,10 +70,10 @@ export class CategoriaRepository implements Repository {
     const info = this.db
       .prepare(
         `UPDATE categoria
-         SET nome = ?, tipo = ?, cor = ?, icone = ?, updated_at = CURRENT_TIMESTAMP
+         SET nome = ?, tipo = ?, cor = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ?`
       )
-      .run(input.nome, input.tipo, input.cor, input.icone ?? null, id)
+      .run(input.nome, input.tipo, input.cor, id)
     if (info.changes === 0) throw new Error(`Categoria #${id} não encontrada`)
     const categoria = this.findById(id)
     if (!categoria) throw new Error(`Falha ao recuperar categoria #${id} após update`)

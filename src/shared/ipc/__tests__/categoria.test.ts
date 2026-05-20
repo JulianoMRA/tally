@@ -5,32 +5,11 @@ describe('categoriaInputSchema', () => {
   const inputValido = {
     nome: 'Mercado',
     tipo: 'Despesa' as const,
-    cor: '#4caf50',
-    icone: '🛒'
+    cor: '#4caf50'
   }
 
   it('aceita input válido completo', () => {
     expect(() => categoriaInputSchema.parse(inputValido)).not.toThrow()
-  })
-
-  it('aceita input sem icone (undefined)', () => {
-    const result = categoriaInputSchema.parse({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50' })
-    expect(result.icone).toBeNull()
-  })
-
-  it('aceita icone null explícito', () => {
-    const result = categoriaInputSchema.parse({ ...inputValido, icone: null })
-    expect(result.icone).toBeNull()
-  })
-
-  it('transforma string vazia de icone em null', () => {
-    const result = categoriaInputSchema.parse({ ...inputValido, icone: '' })
-    expect(result.icone).toBeNull()
-  })
-
-  it('transforma icone com só espaços em null', () => {
-    const result = categoriaInputSchema.parse({ ...inputValido, icone: '   ' })
-    expect(result.icone).toBeNull()
   })
 
   it('aceita todos os tipos válidos', () => {
@@ -70,9 +49,5 @@ describe('categoriaInputSchema', () => {
 
   it('rejeita cor com caracteres inválidos', () => {
     expect(() => categoriaInputSchema.parse({ ...inputValido, cor: '#ZZZZZZ' })).toThrow()
-  })
-
-  it('rejeita icone com mais de 16 caracteres', () => {
-    expect(() => categoriaInputSchema.parse({ ...inputValido, icone: 'a'.repeat(17) })).toThrow()
   })
 })

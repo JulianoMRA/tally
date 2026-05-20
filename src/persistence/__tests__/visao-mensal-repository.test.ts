@@ -4,8 +4,6 @@ import { openInMemoryDatabase } from '../database'
 import { runMigrations } from '../migrations/runner'
 import { VisaoMensalRepository } from '../repositories/visao-mensal-repository'
 import { DespesaRepository } from '../repositories/despesa-repository'
-import { AjudaRepository } from '../repositories/ajuda-repository'
-import { ContribuidorRepository } from '../repositories/contribuidor-repository'
 import { RendaRepository } from '../repositories/renda-repository'
 import { RecebimentoRepository } from '../repositories/recebimento-repository'
 
@@ -37,7 +35,6 @@ describe('VisaoMensalRepository.detalhar (RF-VIS-01/02 + RN-08)', () => {
     expect(result.faturas).toEqual([])
     expect(result.gastosForaCartao).toEqual([])
     expect(result.recebimentos).toEqual([])
-    expect(result.ajudasPendentes).toEqual([])
     expect(result.totais.saldoRealizadoCentavos).toBe(0)
     expect(result.totais.saldoProjetadoCentavos).toBe(0)
   })
@@ -89,78 +86,11 @@ describe('VisaoMensalRepository.detalhar (RF-VIS-01/02 + RN-08)', () => {
     // RN-08: saldo = recebido - (faturas líquido + gastos)
     // recebido = 0 (recém criado, status Esperado), esperado = 100000
     // saídas = 10000 + 5000 + 3000 = 18000
-    expect(result.totais.totalSaidasLiquidasCentavos).toBe(18000)
+    expect(result.totais.totalSaidasCentavos).toBe(18000)
     expect(result.totais.totalEntradasRecebidasCentavos).toBe(0)
     expect(result.totais.totalEntradasProjetadasCentavos).toBe(100000)
     expect(result.totais.saldoRealizadoCentavos).toBe(-18000)
     expect(result.totais.saldoProjetadoCentavos).toBe(82000)
-  })
-
-  it('líquido da fatura desconta ajudas (RN-07)', () => {
-    const cartaoId = inserirCartao(db, 'Inter', 5, 12)
-    const catId = inserirCategoria(db)
-    const despesaRepo = new DespesaRepository(db)
-    const contribRepo = new ContribuidorRepository(db)
-    const ajudaRepo = new AjudaRepository(db)
-
-    const r = despesaRepo.criarUnicaCredito({
-      descricao: 'X',
-      categoriaId: catId,
-      cartaoId,
-      valorCentavos: 10000,
-      dataCompra: '2026-06-03'
-    })
-    const mae = contribRepo.create({ nome: 'Mãe', contato: null })
-    ajudaRepo.criar({
-      contribuidorId: mae.id,
-      parcelaId: r.parcela.id,
-      valorCentavos: 3000,
-      recorrente: false
-    })
-
-    const result = repo.detalhar('2026-06')
-    expect(result.faturas[0].totalBrutoCentavos).toBe(10000)
-    expect(result.faturas[0].totalAjudasCentavos).toBe(3000)
-    expect(result.faturas[0].totalLiquidoCentavos).toBe(7000)
-    expect(result.totais.totalSaidasLiquidasCentavos).toBe(7000)
-  })
-
-  it('ajudas Pendentes aparecem agrupadas por contribuidor; Recebidas excluídas', () => {
-    const cartaoId = inserirCartao(db, 'Inter', 5, 12)
-    const catId = inserirCategoria(db)
-    const despesaRepo = new DespesaRepository(db)
-    const contribRepo = new ContribuidorRepository(db)
-    const ajudaRepo = new AjudaRepository(db)
-
-    const r = despesaRepo.criarUnicaCredito({
-      descricao: 'X',
-      categoriaId: catId,
-      cartaoId,
-      valorCentavos: 10000,
-      dataCompra: '2026-06-03'
-    })
-    const mae = contribRepo.create({ nome: 'Mãe', contato: null })
-    const pai = contribRepo.create({ nome: 'Pai', contato: null })
-
-    ajudaRepo.criar({
-      contribuidorId: mae.id,
-      parcelaId: r.parcela.id,
-      valorCentavos: 3000,
-      recorrente: false
-    })
-    const ajudaPai = ajudaRepo.criar({
-      contribuidorId: pai.id,
-      parcelaId: r.parcela.id,
-      valorCentavos: 2000,
-      recorrente: false
-    })
-    // Marca a ajuda do pai como Recebida — não deve aparecer em pendentes
-    ajudaRepo.marcarRecebida(ajudaPai.criadas[0].id, '2026-06-10')
-
-    const result = repo.detalhar('2026-06')
-    expect(result.ajudasPendentes).toHaveLength(1)
-    expect(result.ajudasPendentes[0].contribuidorNome).toBe('Mãe')
-    expect(result.ajudasPendentes[0].totalPendenteCentavos).toBe(3000)
   })
 
   it('exclui faturas e dados de outros meses', () => {
@@ -185,11 +115,11 @@ describe('VisaoMensalRepository.detalhar (RF-VIS-01/02 + RN-08)', () => {
 
     const junho = repo.detalhar('2026-06')
     expect(junho.faturas).toHaveLength(1)
-    expect(junho.totais.totalSaidasLiquidasCentavos).toBe(1000)
+    expect(junho.totais.totalSaidasCentavos).toBe(1000)
 
     const julho = repo.detalhar('2026-07')
     expect(julho.faturas).toHaveLength(1)
-    expect(julho.totais.totalSaidasLiquidasCentavos).toBe(2000)
+    expect(julho.totais.totalSaidasCentavos).toBe(2000)
   })
 
   it('contabiliza recebido vs esperado corretamente', () => {
@@ -270,7 +200,7 @@ describe('VisaoMensalRepository.detalhar — extensão de horizonte (RF-VIS-04, 
     const result = repo.detalhar('2027-08')
 
     expect(result.faturas).toHaveLength(1)
-    expect(result.faturas[0].totalBrutoCentavos).toBe(2000)
+    expect(result.faturas[0].totalCentavos).toBe(2000)
 
     expect(result.recebimentos).toHaveLength(1)
     expect(result.recebimentos[0].valorCentavos).toBe(100000)
