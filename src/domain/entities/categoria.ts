@@ -5,7 +5,6 @@ export type Categoria = {
   nome: string
   tipo: TipoCategoria
   cor: string
-  icone: string | null
   ativo: boolean
   createdAt: string
   updatedAt: string
