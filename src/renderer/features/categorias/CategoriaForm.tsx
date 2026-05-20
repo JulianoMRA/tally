@@ -23,10 +23,9 @@ export function CategoriaForm({ mode, categoriaInicial, onSalvar, onCancelar }: 
       ? {
           nome: categoriaInicial.nome,
           tipo: categoriaInicial.tipo,
-          cor: categoriaInicial.cor,
-          icone: categoriaInicial.icone
+          cor: categoriaInicial.cor
         }
-      : { tipo: 'Despesa', cor: '#000000', icone: null }
+      : { tipo: 'Despesa', cor: '#000000' }
   })
 
   return (
@@ -50,20 +49,9 @@ export function CategoriaForm({ mode, categoriaInicial, onSalvar, onCancelar }: 
         </div>
       </Field>
 
-      <div className={styles.fieldRow}>
-        <Field label="Cor" error={errors.cor?.message}>
-          <input type="color" {...register('cor')} className={styles.colorInput} />
-        </Field>
-        <Field label="Ícone (opcional)" error={errors.icone?.message}>
-          <Input
-            type="text"
-            {...register('icone')}
-            placeholder="🛒 ou Mercado"
-            maxLength={16}
-            error={!!errors.icone}
-          />
-        </Field>
-      </div>
+      <Field label="Cor" error={errors.cor?.message}>
+        <input type="color" {...register('cor')} className={styles.colorInput} />
+      </Field>
 
       <div className={styles.formActions}>
         <Button type="button" variant="ghost" onClick={onCancelar}>
