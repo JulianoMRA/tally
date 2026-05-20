@@ -9,6 +9,7 @@ type BadgeVariant =
   | 'expense'
   | 'active'
   | 'archived'
+  | 'projection'
 
 interface BadgeProps {
   variant: BadgeVariant
@@ -23,7 +24,8 @@ const LABELS: Record<BadgeVariant, string> = {
   income: 'Receita',
   expense: 'Despesa',
   active: 'Ativo',
-  archived: 'Arquivado'
+  archived: 'Arquivado',
+  projection: 'Projeção'
 }
 
 export function Badge({ variant, label }: BadgeProps) {
