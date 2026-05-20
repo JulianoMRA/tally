@@ -44,6 +44,15 @@ logs/
 # TypeScript incremental build info
 *.tsbuildinfo
 
+# TypeScript --build outputs (gerados acidentalmente por tsc --build)
+src/**/*.js
+src/**/*.jsx
+electron/**/*.js
+electron/**/*.d.ts
+src/domain/**/*.d.ts
+src/persistence/**/*.d.ts
+src/shared/**/*.d.ts
+
 # Claude Code — arquivos internos de sessão e operação
 .claude/
 CLAUDE.md
