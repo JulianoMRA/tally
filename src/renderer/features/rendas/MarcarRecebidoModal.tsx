@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Button, Field, Input } from '../../components/ui'
-import styles from './recebimentos.module.css'
+import styles from './rendas.module.css'
 
 type Props = {
   descricao: string
