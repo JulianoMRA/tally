@@ -1,0 +1,121 @@
+.body {
+  padding: 0 32px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.toolbarLabel {
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+
+.periodoSelector {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-base);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  padding: 3px;
+}
+
+.periodoBtn {
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--r-2) - 2px);
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.periodoBtn:hover {
+  background: var(--bg-elev);
+  color: var(--ink);
+}
+
+.periodoBtnActive,
+.periodoBtnActive:hover {
+  background: var(--ink);
+  color: var(--bg-elev);
+  font-weight: 600;
+}
+
+.gastosMesGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.ranking {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rankItem {
+  display: grid;
+  grid-template-columns: 16px 1fr auto 50px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+}
+
+.rankChip {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid var(--rule);
+}
+
+.rankNome {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.rankValor {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.rankPct {
+  font-size: 11px;
+  color: var(--ink-muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.chartWrap {
+  width: 100%;
+  min-height: 240px;
+}
+
+.erro {
+  font-size: 12px;
+  color: var(--expense);
+  margin: 8px 0;
+}
+
+@media (max-width: 900px) {
+  .gastosMesGrid {
+    grid-template-columns: 1fr;
+  }
+}
