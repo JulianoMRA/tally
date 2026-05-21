@@ -5,7 +5,7 @@ import {
   proxMesReferencia
 } from '@domain/services/mes-referencia'
 import { PageHead } from '../../components/layout/PageHead'
-import { Badge, EmptyState, Field, Input, Panel } from '../../components/ui'
+import { Badge, EmptyState, Input, Panel } from '../../components/ui'
 import { pluralizar } from '../../lib/pluralizar'
 import { useVisaoMensal } from './hooks/use-visao-mensal'
 import styles from './visao-mensal.module.css'
@@ -55,14 +55,13 @@ export default function VisaoMensalPage() {
           >
             ←
           </button>
-          <Field label="Mês">
-            <Input
-              type="month"
-              value={mes}
-              onChange={(e) => setMes(e.target.value)}
-              className={styles.mesInput}
-            />
-          </Field>
+          <Input
+            type="month"
+            value={mes}
+            onChange={(e) => setMes(e.target.value)}
+            className={styles.mesInput}
+            aria-label="Mês"
+          />
           <button
             type="button"
             className={styles.navBtn}

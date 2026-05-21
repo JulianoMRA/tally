@@ -19,7 +19,7 @@ export default function FaturasPage() {
   const [cartaoId, setCartaoId] = useState<number | null>(null)
   const [modo, setModo] = useState<Modo>({ kind: 'lista' })
 
-  const { cartoes } = useCartoesAtivos()
+  const { cartoes, loading: loadingCartoes } = useCartoesAtivos()
   const {
     faturas,
     loading: loadingFaturas,
@@ -56,18 +56,28 @@ export default function FaturasPage() {
           <Select
             id="cartaoSelect"
             value={cartaoId ?? ''}
+            disabled={loadingCartoes}
             onChange={(e) => {
-              setCartaoId(e.target.value ? Number(e.target.value) : null)
+              const val = e.target.value
+              setCartaoId(val ? Number(val) : null)
               setModo({ kind: 'lista' })
             }}
             style={{ maxWidth: 240 }}
           >
-            <option value="">Selecione um cartão…</option>
-            {cartoes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome}
-              </option>
-            ))}
+            {loadingCartoes ? (
+              <option value="">Carregando cartões…</option>
+            ) : cartoes.length === 0 ? (
+              <option value="">Nenhum cartão cadastrado</option>
+            ) : (
+              <>
+                <option value="">Selecione um cartão…</option>
+                {cartoes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
+                ))}
+              </>
+            )}
           </Select>
         </div>
 
