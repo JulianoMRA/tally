@@ -3,10 +3,14 @@ import type { Cartao } from '@domain/entities/cartao'
 import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
 import { PageHead } from '../../components/layout/PageHead'
-import { Badge, Button, EmptyState, Panel } from '../../components/ui'
+import { Badge, Button, ConfirmDialog, EmptyState, Panel, useToast } from '../../components/ui'
 import { useAssinaturas } from './hooks/use-assinaturas'
 import { ReajustarValorModal } from './ReajustarValorModal'
 import styles from './assinaturas.module.css'
+
+type Confirmacao =
+  | { tipo: 'cancelar'; assinatura: Despesa }
+  | { tipo: 'excluir'; assinatura: Despesa }
 
 function formatBRL(centavos: number): string {
   return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -18,7 +22,8 @@ export default function AssinaturasPage() {
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [filtroAtivas, setFiltroAtivas] = useState(true)
   const [reajustando, setReajustando] = useState<Despesa | null>(null)
-  const [acaoErro, setAcaoErro] = useState<string | null>(null)
+  const [confirmacao, setConfirmacao] = useState<Confirmacao | null>(null)
+  const toast = useToast()
 
   useEffect(() => {
     window.api.cartao.list({ incluirArquivados: true }).then(setCartoes)
@@ -27,34 +32,27 @@ export default function AssinaturasPage() {
 
   const exibidas = assinaturas.filter((a) => (filtroAtivas ? a.ativa : !a.ativa))
 
-  async function handleCancelar(assinatura: Despesa) {
-    const ok = window.confirm(
-      `Cancelar a assinatura "${assinatura.descricao}"? ` +
-        'As ocorrências em faturas abertas serão removidas. ' +
-        'Ocorrências em faturas já fechadas ou pagas permanecem no histórico.'
-    )
-    if (!ok) return
-    setAcaoErro(null)
+  async function confirmarCancelar(assinatura: Despesa) {
     try {
       await window.api.despesa.cancelarAssinatura({ despesaId: assinatura.id })
+      toast.show(`"${assinatura.descricao}" cancelada.`, 'success')
       await recarregar()
     } catch (e) {
-      setAcaoErro(e instanceof Error ? e.message : 'Erro ao cancelar assinatura.')
+      toast.show(e instanceof Error ? e.message : 'Erro ao cancelar assinatura.', 'error')
+    } finally {
+      setConfirmacao(null)
     }
   }
 
-  async function handleExcluir(assinatura: Despesa) {
-    const ok = window.confirm(
-      `Excluir definitivamente a assinatura "${assinatura.descricao}" e TODAS as parcelas pendentes? ` +
-        'Esta ação é irreversível. Bloqueia se houver parcela já paga.'
-    )
-    if (!ok) return
-    setAcaoErro(null)
+  async function confirmarExcluir(assinatura: Despesa) {
     try {
       await window.api.despesa.excluir({ despesaId: assinatura.id })
+      toast.show(`"${assinatura.descricao}" excluída.`, 'success')
       await recarregar()
     } catch (e) {
-      setAcaoErro(e instanceof Error ? e.message : 'Erro ao excluir assinatura.')
+      toast.show(e instanceof Error ? e.message : 'Erro ao excluir assinatura.', 'error')
+    } finally {
+      setConfirmacao(null)
     }
   }
 
@@ -105,7 +103,6 @@ export default function AssinaturasPage() {
         </div>
 
         {erro && <p className={styles.erro}>{erro}</p>}
-        {acaoErro && <p className={styles.erro}>{acaoErro}</p>}
 
         <Panel title={filtroAtivas ? 'Assinaturas ativas' : 'Assinaturas canceladas'} flush>
           {loading ? (
@@ -139,12 +136,20 @@ export default function AssinaturasPage() {
                         <Button variant="ghost" size="sm" onClick={() => setReajustando(a)}>
                           Reajustar
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleCancelar(a)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setConfirmacao({ tipo: 'cancelar', assinatura: a })}
+                        >
                           Cancelar
                         </Button>
                       </>
                     )}
-                    <Button variant="danger" size="sm" onClick={() => handleExcluir(a)}>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => setConfirmacao({ tipo: 'excluir', assinatura: a })}
+                    >
                       Excluir
                     </Button>
                   </div>
@@ -160,6 +165,27 @@ export default function AssinaturasPage() {
             valorAtualCentavos={reajustando.valorCentavos}
             onConfirmar={handleReajustarConfirmar}
             onCancelar={() => setReajustando(null)}
+          />
+        )}
+
+        {confirmacao?.tipo === 'cancelar' && (
+          <ConfirmDialog
+            title={`Cancelar "${confirmacao.assinatura.descricao}"?`}
+            body="As ocorrências em faturas abertas serão removidas. Ocorrências em faturas já fechadas ou pagas permanecem no histórico."
+            confirmText="Cancelar assinatura"
+            confirmVariant="danger"
+            onConfirm={() => confirmarCancelar(confirmacao.assinatura)}
+            onCancel={() => setConfirmacao(null)}
+          />
+        )}
+        {confirmacao?.tipo === 'excluir' && (
+          <ConfirmDialog
+            title={`Excluir "${confirmacao.assinatura.descricao}"?`}
+            body="A assinatura e TODAS as parcelas pendentes serão removidas. Esta ação é irreversível e bloqueia se houver parcela já paga."
+            confirmText="Excluir"
+            confirmVariant="danger"
+            onConfirm={() => confirmarExcluir(confirmacao.assinatura)}
+            onCancel={() => setConfirmacao(null)}
           />
         )}
       </div>
