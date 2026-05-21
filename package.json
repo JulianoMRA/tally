@@ -4,6 +4,7 @@
   "description": "Desktop app for monthly personal finance tracking",
   "type": "module",
   "main": "out/main/index.cjs",
+  "productName": "Tally",
   "author": "Juliano Melo Rodrigues Alencar",
   "license": "MIT",
   "engines": {
@@ -19,7 +20,52 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
+    "gen:icon": "node scripts/gen-icon.mjs",
+    "dist": "npm run build && electron-builder --win",
+    "dist:dir": "npm run build && electron-builder --win --dir",
     "prepare": "husky"
+  },
+  "build": {
+    "appId": "br.com.juliano.tally",
+    "productName": "Tally",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Tally"
+    },
+    "portable": {
+      "artifactName": "Tally-${version}-portable.exe"
+    },
+    "asar": true,
+    "compression": "normal"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
