@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { CriarRecebimentoAvulsoInput } from '@shared/ipc/recebimento'
 import { Button, Field, Input } from '../../components/ui'
-import styles from './recebimentos.module.css'
+import styles from './rendas.module.css'
 
 type Props = {
   onConfirmar: (input: CriarRecebimentoAvulsoInput) => Promise<void>

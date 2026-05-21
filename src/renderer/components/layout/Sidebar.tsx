@@ -113,22 +113,6 @@ const NAV: NavGroup[] = [
             <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
           </svg>
         )
-      },
-      {
-        to: '/recebimentos',
-        label: 'Recebimentos',
-        icon: (
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 12l5 5L20 7" />
-          </svg>
-        )
       }
     ]
   },
