@@ -52,6 +52,17 @@ export {
   type VisaoMensalApi
 } from './visao-mensal'
 
+export {
+  RELATORIO_IPC_CHANNELS,
+  type TotaisPorCategoriaInput,
+  type EvolucaoSaldoInput,
+  type EvolucaoCategoriaInput,
+  type TotalPorCategoria,
+  type PontoEvolucaoSaldo,
+  type PontoEvolucaoCategoria,
+  type RelatorioApi
+} from './relatorio'
+
 import type { CartaoApi } from './cartao'
 import type { CategoriaApi } from './categoria'
 import type { DespesaApi } from './despesa'
@@ -59,6 +70,7 @@ import type { FaturaApi } from './fatura'
 import type { RendaApi } from './renda'
 import type { RecebimentoApi } from './recebimento'
 import type { VisaoMensalApi } from './visao-mensal'
+import type { RelatorioApi } from './relatorio'
 
 export type Api = {
   cartao: CartaoApi
@@ -68,4 +80,5 @@ export type Api = {
   renda: RendaApi
   recebimento: RecebimentoApi
   visaoMensal: VisaoMensalApi
+  relatorio: RelatorioApi
 }

@@ -6,6 +6,7 @@ import DespesasPage from './features/despesas/DespesasPage'
 import FaturasPage from './features/faturas/FaturasPage'
 import AssinaturasPage from './features/assinaturas/AssinaturasPage'
 import GastosPage from './features/gastos/GastosPage'
+import RelatoriosPage from './features/relatorios/RelatoriosPage'
 import RendasPage from './features/rendas/RendasPage'
 import VisaoMensalPage from './features/visao-mensal/VisaoMensalPage'
 
@@ -23,6 +24,7 @@ export const router = createHashRouter([
       { path: 'assinaturas', element: <AssinaturasPage /> },
       { path: 'gastos', element: <GastosPage /> },
       { path: 'rendas', element: <RendasPage /> },
+      { path: 'relatorios', element: <RelatoriosPage /> },
       { path: 'recebimentos', element: <Navigate to="/rendas" replace /> }
     ]
   }

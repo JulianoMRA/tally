@@ -12,6 +12,7 @@ import { registerFaturaHandlers } from './ipc/fatura-handlers'
 import { registerRendaHandlers } from './ipc/renda-handlers'
 import { registerRecebimentoHandlers } from './ipc/recebimento-handlers'
 import { registerVisaoMensalHandlers } from './ipc/visao-mensal-handlers'
+import { registerRelatorioHandlers } from './ipc/relatorio-handlers'
 
 let db: Database | null = null
 let isShuttingDown = false
@@ -117,6 +118,7 @@ if (!obteveLock) {
       registerRendaHandlers(db, ipcMain)
       registerRecebimentoHandlers(db, ipcMain)
       registerVisaoMensalHandlers(db, ipcMain)
+      registerRelatorioHandlers(db, ipcMain)
       createWindow()
 
       app.on('activate', () => {

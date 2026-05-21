@@ -32,6 +32,22 @@ const NAV: NavGroup[] = [
         )
       },
       {
+        to: '/relatorios',
+        label: 'Relatórios',
+        icon: (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+          </svg>
+        )
+      },
+      {
         to: '/faturas',
         label: 'Faturas',
         icon: (

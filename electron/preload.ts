@@ -35,6 +35,12 @@ import type {
 } from '@shared/ipc/recebimento'
 import { VISAO_MENSAL_IPC_CHANNELS } from '@shared/ipc/visao-mensal'
 import type { DetalharMesInput } from '@shared/ipc/visao-mensal'
+import { RELATORIO_IPC_CHANNELS } from '@shared/ipc/relatorio'
+import type {
+  TotaisPorCategoriaInput,
+  EvolucaoSaldoInput,
+  EvolucaoCategoriaInput
+} from '@shared/ipc/relatorio'
 
 contextBridge.exposeInMainWorld('api', {
   cartao: {
@@ -116,5 +122,13 @@ contextBridge.exposeInMainWorld('api', {
   visaoMensal: {
     detalhar: (input: DetalharMesInput) =>
       ipcRenderer.invoke(VISAO_MENSAL_IPC_CHANNELS.detalhar, input)
+  },
+  relatorio: {
+    totaisPorCategoria: (input: TotaisPorCategoriaInput) =>
+      ipcRenderer.invoke(RELATORIO_IPC_CHANNELS.totaisPorCategoria, input),
+    evolucaoSaldo: (input: EvolucaoSaldoInput) =>
+      ipcRenderer.invoke(RELATORIO_IPC_CHANNELS.evolucaoSaldo, input),
+    evolucaoCategoria: (input: EvolucaoCategoriaInput) =>
+      ipcRenderer.invoke(RELATORIO_IPC_CHANNELS.evolucaoCategoria, input)
   }
 })
