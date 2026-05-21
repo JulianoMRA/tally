@@ -4,10 +4,8 @@ import { openInMemoryDatabase } from '../database'
 import { runMigrations } from '../migrations/runner'
 
 const EXPECTED_TABLES = [
-  'ajuda',
   'cartao',
   'categoria',
-  'contribuidor',
   'despesa',
   'fatura',
   'parcela',
@@ -34,8 +32,30 @@ describe('migration 0001_initial_schema', () => {
     runMigrations(db)
   })
 
-  it('cria todas as 9 tabelas do PRD §6 + schema_migrations', () => {
+  it('cria as 7 tabelas do PRD §6 + schema_migrations apos as duas migrations', () => {
     expect(listTables(db)).toEqual(EXPECTED_TABLES)
+  })
+
+  it('migration 0002 mantem categoria.icone e renda.categoria_id como colunas mortas (nao referenciadas pelo codigo)', () => {
+    // Limpar as colunas com seguranca requer desligar foreign_keys fora da
+    // transacao da migration. Esse refator de infra fica para um slice de
+    // hardening posterior. As colunas permanecem nullable, o codigo nao as
+    // referencia, e os INSERTs as omitem.
+    const colsCategoria = (
+      db.prepare('PRAGMA table_info(categoria)').all() as { name: string }[]
+    ).map((c) => c.name)
+    expect(colsCategoria).toContain('icone')
+
+    const colsRenda = (db.prepare('PRAGMA table_info(renda)').all() as { name: string }[]).map(
+      (c) => c.name
+    )
+    expect(colsRenda).toContain('categoria_id')
+  })
+
+  it('migration 0002 removeu as tabelas ajuda e contribuidor', () => {
+    const tables = listTables(db)
+    expect(tables).not.toContain('ajuda')
+    expect(tables).not.toContain('contribuidor')
   })
 
   it('aplica todas as constraints essenciais', () => {
@@ -131,6 +151,6 @@ describe('migration 0001_initial_schema', () => {
   it('é idempotente quando rodada repetidamente', () => {
     const second = runMigrations(db)
     expect(second.applied).toEqual([])
-    expect(second.skipped).toEqual(['0001_initial_schema'])
+    expect(second.skipped).toEqual(['0001_initial_schema', '0002_simplificacao_pre_slice_13'])
   })
 })

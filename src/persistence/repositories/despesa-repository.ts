@@ -9,6 +9,7 @@ import { ParcelaRepository } from './parcela-repository'
 import { calcularExtensaoNecessaria } from '../../domain/services/calcular-extensao-horizonte'
 import { gerarParcelas } from '../../domain/services/gerar-parcelas'
 import { gerarOcorrenciasAssinatura } from '../../domain/services/gerar-ocorrencias-assinatura'
+import { podeDeletarDespesa } from '../../domain/services/regras-despesa'
 
 const HORIZONTE_ASSINATURA_MESES = 12
 
@@ -480,6 +481,41 @@ export class DespesaRepository implements Repository {
     sql += ' ORDER BY data_compra DESC, id DESC'
     const rows = this.db.prepare(sql).all(...params) as DespesaRow[]
     return rows.map(mapRow)
+  }
+
+  /**
+   * RF-DES-09 — exclui despesa e suas parcelas pendentes em uma única
+   * transação. Bloqueia quando há parcela Paga (regra em
+   * `podeDeletarDespesa`). FKs são `ON DELETE RESTRICT`, por isso parcelas
+   * são apagadas antes da despesa.
+   */
+  excluir(despesaId: number): { despesaExcluida: number; parcelasExcluidas: number } {
+    const despesaRow = this.db.prepare('SELECT * FROM despesa WHERE id = ?').get(despesaId) as
+      | DespesaRow
+      | undefined
+    if (!despesaRow) throw new Error(`Despesa #${despesaId} não encontrada`)
+
+    const parcelaRepo = new ParcelaRepository(this.db)
+    const parcelas = parcelaRepo.listarPorDespesa(despesaId)
+
+    const regra = podeDeletarDespesa(parcelas)
+    if (!regra.ok) {
+      throw new Error(
+        `Despesa #${despesaId} possui parcela(s) paga(s): ${regra.parcelasPagas.join(', ')}. Exclusão bloqueada.`
+      )
+    }
+
+    return this.db.transaction(() => {
+      const delParcelas = this.db.prepare('DELETE FROM parcela WHERE despesa_id = ?')
+      const infoP = delParcelas.run(despesaId)
+
+      this.db.prepare('DELETE FROM despesa WHERE id = ?').run(despesaId)
+
+      return {
+        despesaExcluida: despesaId,
+        parcelasExcluidas: Number(infoP.changes)
+      }
+    })()
   }
 
   listarAssinaturas(filtro?: { ativa?: boolean }): Despesa[] {

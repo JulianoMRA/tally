@@ -685,6 +685,92 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
       expect(mesesGerados(b.despesa.id)).toHaveLength(15)
     })
   })
+
+  describe('excluir (RF-DES-09)', () => {
+    it('deleta despesa parcelada sem parcelas pagas + suas parcelas pendentes', () => {
+      const r = repo.criarParceladaCredito({
+        descricao: 'TV',
+        categoriaId: catId,
+        cartaoId,
+        totalParcelas: 5,
+        valorTotalCentavos: 5000,
+        dataCompra: '2026-06-03'
+      })
+
+      const resultado = repo.excluir(r.despesa.id)
+
+      expect(resultado.despesaExcluida).toBe(r.despesa.id)
+      expect(resultado.parcelasExcluidas).toBe(5)
+
+      const restante = db
+        .prepare('SELECT count(*) as n FROM despesa WHERE id = ?')
+        .get(r.despesa.id) as { n: number }
+      expect(restante.n).toBe(0)
+
+      const parcelasRestantes = db
+        .prepare('SELECT count(*) as n FROM parcela WHERE despesa_id = ?')
+        .get(r.despesa.id) as { n: number }
+      expect(parcelasRestantes.n).toBe(0)
+    })
+
+    it('bloqueia exclusão quando ha pelo menos uma parcela Paga', () => {
+      const r = repo.criarParceladaCredito({
+        descricao: 'TV',
+        categoriaId: catId,
+        cartaoId,
+        totalParcelas: 5,
+        valorTotalCentavos: 5000,
+        dataCompra: '2026-06-03'
+      })
+      db.prepare(
+        "UPDATE parcela SET status = 'Paga', data_pagamento = '2026-06-12' WHERE id = ?"
+      ).run(r.parcelas[0].id)
+
+      expect(() => repo.excluir(r.despesa.id)).toThrow(/parcela.*paga/i)
+
+      const ainda = db
+        .prepare('SELECT count(*) as n FROM despesa WHERE id = ?')
+        .get(r.despesa.id) as { n: number }
+      expect(ainda.n).toBe(1)
+    })
+
+    it('lança erro para despesa inexistente', () => {
+      expect(() => repo.excluir(99999)).toThrow(/não encontrada/i)
+    })
+
+    it('é atômica: erro de SQL não deixa parcelas órfãs', () => {
+      const r = repo.criarParceladaCredito({
+        descricao: 'TV',
+        categoriaId: catId,
+        cartaoId,
+        totalParcelas: 3,
+        valorTotalCentavos: 3000,
+        dataCompra: '2026-06-03'
+      })
+
+      // Exclui de verdade — deve completar
+      repo.excluir(r.despesa.id)
+
+      const parcelasOrfas = db
+        .prepare('SELECT count(*) as n FROM parcela WHERE despesa_id = ?')
+        .get(r.despesa.id) as { n: number }
+      expect(parcelasOrfas.n).toBe(0)
+    })
+
+    it('exclui despesa Unica (1 parcela)', () => {
+      const r = repo.criarUnicaCredito({
+        descricao: 'Almoço',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 2500,
+        dataCompra: '2026-06-04'
+      })
+
+      const resultado = repo.excluir(r.despesa.id)
+
+      expect(resultado.parcelasExcluidas).toBe(1)
+    })
+  })
 })
 
 describe('DespesaRepository — fora de cartão (RF-DES-01)', () => {

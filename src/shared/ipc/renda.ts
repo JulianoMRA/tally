@@ -20,7 +20,6 @@ const valorSchema = z
 
 export const criarRendaAvulsaInputSchema = z.object({
   nome: nomeSchema,
-  categoriaId: z.number().int().positive().nullable().optional(),
   valorPadraoCentavos: valorSchema
 })
 
@@ -28,7 +27,6 @@ export type CriarRendaAvulsaInput = z.infer<typeof criarRendaAvulsaInputSchema>
 
 export const criarRendaRecorrenteInputSchema = z.object({
   nome: nomeSchema,
-  categoriaId: z.number().int().positive().nullable().optional(),
   valorPadraoCentavos: valorSchema,
   diaEsperado: z
     .number({ message: 'Dia esperado é obrigatório' })
@@ -42,7 +40,6 @@ export type CriarRendaRecorrenteInput = z.infer<typeof criarRendaRecorrenteInput
 
 export const updateRendaInputSchema = z.object({
   nome: nomeSchema,
-  categoriaId: z.number().int().positive().nullable().optional(),
   valorPadraoCentavos: valorSchema
 })
 

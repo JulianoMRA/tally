@@ -75,10 +75,12 @@
   color: var(--ink);
 }
 
-.tipoBtnActive {
-  background: var(--bg-elev);
-  color: var(--ink);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+.tipoBtnActive,
+.tipoBtnActive:hover {
+  background: var(--ink);
+  color: var(--bg-elev);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  font-weight: 600;
 }
 
 .formInner {

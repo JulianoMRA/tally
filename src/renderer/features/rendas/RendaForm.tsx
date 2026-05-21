@@ -8,8 +8,7 @@ import {
   type CriarRendaAvulsaInput,
   type CriarRendaRecorrenteInput
 } from '@shared/ipc/renda'
-import { Button, Field, Input, Select } from '../../components/ui'
-import { useCategoriasRenda } from './hooks/use-categorias-renda'
+import { Button, Field, Input } from '../../components/ui'
 import styles from './rendas.module.css'
 
 type TipoForm = 'recorrente' | 'avulsa'
@@ -39,7 +38,6 @@ type Props = {
 }
 
 function FormRecorrente({ onSalvar }: { onSalvar: Props['onSalvarRecorrente'] }) {
-  const { categorias } = useCategoriasRenda()
   const {
     register,
     handleSubmit,
@@ -50,10 +48,6 @@ function FormRecorrente({ onSalvar }: { onSalvar: Props['onSalvarRecorrente'] })
   async function onSubmit(values: RecorrenteValues) {
     await onSalvar({
       nome: values.nome,
-      categoriaId:
-        values.categoriaId === undefined || values.categoriaId === null
-          ? null
-          : Number(values.categoriaId) || null,
       valorPadraoCentavos: parseCentavos(values.valorReais),
       diaEsperado: Number(values.diaEsperado),
       dataInicio: values.dataInicio
@@ -72,31 +66,15 @@ function FormRecorrente({ onSalvar }: { onSalvar: Props['onSalvarRecorrente'] })
         />
       </Field>
 
-      <div className={styles.fieldRow}>
-        <Field label="Categoria" error={errors.categoriaId?.message}>
-          <Select
-            {...register('categoriaId', { setValueAs: (v) => (v === '' ? null : Number(v)) })}
-          >
-            <option value="">—</option>
-            {categorias.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.icone ? `${c.icone} ` : ''}
-                {c.nome}
-              </option>
-            ))}
-          </Select>
-        </Field>
-
-        <Field label="Valor padrão (R$)" error={errors.valorReais?.message} required>
-          <Input
-            type="text"
-            inputMode="decimal"
-            {...register('valorReais')}
-            placeholder="0,00"
-            error={!!errors.valorReais}
-          />
-        </Field>
-      </div>
+      <Field label="Valor padrão (R$)" error={errors.valorReais?.message} required>
+        <Input
+          type="text"
+          inputMode="decimal"
+          {...register('valorReais')}
+          placeholder="0,00"
+          error={!!errors.valorReais}
+        />
+      </Field>
 
       <div className={styles.fieldRow}>
         <Field label="Dia esperado" error={errors.diaEsperado?.message} required>
@@ -128,7 +106,6 @@ function FormRecorrente({ onSalvar }: { onSalvar: Props['onSalvarRecorrente'] })
 }
 
 function FormAvulsa({ onSalvar }: { onSalvar: Props['onSalvarAvulsa'] }) {
-  const { categorias } = useCategoriasRenda()
   const {
     register,
     handleSubmit,
@@ -139,10 +116,6 @@ function FormAvulsa({ onSalvar }: { onSalvar: Props['onSalvarAvulsa'] }) {
   async function onSubmit(values: AvulsaValues) {
     await onSalvar({
       nome: values.nome,
-      categoriaId:
-        values.categoriaId === undefined || values.categoriaId === null
-          ? null
-          : Number(values.categoriaId) || null,
       valorPadraoCentavos: parseCentavos(values.valorReais)
     })
     reset()
@@ -154,31 +127,15 @@ function FormAvulsa({ onSalvar }: { onSalvar: Props['onSalvarAvulsa'] }) {
         <Input type="text" {...register('nome')} placeholder="Ex: Freela X" error={!!errors.nome} />
       </Field>
 
-      <div className={styles.fieldRow}>
-        <Field label="Categoria" error={errors.categoriaId?.message}>
-          <Select
-            {...register('categoriaId', { setValueAs: (v) => (v === '' ? null : Number(v)) })}
-          >
-            <option value="">—</option>
-            {categorias.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.icone ? `${c.icone} ` : ''}
-                {c.nome}
-              </option>
-            ))}
-          </Select>
-        </Field>
-
-        <Field label="Valor padrão (R$)" error={errors.valorReais?.message} required>
-          <Input
-            type="text"
-            inputMode="decimal"
-            {...register('valorReais')}
-            placeholder="0,00"
-            error={!!errors.valorReais}
-          />
-        </Field>
-      </div>
+      <Field label="Valor padrão (R$)" error={errors.valorReais?.message} required>
+        <Input
+          type="text"
+          inputMode="decimal"
+          {...register('valorReais')}
+          placeholder="0,00"
+          error={!!errors.valorReais}
+        />
+      </Field>
 
       <p className={styles.empty}>Fonte avulsa não gera recebimentos automáticos.</p>
 

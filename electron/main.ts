@@ -9,8 +9,6 @@ import { registerCartaoHandlers } from './ipc/cartao-handlers'
 import { registerCategoriaHandlers } from './ipc/categoria-handlers'
 import { registerDespesaHandlers } from './ipc/despesa-handlers'
 import { registerFaturaHandlers } from './ipc/fatura-handlers'
-import { registerContribuidorHandlers } from './ipc/contribuidor-handlers'
-import { registerAjudaHandlers } from './ipc/ajuda-handlers'
 import { registerRendaHandlers } from './ipc/renda-handlers'
 import { registerRecebimentoHandlers } from './ipc/recebimento-handlers'
 import { registerVisaoMensalHandlers } from './ipc/visao-mensal-handlers'
@@ -116,8 +114,6 @@ if (!obteveLock) {
       registerCategoriaHandlers(db, ipcMain)
       registerDespesaHandlers(db, ipcMain)
       registerFaturaHandlers(db, ipcMain)
-      registerContribuidorHandlers(db, ipcMain)
-      registerAjudaHandlers(db, ipcMain)
       registerRendaHandlers(db, ipcMain)
       registerRecebimentoHandlers(db, ipcMain)
       registerVisaoMensalHandlers(db, ipcMain)

@@ -19,28 +19,16 @@ describe('CategoriaRepository', () => {
       const categoria = repo.create({
         nome: 'Mercado',
         tipo: 'Despesa',
-        cor: '#4caf50',
-        icone: '🛒'
+        cor: '#4caf50'
       })
 
       expect(categoria.id).toBeTypeOf('number')
       expect(categoria.nome).toBe('Mercado')
       expect(categoria.tipo).toBe('Despesa')
       expect(categoria.cor).toBe('#4caf50')
-      expect(categoria.icone).toBe('🛒')
       expect(categoria.ativo).toBe(true)
       expect(categoria.createdAt).toBeTruthy()
       expect(categoria.updatedAt).toBeTruthy()
-    })
-
-    it('aceita icone null', () => {
-      const categoria = repo.create({
-        nome: 'Transporte',
-        tipo: 'Despesa',
-        cor: '#2196f3',
-        icone: null
-      })
-      expect(categoria.icone).toBeNull()
     })
   })
 
@@ -50,7 +38,7 @@ describe('CategoriaRepository', () => {
     })
 
     it('devolve a categoria pelo id', () => {
-      const criada = repo.create({ nome: 'Salário', tipo: 'Renda', cor: '#ffeb3b', icone: null })
+      const criada = repo.create({ nome: 'Salário', tipo: 'Renda', cor: '#ffeb3b' })
       const encontrada = repo.findById(criada.id)
 
       expect(encontrada?.id).toBe(criada.id)
@@ -60,8 +48,8 @@ describe('CategoriaRepository', () => {
 
   describe('list', () => {
     it('retorna apenas categorias ativas por padrão, ordenadas por nome', () => {
-      repo.create({ nome: 'Transporte', tipo: 'Despesa', cor: '#2196f3', icone: null })
-      repo.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50', icone: null })
+      repo.create({ nome: 'Transporte', tipo: 'Despesa', cor: '#2196f3' })
+      repo.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50' })
 
       const lista = repo.list()
 
@@ -71,8 +59,8 @@ describe('CategoriaRepository', () => {
     })
 
     it('exclui arquivadas da listagem padrão', () => {
-      const mercado = repo.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50', icone: null })
-      repo.create({ nome: 'Transporte', tipo: 'Despesa', cor: '#2196f3', icone: null })
+      const mercado = repo.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50' })
+      repo.create({ nome: 'Transporte', tipo: 'Despesa', cor: '#2196f3' })
       repo.arquivar(mercado.id)
 
       const lista = repo.list()
@@ -82,7 +70,7 @@ describe('CategoriaRepository', () => {
     })
 
     it('inclui arquivadas quando solicitado', () => {
-      const mercado = repo.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50', icone: null })
+      const mercado = repo.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50' })
       repo.arquivar(mercado.id)
 
       const lista = repo.list({ incluirArquivados: true })
@@ -92,9 +80,9 @@ describe('CategoriaRepository', () => {
     })
 
     it('filtra por tipo Despesa retornando Despesa e Ambos', () => {
-      repo.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50', icone: null })
-      repo.create({ nome: 'Salário', tipo: 'Renda', cor: '#ffeb3b', icone: null })
-      repo.create({ nome: 'Geral', tipo: 'Ambos', cor: '#9e9e9e', icone: null })
+      repo.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50' })
+      repo.create({ nome: 'Salário', tipo: 'Renda', cor: '#ffeb3b' })
+      repo.create({ nome: 'Geral', tipo: 'Ambos', cor: '#9e9e9e' })
 
       const lista = repo.list({ tipo: 'Despesa' })
 
@@ -104,9 +92,9 @@ describe('CategoriaRepository', () => {
     })
 
     it('filtra por tipo Renda retornando Renda e Ambos', () => {
-      repo.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50', icone: null })
-      repo.create({ nome: 'Salário', tipo: 'Renda', cor: '#ffeb3b', icone: null })
-      repo.create({ nome: 'Geral', tipo: 'Ambos', cor: '#9e9e9e', icone: null })
+      repo.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50' })
+      repo.create({ nome: 'Salário', tipo: 'Renda', cor: '#ffeb3b' })
+      repo.create({ nome: 'Geral', tipo: 'Ambos', cor: '#9e9e9e' })
 
       const lista = repo.list({ tipo: 'Renda' })
 
@@ -118,37 +106,32 @@ describe('CategoriaRepository', () => {
 
   describe('update', () => {
     it('atualiza campos e retorna nova entidade', () => {
-      const criada = repo.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50', icone: null })
+      const criada = repo.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50' })
 
       const atualizada = repo.update(criada.id, {
         nome: 'Supermercado',
         tipo: 'Ambos',
-        cor: '#81c784',
-        icone: '🏪'
+        cor: '#81c784'
       })
 
       expect(atualizada.nome).toBe('Supermercado')
       expect(atualizada.tipo).toBe('Ambos')
       expect(atualizada.cor).toBe('#81c784')
-      expect(atualizada.icone).toBe('🏪')
     })
 
     it('updatedAt é maior ou igual ao createdAt após update', () => {
-      const criada = repo.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50', icone: null })
+      const criada = repo.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50' })
       const atualizada = repo.update(criada.id, {
         nome: 'Mercado',
         tipo: 'Despesa',
-        cor: '#4caf50',
-        icone: null
+        cor: '#4caf50'
       })
 
       expect(atualizada.updatedAt >= criada.createdAt).toBe(true)
     })
 
     it('lança erro para id inexistente', () => {
-      expect(() =>
-        repo.update(999, { nome: 'X', tipo: 'Despesa', cor: '#000000', icone: null })
-      ).toThrow()
+      expect(() => repo.update(999, { nome: 'X', tipo: 'Despesa', cor: '#000000' })).toThrow()
     })
   })
 
@@ -157,8 +140,7 @@ describe('CategoriaRepository', () => {
       const categoria = repo.create({
         nome: 'Mercado',
         tipo: 'Despesa',
-        cor: '#4caf50',
-        icone: null
+        cor: '#4caf50'
       })
 
       const arquivada = repo.arquivar(categoria.id)
@@ -170,8 +152,7 @@ describe('CategoriaRepository', () => {
       const categoria = repo.create({
         nome: 'Mercado',
         tipo: 'Despesa',
-        cor: '#4caf50',
-        icone: null
+        cor: '#4caf50'
       })
       repo.arquivar(categoria.id)
 
@@ -182,8 +163,7 @@ describe('CategoriaRepository', () => {
       const categoria = repo.create({
         nome: 'Mercado',
         tipo: 'Despesa',
-        cor: '#4caf50',
-        icone: null
+        cor: '#4caf50'
       })
       repo.arquivar(categoria.id)
 

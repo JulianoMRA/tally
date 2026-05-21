@@ -4,9 +4,7 @@ import type { Parcela } from '../../domain/entities/parcela'
 export type FaturaDetalhada = {
   fatura: Fatura
   parcelas: Parcela[]
-  totalBrutoCentavos: number
-  totalAjudasCentavos: number
-  totalLiquidoCentavos: number
+  totalCentavos: number
 }
 
 export type FaturaApi = {

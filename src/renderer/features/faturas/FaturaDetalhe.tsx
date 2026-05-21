@@ -1,12 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { Fatura } from '@domain/entities/fatura'
-import type { Ajuda } from '@domain/entities/ajuda'
-import type { Contribuidor } from '@domain/entities/contribuidor'
 import type { FaturaDetalhada } from '@shared/ipc/fatura'
 import { useCicloFatura } from './hooks/use-faturas'
 import { AdiantarParcelasModal } from './AdiantarParcelasModal'
-import { AdicionarAjudaModal } from './AdicionarAjudaModal'
-import { AjudaChip } from './AjudaChip'
 import { Badge, Button, Panel, EmptyState, Field, Input } from '../../components/ui'
 import styles from './faturas.module.css'
 
@@ -17,12 +13,6 @@ type Props = {
   onVoltar: () => void
   onFaturaAtualizada: (fatura: Fatura) => void
   onDetalheAtualizado: (detalhe: FaturaDetalhada) => void
-}
-
-type ParcelaAlvoAjuda = {
-  parcelaId: number
-  numero: number
-  total: number | null
 }
 
 function formatBRL(centavos: number): string {
@@ -47,28 +37,14 @@ export function FaturaDetalhe({
   onFaturaAtualizada,
   onDetalheAtualizado
 }: Props) {
-  const { fatura, parcelas, totalBrutoCentavos, totalAjudasCentavos, totalLiquidoCentavos } =
-    detalhe
+  const { fatura, parcelas, totalCentavos } = detalhe
   const kind = fatura.status.kind
 
   const [modoPagar, setModoPagar] = useState(false)
   const [dataPagamento, setDataPagamento] = useState(dataHoje)
   const [modoAdiantar, setModoAdiantar] = useState(false)
-  const [parcelaAlvoAjuda, setParcelaAlvoAjuda] = useState<ParcelaAlvoAjuda | null>(null)
-  const [ajudas, setAjudas] = useState<Ajuda[]>([])
-  const [contribuidores, setContribuidores] = useState<Contribuidor[]>([])
 
   const ciclo = useCicloFatura(onFaturaAtualizada)
-
-  useEffect(() => {
-    window.api.contribuidor.list({ incluirArquivados: true }).then(setContribuidores)
-  }, [])
-
-  useEffect(() => {
-    Promise.all(parcelas.map((p) => window.api.ajuda.listarPorParcela({ parcelaId: p.id })))
-      .then((listas) => setAjudas(listas.flat()))
-      .catch(() => setAjudas([]))
-  }, [parcelas])
 
   async function recarregarDetalhe() {
     const atualizada = await window.api.fatura.detalharComParcelas(fatura.id)
@@ -84,34 +60,18 @@ export function FaturaDetalhe({
     await recarregarDetalhe()
   }
 
-  async function handleAdicionarAjuda(input: {
-    contribuidorId: number
-    valorCentavos: number
-    recorrente: boolean
-  }) {
-    if (!parcelaAlvoAjuda) return
-    await window.api.ajuda.criar({
-      contribuidorId: input.contribuidorId,
-      parcelaId: parcelaAlvoAjuda.parcelaId,
-      valorCentavos: input.valorCentavos,
-      recorrente: input.recorrente
-    })
-    setParcelaAlvoAjuda(null)
-    await recarregarDetalhe()
-  }
-
-  async function handleExcluirAjuda(ajudaId: number) {
-    await window.api.ajuda.excluir({ ajudaId })
-    await recarregarDetalhe()
-  }
-
-  function ajudasDaParcela(parcelaId: number): Ajuda[] {
-    return ajudas.filter((a) => a.parcelaId === parcelaId)
-  }
-
-  function permitirReplicar(parcelaTotal: number | null): boolean {
-    // Assinatura: total = null. Parcelada: total > 1. Única: total = 1.
-    return parcelaTotal === null || (parcelaTotal !== null && parcelaTotal > 1)
+  async function handleExcluirDespesa(despesaId: number) {
+    const ok = window.confirm(
+      `Excluir a despesa #${despesaId} e TODAS as suas parcelas pendentes? ` +
+        'Esta ação é irreversível. Bloqueia se houver parcela paga.'
+    )
+    if (!ok) return
+    try {
+      await window.api.despesa.excluir({ despesaId })
+      await recarregarDetalhe()
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : 'Erro ao excluir despesa.')
+    }
   }
 
   function handleFechar() {
@@ -219,17 +179,6 @@ export function FaturaDetalhe({
         />
       )}
 
-      {parcelaAlvoAjuda && (
-        <AdicionarAjudaModal
-          parcelaId={parcelaAlvoAjuda.parcelaId}
-          numeroParcela={parcelaAlvoAjuda.numero}
-          totalParcelas={parcelaAlvoAjuda.total}
-          permitirReplicar={permitirReplicar(parcelaAlvoAjuda.total)}
-          onConfirmar={handleAdicionarAjuda}
-          onCancelar={() => setParcelaAlvoAjuda(null)}
-        />
-      )}
-
       <Panel
         title="Parcelas"
         meta={`${parcelas.length} lançamento${parcelas.length !== 1 ? 's' : ''}`}
@@ -246,8 +195,8 @@ export function FaturaDetalhe({
                   <th>Parcela</th>
                   <th>Data</th>
                   <th className={styles.colValor}>Valor</th>
-                  <th>Ajudas</th>
                   <th>Status</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -260,53 +209,32 @@ export function FaturaDetalhe({
                     <td>{p.dataReferencia}</td>
                     <td className={`${styles.colValor} tnum`}>{formatBRL(p.valorCentavos)}</td>
                     <td>
-                      <div className={styles.ajudasCell}>
-                        {ajudasDaParcela(p.id).map((a) => (
-                          <AjudaChip
-                            key={a.id}
-                            ajuda={a}
-                            contribuidor={contribuidores.find((c) => c.id === a.contribuidorId)}
-                            onExcluir={handleExcluirAjuda}
-                          />
-                        ))}
-                        <button
-                          type="button"
-                          className={styles.ajudaAdicionarBtn}
-                          aria-label="Adicionar ajuda"
-                          onClick={() =>
-                            setParcelaAlvoAjuda({
-                              parcelaId: p.id,
-                              numero: p.numero,
-                              total: p.total
-                            })
-                          }
-                        >
-                          +
-                        </button>
-                      </div>
+                      <Badge variant={p.status === 'Paga' ? 'paid' : 'pending'} />
                     </td>
                     <td>
-                      <Badge variant={p.status === 'Paga' ? 'paid' : 'pending'} />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleExcluirDespesa(p.despesaId)}
+                        disabled={p.status === 'Paga'}
+                        title={
+                          p.status === 'Paga'
+                            ? 'Não é possível excluir uma despesa com parcela paga'
+                            : 'Excluir despesa inteira'
+                        }
+                      >
+                        Excluir
+                      </Button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
             <div className={styles.totaisFooter}>
-              <div className={styles.totalLinha}>
-                <span className={styles.totalLabel}>Total bruto</span>
-                <span className={`${styles.totalValor} tnum`}>{formatBRL(totalBrutoCentavos)}</span>
-              </div>
-              <div className={styles.totalLinha}>
-                <span className={styles.totalLabel}>Ajudas</span>
-                <span className={`${styles.totalValor} tnum`}>
-                  − {formatBRL(totalAjudasCentavos)}
-                </span>
-              </div>
               <div className={`${styles.totalLinha} ${styles.totalLiquidoLinha}`}>
-                <span className={styles.totalLabel}>Líquido</span>
+                <span className={styles.totalLabel}>Total</span>
                 <span className={`${styles.totalLiquidoValor} tnum`}>
-                  {formatBRL(totalLiquidoCentavos)}
+                  {formatBRL(totalCentavos)}
                 </span>
               </div>
             </div>

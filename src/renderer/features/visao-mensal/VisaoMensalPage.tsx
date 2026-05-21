@@ -5,7 +5,8 @@ import {
   proxMesReferencia
 } from '@domain/services/mes-referencia'
 import { PageHead } from '../../components/layout/PageHead'
-import { Badge, EmptyState, Field, Input, Panel } from '../../components/ui'
+import { Badge, EmptyState, Input, Panel } from '../../components/ui'
+import { pluralizar } from '../../lib/pluralizar'
 import { useVisaoMensal } from './hooks/use-visao-mensal'
 import styles from './visao-mensal.module.css'
 
@@ -22,7 +23,8 @@ function rotuloMes(mes: string): string {
   const [ano, m] = mes.split('-').map(Number)
   const data = new Date(ano, m - 1, 1)
   const formatador = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' })
-  return formatador.format(data)
+  const bruto = formatador.format(data)
+  return bruto.charAt(0).toUpperCase() + bruto.slice(1)
 }
 
 export default function VisaoMensalPage() {
@@ -53,14 +55,13 @@ export default function VisaoMensalPage() {
           >
             ←
           </button>
-          <Field label="Mês">
-            <Input
-              type="month"
-              value={mes}
-              onChange={(e) => setMes(e.target.value)}
-              className={styles.mesInput}
-            />
-          </Field>
+          <Input
+            type="month"
+            value={mes}
+            onChange={(e) => setMes(e.target.value)}
+            className={styles.mesInput}
+            aria-label="Mês"
+          />
           <button
             type="button"
             className={styles.navBtn}
@@ -98,12 +99,12 @@ export default function VisaoMensalPage() {
               </div>
 
               <div className={styles.card}>
-                <span className={styles.cardLabel}>Faturas (líquido)</span>
+                <span className={styles.cardLabel}>Faturas</span>
                 <span className={`${styles.cardValor} ${styles.cardValorExpense}`}>
-                  {formatBRL(detalhe.faturas.reduce((s, f) => s + f.totalLiquidoCentavos, 0))}
+                  {formatBRL(detalhe.faturas.reduce((s, f) => s + f.totalCentavos, 0))}
                 </span>
                 <span className={styles.cardMeta}>
-                  {detalhe.faturas.length} cartão{detalhe.faturas.length !== 1 ? 'ões' : ''}
+                  {detalhe.faturas.length} {pluralizar('cartão', detalhe.faturas.length, 'ões')}
                 </span>
               </div>
 
@@ -113,22 +114,8 @@ export default function VisaoMensalPage() {
                   {formatBRL(detalhe.gastosForaCartao.reduce((s, g) => s + g.valorCentavos, 0))}
                 </span>
                 <span className={styles.cardMeta}>
-                  {detalhe.gastosForaCartao.length} lançamento
-                  {detalhe.gastosForaCartao.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-
-              <div className={styles.card}>
-                <span className={styles.cardLabel}>A receber em ajudas</span>
-                <span className={styles.cardValor}>
-                  {formatBRL(
-                    detalhe.ajudasPendentes.reduce((s, a) => s + a.totalPendenteCentavos, 0)
-                  )}
-                </span>
-                <span className={styles.cardMeta}>
-                  {detalhe.ajudasPendentes.length === 0
-                    ? 'nenhum contribuidor pendente'
-                    : detalhe.ajudasPendentes.map((a) => a.contribuidorNome).join(' · ')}
+                  {detalhe.gastosForaCartao.length}{' '}
+                  {pluralizar('lançamento', detalhe.gastosForaCartao.length)}
                 </span>
               </div>
             </div>
@@ -158,7 +145,7 @@ export default function VisaoMensalPage() {
 
             <Panel
               title="Faturas"
-              meta={`${detalhe.faturas.length} cartão${detalhe.faturas.length !== 1 ? 'ões' : ''}`}
+              meta={`${detalhe.faturas.length} ${pluralizar('cartão', detalhe.faturas.length, 'ões')}`}
               flush
               className={styles.panel}
             >
@@ -170,9 +157,7 @@ export default function VisaoMensalPage() {
                     <tr>
                       <th>Cartão</th>
                       <th>Vencimento</th>
-                      <th className={styles.colValor}>Bruto</th>
-                      <th className={styles.colValor}>Ajudas</th>
-                      <th className={styles.colValor}>Líquido</th>
+                      <th className={styles.colValor}>Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -184,15 +169,7 @@ export default function VisaoMensalPage() {
                         </td>
                         <td className="mono">{f.fatura.dataVencimento}</td>
                         <td className={`${styles.colValor} tnum`}>
-                          {formatBRL(f.totalBrutoCentavos)}
-                        </td>
-                        <td className={`${styles.colValor} tnum`}>
-                          {f.totalAjudasCentavos > 0
-                            ? `− ${formatBRL(f.totalAjudasCentavos)}`
-                            : '—'}
-                        </td>
-                        <td className={`${styles.colValor} tnum`}>
-                          <strong>{formatBRL(f.totalLiquidoCentavos)}</strong>
+                          <strong>{formatBRL(f.totalCentavos)}</strong>
                         </td>
                       </tr>
                     ))}
@@ -203,9 +180,7 @@ export default function VisaoMensalPage() {
 
             <Panel
               title="Recebimentos"
-              meta={`${detalhe.recebimentos.length} entrada${
-                detalhe.recebimentos.length !== 1 ? 's' : ''
-              }`}
+              meta={`${detalhe.recebimentos.length} ${pluralizar('entrada', detalhe.recebimentos.length)}`}
               flush
               className={styles.panel}
             >
@@ -245,9 +220,7 @@ export default function VisaoMensalPage() {
 
             <Panel
               title="Gastos fora de cartão"
-              meta={`${detalhe.gastosForaCartao.length} lançamento${
-                detalhe.gastosForaCartao.length !== 1 ? 's' : ''
-              }`}
+              meta={`${detalhe.gastosForaCartao.length} ${pluralizar('lançamento', detalhe.gastosForaCartao.length)}`}
               flush
               className={styles.panel}
             >

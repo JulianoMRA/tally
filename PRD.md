@@ -1,8 +1,12 @@
 # PRD — App Desktop de Controle Financeiro Pessoal
 
-> **Status:** Planejamento concluído. Pronto para iniciar implementação.
+> **Status:** Em desenvolvimento ativo.
 > **Owner:** Juliano Melo Rodrigues Alencar
-> **Última atualização:** 13 de maio de 2026
+> **Última atualização:** 20 de maio de 2026 (Slice 12.1 — simplificação)
+>
+> **Mudança no Slice 12.1:** Ajudas, Contribuidores, ícones de Categoria e
+> categoria em Renda foram **removidos** do escopo. Cobranças a terceiros agora
+> são tratadas como rendas avulsas. Detalhes na seção 9 (Roadmap).
 
 ---
 
@@ -30,7 +34,7 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - Cadastro de parcelamentos já em andamento (essencial para migração inicial dos dados da planilha)
 - Adiantamento e cancelamento de parcelas futuras
 - Fatura como entidade com ciclo de vida (Aberta → Fechada → Paga)
-- Ajudas vinculadas a parcelas, com dashboard "A Receber por Pessoa"
+- ~~Ajudas vinculadas a parcelas, com dashboard "A Receber por Pessoa"~~ (removido no Slice 12.1)
 - Recebimentos de renda fixos (recorrentes) e avulsos
 - Visão mensal consolidada (faturas + gastos fora de cartão + entradas + saldo)
 - Navegação multi-mês com projeção de meses futuros baseada em parcelas e assinaturas ativas
@@ -63,7 +67,7 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 
 ### 4.2 Categorias (RF-CAT)
 
-- **RF-CAT-01** — Cadastrar categoria com nome, tipo (Despesa, Renda ou Ambos), cor e ícone opcional.
+- **RF-CAT-01** — Cadastrar categoria com nome, tipo (Despesa, Renda ou Ambos) e cor.
 - **RF-CAT-02** — Editar e arquivar categorias. Despesas vinculadas a categoria arquivada continuam exibindo a categoria com indicador de inativa.
 
 ### 4.3 Despesas (RF-DES)
@@ -86,18 +90,15 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - **RF-FAT-04** — Marcar fatura como paga. Ação requer confirmação. Após paga, fatura não permite mais edição de parcelas.
 - **RF-FAT-05** — Reabrir fatura paga (caso de erro): requer confirmação.
 
-### 4.5 Contribuidores e Ajudas (RF-AJU)
+### 4.5 ~~Contribuidores e Ajudas (RF-AJU)~~
 
-- **RF-AJU-01** — Cadastrar contribuidor com nome, contato opcional e flag ativo.
-- **RF-AJU-02** — Vincular ajuda a uma parcela específica, informando contribuidor, valor e flag recorrente. Uma parcela pode ter N ajudas.
-- **RF-AJU-03** — Quando despesa é assinatura ou parcelada e a ajuda é marcada como recorrente, o vínculo é replicado automaticamente em todas as ocorrências futuras (até cancelamento ou fim das parcelas).
-- **RF-AJU-04** — Dashboard "A Receber por Pessoa": lista agrupada por contribuidor com total a receber e botões para marcar como recebido (individual ou em massa).
-- **RF-AJU-05** — Status da ajuda: `Pendente` ou `Recebida`. Marcar como recebida registra a data de recebimento.
-- **RF-AJU-06** — Recebimento de ajuda **não** conta como entrada financeira: apenas atualiza o cálculo de líquido da fatura.
+> **Removido no Slice 12.1.** Cobranças a terceiros passam a ser registradas
+> como Rendas Avulsas (RF-REN-04). Os requisitos RF-AJU-01..06 foram
+> descontinuados em 20/05/2026 junto com a tabela `ajuda` e `contribuidor`.
 
 ### 4.6 Rendas e Recebimentos (RF-REN)
 
-- **RF-REN-01** — Cadastrar fonte de renda com nome, tipo (Avulsa ou Recorrente), valor padrão, categoria opcional, dia esperado de recebimento (se recorrente) e flag ativo.
+- **RF-REN-01** — Cadastrar fonte de renda com nome, tipo (Avulsa ou Recorrente), valor padrão, dia esperado de recebimento (se recorrente) e flag ativo.
 - **RF-REN-02** — Renda recorrente gera recebimentos esperados para os próximos N meses (configurável, default 12).
 - **RF-REN-03** — Marcar recebimento como recebido, com data efetiva.
 - **RF-REN-04** — Cadastrar recebimento avulso (freela, presente, etc.) sem fonte recorrente vinculada.
@@ -142,7 +143,7 @@ Unique constraint: `(cartao_id, mes_referencia)`.
 
 ### Categoria
 
-`id, nome, tipo (Despesa|Renda|Ambos), cor, icone, ativo, created_at, updated_at`
+`id, nome, tipo (Despesa|Renda|Ambos), cor, ativo, created_at, updated_at`
 
 ### Despesa
 
@@ -154,17 +155,9 @@ Nota: `valor_parcela` é o valor de cada ocorrência. Para única, igual ao valo
 
 `id, despesa_id, fatura_id (nullable se forma_pagamento ≠ Credito), numero, total (nullable para assinatura), valor, data_referencia (data esperada, usada para gastos fora de cartão), status (Pendente|Paga), data_pagamento, created_at, updated_at`
 
-### Contribuidor
-
-`id, nome, contato, ativo, created_at, updated_at`
-
-### Ajuda
-
-`id, contribuidor_id, parcela_id, valor, status (Pendente|Recebida), data_recebimento, recorrente, created_at, updated_at`
-
 ### Renda
 
-`id, nome, categoria_id (nullable), tipo (Avulsa|Recorrente), valor_padrao, dia_esperado (nullable), ativa, created_at, updated_at`
+`id, nome, tipo (Avulsa|Recorrente), valor_padrao, dia_esperado (nullable), ativa, created_at, updated_at`
 
 ### Recebimento
 
@@ -212,9 +205,9 @@ Ao adiantar M parcelas de uma despesa:
 
 Despesa do tipo Assinatura gera ocorrências mês a mês conforme o tempo avança ou conforme o usuário navega para meses futuros (geração preguiçosa). Mantém-se um horizonte de 12 meses adiante.
 
-### RN-05 — Ajuda recorrente
+### ~~RN-05 — Ajuda recorrente~~
 
-Quando uma ajuda é marcada como recorrente em uma parcela de despesa parcelada ou assinatura, ela é replicada em todas as parcelas futuras da mesma despesa. Edição posterior da ajuda recorrente em uma parcela específica não propaga (decisão de produto: edição pontual fica isolada).
+> Removida no Slice 12.1 junto com toda a feature de Ajudas.
 
 ### RN-06 — Ciclo de vida da fatura
 
@@ -222,13 +215,16 @@ Quando uma ajuda é marcada como recorrente em uma parcela de despesa parcelada 
 - `Fechada`: `data_fechamento <= data atual < data_vencimento` ou usuário fechou manualmente. Não aceita novas parcelas exceto via adiantamento explícito.
 - `Paga`: usuário registrou pagamento. Imutável exceto via reabertura.
 
-### RN-07 — Cálculo do líquido da fatura
+### RN-07 — Cálculo do total da fatura
 
-`liquido = soma(valor_parcela) - soma(ajuda.valor onde ajuda.parcela_id ∈ parcelas da fatura)`. Ajudas com status `Pendente` ou `Recebida` ambas contam (a ajuda existe, independente de já ter sido cobrada).
+`total = soma(valor_parcela onde parcela.fatura_id = fatura.id)`.
+
+> Anteriormente havia subtração de ajudas (`líquido = bruto − ajudas`); removida
+> no Slice 12.1 junto com a feature de Ajudas.
 
 ### RN-08 — Balanço mensal
 
-`saldo = soma(recebimentos do mês) - (soma(faturas do mês líquido) + soma(gastos fora de cartão do mês))`. Recebimentos de ajuda **não** entram no cálculo de entradas (reembolso, não receita).
+`saldo = soma(recebimentos do mês) - (soma(faturas do mês) + soma(gastos fora de cartão do mês))`.
 
 ---
 
@@ -281,24 +277,25 @@ Bugs encontrados durante desenvolvimento ou uso real são registrados como GitHu
 
 Ordem proposta para implementação. Cada slice é uma fatia ponta-a-ponta (UI + lógica + persistência + testes) que entrega valor incremental.
 
-| #   | Slice                    | Entrega principal                                                                                                                                         |
-| --- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0   | Setup do projeto         | Electron + Vite + React + TS + SQLite + Vitest + Playwright + ESLint + Prettier + Husky + commitlint + GitHub Actions configurado e rodando "Hello World" |
-| 1   | Camada de domínio base   | Migrations, entidades, repositórios base, testes da regra RN-01 (cálculo de fatura por data)                                                              |
-| 2   | Cartões                  | CRUD de cartões com data de fechamento/vencimento                                                                                                         |
-| 3   | Categorias               | CRUD de categorias com tipo (Despesa/Renda/Ambos)                                                                                                         |
-| 4   | Despesa única + fatura   | Cadastrar gasto avulso em cartão; geração automática de fatura; visualização da fatura                                                                    |
-| 4.5 | Identidade visual        | Design system (tokens, fontes Geist, logo, primitivos UI); retrofit das telas dos Slices 1–4                                                              |
-| 5   | Fatura: ciclo de vida    | Fechamento e pagamento de fatura; cálculo de totais                                                                                                       |
-| 6   | Despesa parcelada        | Cadastro completo (nova e em andamento); geração de parcelas; adiantamento; cancelamento                                                                  |
-| 7   | Assinatura               | Cadastro de assinatura; geração de ocorrências; cancelamento                                                                                              |
-| 8   | Despesas fora de cartão  | Pix, débito, dinheiro vinculados ao mês calendário                                                                                                        |
-| 9   | Contribuidores e Ajudas  | CRUD de contribuidores; vínculo de ajuda; ajuda recorrente; dashboard "A Receber por Pessoa"                                                              |
-| 10  | Rendas e Recebimentos    | Fontes recorrentes e avulsas; geração de recebimentos esperados; marcar recebido                                                                          |
-| 11  | Visão mensal consolidada | Tela do mês com faturas + gastos fora + entradas + saldo + ajudas                                                                                         |
-| 12  | Multi-mês e projeção     | Navegação entre meses; projeção 6/12 meses futuros                                                                                                        |
-| 13  | Relatórios e gráficos    | Pizza por categoria; evolução temporal; comparativos                                                                                                      |
-| 14  | Hardening                | Polimento de UX, atalhos, validações, mensagens de erro, edge cases dos testes                                                                            |
+| #    | Slice                       | Entrega principal                                                                                                                                         |
+| ---- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | Setup do projeto            | Electron + Vite + React + TS + SQLite + Vitest + Playwright + ESLint + Prettier + Husky + commitlint + GitHub Actions configurado e rodando "Hello World" |
+| 1    | Camada de domínio base      | Migrations, entidades, repositórios base, testes da regra RN-01 (cálculo de fatura por data)                                                              |
+| 2    | Cartões                     | CRUD de cartões com data de fechamento/vencimento                                                                                                         |
+| 3    | Categorias                  | CRUD de categorias com tipo (Despesa/Renda/Ambos)                                                                                                         |
+| 4    | Despesa única + fatura      | Cadastrar gasto avulso em cartão; geração automática de fatura; visualização da fatura                                                                    |
+| 4.5  | Identidade visual           | Design system (tokens, fontes Geist, logo, primitivos UI); retrofit das telas dos Slices 1–4                                                              |
+| 5    | Fatura: ciclo de vida       | Fechamento e pagamento de fatura; cálculo de totais                                                                                                       |
+| 6    | Despesa parcelada           | Cadastro completo (nova e em andamento); geração de parcelas; adiantamento; cancelamento                                                                  |
+| 7    | Assinatura                  | Cadastro de assinatura; geração de ocorrências; cancelamento                                                                                              |
+| 8    | Despesas fora de cartão     | Pix, débito, dinheiro vinculados ao mês calendário                                                                                                        |
+| 9    | ~~Contribuidores e Ajudas~~ | **Revertido no Slice 12.1.** Cobranças a terceiros viraram rendas avulsas.                                                                                |
+| 10   | Rendas e Recebimentos       | Fontes recorrentes e avulsas; geração de recebimentos esperados; marcar recebido                                                                          |
+| 11   | Visão mensal consolidada    | Tela do mês com faturas + gastos fora + entradas + saldo                                                                                                  |
+| 12   | Multi-mês e projeção        | Navegação entre meses; projeção 6/12 meses futuros                                                                                                        |
+| 12.1 | Cleanup e simplificação     | Bugs visuais, RF-DES-09 (excluir despesa), reversão do Slice 9, remoção de ícone de Categoria e categoria em Renda                                        |
+| 13   | Relatórios e gráficos       | Pizza por categoria; evolução temporal; comparativos                                                                                                      |
+| 14   | Hardening                   | Polimento de UX, atalhos, validações, mensagens de erro, edge cases dos testes                                                                            |
 
 V2 (orçamento, exportação, backup, tags) entra após o slice 14.
 

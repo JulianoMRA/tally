@@ -27,10 +27,7 @@ export function CategoriaList({ categorias, onEditar, onArquivar, onDesarquivar 
         <li key={categoria.id} className={styles.listItem}>
           <span className={styles.colorChip} style={{ background: categoria.cor }} />
           <div className={styles.listItemInfo}>
-            <span className={styles.listItemNome}>
-              {categoria.icone && <span className={styles.icone}>{categoria.icone}</span>}
-              {categoria.nome}
-            </span>
+            <span className={styles.listItemNome}>{categoria.nome}</span>
             <span className={styles.listItemMeta}>{TIPO_LABEL[categoria.tipo]}</span>
           </div>
           <div className={styles.listItemActions}>
