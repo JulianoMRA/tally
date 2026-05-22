@@ -3,7 +3,7 @@ import type { StatusRecebimento } from '@domain/entities/recebimento'
 import type { CriarRendaAvulsaInput, CriarRendaRecorrenteInput } from '@shared/ipc/renda'
 import type { CriarRecebimentoAvulsoInput, RecebimentoComContexto } from '@shared/ipc/recebimento'
 import { PageHead } from '../../components/layout/PageHead'
-import { Button, EmptyState, Field, Input } from '../../components/ui'
+import { Button, EmptyState, Field, Input, Panel } from '../../components/ui'
 import { useRendas } from './hooks/use-rendas'
 import { useRecebimentos } from './hooks/use-recebimentos'
 import { RendaForm } from './RendaForm'
@@ -249,7 +249,7 @@ function AbaFontes() {
           {loading && <p className={styles.empty}>Carregando…</p>}
           {error && <p className={styles.errorMsg}>{error}</p>}
           {!loading && !error && (
-            <RendaList
+            <FontesAgrupadas
               rendas={rendas}
               onArquivar={handleArquivar}
               onDesarquivar={handleDesarquivar}
@@ -264,6 +264,49 @@ function AbaFontes() {
           />
         </section>
       </div>
+    </>
+  )
+}
+
+function FontesAgrupadas({
+  rendas,
+  onArquivar,
+  onDesarquivar
+}: {
+  rendas: import('@domain/entities/renda').Renda[]
+  onArquivar: (id: number) => void
+  onDesarquivar: (id: number) => void
+}) {
+  const recorrentes = rendas
+    .filter((r) => r.tipo === 'Recorrente')
+    .sort((a, b) => (a.diaEsperado ?? 0) - (b.diaEsperado ?? 0) || a.nome.localeCompare(b.nome))
+  const avulsas = rendas
+    .filter((r) => r.tipo === 'Avulsa')
+    .sort((a, b) => a.nome.localeCompare(b.nome))
+
+  const totalMensalRecorrentes = recorrentes
+    .filter((r) => r.ativa)
+    .reduce((s, r) => s + r.valorPadraoCentavos, 0)
+
+  return (
+    <>
+      <Panel
+        title="Recorrentes"
+        meta={`${recorrentes.length} ${recorrentes.length === 1 ? 'fonte' : 'fontes'}${recorrentes.length > 0 ? ` · ${formatBRL(totalMensalRecorrentes)}/mês` : ''}`}
+        flush
+        className={styles.panel}
+      >
+        <RendaList rendas={recorrentes} onArquivar={onArquivar} onDesarquivar={onDesarquivar} />
+      </Panel>
+
+      <Panel
+        title="Avulsas"
+        meta={`${avulsas.length} ${avulsas.length === 1 ? 'fonte' : 'fontes'}`}
+        flush
+        className={styles.panel}
+      >
+        <RendaList rendas={avulsas} onArquivar={onArquivar} onDesarquivar={onDesarquivar} />
+      </Panel>
     </>
   )
 }

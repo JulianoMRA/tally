@@ -101,6 +101,10 @@
   margin: 0;
 }
 
+.panel {
+  margin-bottom: 16px;
+}
+
 .form {
   background: var(--bg-elev);
   border: 1px solid var(--rule);

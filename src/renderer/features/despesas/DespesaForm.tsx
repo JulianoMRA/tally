@@ -405,13 +405,17 @@ function FormEmAndamento({
   } = useForm<EmAndamentoValues>({ resolver: zodResolver(emAndamentoSchema) })
 
   async function onSubmit(values: EmAndamentoValues) {
+    const total = Number(values.totalParcelas)
+    const atual = Number(values.parcelaAtual)
+    const parcelasRestantes = Math.max(1, total - atual + 1)
+    const valorParcelaCentavos = parseCentavos(values.valorReais)
     await onSalvar({
       descricao: values.descricao,
       categoriaId: Number(values.categoriaId),
       cartaoId: Number(values.cartaoId),
-      totalParcelas: Number(values.totalParcelas),
-      parcelaAtual: Number(values.parcelaAtual),
-      valorRestanteCentavos: parseCentavos(values.valorReais),
+      totalParcelas: total,
+      parcelaAtual: atual,
+      valorRestanteCentavos: valorParcelaCentavos * parcelasRestantes,
       dataCompra: values.dataCompra
     })
     reset()
@@ -444,7 +448,7 @@ function FormEmAndamento({
       </div>
 
       <div className={styles.fieldRow}>
-        <Field label="Valor restante (R$)" error={errors.valorReais?.message} required>
+        <Field label="Valor da parcela (R$)" error={errors.valorReais?.message} required>
           <Input
             type="text"
             inputMode="decimal"
