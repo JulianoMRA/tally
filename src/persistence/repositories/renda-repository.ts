@@ -10,6 +10,7 @@ import type {
 import type { Repository } from './types'
 import { calcularExtensaoNecessaria } from '../../domain/services/calcular-extensao-horizonte'
 import { gerarRecebimentosRecorrentes } from '../../domain/services/gerar-recebimentos-recorrentes'
+import { clampDiaNoMes } from '../../domain/services/mes-referencia'
 
 const HORIZONTE_RECEBIMENTOS_MESES = 12
 
@@ -135,14 +136,21 @@ export class RendaRepository implements Repository {
     const existente = this.findById(id)
     if (!existente) throw new Error(`Renda #${id} não encontrada`)
 
+    // Para Recorrente: se diaEsperado vier no input, valida e usa; senão mantém existente.
+    // Para Avulsa: diaEsperado sempre permanece null (ignorado).
+    const novoDiaEsperado =
+      existente.tipo === 'Recorrente' && input.diaEsperado !== undefined
+        ? input.diaEsperado
+        : existente.diaEsperado
+
     return this.db.transaction(() => {
       this.db
         .prepare(
           `UPDATE renda
-           SET nome = ?, valor_padrao_centavos = ?, updated_at = CURRENT_TIMESTAMP
+           SET nome = ?, valor_padrao_centavos = ?, dia_esperado = ?, updated_at = CURRENT_TIMESTAMP
            WHERE id = ?`
         )
-        .run(input.nome, input.valorPadraoCentavos, id)
+        .run(input.nome, input.valorPadraoCentavos, novoDiaEsperado, id)
 
       // RF-REN-05: reajuste do valor padrão afeta recebimentos futuros ainda Esperado
       if (
@@ -156,6 +164,27 @@ export class RendaRepository implements Repository {
              WHERE renda_id = ? AND status = 'Esperado'`
           )
           .run(input.valorPadraoCentavos, id)
+      }
+
+      // RF-REN-06: mudar diaEsperado recalcula data_esperada dos Esperados
+      if (
+        existente.tipo === 'Recorrente' &&
+        novoDiaEsperado !== null &&
+        novoDiaEsperado !== existente.diaEsperado
+      ) {
+        const esperados = this.db
+          .prepare(
+            `SELECT id, data_esperada FROM recebimento WHERE renda_id = ? AND status = 'Esperado'`
+          )
+          .all(id) as { id: number; data_esperada: string }[]
+        const updData = this.db.prepare(
+          `UPDATE recebimento SET data_esperada = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+        )
+        for (const e of esperados) {
+          const [ano, mes] = e.data_esperada.split('-').map(Number)
+          const novaData = clampDiaNoMes(ano, mes, novoDiaEsperado)
+          updData.run(novaData, e.id)
+        }
       }
 
       const atualizada = this.findById(id)

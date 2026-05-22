@@ -149,6 +149,56 @@ describe('RendaRepository', () => {
     it('lança erro para id inexistente', () => {
       expect(() => repo.update(9999, { nome: 'X', valorPadraoCentavos: 1000 })).toThrow()
     })
+
+    it('RF-REN-06: muda diaEsperado e recalcula data_esperada dos Esperados', () => {
+      const r = repo.criarRecorrente({
+        nome: 'Bolsa',
+        valorPadraoCentavos: 100000,
+        diaEsperado: 5,
+        dataInicio: '2026-06-01'
+      })
+      // Confirma data inicial dia 5
+      expect(r.recebimentos[0].dataEsperada).toBe('2026-06-05')
+
+      repo.update(r.renda.id, {
+        nome: 'Bolsa',
+        valorPadraoCentavos: 100000,
+        diaEsperado: 15
+      })
+
+      const recebimentos = db
+        .prepare(
+          'SELECT data_esperada FROM recebimento WHERE renda_id = ? ORDER BY data_esperada ASC'
+        )
+        .all(r.renda.id) as { data_esperada: string }[]
+      // Todos os 12 Esperados agora caem no dia 15
+      for (const rec of recebimentos) {
+        expect(rec.data_esperada.endsWith('-15')).toBe(true)
+      }
+    })
+
+    it('RF-REN-06: clampa diaEsperado em meses curtos (dia 31 → 30 em abril)', () => {
+      const r = repo.criarRecorrente({
+        nome: 'X',
+        valorPadraoCentavos: 1000,
+        diaEsperado: 1,
+        dataInicio: '2026-03-01'
+      })
+
+      repo.update(r.renda.id, {
+        nome: 'X',
+        valorPadraoCentavos: 1000,
+        diaEsperado: 31
+      })
+
+      const recebimentos = db
+        .prepare(
+          'SELECT data_esperada FROM recebimento WHERE renda_id = ? ORDER BY data_esperada ASC'
+        )
+        .all(r.renda.id) as { data_esperada: string }[]
+      const abril = recebimentos.find((r) => r.data_esperada.startsWith('2026-04'))
+      expect(abril?.data_esperada).toBe('2026-04-30')
+    })
   })
 
   describe('arquivar', () => {

@@ -40,7 +40,8 @@ export type CriarRendaRecorrenteInput = z.infer<typeof criarRendaRecorrenteInput
 
 export const updateRendaInputSchema = z.object({
   nome: nomeSchema,
-  valorPadraoCentavos: valorSchema
+  valorPadraoCentavos: valorSchema,
+  diaEsperado: z.number().int().min(1).max(31).nullable().optional()
 })
 
 export type UpdateRendaInput = z.infer<typeof updateRendaInputSchema>
