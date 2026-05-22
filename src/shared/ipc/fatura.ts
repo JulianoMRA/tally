@@ -5,6 +5,11 @@ export type FaturaDetalhada = {
   fatura: Fatura
   parcelas: Parcela[]
   totalCentavos: number
+  /**
+   * Mapa parcelaId → descrição da despesa associada. Opcional para
+   * retrocompatibilidade. Slice 14.1.
+   */
+  descricoesPorParcela?: Record<number, string>
 }
 
 export type FaturaApi = {

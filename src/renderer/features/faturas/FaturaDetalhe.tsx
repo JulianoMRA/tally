@@ -205,7 +205,7 @@ export function FaturaDetalhe({
             <table className={styles.tabela}>
               <thead>
                 <tr>
-                  <th>#</th>
+                  <th>Descrição</th>
                   <th>Parcela</th>
                   <th>Data</th>
                   <th className={styles.colValor}>Valor</th>
@@ -216,7 +216,7 @@ export function FaturaDetalhe({
               <tbody>
                 {parcelas.map((p) => (
                   <tr key={p.id}>
-                    <td className={styles.colId}>{p.id}</td>
+                    <td>{detalhe.descricoesPorParcela?.[p.id] ?? `#${p.despesaId}`}</td>
                     <td className="mono">
                       {p.numero}/{p.total ?? '?'}
                     </td>

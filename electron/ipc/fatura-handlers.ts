@@ -23,10 +23,25 @@ export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
       const parcelas = parcelaRepo.listarPorFatura(faturaId)
       const totalCentavos = parcelas.reduce((sum, p) => sum + p.valorCentavos, 0)
 
+      const descricoesPorParcela: Record<number, string> = {}
+      const despesaIds = [...new Set(parcelas.map((p) => p.despesaId))]
+      if (despesaIds.length > 0) {
+        const placeholders = despesaIds.map(() => '?').join(',')
+        const rows = db
+          .prepare(`SELECT id, descricao FROM despesa WHERE id IN (${placeholders})`)
+          .all(...despesaIds) as { id: number; descricao: string }[]
+        const descPorDespesa = new Map(rows.map((r) => [r.id, r.descricao]))
+        for (const p of parcelas) {
+          const d = descPorDespesa.get(p.despesaId)
+          if (d) descricoesPorParcela[p.id] = d
+        }
+      }
+
       return {
         fatura,
         parcelas,
-        totalCentavos
+        totalCentavos,
+        descricoesPorParcela
       }
     }
   )
