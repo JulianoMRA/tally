@@ -1,9 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type { Categoria } from '@domain/entities/categoria'
+import type { Despesa } from '@domain/entities/despesa'
 import type { Fatura } from '@domain/entities/fatura'
 import type { Parcela } from '@domain/entities/parcela'
 import type { FaturaDetalhada } from '@shared/ipc/fatura'
 import { useCicloFatura } from './hooks/use-faturas'
 import { AdiantarParcelasModal } from './AdiantarParcelasModal'
+import { EditarDespesaModal } from './EditarDespesaModal'
 import {
   Badge,
   Button,
@@ -28,12 +31,12 @@ function compararParcelas(
   a: Parcela,
   b: Parcela,
   by: SortBy,
-  descricoes: Record<number, string> | undefined
+  despesas: Record<number, { descricao: string }> | undefined
 ): number {
   switch (by) {
     case 'descricao': {
-      const da = descricoes?.[a.id] ?? `#${a.despesaId}`
-      const db = descricoes?.[b.id] ?? `#${b.despesaId}`
+      const da = despesas?.[a.id]?.descricao ?? `#${a.despesaId}`
+      const db = despesas?.[b.id]?.descricao ?? `#${b.despesaId}`
       return da.localeCompare(db, 'pt-BR')
     }
     case 'parcela':
@@ -84,19 +87,25 @@ export function FaturaDetalhe({
   const [modoPagar, setModoPagar] = useState(false)
   const [dataPagamento, setDataPagamento] = useState(dataHoje)
   const [parcelaAdiantar, setParcelaAdiantar] = useState<Parcela | null>(null)
+  const [despesaEditar, setDespesaEditar] = useState<Despesa | null>(null)
+  const [categorias, setCategorias] = useState<Categoria[]>([])
   const [dialogo, setDialogo] = useState<DialogoConfirma | null>(null)
   const [sortBy, setSortBy] = useState<SortBy>('data')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const toast = useToast()
 
+  useEffect(() => {
+    window.api.categoria.list({ tipo: 'Despesa' }).then(setCategorias)
+  }, [])
+
   const parcelasOrdenadas = useMemo(() => {
     const copia = [...parcelas]
     copia.sort((a, b) => {
-      const c = compararParcelas(a, b, sortBy, detalhe.descricoesPorParcela)
+      const c = compararParcelas(a, b, sortBy, detalhe.despesasPorParcela)
       return sortDir === 'asc' ? c : -c
     })
     return copia
-  }, [parcelas, sortBy, sortDir, detalhe.descricoesPorParcela])
+  }, [parcelas, sortBy, sortDir, detalhe.despesasPorParcela])
 
   function handleSort(col: SortBy) {
     if (col === sortBy) {
@@ -127,6 +136,27 @@ export function FaturaDetalhe({
     toast.show(`${quantidade} parcela(s) adiantada(s).`, 'success')
     setParcelaAdiantar(null)
     await recarregarDetalhe()
+  }
+
+  async function handleConfirmarEditarDespesa(input: {
+    descricao: string
+    categoriaId: number
+    valorCentavos: number
+    dataCompra?: string
+  }) {
+    if (!despesaEditar) return
+    try {
+      await window.api.despesa.atualizar({
+        despesaId: despesaEditar.id,
+        ...input
+      })
+      toast.show('Despesa atualizada.', 'success')
+      setDespesaEditar(null)
+      await recarregarDetalhe()
+    } catch (e) {
+      toast.show(e instanceof Error ? e.message : 'Erro ao atualizar despesa.', 'error')
+      throw e
+    }
   }
 
   async function confirmarExcluirDespesa(despesaId: number) {
@@ -228,11 +258,21 @@ export function FaturaDetalhe({
         {ciclo.erro && <p className={styles.erroAcao}>{ciclo.erro}</p>}
       </div>
 
+      {despesaEditar && (
+        <EditarDespesaModal
+          despesa={despesaEditar}
+          categorias={categorias}
+          onConfirmar={handleConfirmarEditarDespesa}
+          onCancelar={() => setDespesaEditar(null)}
+        />
+      )}
+
       {parcelaAdiantar && (
         <AdiantarParcelasModal
           despesaId={parcelaAdiantar.despesaId}
           descricao={
-            detalhe.descricoesPorParcela?.[parcelaAdiantar.id] ?? `#${parcelaAdiantar.despesaId}`
+            detalhe.despesasPorParcela?.[parcelaAdiantar.id]?.descricao ??
+            `#${parcelaAdiantar.despesaId}`
           }
           cartaoId={fatura.cartaoId}
           faturaAtualId={fatura.id}
@@ -277,7 +317,7 @@ export function FaturaDetalhe({
               <tbody>
                 {parcelasOrdenadas.map((p) => (
                   <tr key={p.id}>
-                    <td>{detalhe.descricoesPorParcela?.[p.id] ?? `#${p.despesaId}`}</td>
+                    <td>{detalhe.despesasPorParcela?.[p.id]?.descricao ?? `#${p.despesaId}`}</td>
                     <td className="mono">
                       {p.numero}/{p.total ?? '?'}
                     </td>
@@ -288,6 +328,21 @@ export function FaturaDetalhe({
                     </td>
                     <td>
                       <div className={styles.rowActions}>
+                        {p.status === 'Pendente' && detalhe.despesasPorParcela?.[p.id] && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDespesaEditar(detalhe.despesasPorParcela![p.id])}
+                            disabled={detalhe.despesasPorParcela[p.id].tipo === 'Assinatura'}
+                            title={
+                              detalhe.despesasPorParcela[p.id].tipo === 'Assinatura'
+                                ? 'Use Reajustar em Assinaturas'
+                                : 'Editar despesa'
+                            }
+                          >
+                            Editar
+                          </Button>
+                        )}
                         {kind === 'Aberta' && p.status === 'Pendente' && (
                           <Button
                             variant="ghost"

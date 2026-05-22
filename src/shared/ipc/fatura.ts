@@ -1,3 +1,4 @@
+import type { Despesa } from '../../domain/entities/despesa'
 import type { Fatura } from '../../domain/entities/fatura'
 import type { Parcela } from '../../domain/entities/parcela'
 
@@ -6,10 +7,10 @@ export type FaturaDetalhada = {
   parcelas: Parcela[]
   totalCentavos: number
   /**
-   * Mapa parcelaId → descrição da despesa associada. Opcional para
-   * retrocompatibilidade. Slice 14.1.
+   * Mapa parcelaId → despesa associada. Permite exibir descrição na tabela
+   * e pré-popular o EditarDespesaModal sem round-trip extra. Slice 14.1.
    */
-  descricoesPorParcela?: Record<number, string>
+  despesasPorParcela?: Record<number, Despesa>
 }
 
 export type FaturaApi = {
