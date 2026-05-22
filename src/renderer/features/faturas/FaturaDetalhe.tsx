@@ -83,7 +83,7 @@ export function FaturaDetalhe({
 
   const [modoPagar, setModoPagar] = useState(false)
   const [dataPagamento, setDataPagamento] = useState(dataHoje)
-  const [modoAdiantar, setModoAdiantar] = useState(false)
+  const [parcelaAdiantar, setParcelaAdiantar] = useState<Parcela | null>(null)
   const [dialogo, setDialogo] = useState<DialogoConfirma | null>(null)
   const [sortBy, setSortBy] = useState<SortBy>('data')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
@@ -122,9 +122,10 @@ export function FaturaDetalhe({
     }
   }
 
-  async function handleAdiantar(despesaId: number, quantidade: number) {
-    await window.api.despesa.adiantarParcelas({ despesaId, quantidade, faturaDestinoId: fatura.id })
-    setModoAdiantar(false)
+  async function handleAdiantar(despesaId: number, quantidade: number, faturaDestinoId: number) {
+    await window.api.despesa.adiantarParcelas({ despesaId, quantidade, faturaDestinoId })
+    toast.show(`${quantidade} parcela(s) adiantada(s).`, 'success')
+    setParcelaAdiantar(null)
     await recarregarDetalhe()
   }
 
@@ -168,24 +169,14 @@ export function FaturaDetalhe({
 
       <div className={styles.cicloActions}>
         {kind === 'Aberta' && (
-          <>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setDialogo({ tipo: 'fechar' })}
-              disabled={ciclo.loading}
-            >
-              Fechar fatura
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setModoAdiantar(true)}
-              disabled={ciclo.loading}
-            >
-              Adiantar parcelas
-            </Button>
-          </>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setDialogo({ tipo: 'fechar' })}
+            disabled={ciclo.loading}
+          >
+            Fechar fatura
+          </Button>
         )}
         {kind === 'Fechada' && !modoPagar && (
           <Button
@@ -237,11 +228,16 @@ export function FaturaDetalhe({
         {ciclo.erro && <p className={styles.erroAcao}>{ciclo.erro}</p>}
       </div>
 
-      {modoAdiantar && (
+      {parcelaAdiantar && (
         <AdiantarParcelasModal
-          faturaDestinoId={fatura.id}
+          despesaId={parcelaAdiantar.despesaId}
+          descricao={
+            detalhe.descricoesPorParcela?.[parcelaAdiantar.id] ?? `#${parcelaAdiantar.despesaId}`
+          }
+          cartaoId={fatura.cartaoId}
+          faturaAtualId={fatura.id}
           onConfirmar={handleAdiantar}
-          onCancelar={() => setModoAdiantar(false)}
+          onCancelar={() => setParcelaAdiantar(null)}
         />
       )}
 
@@ -291,19 +287,31 @@ export function FaturaDetalhe({
                       <Badge variant={p.status === 'Paga' ? 'paid' : 'pending'} />
                     </td>
                     <td>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDialogo({ tipo: 'excluir', despesaId: p.despesaId })}
-                        disabled={p.status === 'Paga'}
-                        title={
-                          p.status === 'Paga'
-                            ? 'Não é possível excluir uma despesa com parcela paga'
-                            : 'Excluir despesa inteira'
-                        }
-                      >
-                        Excluir
-                      </Button>
+                      <div className={styles.rowActions}>
+                        {kind === 'Aberta' && p.status === 'Pendente' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setParcelaAdiantar(p)}
+                            title="Adiantar para outra fatura"
+                          >
+                            Adiantar
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDialogo({ tipo: 'excluir', despesaId: p.despesaId })}
+                          disabled={p.status === 'Paga'}
+                          title={
+                            p.status === 'Paga'
+                              ? 'Não é possível excluir uma despesa com parcela paga'
+                              : 'Excluir despesa inteira'
+                          }
+                        >
+                          Excluir
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}

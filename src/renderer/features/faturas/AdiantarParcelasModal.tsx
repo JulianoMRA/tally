@@ -1,40 +1,71 @@
-import { useState } from 'react'
-import { Button, Field, Input } from '../../components/ui'
+import { useEffect, useState } from 'react'
+import type { Fatura } from '@domain/entities/fatura'
+import { Button, Field, Input, Select } from '../../components/ui'
 import { useEscapeKey } from '../../hooks/use-escape-key'
 import styles from './faturas.module.css'
 
 type Props = {
-  faturaDestinoId: number
-  onConfirmar: (despesaId: number, quantidade: number) => Promise<void>
+  despesaId: number
+  descricao: string
+  cartaoId: number
+  faturaAtualId: number
+  onConfirmar: (despesaId: number, quantidade: number, faturaDestinoId: number) => Promise<void>
   onCancelar: () => void
 }
 
 export function AdiantarParcelasModal({
-  faturaDestinoId: _faturaDestinoId,
+  despesaId,
+  descricao,
+  cartaoId,
+  faturaAtualId,
   onConfirmar,
   onCancelar
 }: Props) {
-  const [despesaId, setDespesaId] = useState('')
   const [quantidade, setQuantidade] = useState('1')
+  const [faturaDestinoId, setFaturaDestinoId] = useState<string>('')
+  const [faturasDestino, setFaturasDestino] = useState<Fatura[]>([])
+  const [loadingFaturas, setLoadingFaturas] = useState(true)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   useEscapeKey(onCancelar)
 
-  async function handleConfirmar() {
-    const dId = parseInt(despesaId, 10)
-    const qtd = parseInt(quantidade, 10)
-    if (isNaN(dId) || dId <= 0) {
-      setErro('Informe um ID de despesa válido.')
-      return
+  useEffect(() => {
+    let ativo = true
+    window.api.fatura
+      .listarPorCartao(cartaoId)
+      .then((todas) => {
+        if (!ativo) return
+        const candidatas = todas.filter((f) => f.id !== faturaAtualId && f.status.kind === 'Aberta')
+        setFaturasDestino(candidatas)
+        if (candidatas.length > 0) setFaturaDestinoId(String(candidatas[0].id))
+      })
+      .catch((e) => {
+        if (!ativo) return
+        setErro(e instanceof Error ? e.message : 'Erro ao carregar faturas destino.')
+      })
+      .finally(() => {
+        if (ativo) setLoadingFaturas(false)
+      })
+    return () => {
+      ativo = false
     }
+  }, [cartaoId, faturaAtualId])
+
+  async function handleConfirmar() {
+    const qtd = parseInt(quantidade, 10)
+    const destino = parseInt(faturaDestinoId, 10)
     if (isNaN(qtd) || qtd <= 0) {
       setErro('Quantidade deve ser maior que zero.')
+      return
+    }
+    if (isNaN(destino) || destino <= 0) {
+      setErro('Selecione a fatura destino.')
       return
     }
     setErro(null)
     setLoading(true)
     try {
-      await onConfirmar(dId, qtd)
+      await onConfirmar(despesaId, qtd, destino)
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Erro ao adiantar parcelas.')
     } finally {
@@ -45,20 +76,31 @@ export function AdiantarParcelasModal({
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modal}>
-        <h3 className={styles.modalTitle}>Adiantar parcelas para esta fatura</h3>
+        <h3 className={styles.modalTitle}>Adiantar parcelas</h3>
         <p className={styles.modalDesc}>
-          As parcelas mais futuras da despesa serão movidas para esta fatura.
+          Despesa: <strong>{descricao}</strong>. As parcelas mais futuras serão movidas para a
+          fatura destino.
         </p>
 
         <div className={styles.modalFields}>
-          <Field label="ID da despesa parcelada">
-            <Input
-              type="number"
-              min={1}
-              value={despesaId}
-              onChange={(e) => setDespesaId(e.target.value)}
-              placeholder="Ex: 3"
-            />
+          <Field label="Fatura destino">
+            <Select
+              value={faturaDestinoId}
+              onChange={(e) => setFaturaDestinoId(e.target.value)}
+              disabled={loadingFaturas || faturasDestino.length === 0}
+            >
+              {loadingFaturas ? (
+                <option value="">Carregando…</option>
+              ) : faturasDestino.length === 0 ? (
+                <option value="">Nenhuma fatura Aberta disponível</option>
+              ) : (
+                faturasDestino.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.mesReferencia} (vence {f.dataVencimento})
+                  </option>
+                ))
+              )}
+            </Select>
           </Field>
 
           <Field label="Quantidade de parcelas">
@@ -77,7 +119,12 @@ export function AdiantarParcelasModal({
           <Button variant="ghost" size="sm" onClick={onCancelar} disabled={loading}>
             Cancelar
           </Button>
-          <Button variant="primary" size="sm" onClick={handleConfirmar} disabled={loading}>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleConfirmar}
+            disabled={loading || faturasDestino.length === 0}
+          >
             {loading ? 'Adiantando…' : 'Confirmar'}
           </Button>
         </div>
