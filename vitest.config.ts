@@ -10,7 +10,14 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/domain/**', 'src/persistence/**'],
+      // RNF-06: 80% no domain (RN-XX criticas) + 60% global.
       thresholds: {
+        'src/domain/**': {
+          lines: 80,
+          functions: 80,
+          branches: 80,
+          statements: 80
+        },
         lines: 60,
         functions: 60,
         branches: 60,

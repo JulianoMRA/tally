@@ -3,8 +3,22 @@ import type { Fatura } from '@domain/entities/fatura'
 import type { FaturaDetalhada } from '@shared/ipc/fatura'
 import { useCicloFatura } from './hooks/use-faturas'
 import { AdiantarParcelasModal } from './AdiantarParcelasModal'
-import { Badge, Button, Panel, EmptyState, Field, Input } from '../../components/ui'
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  Panel,
+  EmptyState,
+  Field,
+  Input,
+  useToast
+} from '../../components/ui'
 import styles from './faturas.module.css'
+
+type DialogoConfirma =
+  | { tipo: 'fechar' }
+  | { tipo: 'reabrir' }
+  | { tipo: 'excluir'; despesaId: number }
 
 type Props = {
   detalhe: FaturaDetalhada
@@ -43,6 +57,8 @@ export function FaturaDetalhe({
   const [modoPagar, setModoPagar] = useState(false)
   const [dataPagamento, setDataPagamento] = useState(dataHoje)
   const [modoAdiantar, setModoAdiantar] = useState(false)
+  const [dialogo, setDialogo] = useState<DialogoConfirma | null>(null)
+  const toast = useToast()
 
   const ciclo = useCicloFatura(onFaturaAtualizada)
 
@@ -60,32 +76,20 @@ export function FaturaDetalhe({
     await recarregarDetalhe()
   }
 
-  async function handleExcluirDespesa(despesaId: number) {
-    const ok = window.confirm(
-      `Excluir a despesa #${despesaId} e TODAS as suas parcelas pendentes? ` +
-        'Esta ação é irreversível. Bloqueia se houver parcela paga.'
-    )
-    if (!ok) return
+  async function confirmarExcluirDespesa(despesaId: number) {
     try {
       await window.api.despesa.excluir({ despesaId })
+      toast.show('Despesa excluída.', 'success')
       await recarregarDetalhe()
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : 'Erro ao excluir despesa.')
+      toast.show(e instanceof Error ? e.message : 'Erro ao excluir despesa.', 'error')
+    } finally {
+      setDialogo(null)
     }
-  }
-
-  function handleFechar() {
-    if (!window.confirm('Fechar esta fatura? Novas parcelas não poderão ser adicionadas.')) return
-    ciclo.fechar(fatura.id)
   }
 
   function handlePagarConfirmar() {
     ciclo.pagar(fatura.id, dataPagamento).then(() => setModoPagar(false))
-  }
-
-  function handleReabrir() {
-    if (!window.confirm('Reabrir esta fatura? O status voltará para Aberta.')) return
-    ciclo.reabrir(fatura.id)
   }
 
   return (
@@ -113,7 +117,12 @@ export function FaturaDetalhe({
       <div className={styles.cicloActions}>
         {kind === 'Aberta' && (
           <>
-            <Button variant="secondary" size="sm" onClick={handleFechar} disabled={ciclo.loading}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setDialogo({ tipo: 'fechar' })}
+              disabled={ciclo.loading}
+            >
               Fechar fatura
             </Button>
             <Button
@@ -164,7 +173,12 @@ export function FaturaDetalhe({
           </div>
         )}
         {kind === 'Paga' && (
-          <Button variant="ghost" size="sm" onClick={handleReabrir} disabled={ciclo.loading}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setDialogo({ tipo: 'reabrir' })}
+            disabled={ciclo.loading}
+          >
             Reabrir fatura
           </Button>
         )}
@@ -215,7 +229,7 @@ export function FaturaDetalhe({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleExcluirDespesa(p.despesaId)}
+                        onClick={() => setDialogo({ tipo: 'excluir', despesaId: p.despesaId })}
                         disabled={p.status === 'Paga'}
                         title={
                           p.status === 'Paga'
@@ -241,6 +255,41 @@ export function FaturaDetalhe({
           </>
         )}
       </Panel>
+
+      {dialogo?.tipo === 'fechar' && (
+        <ConfirmDialog
+          title="Fechar fatura?"
+          body="Após fechada, novas parcelas só entram via adiantamento explícito."
+          confirmText="Fechar"
+          onConfirm={() => {
+            ciclo.fechar(fatura.id)
+            setDialogo(null)
+          }}
+          onCancel={() => setDialogo(null)}
+        />
+      )}
+      {dialogo?.tipo === 'reabrir' && (
+        <ConfirmDialog
+          title="Reabrir fatura?"
+          body="O status voltará para Aberta. A data de pagamento será apagada."
+          confirmText="Reabrir"
+          onConfirm={() => {
+            ciclo.reabrir(fatura.id)
+            setDialogo(null)
+          }}
+          onCancel={() => setDialogo(null)}
+        />
+      )}
+      {dialogo?.tipo === 'excluir' && (
+        <ConfirmDialog
+          title="Excluir despesa?"
+          body="A despesa e TODAS as suas parcelas pendentes serão removidas. Esta ação é irreversível."
+          confirmText="Excluir"
+          confirmVariant="danger"
+          onConfirm={() => confirmarExcluirDespesa(dialogo.despesaId)}
+          onCancel={() => setDialogo(null)}
+        />
+      )}
     </div>
   )
 }

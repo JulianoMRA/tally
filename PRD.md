@@ -295,7 +295,7 @@ Ordem proposta para implementação. Cada slice é uma fatia ponta-a-ponta (UI +
 | 12   | Multi-mês e projeção        | Navegação entre meses; projeção 6/12 meses futuros                                                                                                        |
 | 12.1 | Cleanup e simplificação     | Bugs visuais, RF-DES-09 (excluir despesa), reversão do Slice 9, remoção de ícone de Categoria e categoria em Renda                                        |
 | 13   | Relatórios e gráficos ✅    | Pizza por categoria; evolução temporal; comparativos                                                                                                      |
-| 14   | Hardening                   | Polimento de UX, atalhos, validações, mensagens de erro, edge cases dos testes, packager (electron-builder)                                               |
+| 14   | Hardening ✅                | electron-builder NSIS+portable, RNF-06 (80% domain / 60% global), primitivos Toast/ConfirmDialog/useEscapeKey                                             |
 
 V2 (orçamento, exportação, backup, tags) entra após o slice 14.
 

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CriarRecebimentoAvulsoInput } from '@shared/ipc/recebimento'
 import { Button, Field, Input } from '../../components/ui'
+import { useEscapeKey } from '../../hooks/use-escape-key'
 import styles from './rendas.module.css'
 
 type Props = {
@@ -24,6 +25,7 @@ export function NovoAvulsoModal({ onConfirmar, onCancelar }: Props) {
   const [dataRecebida, setDataRecebida] = useState(dataHoje)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  useEscapeKey(onCancelar)
 
   async function handleConfirmar() {
     if (!nome.trim()) {
