@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Button, Field, Input } from '../../components/ui'
+import { useEscapeKey } from '../../hooks/use-escape-key'
 import styles from './assinaturas.module.css'
 
 type Props = {
@@ -28,6 +29,7 @@ export function ReajustarValorModal({
   )
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  useEscapeKey(onCancelar)
 
   async function handleConfirmar() {
     if (!/^\d+([.,]\d{1,2})?$/.test(valorReais)) {

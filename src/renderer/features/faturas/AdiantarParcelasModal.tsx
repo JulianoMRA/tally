@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Button, Field, Input } from '../../components/ui'
+import { useEscapeKey } from '../../hooks/use-escape-key'
 import styles from './faturas.module.css'
 
 type Props = {
@@ -17,6 +18,7 @@ export function AdiantarParcelasModal({
   const [quantidade, setQuantidade] = useState('1')
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  useEscapeKey(onCancelar)
 
   async function handleConfirmar() {
     const dId = parseInt(despesaId, 10)

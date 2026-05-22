@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Button, Field, Input } from '../../components/ui'
+import { useEscapeKey } from '../../hooks/use-escape-key'
 import styles from './rendas.module.css'
 
 type Props = {
@@ -17,6 +18,7 @@ export function MarcarRecebidoModal({ descricao, valorReais, onConfirmar, onCanc
   const [data, setData] = useState(dataHoje)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  useEscapeKey(onCancelar)
 
   async function handleConfirmar() {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) {
