@@ -9,7 +9,8 @@ import { ParcelaRepository } from './parcela-repository'
 import { calcularExtensaoNecessaria } from '../../domain/services/calcular-extensao-horizonte'
 import { gerarParcelas } from '../../domain/services/gerar-parcelas'
 import { gerarOcorrenciasAssinatura } from '../../domain/services/gerar-ocorrencias-assinatura'
-import { podeDeletarDespesa } from '../../domain/services/regras-despesa'
+import { podeDeletarDespesa, podeEditarDespesa } from '../../domain/services/regras-despesa'
+import { recalcularParcelasPendentes } from '../../domain/services/recalcular-parcelas'
 
 const HORIZONTE_ASSINATURA_MESES = 12
 
@@ -515,6 +516,112 @@ export class DespesaRepository implements Repository {
         despesaExcluida: despesaId,
         parcelasExcluidas: Number(infoP.changes)
       }
+    })()
+  }
+
+  /**
+   * RF-DES-10 — atualiza descricao, categoria e valor de uma despesa
+   * Unica ou Parcelada. Para Unica, tambem aceita nova `dataCompra` (move
+   * a parcela para a fatura calculada via RN-01). Bloqueia quando ha
+   * parcela paga.
+   *
+   * Se `valorCentavos` mudou:
+   * - Unica: atualiza a unica parcela.
+   * - Parcelada: distribui o novo valor entre as parcelas pendentes via
+   *   `recalcularParcelasPendentes` (resto vai para a ultima).
+   *
+   * Assinatura nao usa este metodo — usar `reajustarValorMensalAssinatura`.
+   */
+  atualizar(
+    despesaId: number,
+    input: {
+      descricao: string
+      categoriaId: number
+      valorCentavos: number
+      dataCompra?: string
+    }
+  ): Despesa {
+    const despesaRow = this.db.prepare('SELECT * FROM despesa WHERE id = ?').get(despesaId) as
+      | DespesaRow
+      | undefined
+    if (!despesaRow) throw new Error(`Despesa #${despesaId} não encontrada`)
+    if (despesaRow.tipo === 'Assinatura') {
+      throw new Error(`Use reajustarValorMensalAssinatura para assinaturas.`)
+    }
+
+    const parcelaRepo = new ParcelaRepository(this.db)
+    const parcelas = parcelaRepo.listarPorDespesa(despesaId)
+    const regra = podeEditarDespesa(parcelas)
+    if (!regra.ok) {
+      throw new Error(
+        `Despesa #${despesaId} possui parcela(s) paga(s): ${regra.parcelasPagas.join(', ')}. Edição bloqueada.`
+      )
+    }
+
+    const valorMudou = despesaRow.valor_centavos !== input.valorCentavos
+    const dataMudou = input.dataCompra !== undefined && input.dataCompra !== despesaRow.data_compra
+
+    if (dataMudou && despesaRow.tipo === 'Parcelada') {
+      throw new Error(
+        `Edição de data não suportada para despesas Parceladas (exclua e recadastre).`
+      )
+    }
+
+    return this.db.transaction(() => {
+      this.db
+        .prepare(
+          `UPDATE despesa
+           SET descricao = ?, categoria_id = ?, valor_centavos = ?, data_compra = ?, updated_at = datetime('now')
+           WHERE id = ?`
+        )
+        .run(
+          input.descricao,
+          input.categoriaId,
+          input.valorCentavos,
+          input.dataCompra ?? despesaRow.data_compra,
+          despesaId
+        )
+
+      if (valorMudou) {
+        if (despesaRow.tipo === 'Unica') {
+          this.db
+            .prepare(
+              `UPDATE parcela SET valor_centavos = ?, updated_at = datetime('now') WHERE despesa_id = ?`
+            )
+            .run(input.valorCentavos, despesaId)
+        } else {
+          // Parcelada
+          const novas = recalcularParcelasPendentes(parcelas, input.valorCentavos)
+          const upd = this.db.prepare(
+            `UPDATE parcela SET valor_centavos = ?, updated_at = datetime('now') WHERE id = ?`
+          )
+          for (let i = 0; i < novas.length; i++) {
+            if (novas[i].valorCentavos !== parcelas[i].valorCentavos) {
+              upd.run(novas[i].valorCentavos, novas[i].id)
+            }
+          }
+        }
+      }
+
+      if (dataMudou && despesaRow.tipo === 'Unica' && despesaRow.cartao_id !== null) {
+        // Recalcula fatura de destino via RN-01
+        const cartaoRepo = new CartaoRepository(this.db)
+        const cartao = cartaoRepo.findById(despesaRow.cartao_id)
+        if (!cartao) throw new Error(`Cartão #${despesaRow.cartao_id} não encontrado`)
+        const faturaRepo = new FaturaRepository(this.db)
+        const novaFatura = faturaRepo.upsertParaCompra(cartao, input.dataCompra!)
+        // Move a unica parcela
+        this.db
+          .prepare(
+            `UPDATE parcela SET fatura_id = ?, data_referencia = ?, updated_at = datetime('now') WHERE despesa_id = ?`
+          )
+          .run(novaFatura.id, novaFatura.mesReferencia, despesaId)
+      }
+
+      const atualizadaRow = this.db
+        .prepare('SELECT * FROM despesa WHERE id = ?')
+        .get(despesaId) as DespesaRow
+      return mapRow(atualizadaRow)
     })()
   }
 
