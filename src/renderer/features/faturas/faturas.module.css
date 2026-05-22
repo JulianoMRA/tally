@@ -187,6 +187,15 @@
   text-align: right;
 }
 
+.thSortavel {
+  cursor: pointer;
+  user-select: none;
+}
+
+.thSortavel:hover {
+  color: var(--ink);
+}
+
 .totalRow {
   display: flex;
   align-items: center;

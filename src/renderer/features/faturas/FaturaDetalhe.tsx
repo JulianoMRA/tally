@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Fatura } from '@domain/entities/fatura'
+import type { Parcela } from '@domain/entities/parcela'
 import type { FaturaDetalhada } from '@shared/ipc/fatura'
 import { useCicloFatura } from './hooks/use-faturas'
 import { AdiantarParcelasModal } from './AdiantarParcelasModal'
@@ -19,6 +20,32 @@ type DialogoConfirma =
   | { tipo: 'fechar' }
   | { tipo: 'reabrir' }
   | { tipo: 'excluir'; despesaId: number }
+
+type SortBy = 'descricao' | 'parcela' | 'data' | 'valor' | 'status'
+type SortDir = 'asc' | 'desc'
+
+function compararParcelas(
+  a: Parcela,
+  b: Parcela,
+  by: SortBy,
+  descricoes: Record<number, string> | undefined
+): number {
+  switch (by) {
+    case 'descricao': {
+      const da = descricoes?.[a.id] ?? `#${a.despesaId}`
+      const db = descricoes?.[b.id] ?? `#${b.despesaId}`
+      return da.localeCompare(db, 'pt-BR')
+    }
+    case 'parcela':
+      return a.numero - b.numero || (a.total ?? 0) - (b.total ?? 0)
+    case 'data':
+      return a.dataReferencia.localeCompare(b.dataReferencia)
+    case 'valor':
+      return a.valorCentavos - b.valorCentavos
+    case 'status':
+      return a.status.localeCompare(b.status)
+  }
+}
 
 type Props = {
   detalhe: FaturaDetalhada
@@ -58,7 +85,32 @@ export function FaturaDetalhe({
   const [dataPagamento, setDataPagamento] = useState(dataHoje)
   const [modoAdiantar, setModoAdiantar] = useState(false)
   const [dialogo, setDialogo] = useState<DialogoConfirma | null>(null)
+  const [sortBy, setSortBy] = useState<SortBy>('data')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
   const toast = useToast()
+
+  const parcelasOrdenadas = useMemo(() => {
+    const copia = [...parcelas]
+    copia.sort((a, b) => {
+      const c = compararParcelas(a, b, sortBy, detalhe.descricoesPorParcela)
+      return sortDir === 'asc' ? c : -c
+    })
+    return copia
+  }, [parcelas, sortBy, sortDir, detalhe.descricoesPorParcela])
+
+  function handleSort(col: SortBy) {
+    if (col === sortBy) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(col)
+      setSortDir('asc')
+    }
+  }
+
+  function sortIndicator(col: SortBy): string {
+    if (col !== sortBy) return ''
+    return sortDir === 'asc' ? ' ↑' : ' ↓'
+  }
 
   const ciclo = useCicloFatura(onFaturaAtualizada)
 
@@ -205,16 +257,29 @@ export function FaturaDetalhe({
             <table className={styles.tabela}>
               <thead>
                 <tr>
-                  <th>Descrição</th>
-                  <th>Parcela</th>
-                  <th>Data</th>
-                  <th className={styles.colValor}>Valor</th>
-                  <th>Status</th>
+                  <th className={styles.thSortavel} onClick={() => handleSort('descricao')}>
+                    Descrição{sortIndicator('descricao')}
+                  </th>
+                  <th className={styles.thSortavel} onClick={() => handleSort('parcela')}>
+                    Parcela{sortIndicator('parcela')}
+                  </th>
+                  <th className={styles.thSortavel} onClick={() => handleSort('data')}>
+                    Data{sortIndicator('data')}
+                  </th>
+                  <th
+                    className={`${styles.colValor} ${styles.thSortavel}`}
+                    onClick={() => handleSort('valor')}
+                  >
+                    Valor{sortIndicator('valor')}
+                  </th>
+                  <th className={styles.thSortavel} onClick={() => handleSort('status')}>
+                    Status{sortIndicator('status')}
+                  </th>
                   <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {parcelas.map((p) => (
+                {parcelasOrdenadas.map((p) => (
                   <tr key={p.id}>
                     <td>{detalhe.descricoesPorParcela?.[p.id] ?? `#${p.despesaId}`}</td>
                     <td className="mono">
