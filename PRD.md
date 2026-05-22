@@ -81,6 +81,7 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - **RF-DES-07** — **Cancelar assinatura**: para de gerar ocorrências futuras a partir do mês seguinte ao cancelamento.
 - **RF-DES-08** — Editar valor das parcelas restantes (caso de reajuste de assinatura).
 - **RF-DES-09** — Excluir despesa: requer confirmação explícita. Se houver parcelas pagas, exclusão é bloqueada (apenas arquivamento).
+- **RF-DES-10** — Editar despesa (Única/Parcelada): descrição, categoria e valor sempre; data apenas para Única (move fatura via RN-01). Bloqueia se houver parcela paga. Em Parcelada, novo valor é redistribuído entre parcelas pendentes (paga preserva).
 
 ### 4.4 Faturas (RF-FAT)
 
@@ -103,6 +104,7 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - **RF-REN-03** — Marcar recebimento como recebido, com data efetiva.
 - **RF-REN-04** — Cadastrar recebimento avulso (freela, presente, etc.) sem fonte recorrente vinculada.
 - **RF-REN-05** — Editar valor padrão da fonte recorrente afeta recebimentos futuros ainda não recebidos.
+- **RF-REN-06** — Editar fonte de renda: nome, valor padrão e (Recorrente) dia esperado. Mudar dia esperado recalcula `data_esperada` dos recebimentos Esperado, clampando ao último dia de meses curtos. Recebidos preservam.
 
 ### 4.7 Visão Mensal e Multi-Mês (RF-VIS)
 
@@ -277,25 +279,26 @@ Bugs encontrados durante desenvolvimento ou uso real são registrados como GitHu
 
 Ordem proposta para implementação. Cada slice é uma fatia ponta-a-ponta (UI + lógica + persistência + testes) que entrega valor incremental.
 
-| #    | Slice                       | Entrega principal                                                                                                                                         |
-| ---- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0    | Setup do projeto            | Electron + Vite + React + TS + SQLite + Vitest + Playwright + ESLint + Prettier + Husky + commitlint + GitHub Actions configurado e rodando "Hello World" |
-| 1    | Camada de domínio base      | Migrations, entidades, repositórios base, testes da regra RN-01 (cálculo de fatura por data)                                                              |
-| 2    | Cartões                     | CRUD de cartões com data de fechamento/vencimento                                                                                                         |
-| 3    | Categorias                  | CRUD de categorias com tipo (Despesa/Renda/Ambos)                                                                                                         |
-| 4    | Despesa única + fatura      | Cadastrar gasto avulso em cartão; geração automática de fatura; visualização da fatura                                                                    |
-| 4.5  | Identidade visual           | Design system (tokens, fontes Geist, logo, primitivos UI); retrofit das telas dos Slices 1–4                                                              |
-| 5    | Fatura: ciclo de vida       | Fechamento e pagamento de fatura; cálculo de totais                                                                                                       |
-| 6    | Despesa parcelada           | Cadastro completo (nova e em andamento); geração de parcelas; adiantamento; cancelamento                                                                  |
-| 7    | Assinatura                  | Cadastro de assinatura; geração de ocorrências; cancelamento                                                                                              |
-| 8    | Despesas fora de cartão     | Pix, débito, dinheiro vinculados ao mês calendário                                                                                                        |
-| 9    | ~~Contribuidores e Ajudas~~ | **Revertido no Slice 12.1.** Cobranças a terceiros viraram rendas avulsas.                                                                                |
-| 10   | Rendas e Recebimentos       | Fontes recorrentes e avulsas; geração de recebimentos esperados; marcar recebido                                                                          |
-| 11   | Visão mensal consolidada    | Tela do mês com faturas + gastos fora + entradas + saldo                                                                                                  |
-| 12   | Multi-mês e projeção        | Navegação entre meses; projeção 6/12 meses futuros                                                                                                        |
-| 12.1 | Cleanup e simplificação     | Bugs visuais, RF-DES-09 (excluir despesa), reversão do Slice 9, remoção de ícone de Categoria e categoria em Renda                                        |
-| 13   | Relatórios e gráficos ✅    | Pizza por categoria; evolução temporal; comparativos                                                                                                      |
-| 14   | Hardening ✅                | electron-builder NSIS+portable, RNF-06 (80% domain / 60% global), primitivos Toast/ConfirmDialog/useEscapeKey                                             |
+| #    | Slice                       | Entrega principal                                                                                                                                                     |
+| ---- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | Setup do projeto            | Electron + Vite + React + TS + SQLite + Vitest + Playwright + ESLint + Prettier + Husky + commitlint + GitHub Actions configurado e rodando "Hello World"             |
+| 1    | Camada de domínio base      | Migrations, entidades, repositórios base, testes da regra RN-01 (cálculo de fatura por data)                                                                          |
+| 2    | Cartões                     | CRUD de cartões com data de fechamento/vencimento                                                                                                                     |
+| 3    | Categorias                  | CRUD de categorias com tipo (Despesa/Renda/Ambos)                                                                                                                     |
+| 4    | Despesa única + fatura      | Cadastrar gasto avulso em cartão; geração automática de fatura; visualização da fatura                                                                                |
+| 4.5  | Identidade visual           | Design system (tokens, fontes Geist, logo, primitivos UI); retrofit das telas dos Slices 1–4                                                                          |
+| 5    | Fatura: ciclo de vida       | Fechamento e pagamento de fatura; cálculo de totais                                                                                                                   |
+| 6    | Despesa parcelada           | Cadastro completo (nova e em andamento); geração de parcelas; adiantamento; cancelamento                                                                              |
+| 7    | Assinatura                  | Cadastro de assinatura; geração de ocorrências; cancelamento                                                                                                          |
+| 8    | Despesas fora de cartão     | Pix, débito, dinheiro vinculados ao mês calendário                                                                                                                    |
+| 9    | ~~Contribuidores e Ajudas~~ | **Revertido no Slice 12.1.** Cobranças a terceiros viraram rendas avulsas.                                                                                            |
+| 10   | Rendas e Recebimentos       | Fontes recorrentes e avulsas; geração de recebimentos esperados; marcar recebido                                                                                      |
+| 11   | Visão mensal consolidada    | Tela do mês com faturas + gastos fora + entradas + saldo                                                                                                              |
+| 12   | Multi-mês e projeção        | Navegação entre meses; projeção 6/12 meses futuros                                                                                                                    |
+| 12.1 | Cleanup e simplificação     | Bugs visuais, RF-DES-09 (excluir despesa), reversão do Slice 9, remoção de ícone de Categoria e categoria em Renda                                                    |
+| 13   | Relatórios e gráficos ✅    | Pizza por categoria; evolução temporal; comparativos                                                                                                                  |
+| 14   | Hardening ✅                | electron-builder NSIS+portable, RNF-06 (80% domain / 60% global), primitivos Toast/ConfirmDialog/useEscapeKey                                                         |
+| 14.1 | Polimento pós-MVP ✅        | Bugs visuais, RF-DES-10 (editar despesa), RF-REN-06 (editar renda), adiantar parcela por linha, ordenação client-side, descrição em FaturaDetalhe, Rendas em 2 Panels |
 
 V2 (orçamento, exportação, backup, tags) entra após o slice 14.
 

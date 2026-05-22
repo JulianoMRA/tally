@@ -771,6 +771,178 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
       expect(resultado.parcelasExcluidas).toBe(1)
     })
   })
+
+  describe('atualizar (RF-DES-10)', () => {
+    it('atualiza descricao, categoria e valor de despesa Unica + sua unica parcela', () => {
+      const r = repo.criarUnicaCredito({
+        descricao: 'Mercado',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 5000,
+        dataCompra: '2026-06-03'
+      })
+      const cat2 = db
+        .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Lazer', 'Despesa', '#abc')")
+        .run().lastInsertRowid as number
+
+      const atualizada = repo.atualizar(r.despesa.id, {
+        descricao: 'Mercadinho',
+        categoriaId: cat2,
+        valorCentavos: 7500
+      })
+
+      expect(atualizada.descricao).toBe('Mercadinho')
+      expect(atualizada.categoriaId).toBe(cat2)
+      expect(atualizada.valorCentavos).toBe(7500)
+
+      const parcela = parcelaRepo.listarPorDespesa(r.despesa.id)[0]
+      expect(parcela.valorCentavos).toBe(7500)
+    })
+
+    it('atualiza valor de despesa Parcelada distribuindo entre pendentes', () => {
+      const r = repo.criarParceladaCredito({
+        descricao: 'TV',
+        categoriaId: catId,
+        cartaoId,
+        totalParcelas: 5,
+        valorTotalCentavos: 5000,
+        dataCompra: '2026-06-03'
+      })
+
+      repo.atualizar(r.despesa.id, {
+        descricao: 'TV nova',
+        categoriaId: catId,
+        valorCentavos: 10000
+      })
+
+      const parcelas = parcelaRepo.listarPorDespesa(r.despesa.id)
+      const soma = parcelas.reduce((s, p) => s + p.valorCentavos, 0)
+      expect(soma).toBe(10000)
+      // Cada parcela recebe 2000 (10000/5)
+      for (const p of parcelas) {
+        expect(p.valorCentavos).toBe(2000)
+      }
+    })
+
+    it('Parcelada com 1 parcela paga: distribui novo valor entre pendentes preservando paga', () => {
+      const r = repo.criarParceladaCredito({
+        descricao: 'TV',
+        categoriaId: catId,
+        cartaoId,
+        totalParcelas: 4,
+        valorTotalCentavos: 4000,
+        dataCompra: '2026-06-03'
+      })
+      // Mark parcela 1 as Paga
+      db.prepare(
+        "UPDATE parcela SET status = 'Paga', data_pagamento = '2026-06-12' WHERE id = ?"
+      ).run(r.parcelas[0].id)
+
+      expect(() =>
+        repo.atualizar(r.despesa.id, {
+          descricao: 'TV',
+          categoriaId: catId,
+          valorCentavos: 4000
+        })
+      ).toThrow(/parcela.*paga/i)
+    })
+
+    it('bloqueia edicao se ha parcela paga', () => {
+      const r = repo.criarUnicaCredito({
+        descricao: 'X',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 1000,
+        dataCompra: '2026-06-03'
+      })
+      db.prepare(
+        "UPDATE parcela SET status = 'Paga', data_pagamento = '2026-06-12' WHERE id = ?"
+      ).run(r.parcela.id)
+
+      expect(() =>
+        repo.atualizar(r.despesa.id, {
+          descricao: 'Y',
+          categoriaId: catId,
+          valorCentavos: 2000
+        })
+      ).toThrow(/edição bloqueada/i)
+    })
+
+    it('Unica: mudar dataCompra move parcela para outra fatura (RN-01)', () => {
+      // dia 03 → fatura junho (fechamento dia 5)
+      const r = repo.criarUnicaCredito({
+        descricao: 'Compra',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 1000,
+        dataCompra: '2026-06-03'
+      })
+      const faturaInicial = db
+        .prepare('SELECT mes_referencia FROM fatura WHERE id = ?')
+        .get(r.parcela.faturaId) as { mes_referencia: string }
+      expect(faturaInicial.mes_referencia).toBe('2026-06')
+
+      // Move para dia 10 (após fechamento) → fatura julho
+      repo.atualizar(r.despesa.id, {
+        descricao: 'Compra',
+        categoriaId: catId,
+        valorCentavos: 1000,
+        dataCompra: '2026-06-10'
+      })
+
+      const parcelaAposEdit = parcelaRepo.listarPorDespesa(r.despesa.id)[0]
+      const faturaAposEdit = db
+        .prepare('SELECT mes_referencia FROM fatura WHERE id = ?')
+        .get(parcelaAposEdit.faturaId) as { mes_referencia: string }
+      expect(faturaAposEdit.mes_referencia).toBe('2026-07')
+    })
+
+    it('Parcelada: bloqueia mudar dataCompra', () => {
+      const r = repo.criarParceladaCredito({
+        descricao: 'TV',
+        categoriaId: catId,
+        cartaoId,
+        totalParcelas: 3,
+        valorTotalCentavos: 3000,
+        dataCompra: '2026-06-03'
+      })
+      expect(() =>
+        repo.atualizar(r.despesa.id, {
+          descricao: 'TV',
+          categoriaId: catId,
+          valorCentavos: 3000,
+          dataCompra: '2026-07-03'
+        })
+      ).toThrow(/data.*não suportada/i)
+    })
+
+    it('Assinatura: rejeita atualizar (deve usar reajustarValorMensalAssinatura)', () => {
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 1990,
+        dataInicio: '2026-06-03'
+      })
+      expect(() =>
+        repo.atualizar(r.despesa.id, {
+          descricao: 'X',
+          categoriaId: catId,
+          valorCentavos: 2000
+        })
+      ).toThrow(/reajustarValorMensalAssinatura/)
+    })
+
+    it('lanca erro para despesa inexistente', () => {
+      expect(() =>
+        repo.atualizar(9999, {
+          descricao: 'X',
+          categoriaId: catId,
+          valorCentavos: 1000
+        })
+      ).toThrow(/não encontrada/i)
+    })
+  })
 })
 
 describe('DespesaRepository — fora de cartão (RF-DES-01)', () => {

@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import type { StatusRecebimento } from '@domain/entities/recebimento'
+import type { Renda } from '@domain/entities/renda'
 import type { CriarRendaAvulsaInput, CriarRendaRecorrenteInput } from '@shared/ipc/renda'
 import type { CriarRecebimentoAvulsoInput, RecebimentoComContexto } from '@shared/ipc/recebimento'
 import { PageHead } from '../../components/layout/PageHead'
-import { Button, EmptyState, Field, Input } from '../../components/ui'
+import { Button, EmptyState, Field, Input, Panel, useToast } from '../../components/ui'
 import { useRendas } from './hooks/use-rendas'
 import { useRecebimentos } from './hooks/use-recebimentos'
 import { RendaForm } from './RendaForm'
 import { RendaList } from './RendaList'
+import { EditarRendaModal } from './EditarRendaModal'
 import { MarcarRecebidoModal } from './MarcarRecebidoModal'
 import { NovoAvulsoModal } from './NovoAvulsoModal'
 import styles from './rendas.module.css'
@@ -210,6 +212,8 @@ function AbaRecebimentos() {
 
 function AbaFontes() {
   const { rendas, loading, error, incluirArquivadas, setIncluirArquivadas, refetch } = useRendas()
+  const [rendaEditar, setRendaEditar] = useState<Renda | null>(null)
+  const toast = useToast()
 
   async function handleSalvarAvulsa(input: CriarRendaAvulsaInput) {
     await window.api.renda.criarAvulsa(input)
@@ -231,6 +235,23 @@ function AbaFontes() {
     await refetch()
   }
 
+  async function handleConfirmarEditar(input: {
+    nome: string
+    valorPadraoCentavos: number
+    diaEsperado?: number | null
+  }) {
+    if (!rendaEditar) return
+    try {
+      await window.api.renda.update(rendaEditar.id, input)
+      toast.show(`"${input.nome}" atualizada.`, 'success')
+      setRendaEditar(null)
+      await refetch()
+    } catch (e) {
+      toast.show(e instanceof Error ? e.message : 'Erro ao salvar.', 'error')
+      throw e
+    }
+  }
+
   return (
     <>
       <div style={{ padding: '0 32px 12px' }}>
@@ -249,8 +270,9 @@ function AbaFontes() {
           {loading && <p className={styles.empty}>Carregando…</p>}
           {error && <p className={styles.errorMsg}>{error}</p>}
           {!loading && !error && (
-            <RendaList
+            <FontesAgrupadas
               rendas={rendas}
+              onEditar={setRendaEditar}
               onArquivar={handleArquivar}
               onDesarquivar={handleDesarquivar}
             />
@@ -264,6 +286,69 @@ function AbaFontes() {
           />
         </section>
       </div>
+
+      {rendaEditar && (
+        <EditarRendaModal
+          renda={rendaEditar}
+          onConfirmar={handleConfirmarEditar}
+          onCancelar={() => setRendaEditar(null)}
+        />
+      )}
+    </>
+  )
+}
+
+function FontesAgrupadas({
+  rendas,
+  onEditar,
+  onArquivar,
+  onDesarquivar
+}: {
+  rendas: Renda[]
+  onEditar: (renda: Renda) => void
+  onArquivar: (id: number) => void
+  onDesarquivar: (id: number) => void
+}) {
+  const recorrentes = rendas
+    .filter((r) => r.tipo === 'Recorrente')
+    .sort((a, b) => (a.diaEsperado ?? 0) - (b.diaEsperado ?? 0) || a.nome.localeCompare(b.nome))
+  const avulsas = rendas
+    .filter((r) => r.tipo === 'Avulsa')
+    .sort((a, b) => a.nome.localeCompare(b.nome))
+
+  const totalMensalRecorrentes = recorrentes
+    .filter((r) => r.ativa)
+    .reduce((s, r) => s + r.valorPadraoCentavos, 0)
+
+  return (
+    <>
+      <Panel
+        title="Recorrentes"
+        meta={`${recorrentes.length} ${recorrentes.length === 1 ? 'fonte' : 'fontes'}${recorrentes.length > 0 ? ` · ${formatBRL(totalMensalRecorrentes)}/mês` : ''}`}
+        flush
+        className={styles.panel}
+      >
+        <RendaList
+          rendas={recorrentes}
+          onEditar={onEditar}
+          onArquivar={onArquivar}
+          onDesarquivar={onDesarquivar}
+        />
+      </Panel>
+
+      <Panel
+        title="Avulsas"
+        meta={`${avulsas.length} ${avulsas.length === 1 ? 'fonte' : 'fontes'}`}
+        flush
+        className={styles.panel}
+      >
+        <RendaList
+          rendas={avulsas}
+          onEditar={onEditar}
+          onArquivar={onArquivar}
+          onDesarquivar={onDesarquivar}
+        />
+      </Panel>
     </>
   )
 }

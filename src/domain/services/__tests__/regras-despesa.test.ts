@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Parcela } from '../../entities/parcela'
-import { podeDeletarDespesa } from '../regras-despesa'
+import { podeDeletarDespesa, podeEditarDespesa } from '../regras-despesa'
 
 function parcela(numero: number, status: 'Pendente' | 'Paga'): Parcela {
   return {
@@ -56,5 +56,26 @@ describe('podeDeletarDespesa (RF-DES-09)', () => {
   it('bloqueia quando ha uma unica parcela Paga', () => {
     const r = podeDeletarDespesa([parcela(7, 'Paga')])
     expect(r.ok).toBe(false)
+  })
+})
+
+describe('podeEditarDespesa (RF-DES-10)', () => {
+  it('permite editar quando nao ha parcelas', () => {
+    expect(podeEditarDespesa([])).toEqual({ ok: true })
+  })
+
+  it('permite editar quando todas pendentes', () => {
+    expect(podeEditarDespesa([parcela(1, 'Pendente'), parcela(2, 'Pendente')])).toEqual({
+      ok: true
+    })
+  })
+
+  it('bloqueia quando ha parcela Paga', () => {
+    const r = podeEditarDespesa([parcela(1, 'Paga'), parcela(2, 'Pendente')])
+    expect(r.ok).toBe(false)
+    if (!r.ok) {
+      expect(r.motivo).toBe('has-parcela-paga')
+      expect(r.parcelasPagas).toEqual([1])
+    }
   })
 })

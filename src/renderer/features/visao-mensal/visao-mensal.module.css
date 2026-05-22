@@ -184,6 +184,14 @@
 .colValor {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  width: 160px;
+  white-space: nowrap;
+}
+
+.colStatus {
+  text-align: right;
+  width: 140px;
+  white-space: nowrap;
 }
 
 .cardChip {
