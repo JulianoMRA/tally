@@ -192,8 +192,8 @@ export default function VisaoMensalPage() {
                     <tr>
                       <th>Fonte</th>
                       <th>Esperada</th>
+                      <th className={styles.colStatus}>Status</th>
                       <th className={styles.colValor}>Valor</th>
-                      <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -201,8 +201,7 @@ export default function VisaoMensalPage() {
                       <tr key={r.id}>
                         <td>{r.rendaNome ?? '—'}</td>
                         <td className="mono">{r.dataEsperada}</td>
-                        <td className={`${styles.colValor} tnum`}>{formatBRL(r.valorCentavos)}</td>
-                        <td>
+                        <td className={styles.colStatus}>
                           {r.status === 'Recebido' ? (
                             <span className={styles.recebimentoStatusBadgeRecebido}>
                               Recebido {r.dataRecebida}
@@ -211,6 +210,7 @@ export default function VisaoMensalPage() {
                             <span className={styles.recebimentoStatusBadgePendente}>Esperado</span>
                           )}
                         </td>
+                        <td className={`${styles.colValor} tnum`}>{formatBRL(r.valorCentavos)}</td>
                       </tr>
                     ))}
                   </tbody>
