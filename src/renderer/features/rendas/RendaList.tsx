@@ -8,11 +8,12 @@ function formatBRL(centavos: number): string {
 
 type Props = {
   rendas: Renda[]
+  onEditar: (renda: Renda) => void
   onArquivar: (id: number) => void
   onDesarquivar: (id: number) => void
 }
 
-export function RendaList({ rendas, onArquivar, onDesarquivar }: Props) {
+export function RendaList({ rendas, onEditar, onArquivar, onDesarquivar }: Props) {
   if (rendas.length === 0) {
     return (
       <EmptyState
@@ -37,6 +38,11 @@ export function RendaList({ rendas, onArquivar, onDesarquivar }: Props) {
           <span className={styles.listItemValor}>{formatBRL(r.valorPadraoCentavos)}</span>
           <Badge variant={r.ativa ? 'active' : 'archived'} />
           <div className={styles.listItemActions}>
+            {r.ativa && (
+              <Button size="sm" variant="ghost" onClick={() => onEditar(r)}>
+                Editar
+              </Button>
+            )}
             {r.ativa ? (
               <Button
                 size="sm"

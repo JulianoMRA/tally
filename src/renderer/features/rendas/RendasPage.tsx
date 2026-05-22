@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import type { StatusRecebimento } from '@domain/entities/recebimento'
+import type { Renda } from '@domain/entities/renda'
 import type { CriarRendaAvulsaInput, CriarRendaRecorrenteInput } from '@shared/ipc/renda'
 import type { CriarRecebimentoAvulsoInput, RecebimentoComContexto } from '@shared/ipc/recebimento'
 import { PageHead } from '../../components/layout/PageHead'
-import { Button, EmptyState, Field, Input, Panel } from '../../components/ui'
+import { Button, EmptyState, Field, Input, Panel, useToast } from '../../components/ui'
 import { useRendas } from './hooks/use-rendas'
 import { useRecebimentos } from './hooks/use-recebimentos'
 import { RendaForm } from './RendaForm'
 import { RendaList } from './RendaList'
+import { EditarRendaModal } from './EditarRendaModal'
 import { MarcarRecebidoModal } from './MarcarRecebidoModal'
 import { NovoAvulsoModal } from './NovoAvulsoModal'
 import styles from './rendas.module.css'
@@ -210,6 +212,8 @@ function AbaRecebimentos() {
 
 function AbaFontes() {
   const { rendas, loading, error, incluirArquivadas, setIncluirArquivadas, refetch } = useRendas()
+  const [rendaEditar, setRendaEditar] = useState<Renda | null>(null)
+  const toast = useToast()
 
   async function handleSalvarAvulsa(input: CriarRendaAvulsaInput) {
     await window.api.renda.criarAvulsa(input)
@@ -229,6 +233,23 @@ function AbaFontes() {
   async function handleDesarquivar(id: number) {
     await window.api.renda.desarquivar(id)
     await refetch()
+  }
+
+  async function handleConfirmarEditar(input: {
+    nome: string
+    valorPadraoCentavos: number
+    diaEsperado?: number | null
+  }) {
+    if (!rendaEditar) return
+    try {
+      await window.api.renda.update(rendaEditar.id, input)
+      toast.show(`"${input.nome}" atualizada.`, 'success')
+      setRendaEditar(null)
+      await refetch()
+    } catch (e) {
+      toast.show(e instanceof Error ? e.message : 'Erro ao salvar.', 'error')
+      throw e
+    }
   }
 
   return (
@@ -251,6 +272,7 @@ function AbaFontes() {
           {!loading && !error && (
             <FontesAgrupadas
               rendas={rendas}
+              onEditar={setRendaEditar}
               onArquivar={handleArquivar}
               onDesarquivar={handleDesarquivar}
             />
@@ -264,16 +286,26 @@ function AbaFontes() {
           />
         </section>
       </div>
+
+      {rendaEditar && (
+        <EditarRendaModal
+          renda={rendaEditar}
+          onConfirmar={handleConfirmarEditar}
+          onCancelar={() => setRendaEditar(null)}
+        />
+      )}
     </>
   )
 }
 
 function FontesAgrupadas({
   rendas,
+  onEditar,
   onArquivar,
   onDesarquivar
 }: {
-  rendas: import('@domain/entities/renda').Renda[]
+  rendas: Renda[]
+  onEditar: (renda: Renda) => void
   onArquivar: (id: number) => void
   onDesarquivar: (id: number) => void
 }) {
@@ -296,7 +328,12 @@ function FontesAgrupadas({
         flush
         className={styles.panel}
       >
-        <RendaList rendas={recorrentes} onArquivar={onArquivar} onDesarquivar={onDesarquivar} />
+        <RendaList
+          rendas={recorrentes}
+          onEditar={onEditar}
+          onArquivar={onArquivar}
+          onDesarquivar={onDesarquivar}
+        />
       </Panel>
 
       <Panel
@@ -305,7 +342,12 @@ function FontesAgrupadas({
         flush
         className={styles.panel}
       >
-        <RendaList rendas={avulsas} onArquivar={onArquivar} onDesarquivar={onDesarquivar} />
+        <RendaList
+          rendas={avulsas}
+          onEditar={onEditar}
+          onArquivar={onArquivar}
+          onDesarquivar={onDesarquivar}
+        />
       </Panel>
     </>
   )
