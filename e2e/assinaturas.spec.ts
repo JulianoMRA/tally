@@ -1,16 +1,8 @@
-import { test, expect, _electron as electron } from '@playwright/test'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
+import { test, expect } from './fixtures/electron-app'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
-  test('cadastrar, reajustar e cancelar uma assinatura', async () => {
-    const app = await electron.launch({
-      args: [join(__dirname, '../out/main/index.cjs')]
-    })
-
+  test('cadastrar, reajustar e cancelar uma assinatura', async ({ app }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
@@ -77,7 +69,5 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     // Aba "Canceladas" mostra a Spotify
     await page.getByRole('button', { name: 'Canceladas' }).click()
     await expect(page.getByText('Spotify E2E')).toBeVisible()
-
-    await app.close()
   })
 })

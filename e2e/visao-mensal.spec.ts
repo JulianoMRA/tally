@@ -1,16 +1,8 @@
-import { test, expect, _electron as electron } from '@playwright/test'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
+import { test, expect } from './fixtures/electron-app'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
-  test('consolida dados do mês escolhido', async () => {
-    const app = await electron.launch({
-      args: [join(__dirname, '../out/main/index.cjs')]
-    })
-
+  test('consolida dados do mês escolhido', async ({ app }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
@@ -68,15 +60,11 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     // Navegar para julho via seta direita
     await page.getByRole('button', { name: 'Próximo mês' }).click()
     await expect(page.getByLabel('Mês')).toHaveValue('2026-07')
-
-    await app.close()
   })
 
-  test('projeção: navegar além do horizonte estende parcelas e recebimentos (RF-VIS-04, RN-04)', async () => {
-    const app = await electron.launch({
-      args: [join(__dirname, '../out/main/index.cjs')]
-    })
-
+  test('projeção: navegar além do horizonte estende parcelas e recebimentos (RF-VIS-04, RN-04)', async ({
+    app
+  }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
@@ -138,7 +126,5 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
 
     // Recebimento projetado
     await expect(page.getByText('R$ 800,00').first()).toBeVisible()
-
-    await app.close()
   })
 })

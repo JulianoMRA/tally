@@ -17,8 +17,14 @@ import { registerRelatorioHandlers } from './ipc/relatorio-handlers'
 let db: Database | null = null
 let isShuttingDown = false
 
+// TALLY_USER_DATA permite redirecionar o diretório de dados para uma pasta
+// isolada — usado pelos testes E2E para nunca tocar na base real do usuário.
 function resolveDbPath(): string {
-  const userDataDir = app.getPath('userData')
+  const override = process.env.TALLY_USER_DATA
+  if (override) {
+    app.setPath('userData', override)
+  }
+  const userDataDir = override ?? app.getPath('userData')
   mkdirSync(userDataDir, { recursive: true })
   return join(userDataDir, 'tally.db')
 }

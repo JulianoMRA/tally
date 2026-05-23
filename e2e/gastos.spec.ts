@@ -1,16 +1,8 @@
-import { test, expect, _electron as electron } from '@playwright/test'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
+import { test, expect } from './fixtures/electron-app'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Gastos fora de cartão (RF-DES-01)', () => {
-  test('cadastrar Pix e visualizar em /gastos com filtro de mês', async () => {
-    const app = await electron.launch({
-      args: [join(__dirname, '../out/main/index.cjs')]
-    })
-
+  test('cadastrar Pix e visualizar em /gastos com filtro de mês', async ({ app }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
@@ -50,7 +42,5 @@ test.describe('Gastos fora de cartão (RF-DES-01)', () => {
     // --- mês vazio (2026-07) ---
     await page.getByLabel('Mês').fill('2026-07')
     await expect(page.getByText('Nenhum gasto fora de cartão neste mês.')).toBeVisible()
-
-    await app.close()
   })
 })

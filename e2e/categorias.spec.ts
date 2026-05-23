@@ -1,16 +1,8 @@
-import { test, expect, _electron as electron } from '@playwright/test'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
+import { test, expect } from './fixtures/electron-app'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Categorias CRUD', () => {
-  test('criar, editar, arquivar e desarquivar uma categoria', async () => {
-    const app = await electron.launch({
-      args: [join(__dirname, '../out/main/index.cjs')]
-    })
-
+  test('criar, editar, arquivar e desarquivar uma categoria', async ({ app }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
@@ -53,7 +45,5 @@ test.describe('Categorias CRUD', () => {
     // Volta na lista sem badge de arquivado
     await expect(page.getByText('Supermercado')).toBeVisible()
     await expect(page.getByText('Arquivado')).not.toBeVisible()
-
-    await app.close()
   })
 })

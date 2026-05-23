@@ -1,16 +1,10 @@
-import { test, expect, _electron as electron } from '@playwright/test'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
+import { test, expect } from './fixtures/electron-app'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Rendas (RF-REN-01..05) — tela unificada Recebimentos + Fontes', () => {
-  test('cadastrar Recorrente na aba Fontes, marcar recebido na aba Recebimentos, criar avulso', async () => {
-    const app = await electron.launch({
-      args: [join(__dirname, '../out/main/index.cjs')]
-    })
-
+  test('cadastrar Recorrente na aba Fontes, marcar recebido na aba Recebimentos, criar avulso', async ({
+    app
+  }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
@@ -48,7 +42,5 @@ test.describe('Rendas (RF-REN-01..05) — tela unificada Recebimentos + Fontes',
 
     await expect(page.getByText('Freela teste E2E')).toBeVisible()
     await expect(page.getByText('R$ 500,00')).toBeVisible()
-
-    await app.close()
   })
 })
