@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, session, shell } from 'electron'
 import { join } from 'path'
 import { mkdirSync, rmSync, existsSync } from 'fs'
 import { is } from '@electron-toolkit/utils'
@@ -85,6 +85,37 @@ function encerrarComFalha(motivo: string, err: unknown): never {
   throw new Error('unreachable')
 }
 
+// Content-Security-Policy aplicada no renderer.
+// 'unsafe-inline' em style-src é exigido pelo emit do Vite (CSS Modules + recharts inline styles).
+// Em dev, 'unsafe-eval' adicional para HMR do Vite; em produção, política mais estrita.
+function cspHeader(): string {
+  const base =
+    "default-src 'self'; " +
+    "script-src 'self'; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data:; " +
+    "font-src 'self' data:; " +
+    "connect-src 'self' ws: wss:; " +
+    "object-src 'none'; " +
+    "base-uri 'self'; " +
+    "frame-ancestors 'none'"
+  if (is.dev) {
+    return base.replace("script-src 'self'", "script-src 'self' 'unsafe-eval'")
+  }
+  return base
+}
+
+function instalarCSP(): void {
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [cspHeader()]
+      }
+    })
+  })
+}
+
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1280,
@@ -92,7 +123,34 @@ function createWindow(): void {
     title: 'Tally',
     webPreferences: {
       preload: join(__dirname, '../preload/preload.cjs'),
-      sandbox: false
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false
+    }
+  })
+
+  // window.open() abre no navegador externo do SO, nunca em uma nova janela do app.
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      shell.openExternal(url)
+    }
+    return { action: 'deny' }
+  })
+
+  // Bloqueia navegação para fora do app (preserva apenas o renderer atual).
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const rendererUrl = process.env['ELECTRON_RENDERER_URL']
+    const ehInterno =
+      (rendererUrl && url.startsWith(rendererUrl)) ||
+      url.startsWith('file://') ||
+      url.startsWith(mainWindow.webContents.getURL())
+    if (!ehInterno) {
+      event.preventDefault()
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        shell.openExternal(url)
+      }
     }
   })
 
@@ -116,6 +174,7 @@ if (!obteveLock) {
 
   app.whenReady().then(() => {
     try {
+      instalarCSP()
       db = inicializarBancoDeDados()
       registerCartaoHandlers(db, ipcMain)
       registerCategoriaHandlers(db, ipcMain)
