@@ -46,9 +46,15 @@ export const updateRendaInputSchema = z.object({
 
 export type UpdateRendaInput = z.infer<typeof updateRendaInputSchema>
 
-export type ListRendaOptions = {
-  incluirArquivadas?: boolean
-}
+export const rendaIdSchema = z.number().int().positive()
+
+export const listRendaOptionsSchema = z
+  .object({
+    incluirArquivadas: z.boolean().optional()
+  })
+  .optional()
+
+export type ListRendaOptions = z.infer<typeof listRendaOptionsSchema>
 
 export type ResultadoCriarRendaRecorrente = {
   renda: Renda

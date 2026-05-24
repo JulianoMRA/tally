@@ -26,9 +26,20 @@ export const cartaoInputSchema = z.object({
 
 export type CartaoInput = z.infer<typeof cartaoInputSchema>
 
-export type ListCartaoOptions = {
-  incluirArquivados?: boolean
-}
+export const cartaoIdSchema = z.number().int().positive()
+
+export const listCartaoOptionsSchema = z
+  .object({
+    incluirArquivados: z.boolean().optional()
+  })
+  .optional()
+
+export type ListCartaoOptions = z.infer<typeof listCartaoOptionsSchema>
+
+export const updateCartaoInputSchema = z.object({
+  id: cartaoIdSchema,
+  data: cartaoInputSchema
+})
 
 export type CartaoApi = {
   list: (options?: ListCartaoOptions) => Promise<Cartao[]>

@@ -5,7 +5,12 @@ import { DespesaRepository } from '../../src/persistence/repositories/despesa-re
 import { FaturaRepository } from '../../src/persistence/repositories/fatura-repository'
 import { ParcelaRepository } from '../../src/persistence/repositories/parcela-repository'
 import { fecharFatura, pagarFatura, reabrirFatura } from '../../src/domain/services/ciclo-fatura'
-import { FATURA_IPC_CHANNELS } from '../../src/shared/ipc/fatura'
+import {
+  cartaoIdSchema,
+  faturaIdSchema,
+  FATURA_IPC_CHANNELS,
+  pagarFaturaInputSchema
+} from '../../src/shared/ipc/fatura'
 import type { FaturaDetalhada } from '../../src/shared/ipc/fatura'
 
 export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
@@ -13,13 +18,15 @@ export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
   const faturaRepo = new FaturaRepository(db)
   const parcelaRepo = new ParcelaRepository(db)
 
-  ipcMain.handle(FATURA_IPC_CHANNELS.listarPorCartao, (_event, cartaoId: number) => {
+  ipcMain.handle(FATURA_IPC_CHANNELS.listarPorCartao, (_event, payload: unknown) => {
+    const cartaoId = cartaoIdSchema.parse(payload)
     return faturaRepo.list(cartaoId)
   })
 
   ipcMain.handle(
     FATURA_IPC_CHANNELS.detalharComParcelas,
-    (_event, faturaId: number): FaturaDetalhada | null => {
+    (_event, payload: unknown): FaturaDetalhada | null => {
+      const faturaId = faturaIdSchema.parse(payload)
       const fatura = faturaRepo.findById(faturaId)
       if (!fatura) return null
 
@@ -44,7 +51,8 @@ export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
     }
   )
 
-  ipcMain.handle(FATURA_IPC_CHANNELS.fechar, (_event, faturaId: number) => {
+  ipcMain.handle(FATURA_IPC_CHANNELS.fechar, (_event, payload: unknown) => {
+    const faturaId = faturaIdSchema.parse(payload)
     const fatura = faturaRepo.findById(faturaId)
     if (!fatura) throw new Error(`Fatura #${faturaId} não encontrada`)
     const resultado = fecharFatura(fatura)
@@ -52,7 +60,11 @@ export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
     return faturaRepo.fechar(faturaId)
   })
 
-  ipcMain.handle(FATURA_IPC_CHANNELS.pagar, (_event, faturaId: number, dataPagamento: string) => {
+  ipcMain.handle(FATURA_IPC_CHANNELS.pagar, (_event, faturaIdRaw: unknown, dataRaw: unknown) => {
+    const { faturaId, dataPagamento } = pagarFaturaInputSchema.parse({
+      faturaId: faturaIdRaw,
+      dataPagamento: dataRaw
+    })
     const fatura = faturaRepo.findById(faturaId)
     if (!fatura) throw new Error(`Fatura #${faturaId} não encontrada`)
     const resultado = pagarFatura(fatura, dataPagamento)
@@ -60,7 +72,8 @@ export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
     return faturaRepo.pagar(faturaId, dataPagamento)
   })
 
-  ipcMain.handle(FATURA_IPC_CHANNELS.reabrir, (_event, faturaId: number) => {
+  ipcMain.handle(FATURA_IPC_CHANNELS.reabrir, (_event, payload: unknown) => {
+    const faturaId = faturaIdSchema.parse(payload)
     const fatura = faturaRepo.findById(faturaId)
     if (!fatura) throw new Error(`Fatura #${faturaId} não encontrada`)
     const resultado = reabrirFatura(fatura)

@@ -14,6 +14,15 @@ export const categoriaInputSchema = z.object({
 
 export type CategoriaInput = z.infer<typeof categoriaInputSchema>
 
+export const categoriaIdSchema = z.number().int().positive()
+
+export const listCategoriaOptionsSchema = z
+  .object({
+    incluirArquivados: z.boolean().optional(),
+    tipo: z.enum(['Despesa', 'Renda', 'Ambos']).optional()
+  })
+  .optional()
+
 export type ListCategoriaOptions = {
   incluirArquivados?: boolean
   tipo?: TipoCategoria
