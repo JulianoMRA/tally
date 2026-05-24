@@ -1,6 +1,6 @@
 {
   "name": "tally",
-  "version": "0.1.0",
+  "version": "0.15.0",
   "description": "Desktop app for monthly personal finance tracking",
   "type": "module",
   "main": "out/main/index.cjs",
