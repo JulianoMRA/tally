@@ -32,24 +32,39 @@ describe('migration 0001_initial_schema', () => {
     runMigrations(db)
   })
 
-  it('cria as 7 tabelas do PRD §6 + schema_migrations apos as duas migrations', () => {
+  it('cria as 7 tabelas do PRD §6 + schema_migrations apos as tres migrations', () => {
     expect(listTables(db)).toEqual(EXPECTED_TABLES)
   })
 
-  it('migration 0002 mantem categoria.icone e renda.categoria_id como colunas mortas (nao referenciadas pelo codigo)', () => {
-    // Limpar as colunas com seguranca requer desligar foreign_keys fora da
-    // transacao da migration. Esse refator de infra fica para um slice de
-    // hardening posterior. As colunas permanecem nullable, o codigo nao as
-    // referencia, e os INSERTs as omitem.
+  it('migration 0003 dropou categoria.icone e renda.categoria_id (colunas mortas pos Slice 12.1)', () => {
     const colsCategoria = (
       db.prepare('PRAGMA table_info(categoria)').all() as { name: string }[]
     ).map((c) => c.name)
-    expect(colsCategoria).toContain('icone')
+    expect(colsCategoria).not.toContain('icone')
+    expect(colsCategoria).toEqual([
+      'id',
+      'nome',
+      'tipo',
+      'cor',
+      'ativo',
+      'created_at',
+      'updated_at'
+    ])
 
     const colsRenda = (db.prepare('PRAGMA table_info(renda)').all() as { name: string }[]).map(
       (c) => c.name
     )
-    expect(colsRenda).toContain('categoria_id')
+    expect(colsRenda).not.toContain('categoria_id')
+    expect(colsRenda).toEqual([
+      'id',
+      'nome',
+      'tipo',
+      'valor_padrao_centavos',
+      'dia_esperado',
+      'ativa',
+      'created_at',
+      'updated_at'
+    ])
   })
 
   it('migration 0002 removeu as tabelas ajuda e contribuidor', () => {
@@ -151,6 +166,10 @@ describe('migration 0001_initial_schema', () => {
   it('é idempotente quando rodada repetidamente', () => {
     const second = runMigrations(db)
     expect(second.applied).toEqual([])
-    expect(second.skipped).toEqual(['0001_initial_schema', '0002_simplificacao_pre_slice_13'])
+    expect(second.skipped).toEqual([
+      '0001_initial_schema',
+      '0002_simplificacao_pre_slice_13',
+      '0003_drop_colunas_mortas'
+    ])
   })
 })
