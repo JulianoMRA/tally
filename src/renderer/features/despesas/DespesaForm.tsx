@@ -209,10 +209,10 @@ function FormUnicaForaCartao({
     formState: { errors, isSubmitting }
   } = useForm<UnicaForaCartaoValues>({
     resolver: zodResolver(unicaForaCartaoSchema),
-    values: {
+    // categoriaId fica undefined ate o usuario selecionar; zod cobra > 0 no submit
+    defaultValues: {
       formaPagamento,
       descricao: '',
-      categoriaId: 0 as unknown as number,
       valorReais: '',
       dataCompra: ''
     }

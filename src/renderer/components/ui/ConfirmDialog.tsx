@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { Button } from './Button'
 import { useEscapeKey } from '../../hooks/use-escape-key'
 import styles from './confirm-dialog.module.css'
@@ -15,7 +15,8 @@ type Props = {
 
 /**
  * Modal de confirmação reusável. Substitui `window.confirm` em ações
- * destrutivas. Fecha com Esc (delega ao `useEscapeKey`).
+ * destrutivas. Fecha com Esc (delega ao `useEscapeKey`). aria-labelledby
+ * usa useId() para que multiplos ConfirmDialog simultaneos nao colidam.
  */
 export function ConfirmDialog({
   title,
@@ -26,6 +27,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel
 }: Props) {
+  const titleId = useId()
   useEscapeKey(onCancel)
   return (
     <div className={styles.overlay} onClick={onCancel}>
@@ -33,10 +35,10 @@ export function ConfirmDialog({
         className={styles.dialog}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="confirm-title"
+        aria-labelledby={titleId}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="confirm-title" className={styles.title}>
+        <h2 id={titleId} className={styles.title}>
           {title}
         </h2>
         <p className={styles.body}>{body}</p>
