@@ -27,9 +27,6 @@ export class FaturaRepository implements Repository {
   }
 
   list(cartaoId?: number): Fatura[] {
-    const hoje = new Date().toISOString().slice(0, 10)
-    this.fecharVencidas(hoje)
-
     const rows = (
       cartaoId === undefined
         ? this.db.prepare('SELECT * FROM fatura ORDER BY mes_referencia, cartao_id').all()
@@ -40,6 +37,12 @@ export class FaturaRepository implements Repository {
     return rows.map(mapFatura)
   }
 
+  /**
+   * Move faturas Aberta vencidas para Fechada. Idempotente — chamada no boot
+   * e em pontos explicitos (ex.: antes de detalhar visao mensal). NAO deve
+   * ser chamada dentro de metodos de leitura: list() deixou de ter esse
+   * efeito colateral para que SELECTs nunca disparem escritas.
+   */
   fecharVencidas(hoje: string): number {
     const result = this.db
       .prepare(

@@ -5,6 +5,7 @@ import { is } from '@electron-toolkit/utils'
 import type { Database } from '../src/persistence/database'
 import { openDatabase } from '../src/persistence/database'
 import { runMigrations } from '../src/persistence/migrations/runner'
+import { FaturaRepository } from '../src/persistence/repositories/fatura-repository'
 import { registerCartaoHandlers } from './ipc/cartao-handlers'
 import { registerCategoriaHandlers } from './ipc/categoria-handlers'
 import { registerDespesaHandlers } from './ipc/despesa-handlers'
@@ -55,6 +56,14 @@ function inicializarBancoDeDados(): Database {
   const result = runMigrations(database)
   if (is.dev && result.applied.length > 0) {
     console.log(`[migrations] aplicadas: ${result.applied.join(', ')}`)
+  }
+  // RN-06: auto-fechamento de faturas vencidas no boot. Antes vivia em
+  // FaturaRepository.list (mutate-on-read); foi extraido para cá para que
+  // SELECTs nunca disparem UPDATEs como efeito colateral.
+  const hoje = new Date().toISOString().slice(0, 10)
+  const fechadas = new FaturaRepository(database).fecharVencidas(hoje)
+  if (is.dev && fechadas > 0) {
+    console.log(`[faturas] ${fechadas} fatura(s) Aberta vencidas → Fechada`)
   }
   return database
 }
