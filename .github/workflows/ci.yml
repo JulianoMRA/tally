@@ -8,8 +8,12 @@ on:
 
 jobs:
   ci:
-    name: lint / typecheck / test / build
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }} · lint / typecheck / test / build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout
@@ -30,11 +34,43 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Test
-        run: npm run test:run
+      - name: Test with coverage (RNF-06 — 80% domain / 60% global)
+        run: npm run test:coverage
 
       - name: Build
         run: npm run build
         env:
           # Suppress Electron download during build-only CI
           ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+
+      # E2E roda apenas no Windows (alvo primario per RNF-02). Evita 2x custo
+      # e cobre o cenario real (path separators, file locks, NSIS).
+      - name: Install Playwright browsers
+        if: matrix.os == 'windows-latest'
+        run: npx playwright install --with-deps
+
+      - name: E2E (Playwright + Electron)
+        if: matrix.os == 'windows-latest'
+        run: npm run e2e
+
+      - name: Upload Playwright report
+        if: always() && matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload coverage report
+        if: always() && matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+      # npm audit nao-bloqueante: surface alertas de seguranca sem barrar PR
+      - name: npm audit (warning-only)
+        if: matrix.os == 'ubuntu-latest'
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true
