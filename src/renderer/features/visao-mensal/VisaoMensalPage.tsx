@@ -6,18 +6,11 @@ import {
 } from '@domain/services/mes-referencia'
 import { PageHead } from '../../components/layout/PageHead'
 import { Badge, EmptyState, Input, Panel } from '../../components/ui'
+import { formatBRL } from '../../lib/format-brl'
+import { mesAtualReferencia } from '../../lib/mes-atual'
 import { pluralizar } from '../../lib/pluralizar'
 import { useVisaoMensal } from './hooks/use-visao-mensal'
 import styles from './visao-mensal.module.css'
-
-function formatBRL(centavos: number): string {
-  return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
-
-function mesAtual(): string {
-  const hoje = new Date()
-  return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`
-}
 
 function rotuloMes(mes: string): string {
   const [ano, m] = mes.split('-').map(Number)
@@ -28,7 +21,7 @@ function rotuloMes(mes: string): string {
 }
 
 export default function VisaoMensalPage() {
-  const [mes, setMes] = useState(mesAtual())
+  const [mes, setMes] = useState(mesAtualReferencia())
   const { detalhe, loading, erro } = useVisaoMensal(mes)
 
   function irAnterior() {
@@ -38,7 +31,7 @@ export default function VisaoMensalPage() {
     setMes(proxMesReferencia(mes))
   }
 
-  const mesesAdiante = diferencaEmMeses(mesAtual(), mes)
+  const mesesAdiante = diferencaEmMeses(mesAtualReferencia(), mes)
   const ehProjecao = mesesAdiante > 0
 
   return (

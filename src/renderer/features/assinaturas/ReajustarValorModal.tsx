@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button, Field, Input } from '../../components/ui'
 import { useEscapeKey } from '../../hooks/use-escape-key'
+import { formatBRL } from '../../lib/format-brl'
 import styles from './assinaturas.module.css'
 
 type Props = {
@@ -12,10 +13,6 @@ type Props = {
 
 function parseCentavos(reais: string): number {
   return Math.round(parseFloat(reais.replace(',', '.')) * 100)
-}
-
-function formatBRL(centavos: number): string {
-  return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 export function ReajustarValorModal({

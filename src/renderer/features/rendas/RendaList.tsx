@@ -1,10 +1,7 @@
 import type { Renda } from '@domain/entities/renda'
 import { Badge, Button, EmptyState } from '../../components/ui'
+import { formatBRL } from '../../lib/format-brl'
 import styles from './rendas.module.css'
-
-function formatBRL(centavos: number): string {
-  return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
 
 type Props = {
   rendas: Renda[]

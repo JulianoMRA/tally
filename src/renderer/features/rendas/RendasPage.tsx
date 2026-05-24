@@ -5,6 +5,8 @@ import type { CriarRendaAvulsaInput, CriarRendaRecorrenteInput } from '@shared/i
 import type { CriarRecebimentoAvulsoInput, RecebimentoComContexto } from '@shared/ipc/recebimento'
 import { PageHead } from '../../components/layout/PageHead'
 import { Button, EmptyState, Field, Input, Panel, useToast } from '../../components/ui'
+import { formatBRL } from '../../lib/format-brl'
+import { mesAtualReferencia } from '../../lib/mes-atual'
 import { useRendas } from './hooks/use-rendas'
 import { useRecebimentos } from './hooks/use-recebimentos'
 import { RendaForm } from './RendaForm'
@@ -16,15 +18,6 @@ import styles from './rendas.module.css'
 
 type Aba = 'recebimentos' | 'fontes'
 type StatusFiltro = 'Todos' | StatusRecebimento
-
-function formatBRL(centavos: number): string {
-  return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
-
-function mesAtual(): string {
-  const hoje = new Date()
-  return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`
-}
 
 export default function RendasPage() {
   const [aba, setAba] = useState<Aba>('recebimentos')
@@ -59,7 +52,7 @@ export default function RendasPage() {
 }
 
 function AbaRecebimentos() {
-  const [mes, setMes] = useState(mesAtual())
+  const [mes, setMes] = useState(mesAtualReferencia())
   const [statusFiltro, setStatusFiltro] = useState<StatusFiltro>('Todos')
   const { recebimentos, loading, erro, recarregar } = useRecebimentos({
     mesReferencia: mes,
