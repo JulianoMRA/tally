@@ -65,7 +65,11 @@ describe('gerarOcorrenciasAssinatura (RN-04)', () => {
         quantidade: 3
       })
 
-      expect(ocorrencias.map((o) => o.dataReferencia)).toEqual(['2026-05', '2026-06', '2026-07'])
+      expect(ocorrencias.map((o) => o.dataReferencia)).toEqual([
+        '2026-05-01',
+        '2026-06-01',
+        '2026-07-01'
+      ])
     })
 
     it('data depois do fechamento → primeira no mês seguinte', () => {
@@ -76,7 +80,11 @@ describe('gerarOcorrenciasAssinatura (RN-04)', () => {
         quantidade: 3
       })
 
-      expect(ocorrencias.map((o) => o.dataReferencia)).toEqual(['2026-06', '2026-07', '2026-08'])
+      expect(ocorrencias.map((o) => o.dataReferencia)).toEqual([
+        '2026-06-01',
+        '2026-07-01',
+        '2026-08-01'
+      ])
     })
 
     it('data exatamente no dia de fechamento entra no mês corrente', () => {
@@ -87,8 +95,8 @@ describe('gerarOcorrenciasAssinatura (RN-04)', () => {
         quantidade: 2
       })
 
-      expect(ocorrencias[0].dataReferencia).toBe('2026-05')
-      expect(ocorrencias[1].dataReferencia).toBe('2026-06')
+      expect(ocorrencias[0].dataReferencia).toBe('2026-05-01')
+      expect(ocorrencias[1].dataReferencia).toBe('2026-06-01')
     })
   })
 
@@ -102,10 +110,10 @@ describe('gerarOcorrenciasAssinatura (RN-04)', () => {
       })
 
       const refs = ocorrencias.map((o) => o.dataReferencia)
-      expect(refs[0]).toBe('2026-11')
-      expect(refs[1]).toBe('2026-12')
-      expect(refs[2]).toBe('2027-01')
-      expect(refs[11]).toBe('2027-10')
+      expect(refs[0]).toBe('2026-11-01')
+      expect(refs[1]).toBe('2026-12-01')
+      expect(refs[2]).toBe('2027-01-01')
+      expect(refs[11]).toBe('2027-10-01')
     })
 
     it('compra em dezembro depois do fechamento começa em janeiro do ano seguinte', () => {
@@ -116,7 +124,11 @@ describe('gerarOcorrenciasAssinatura (RN-04)', () => {
         quantidade: 3
       })
 
-      expect(ocorrencias.map((o) => o.dataReferencia)).toEqual(['2027-01', '2027-02', '2027-03'])
+      expect(ocorrencias.map((o) => o.dataReferencia)).toEqual([
+        '2027-01-01',
+        '2027-02-01',
+        '2027-03-01'
+      ])
     })
   })
 
@@ -131,7 +143,11 @@ describe('gerarOcorrenciasAssinatura (RN-04)', () => {
       })
 
       expect(ocorrencias.map((o) => o.numero)).toEqual([13, 14, 15])
-      expect(ocorrencias.map((o) => o.dataReferencia)).toEqual(['2027-05', '2027-06', '2027-07'])
+      expect(ocorrencias.map((o) => o.dataReferencia)).toEqual([
+        '2027-05-01',
+        '2027-06-01',
+        '2027-07-01'
+      ])
     })
   })
 

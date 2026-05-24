@@ -163,13 +163,14 @@ describe('migration 0001_initial_schema', () => {
     expect(() => insertFatura.run(1, '2026-06', '2026-06-05', '2026-06-12', 'Aberta')).toThrow()
   })
 
-  it('é idempotente quando rodada repetidamente', () => {
+  it('e idempotente quando rodada repetidamente', () => {
     const second = runMigrations(db)
     expect(second.applied).toEqual([])
     expect(second.skipped).toEqual([
       '0001_initial_schema',
       '0002_simplificacao_pre_slice_13',
-      '0003_drop_colunas_mortas'
+      '0003_drop_colunas_mortas',
+      '0004_normaliza_data_referencia'
     ])
   })
 })

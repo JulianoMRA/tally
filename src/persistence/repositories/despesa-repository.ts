@@ -175,7 +175,7 @@ export class DespesaRepository implements Repository {
 
       const parcelas: Parcela[] = []
       for (const p of planejadas) {
-        const fatura = faturaRepo.upsertParaMesReferencia(cartao, p.dataReferencia)
+        const fatura = faturaRepo.upsertParaMesReferencia(cartao, p.dataReferencia.slice(0, 7))
         const parcela = parcelaRepo.criar({
           despesaId: despesa.id,
           faturaId: fatura.id,
@@ -230,7 +230,7 @@ export class DespesaRepository implements Repository {
 
       const parcelas: Parcela[] = []
       for (const p of planejadas) {
-        const fatura = faturaRepo.upsertParaMesReferencia(cartao, p.dataReferencia)
+        const fatura = faturaRepo.upsertParaMesReferencia(cartao, p.dataReferencia.slice(0, 7))
         const parcela = parcelaRepo.criar({
           despesaId: despesa.id,
           faturaId: fatura.id,
@@ -283,7 +283,7 @@ export class DespesaRepository implements Repository {
 
       const parcelas: Parcela[] = []
       for (const o of planejadas) {
-        const fatura = faturaRepo.upsertParaMesReferencia(cartao, o.dataReferencia)
+        const fatura = faturaRepo.upsertParaMesReferencia(cartao, o.dataReferencia.slice(0, 7))
         const parcela = parcelaRepo.criar({
           despesaId: despesa.id,
           faturaId: fatura.id,
@@ -556,12 +556,12 @@ export class DespesaRepository implements Repository {
         if (!cartao) throw new Error(`Cartão #${despesaRow.cartao_id} não encontrado`)
         const faturaRepo = new FaturaRepository(this.db)
         const novaFatura = faturaRepo.upsertParaCompra(cartao, input.dataCompra!)
-        // Move a unica parcela
+        // Move a unica parcela — data_referencia sempre YYYY-MM-DD (Slice 15)
         this.db
           .prepare(
             `UPDATE parcela SET fatura_id = ?, data_referencia = ?, updated_at = datetime('now') WHERE despesa_id = ?`
           )
-          .run(novaFatura.id, novaFatura.mesReferencia, despesaId)
+          .run(novaFatura.id, input.dataCompra!, despesaId)
       }
 
       const atualizadaRow = this.db
@@ -638,8 +638,9 @@ export class DespesaRepository implements Repository {
         })
 
         for (const o of novasOcorrencias) {
-          const existente = faturaRepo.findByCartaoEMesReferencia(cartao.id, o.dataReferencia)
-          const fatura = faturaRepo.upsertParaMesReferencia(cartao, o.dataReferencia)
+          const mesRef = o.dataReferencia.slice(0, 7)
+          const existente = faturaRepo.findByCartaoEMesReferencia(cartao.id, mesRef)
+          const fatura = faturaRepo.upsertParaMesReferencia(cartao, mesRef)
           if (!existente) faturasCriadas++
           parcelaRepo.criar({
             despesaId: a.id,

@@ -49,16 +49,16 @@ export function gerarOcorrenciasAssinatura(
   )
 
   const ocorrencias: OcorrenciaPlanejada[] = []
-  let dataReferencia = primeiraRef
+  let mesRef = primeiraRef
 
   for (let i = 0; i < quantidade; i++) {
     ocorrencias.push({
       numero: ocorrenciaInicial + i,
       total: null,
-      dataReferencia,
+      dataReferencia: `${mesRef}-01`,
       valorCentavos: valorMensalCentavos
     })
-    dataReferencia = proxMesReferencia(dataReferencia)
+    mesRef = proxMesReferencia(mesRef)
   }
 
   return ocorrencias

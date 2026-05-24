@@ -63,19 +63,20 @@ describe('migration 0003_drop_colunas_mortas', () => {
     expect(recebimentos).toHaveLength(1)
   })
 
-  it('checksum estavel: bundle reaplica 3 migrations e nao detecta tampering', () => {
+  it('checksum estavel: bundle reaplica todas as migrations e nao detecta tampering', () => {
     runMigrations(db)
 
     const files = loadBundledMigrations()
     expect(files.map((f) => f.version)).toEqual([
       '0001_initial_schema',
       '0002_simplificacao_pre_slice_13',
-      '0003_drop_colunas_mortas'
+      '0003_drop_colunas_mortas',
+      '0004_normaliza_data_referencia'
     ])
 
     const second = runMigrations(db, files)
     expect(second.applied).toEqual([])
-    expect(second.skipped).toHaveLength(3)
+    expect(second.skipped).toHaveLength(4)
   })
 
   it('preserva categoria + renda inseridas antes do upgrade (simulacao real)', () => {

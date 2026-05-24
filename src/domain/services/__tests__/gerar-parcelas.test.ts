@@ -91,7 +91,7 @@ describe('gerarParcelas (RN-02)', () => {
         valorTotalCentavos: 3000
       })
 
-      expect(parcelas[0].dataReferencia).toBe('2026-05')
+      expect(parcelas[0].dataReferencia).toBe('2026-05-01')
     })
 
     it('cada parcela subsequente avança 1 mês em relação à anterior', () => {
@@ -102,10 +102,10 @@ describe('gerarParcelas (RN-02)', () => {
         valorTotalCentavos: 4000
       })
 
-      expect(parcelas[0].dataReferencia).toBe('2026-05')
-      expect(parcelas[1].dataReferencia).toBe('2026-06')
-      expect(parcelas[2].dataReferencia).toBe('2026-07')
-      expect(parcelas[3].dataReferencia).toBe('2026-08')
+      expect(parcelas[0].dataReferencia).toBe('2026-05-01')
+      expect(parcelas[1].dataReferencia).toBe('2026-06-01')
+      expect(parcelas[2].dataReferencia).toBe('2026-07-01')
+      expect(parcelas[3].dataReferencia).toBe('2026-08-01')
     })
 
     it('compra após fechamento: primeira parcela no mês seguinte', () => {
@@ -117,8 +117,8 @@ describe('gerarParcelas (RN-02)', () => {
         valorTotalCentavos: 2000
       })
 
-      expect(parcelas[0].dataReferencia).toBe('2026-06')
-      expect(parcelas[1].dataReferencia).toBe('2026-07')
+      expect(parcelas[0].dataReferencia).toBe('2026-06-01')
+      expect(parcelas[1].dataReferencia).toBe('2026-07-01')
     })
 
     it('compra exatamente no dia de fechamento entra no mesmo mês', () => {
@@ -129,8 +129,8 @@ describe('gerarParcelas (RN-02)', () => {
         valorTotalCentavos: 2000
       })
 
-      expect(parcelas[0].dataReferencia).toBe('2026-05')
-      expect(parcelas[1].dataReferencia).toBe('2026-06')
+      expect(parcelas[0].dataReferencia).toBe('2026-05-01')
+      expect(parcelas[1].dataReferencia).toBe('2026-06-01')
     })
 
     it('virada de ano: novembro + 3 parcelas → nov, dez, jan', () => {
@@ -141,9 +141,9 @@ describe('gerarParcelas (RN-02)', () => {
         valorTotalCentavos: 3000
       })
 
-      expect(parcelas[0].dataReferencia).toBe('2026-11')
-      expect(parcelas[1].dataReferencia).toBe('2026-12')
-      expect(parcelas[2].dataReferencia).toBe('2027-01')
+      expect(parcelas[0].dataReferencia).toBe('2026-11-01')
+      expect(parcelas[1].dataReferencia).toBe('2026-12-01')
+      expect(parcelas[2].dataReferencia).toBe('2027-01-01')
     })
 
     it('virada de ano com compra após fechamento: dez/out → 3x → jan, fev, mar', () => {
@@ -155,9 +155,9 @@ describe('gerarParcelas (RN-02)', () => {
         valorTotalCentavos: 3000
       })
 
-      expect(parcelas[0].dataReferencia).toBe('2027-01')
-      expect(parcelas[1].dataReferencia).toBe('2027-02')
-      expect(parcelas[2].dataReferencia).toBe('2027-03')
+      expect(parcelas[0].dataReferencia).toBe('2027-01-01')
+      expect(parcelas[1].dataReferencia).toBe('2027-02-01')
+      expect(parcelas[2].dataReferencia).toBe('2027-03-01')
     })
 
     it('12 parcelas em sequência correta passando por virada de ano', () => {
@@ -170,18 +170,18 @@ describe('gerarParcelas (RN-02)', () => {
 
       const refs = parcelas.map((p) => p.dataReferencia)
       expect(refs).toEqual([
-        '2026-03',
-        '2026-04',
-        '2026-05',
-        '2026-06',
-        '2026-07',
-        '2026-08',
-        '2026-09',
-        '2026-10',
-        '2026-11',
-        '2026-12',
-        '2027-01',
-        '2027-02'
+        '2026-03-01',
+        '2026-04-01',
+        '2026-05-01',
+        '2026-06-01',
+        '2026-07-01',
+        '2026-08-01',
+        '2026-09-01',
+        '2026-10-01',
+        '2026-11-01',
+        '2026-12-01',
+        '2027-01-01',
+        '2027-02-01'
       ])
     })
   })
