@@ -4,9 +4,10 @@
 
 ![status](https://img.shields.io/badge/status-in%20development-yellow)
 ![license](https://img.shields.io/badge/license-MIT-blue)
-![tests](https://img.shields.io/badge/tests-coming%20soon-lightgrey)
+![tests](https://img.shields.io/badge/tests-362%20passing-brightgreen)
+![ci](https://img.shields.io/badge/CI-ubuntu%20%2B%20windows-blue)
 
-Tally is a personal project built to replace a Google Sheets workflow that demanded manual work every month: copying the previous month's tab, incrementing parcela numbers (`7/12` → `8/12`), recalculating credit card statement totals, and tracking who owed me what. Tally does all of it automatically.
+Tally is a personal project built to replace a Google Sheets workflow that demanded manual work every month: copying the previous month's tab, incrementing parcela numbers (`7/12` → `8/12`), and recalculating credit card statement totals. Tally does all of it automatically.
 
 It's also a portfolio piece for my repositioning to **QA / Test Automation Engineer** — built with test-driven development from the ground up, comprehensive automated test coverage, and a full CI pipeline.
 
@@ -14,14 +15,14 @@ It's also a portfolio piece for my repositioning to **QA / Test Automation Engin
 
 ## Why
 
-Brazilian personal finance often involves credit card installments (parcelamentos), shared expenses with family (when someone covers part of a subscription or split purchase), and multiple cards with different closing/due dates. The spreadsheets people build around this get repetitive fast:
+Brazilian personal finance often involves credit card installments (parcelamentos), monthly subscriptions, and multiple cards with different closing/due dates. The spreadsheets people build around this get repetitive fast:
 
 - Each month is a near-copy of the last, with parcela counters incremented by hand
 - Future projection is impossible without manually building each upcoming month
-- Tracking who owes you what for shared expenses lives outside the spreadsheet, in memory or text messages
-- Adding categorization or running "how much did I spend on subscriptions last quarter" requires rebuilding the structure every time
+- Categorization and "how much did I spend on subscriptions last quarter" require rebuilding the structure every time
+- Off-card spending (Pix, debit, cash) lives in a different sheet — never consolidated with credit-card totals
 
-Tally solves these with first-class support for installment plans, recurring subscriptions, shared expenses (called "ajudas" in the domain), per-card statement cycles, and multi-month projection.
+Tally solves these with first-class support for installment plans, recurring subscriptions, per-card statement cycles, off-card spending, recurring/one-off income tracking, and multi-month projection.
 
 ---
 
