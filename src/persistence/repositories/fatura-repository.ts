@@ -1,65 +1,13 @@
 import type { Database } from '../database'
 import type { Cartao } from '../../domain/entities/cartao'
-import type { Fatura, StatusFatura } from '../../domain/entities/fatura'
+import type { Fatura } from '../../domain/entities/fatura'
 import {
   calcularReferenciaFaturaDaCompra,
   formatarMesReferencia
 } from '../../domain/services/calcular-fatura-da-compra'
+import { clampDiaNoMes } from '../../domain/services/mes-referencia'
 import type { Repository } from './types'
-
-type FaturaRow = {
-  id: number
-  cartao_id: number
-  mes_referencia: string
-  data_fechamento: string
-  data_vencimento: string
-  status: 'Aberta' | 'Fechada' | 'Paga'
-  data_pagamento: string | null
-  created_at: string
-  updated_at: string
-}
-
-function diasNoMes(ano: number, mes: number): number {
-  if (mes === 2) {
-    const bissexto = (ano % 4 === 0 && ano % 100 !== 0) || ano % 400 === 0
-    return bissexto ? 29 : 28
-  }
-  if ([4, 6, 9, 11].includes(mes)) return 30
-  return 31
-}
-
-function dataDoMes(ano: number, mes: number, dia: number): string {
-  const diaClamp = Math.min(dia, diasNoMes(ano, mes))
-  return `${ano.toString().padStart(4, '0')}-${mes.toString().padStart(2, '0')}-${diaClamp.toString().padStart(2, '0')}`
-}
-
-function mapRow(row: FaturaRow): Fatura {
-  let status: StatusFatura
-  switch (row.status) {
-    case 'Aberta':
-      status = { kind: 'Aberta' }
-      break
-    case 'Fechada':
-      status = { kind: 'Fechada' }
-      break
-    case 'Paga':
-      if (!row.data_pagamento) {
-        throw new Error(`Fatura #${row.id} marcada como Paga sem data_pagamento`)
-      }
-      status = { kind: 'Paga', pagaEm: row.data_pagamento }
-      break
-  }
-  return {
-    id: row.id,
-    cartaoId: row.cartao_id,
-    mesReferencia: row.mes_referencia,
-    dataFechamento: row.data_fechamento,
-    dataVencimento: row.data_vencimento,
-    status,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
-  }
-}
+import { mapFatura, type FaturaRow } from './row-mappers'
 
 export class FaturaRepository implements Repository {
   constructor(public readonly db: Database) {}
@@ -68,14 +16,14 @@ export class FaturaRepository implements Repository {
     const row = this.db.prepare('SELECT * FROM fatura WHERE id = ?').get(id) as
       | FaturaRow
       | undefined
-    return row ? mapRow(row) : null
+    return row ? mapFatura(row) : null
   }
 
   findByCartaoEMesReferencia(cartaoId: number, mesReferencia: string): Fatura | null {
     const row = this.db
       .prepare('SELECT * FROM fatura WHERE cartao_id = ? AND mes_referencia = ?')
       .get(cartaoId, mesReferencia) as FaturaRow | undefined
-    return row ? mapRow(row) : null
+    return row ? mapFatura(row) : null
   }
 
   list(cartaoId?: number): Fatura[] {
@@ -89,7 +37,7 @@ export class FaturaRepository implements Repository {
             .prepare('SELECT * FROM fatura WHERE cartao_id = ? ORDER BY mes_referencia')
             .all(cartaoId)
     ) as FaturaRow[]
-    return rows.map(mapRow)
+    return rows.map(mapFatura)
   }
 
   fecharVencidas(hoje: string): number {
@@ -150,8 +98,8 @@ export class FaturaRepository implements Repository {
     const [anoStr, mesStr] = mesReferencia.split('-')
     const ano = Number(anoStr)
     const mes = Number(mesStr)
-    const dataFechamento = dataDoMes(ano, mes, cartao.diaFechamento)
-    const dataVencimento = dataDoMes(ano, mes, cartao.diaVencimento)
+    const dataFechamento = clampDiaNoMes(ano, mes, cartao.diaFechamento)
+    const dataVencimento = clampDiaNoMes(ano, mes, cartao.diaVencimento)
 
     this.db
       .prepare(
@@ -180,8 +128,8 @@ export class FaturaRepository implements Repository {
   ): Fatura {
     const ref = calcularReferenciaFaturaDaCompra(dataCompra, cartao.diaFechamento)
     const mesReferencia = formatarMesReferencia(ref)
-    const dataFechamento = dataDoMes(ref.ano, ref.mes, cartao.diaFechamento)
-    const dataVencimento = dataDoMes(ref.ano, ref.mes, cartao.diaVencimento)
+    const dataFechamento = clampDiaNoMes(ref.ano, ref.mes, cartao.diaFechamento)
+    const dataVencimento = clampDiaNoMes(ref.ano, ref.mes, cartao.diaVencimento)
 
     this.db
       .prepare(

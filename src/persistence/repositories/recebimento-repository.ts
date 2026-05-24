@@ -6,30 +6,7 @@ import type {
   RecebimentoComContexto
 } from '../../shared/ipc/recebimento'
 import type { Repository } from './types'
-
-type RecebimentoRow = {
-  id: number
-  renda_id: number | null
-  valor_centavos: number
-  data_esperada: string
-  data_recebida: string | null
-  status: StatusRecebimento
-  created_at: string
-  updated_at: string
-}
-
-function mapRow(row: RecebimentoRow): Recebimento {
-  return {
-    id: row.id,
-    rendaId: row.renda_id,
-    valorCentavos: row.valor_centavos,
-    dataEsperada: row.data_esperada,
-    dataRecebida: row.data_recebida,
-    status: row.status,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
-  }
-}
+import { mapRecebimento, type RecebimentoRow } from './row-mappers'
 
 export type CriarRecebimentoInput = {
   rendaId: number | null
@@ -45,7 +22,7 @@ export class RecebimentoRepository implements Repository {
     const row = this.db.prepare('SELECT * FROM recebimento WHERE id = ?').get(id) as
       | RecebimentoRow
       | undefined
-    return row ? mapRow(row) : null
+    return row ? mapRecebimento(row) : null
   }
 
   criar(input: CriarRecebimentoInput): Recebimento {
@@ -120,7 +97,7 @@ export class RecebimentoRepository implements Repository {
 
     const rows = this.db.prepare(sql).all(...params) as Row[]
     return rows.map((r) => ({
-      ...mapRow(r),
+      ...mapRecebimento(r),
       rendaNome: r.renda_nome
     }))
   }

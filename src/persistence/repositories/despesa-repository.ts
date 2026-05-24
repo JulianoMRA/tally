@@ -6,6 +6,7 @@ import type { Repository } from './types'
 import { CartaoRepository } from './cartao-repository'
 import { FaturaRepository } from './fatura-repository'
 import { ParcelaRepository } from './parcela-repository'
+import { mapDespesa, mapParcela, type DespesaRow, type ParcelaRow } from './row-mappers'
 import { calcularExtensaoNecessaria } from '../../domain/services/calcular-extensao-horizonte'
 import { gerarParcelas } from '../../domain/services/gerar-parcelas'
 import { gerarOcorrenciasAssinatura } from '../../domain/services/gerar-ocorrencias-assinatura'
@@ -13,38 +14,6 @@ import { podeDeletarDespesa, podeEditarDespesa } from '../../domain/services/reg
 import { recalcularParcelasPendentes } from '../../domain/services/recalcular-parcelas'
 
 const HORIZONTE_ASSINATURA_MESES = 12
-
-type DespesaRow = {
-  id: number
-  descricao: string
-  categoria_id: number
-  tipo: 'Unica' | 'Parcelada' | 'Assinatura'
-  forma_pagamento: 'Credito' | 'Debito' | 'Pix' | 'Dinheiro'
-  cartao_id: number | null
-  valor_centavos: number
-  total_parcelas: number | null
-  data_compra: string
-  ativa: 0 | 1
-  created_at: string
-  updated_at: string
-}
-
-function mapRow(row: DespesaRow): Despesa {
-  return {
-    id: row.id,
-    descricao: row.descricao,
-    categoriaId: row.categoria_id,
-    tipo: row.tipo,
-    formaPagamento: row.forma_pagamento,
-    cartaoId: row.cartao_id,
-    valorCentavos: row.valor_centavos,
-    totalParcelas: row.total_parcelas,
-    dataCompra: row.data_compra,
-    ativa: row.ativa === 1,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
-  }
-}
 
 export type CriarDespesaUnicaCreditoInput = {
   descricao: string
@@ -151,7 +120,7 @@ export class DespesaRepository implements Repository {
         .prepare('SELECT * FROM despesa WHERE id = ?')
         .get(Number(info.lastInsertRowid)) as DespesaRow | undefined
       if (!despesaRow) throw new Error('Falha ao recuperar despesa após criar')
-      const despesa = mapRow(despesaRow)
+      const despesa = mapDespesa(despesaRow)
 
       const fatura = faturaRepo.upsertParaCompra(cartao, input.dataCompra)
 
@@ -202,7 +171,7 @@ export class DespesaRepository implements Repository {
         .prepare('SELECT * FROM despesa WHERE id = ?')
         .get(Number(info.lastInsertRowid)) as DespesaRow | undefined
       if (!despesaRow) throw new Error('Falha ao recuperar despesa após criar')
-      const despesa = mapRow(despesaRow)
+      const despesa = mapDespesa(despesaRow)
 
       const parcelas: Parcela[] = []
       for (const p of planejadas) {
@@ -257,7 +226,7 @@ export class DespesaRepository implements Repository {
         .prepare('SELECT * FROM despesa WHERE id = ?')
         .get(Number(info.lastInsertRowid)) as DespesaRow | undefined
       if (!despesaRow) throw new Error('Falha ao recuperar despesa após criar')
-      const despesa = mapRow(despesaRow)
+      const despesa = mapDespesa(despesaRow)
 
       const parcelas: Parcela[] = []
       for (const p of planejadas) {
@@ -310,7 +279,7 @@ export class DespesaRepository implements Repository {
         .prepare('SELECT * FROM despesa WHERE id = ?')
         .get(Number(info.lastInsertRowid)) as DespesaRow | undefined
       if (!despesaRow) throw new Error('Falha ao recuperar despesa após criar')
-      const despesa = mapRow(despesaRow)
+      const despesa = mapDespesa(despesaRow)
 
       const parcelas: Parcela[] = []
       for (const o of planejadas) {
@@ -340,25 +309,14 @@ export class DespesaRepository implements Repository {
     }
 
     return this.db.transaction(() => {
-      type ParcelaRow = {
-        id: number
-        despesa_id: number
-        fatura_id: number | null
-        numero: number
-        total: number | null
-        valor_centavos: number
-        data_referencia: string
-        status: 'Pendente' | 'Paga'
-        data_pagamento: string | null
-        created_at: string
-        updated_at: string
-      }
-
+      // RN: parcelas em fatura Aberta são canceladas; Fechada/Paga preservam histórico.
+      // Filtra também por parcela.status='Pendente' (defense in depth — não deveria
+      // existir parcela Paga em fatura Aberta, mas se houver, preservar).
       const rowsParaCancelar = this.db
         .prepare(
           `SELECT p.* FROM parcela p
            INNER JOIN fatura f ON f.id = p.fatura_id
-           WHERE p.despesa_id = ? AND f.status = 'Aberta'`
+           WHERE p.despesa_id = ? AND f.status = 'Aberta' AND p.status = 'Pendente'`
         )
         .all(despesaId) as ParcelaRow[]
 
@@ -366,19 +324,7 @@ export class DespesaRepository implements Repository {
       const canceladas: Parcela[] = []
       for (const row of rowsParaCancelar) {
         del.run(row.id)
-        canceladas.push({
-          id: row.id,
-          despesaId: row.despesa_id,
-          faturaId: row.fatura_id,
-          numero: row.numero,
-          total: row.total,
-          valorCentavos: row.valor_centavos,
-          dataReferencia: row.data_referencia,
-          status: row.status,
-          dataPagamento: row.data_pagamento,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at
-        })
+        canceladas.push(mapParcela(row))
       }
 
       this.db
@@ -388,7 +334,7 @@ export class DespesaRepository implements Repository {
       const atualizada = this.db
         .prepare('SELECT * FROM despesa WHERE id = ?')
         .get(despesaId) as DespesaRow
-      return { despesa: mapRow(atualizada), canceladas }
+      return { despesa: mapDespesa(atualizada), canceladas }
     })()
   }
 
@@ -431,7 +377,7 @@ export class DespesaRepository implements Repository {
       const todasParcelas = parcelaRepo.listarPorDespesa(despesaId)
       const atualizadas = todasParcelas.filter((p) => p.valorCentavos === novoValorCentavos)
 
-      return { despesa: mapRow(atualizadaRow), atualizadas }
+      return { despesa: mapDespesa(atualizadaRow), atualizadas }
     })()
   }
 
@@ -456,7 +402,7 @@ export class DespesaRepository implements Repository {
         .prepare('SELECT * FROM despesa WHERE id = ?')
         .get(Number(info.lastInsertRowid)) as DespesaRow | undefined
       if (!despesaRow) throw new Error('Falha ao recuperar despesa após criar')
-      const despesa = mapRow(despesaRow)
+      const despesa = mapDespesa(despesaRow)
 
       const parcela = parcelaRepo.criar({
         despesaId: despesa.id,
@@ -481,7 +427,7 @@ export class DespesaRepository implements Repository {
     }
     sql += ' ORDER BY data_compra DESC, id DESC'
     const rows = this.db.prepare(sql).all(...params) as DespesaRow[]
-    return rows.map(mapRow)
+    return rows.map(mapDespesa)
   }
 
   /**
@@ -621,7 +567,7 @@ export class DespesaRepository implements Repository {
       const atualizadaRow = this.db
         .prepare('SELECT * FROM despesa WHERE id = ?')
         .get(despesaId) as DespesaRow
-      return mapRow(atualizadaRow)
+      return mapDespesa(atualizadaRow)
     })()
   }
 
@@ -634,7 +580,7 @@ export class DespesaRepository implements Repository {
     }
     sql += ' ORDER BY ativa DESC, descricao ASC'
     const rows = this.db.prepare(sql).all(...params) as DespesaRow[]
-    return rows.map(mapRow)
+    return rows.map(mapDespesa)
   }
 
   /**
