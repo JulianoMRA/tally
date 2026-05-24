@@ -1,18 +1,21 @@
+-- @no-transaction
 -- Slice 15 — fecha o débito documentado em 0002.
 --
 -- Remove colunas mortas que persistiram após o Slice 12.1:
 --   * categoria.icone  (não referenciado por nenhum código desde 12.1)
 --   * renda.categoria_id  (idem)
 --
--- Usa o pattern recreate-table do SQLite. PRAGMA defer_foreign_keys = ON
--- adia a checagem de FKs até o COMMIT, permitindo DROP+CREATE+RENAME de
--- tabelas referenciadas (recebimento.renda_id → renda) dentro da mesma
--- transação do runner.
---
--- Dados são preservados via INSERT INTO ... SELECT explícito (sem icone /
--- sem categoria_id). created_at/updated_at e ids ficam intactos.
+-- Usa o pattern recreate-table do SQLite. `PRAGMA defer_foreign_keys` NÃO é
+-- suficiente — ele adia apenas a checagem de violações de FK, não permite
+-- DROP de tabela referenciada por FK ativa (despesa→categoria, recebimento→
+-- renda). Solução: desligar `foreign_keys` completamente, que só funciona
+-- em autocommit (fora de transação). A diretiva `@no-transaction` no header
+-- faz o runner pular o wrapper db.transaction() — a migration então controla
+-- seu próprio BEGIN/COMMIT.
 
-PRAGMA defer_foreign_keys = ON;
+PRAGMA foreign_keys = OFF;
+
+BEGIN;
 
 -- categoria sem coluna icone
 CREATE TABLE categoria_new (
@@ -52,3 +55,7 @@ INSERT INTO renda_new (id, nome, tipo, valor_padrao_centavos, dia_esperado, ativ
 
 DROP TABLE renda;
 ALTER TABLE renda_new RENAME TO renda;
+
+COMMIT;
+
+PRAGMA foreign_keys = ON;
