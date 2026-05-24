@@ -4,7 +4,15 @@ import type { Renda } from '@domain/entities/renda'
 import type { CriarRendaAvulsaInput, CriarRendaRecorrenteInput } from '@shared/ipc/renda'
 import type { CriarRecebimentoAvulsoInput, RecebimentoComContexto } from '@shared/ipc/recebimento'
 import { PageHead } from '../../components/layout/PageHead'
-import { Button, EmptyState, Field, Input, Panel, useToast } from '../../components/ui'
+import {
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  Field,
+  Input,
+  Panel,
+  useToast
+} from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
 import { mesAtualReferencia } from '../../lib/mes-atual'
 import { useRendas } from './hooks/use-rendas'
@@ -61,6 +69,7 @@ function AbaRecebimentos() {
   const [alvoMarcar, setAlvoMarcar] = useState<RecebimentoComContexto | null>(null)
   const [novoAvulso, setNovoAvulso] = useState(false)
   const [acaoErro, setAcaoErro] = useState<string | null>(null)
+  const [alvoExcluir, setAlvoExcluir] = useState<RecebimentoComContexto | null>(null)
 
   async function handleMarcarRecebido(dataRecebida: string) {
     if (!alvoMarcar) return
@@ -78,17 +87,16 @@ function AbaRecebimentos() {
     await recarregar()
   }
 
-  async function handleExcluir(rec: RecebimentoComContexto) {
-    const ok = window.confirm(
-      `Excluir recebimento de ${formatBRL(rec.valorCentavos)} (${rec.rendaNome ?? 'avulso'})?`
-    )
-    if (!ok) return
+  async function confirmarExcluir() {
+    if (!alvoExcluir) return
     setAcaoErro(null)
     try {
-      await window.api.recebimento.excluir({ recebimentoId: rec.id })
+      await window.api.recebimento.excluir({ recebimentoId: alvoExcluir.id })
       await recarregar()
     } catch (e) {
       setAcaoErro(e instanceof Error ? e.message : 'Erro ao excluir.')
+    } finally {
+      setAlvoExcluir(null)
     }
   }
 
@@ -159,7 +167,7 @@ function AbaRecebimentos() {
                     Marcar recebido
                   </Button>
                 )}
-                <Button size="sm" variant="ghost" onClick={() => handleExcluir(r)}>
+                <Button size="sm" variant="ghost" onClick={() => setAlvoExcluir(r)}>
                   Excluir
                 </Button>
               </div>
@@ -198,6 +206,17 @@ function AbaRecebimentos() {
 
       {novoAvulso && (
         <NovoAvulsoModal onConfirmar={handleCriarAvulso} onCancelar={() => setNovoAvulso(false)} />
+      )}
+
+      {alvoExcluir && (
+        <ConfirmDialog
+          title="Excluir recebimento?"
+          body={`${formatBRL(alvoExcluir.valorCentavos)} — ${alvoExcluir.rendaNome ?? 'avulso'}. Esta acao e irreversivel.`}
+          confirmText="Excluir"
+          confirmVariant="danger"
+          onConfirm={confirmarExcluir}
+          onCancel={() => setAlvoExcluir(null)}
+        />
       )}
     </div>
   )
