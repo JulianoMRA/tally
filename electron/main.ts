@@ -98,20 +98,33 @@ function encerrarComFalha(motivo: string, err: unknown): never {
 // 'unsafe-inline' em style-src é exigido pelo emit do Vite (CSS Modules + recharts inline styles).
 // Em dev, 'unsafe-eval' adicional para HMR do Vite; em produção, política mais estrita.
 function cspHeader(): string {
-  const base =
+  if (is.dev) {
+    // Dev: Vite HMR injeta inline scripts (preamble do @vitejs/plugin-react)
+    // e usa eval para hot-update. unsafe-inline + unsafe-eval necessarios.
+    // ws:/wss: para o websocket do HMR.
+    return (
+      "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+      "style-src 'self' 'unsafe-inline'; " +
+      "img-src 'self' data:; " +
+      "font-src 'self' data:; " +
+      "connect-src 'self' ws: wss: http://localhost:*; " +
+      "object-src 'none'; " +
+      "base-uri 'self'; " +
+      "frame-ancestors 'none'"
+    )
+  }
+  return (
     "default-src 'self'; " +
     "script-src 'self'; " +
     "style-src 'self' 'unsafe-inline'; " +
     "img-src 'self' data:; " +
     "font-src 'self' data:; " +
-    "connect-src 'self' ws: wss:; " +
+    "connect-src 'self'; " +
     "object-src 'none'; " +
     "base-uri 'self'; " +
     "frame-ancestors 'none'"
-  if (is.dev) {
-    return base.replace("script-src 'self'", "script-src 'self' 'unsafe-eval'")
-  }
-  return base
+  )
 }
 
 function instalarCSP(): void {
@@ -134,7 +147,12 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      // sandbox: false porque o preload importa @shared/ipc/* que dependem de
+      // zod (runtime). Com sandbox: true, require('zod') falha — o sandbox
+      // restringe o preload a APIs do Electron puro (contextBridge, ipcRenderer).
+      // Para ativar sandbox seria preciso mover toda validacao Zod para o main
+      // e deixar o preload apenas com channel strings literais.
+      sandbox: false,
       webSecurity: true,
       allowRunningInsecureContent: false
     }
