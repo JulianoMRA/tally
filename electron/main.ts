@@ -127,7 +127,12 @@ function cspHeader(): string {
   )
 }
 
+// CSP aplicada apenas em dev (renderer via http://localhost). Em producao o
+// renderer carrega via file:// onde 'self' e ambiguo no Electron — scripts
+// legítimos podem ser bloqueados. Producao ja esta protegida por
+// contextIsolation + nodeIntegration: false + webSecurity: true.
 function instalarCSP(): void {
+  if (!is.dev) return
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {

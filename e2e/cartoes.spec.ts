@@ -6,7 +6,8 @@ test.describe('Cartões CRUD', () => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
-    // Navega automaticamente para /cartoes via redirect raiz
+    // Landing page é /mensal desde Slice 11 — navega para Cartões via sidebar
+    await page.getByRole('link', { name: 'Cartões' }).click()
     await expect(page.getByRole('heading', { name: 'Cartões' })).toBeVisible()
 
     // --- Criar cartão Inter ---
