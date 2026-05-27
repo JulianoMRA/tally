@@ -417,6 +417,15 @@ export class DespesaRepository implements Repository {
     })()
   }
 
+  listarPorIds(ids: number[]): Despesa[] {
+    if (ids.length === 0) return []
+    const placeholders = ids.map(() => '?').join(',')
+    const rows = this.db
+      .prepare(`SELECT * FROM despesa WHERE id IN (${placeholders})`)
+      .all(...ids) as DespesaRow[]
+    return rows.map(mapDespesa)
+  }
+
   listarGastosForaCartao(filtro?: { mesReferencia?: string }): Despesa[] {
     let sql =
       "SELECT * FROM despesa WHERE tipo = 'Unica' AND forma_pagamento != 'Credito' AND ativa = 1"

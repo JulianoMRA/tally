@@ -945,6 +945,69 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
   })
 })
 
+describe('DespesaRepository.listarPorIds', () => {
+  let db: Database
+  let repo: DespesaRepository
+
+  beforeEach(() => {
+    db = openInMemoryDatabase()
+    runMigrations(db)
+    repo = new DespesaRepository(db)
+  })
+
+  it('retorna [] quando lista de ids é vazia (não dispara SQL inválido)', () => {
+    const resultado = repo.listarPorIds([])
+    expect(resultado).toEqual([])
+  })
+
+  it('retorna as despesas correspondentes aos ids informados', () => {
+    const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+    const catId = inserirCategoria(db)
+
+    const a = repo.criarUnicaCredito({
+      descricao: 'A',
+      categoriaId: catId,
+      cartaoId,
+      valorCentavos: 1000,
+      dataCompra: '2026-06-03'
+    })
+    const b = repo.criarUnicaCredito({
+      descricao: 'B',
+      categoriaId: catId,
+      cartaoId,
+      valorCentavos: 2000,
+      dataCompra: '2026-06-03'
+    })
+    repo.criarUnicaCredito({
+      descricao: 'C',
+      categoriaId: catId,
+      cartaoId,
+      valorCentavos: 3000,
+      dataCompra: '2026-06-03'
+    })
+
+    const resultado = repo.listarPorIds([a.despesa.id, b.despesa.id])
+    const ids = resultado.map((d) => d.id).sort((x, y) => x - y)
+    expect(ids).toEqual([a.despesa.id, b.despesa.id].sort((x, y) => x - y))
+    expect(resultado.every((d) => ['A', 'B'].includes(d.descricao))).toBe(true)
+  })
+
+  it('ignora ids inexistentes sem lançar erro', () => {
+    const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+    const catId = inserirCategoria(db)
+    const a = repo.criarUnicaCredito({
+      descricao: 'A',
+      categoriaId: catId,
+      cartaoId,
+      valorCentavos: 1000,
+      dataCompra: '2026-06-03'
+    })
+
+    const resultado = repo.listarPorIds([a.despesa.id, 999999])
+    expect(resultado.map((d) => d.id)).toEqual([a.despesa.id])
+  })
+})
+
 describe('DespesaRepository — fora de cartão (RF-DES-01)', () => {
   let db: Database
   let repo: DespesaRepository
