@@ -173,7 +173,7 @@ describe('ParcelaRepository', () => {
         numero: 1,
         total: 3,
         valorCentavos: 1000,
-        dataReferencia: '2026-05'
+        dataReferencia: '2026-05-01'
       })
       repo.criar({
         despesaId,
@@ -181,7 +181,7 @@ describe('ParcelaRepository', () => {
         numero: 2,
         total: 3,
         valorCentavos: 1000,
-        dataReferencia: '2026-06'
+        dataReferencia: '2026-06-01'
       })
       repo.criar({
         despesaId,
@@ -189,7 +189,7 @@ describe('ParcelaRepository', () => {
         numero: 3,
         total: 3,
         valorCentavos: 1000,
-        dataReferencia: '2026-07'
+        dataReferencia: '2026-07-01'
       })
 
       const resultado = repo.adiantar({ despesaId, quantidade: 2, faturaDestinoId: destino })
@@ -217,7 +217,7 @@ describe('ParcelaRepository', () => {
         numero: 9,
         total: 12,
         valorCentavos: 1000,
-        dataReferencia: '2026-05'
+        dataReferencia: '2026-05-01'
       })
       repo.criar({
         despesaId,
@@ -225,7 +225,7 @@ describe('ParcelaRepository', () => {
         numero: 10,
         total: 12,
         valorCentavos: 1000,
-        dataReferencia: '2026-06'
+        dataReferencia: '2026-06-01'
       })
 
       const resultado = repo.adiantar({ despesaId, quantidade: 1, faturaDestinoId: destino })
@@ -249,7 +249,7 @@ describe('ParcelaRepository', () => {
         numero: 1,
         total: 2,
         valorCentavos: 1000,
-        dataReferencia: '2026-05'
+        dataReferencia: '2026-05-01'
       })
       repo.criar({
         despesaId,
@@ -257,7 +257,7 @@ describe('ParcelaRepository', () => {
         numero: 2,
         total: 2,
         valorCentavos: 1000,
-        dataReferencia: '2026-06'
+        dataReferencia: '2026-06-01'
       })
 
       const resultado = repo.adiantar({ despesaId, quantidade: 1, faturaDestinoId: destino })
@@ -280,7 +280,7 @@ describe('ParcelaRepository', () => {
         numero: 1,
         total: 3,
         valorCentavos: 1000,
-        dataReferencia: '2026-06'
+        dataReferencia: '2026-06-01'
       })
       repo.criar({
         despesaId,
@@ -288,7 +288,7 @@ describe('ParcelaRepository', () => {
         numero: 2,
         total: 3,
         valorCentavos: 1000,
-        dataReferencia: '2026-07'
+        dataReferencia: '2026-07-01'
       })
       repo.criar({
         despesaId,
@@ -296,7 +296,7 @@ describe('ParcelaRepository', () => {
         numero: 3,
         total: 3,
         valorCentavos: 1000,
-        dataReferencia: '2026-08'
+        dataReferencia: '2026-08-01'
       })
 
       const resultado = repo.cancelarPendentes(despesaId)
@@ -322,7 +322,7 @@ describe('ParcelaRepository', () => {
         numero: 1,
         total: 2,
         valorCentavos: 1000,
-        dataReferencia: '2026-05'
+        dataReferencia: '2026-05-01'
       })
       repo.criar({
         despesaId,
@@ -330,7 +330,7 @@ describe('ParcelaRepository', () => {
         numero: 2,
         total: 2,
         valorCentavos: 1000,
-        dataReferencia: '2026-06'
+        dataReferencia: '2026-06-01'
       })
 
       const resultado = repo.cancelarPendentes(despesaId)
@@ -358,7 +358,7 @@ describe('ParcelaRepository', () => {
         numero: 1,
         total: 2,
         valorCentavos: 1000,
-        dataReferencia: '2026-05'
+        dataReferencia: '2026-05-01'
       })
       repo.criar({
         despesaId,
@@ -366,7 +366,7 @@ describe('ParcelaRepository', () => {
         numero: 2,
         total: 2,
         valorCentavos: 1000,
-        dataReferencia: '2026-06'
+        dataReferencia: '2026-06-01'
       })
 
       const resultado = repo.cancelarPendentes(despesaId)
@@ -391,7 +391,7 @@ describe('ParcelaRepository', () => {
         numero: 1,
         total: 1,
         valorCentavos: 1000,
-        dataReferencia: '2026-05'
+        dataReferencia: '2026-05-01'
       })
 
       const resultado = repo.cancelarPendentes(despesaId)

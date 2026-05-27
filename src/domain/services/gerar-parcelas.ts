@@ -5,6 +5,13 @@ import {
 } from './calcular-fatura-da-compra'
 import { proxMesReferencia } from './mes-referencia'
 
+// Slice 15: parcela.dataReferencia agora e sempre YYYY-MM-DD (dia 01 para
+// parcelas geradas a partir de mes de referencia). Antes co-existiam dois
+// formatos na mesma coluna; agora a coluna e homogenea.
+function mesRefParaData(mesRef: string): string {
+  return `${mesRef}-01`
+}
+
 export type ParcelaPlanejada = {
   numero: number
   total: number
@@ -52,16 +59,16 @@ export function gerarParcelas(input: GerarParcelasInput): ParcelaPlanejada[] {
   )
 
   const parcelas: ParcelaPlanejada[] = []
-  let dataReferencia = primeiraRef
+  let mesRef = primeiraRef
 
   for (let i = 0; i < quantidade; i++) {
     parcelas.push({
       numero: parcelaInicial + i,
       total: totalParcelas,
-      dataReferencia,
+      dataReferencia: mesRefParaData(mesRef),
       valorCentavos: valores[i]
     })
-    dataReferencia = proxMesReferencia(dataReferencia)
+    mesRef = proxMesReferencia(mesRef)
   }
 
   return parcelas

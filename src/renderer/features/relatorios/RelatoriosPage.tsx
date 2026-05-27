@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Categoria } from '@domain/entities/categoria'
 import { PageHead } from '../../components/layout/PageHead'
 import { EmptyState, Field, Input, Panel, Select } from '../../components/ui'
+import { mesAtualReferencia } from '../../lib/mes-atual'
 import { CategoriaPieChart } from './components/CategoriaPieChart'
 import { CategoriaRanking } from './components/CategoriaRanking'
 import { EvolucaoCategoriaChart } from './components/EvolucaoCategoriaChart'
@@ -13,13 +14,8 @@ import styles from './relatorios.module.css'
 
 type Periodo = 6 | 12
 
-function mesAtual(): string {
-  const hoje = new Date()
-  return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`
-}
-
 export default function RelatoriosPage() {
-  const [mes, setMes] = useState(mesAtual)
+  const [mes, setMes] = useState(mesAtualReferencia)
   const [periodoEvolucao, setPeriodoEvolucao] = useState<Periodo>(6)
   const [periodoCategoria, setPeriodoCategoria] = useState<Periodo>(6)
   const [categorias, setCategorias] = useState<Categoria[]>([])

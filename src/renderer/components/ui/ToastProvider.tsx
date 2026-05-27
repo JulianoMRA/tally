@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode
+} from 'react'
 import styles from './toast.module.css'
 
 export type ToastKind = 'success' | 'error' | 'info'
@@ -19,13 +27,25 @@ const DEFAULT_DURATION_MS = 3000
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
+  const nextIdRef = useRef(1)
+  const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
 
   const show = useCallback((message: string, kind: ToastKind = 'info') => {
-    const id = Date.now() + Math.random()
+    const id = nextIdRef.current++
     setToasts((prev) => [...prev, { id, message, kind }])
-    setTimeout(() => {
+    const handle = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id))
+      timersRef.current.delete(handle)
     }, DEFAULT_DURATION_MS)
+    timersRef.current.add(handle)
+  }, [])
+
+  useEffect(() => {
+    const timers = timersRef.current
+    return () => {
+      for (const handle of timers) clearTimeout(handle)
+      timers.clear()
+    }
   }, [])
 
   return (

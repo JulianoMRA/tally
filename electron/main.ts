@@ -1,10 +1,11 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, session, shell } from 'electron'
 import { join } from 'path'
 import { mkdirSync, rmSync, existsSync } from 'fs'
 import { is } from '@electron-toolkit/utils'
 import type { Database } from '../src/persistence/database'
 import { openDatabase } from '../src/persistence/database'
 import { runMigrations } from '../src/persistence/migrations/runner'
+import { FaturaRepository } from '../src/persistence/repositories/fatura-repository'
 import { registerCartaoHandlers } from './ipc/cartao-handlers'
 import { registerCategoriaHandlers } from './ipc/categoria-handlers'
 import { registerDespesaHandlers } from './ipc/despesa-handlers'
@@ -17,8 +18,14 @@ import { registerRelatorioHandlers } from './ipc/relatorio-handlers'
 let db: Database | null = null
 let isShuttingDown = false
 
+// TALLY_USER_DATA permite redirecionar o diretório de dados para uma pasta
+// isolada — usado pelos testes E2E para nunca tocar na base real do usuário.
 function resolveDbPath(): string {
-  const userDataDir = app.getPath('userData')
+  const override = process.env.TALLY_USER_DATA
+  if (override) {
+    app.setPath('userData', override)
+  }
+  const userDataDir = override ?? app.getPath('userData')
   mkdirSync(userDataDir, { recursive: true })
   return join(userDataDir, 'tally.db')
 }
@@ -50,6 +57,14 @@ function inicializarBancoDeDados(): Database {
   if (is.dev && result.applied.length > 0) {
     console.log(`[migrations] aplicadas: ${result.applied.join(', ')}`)
   }
+  // RN-06: auto-fechamento de faturas vencidas no boot. Antes vivia em
+  // FaturaRepository.list (mutate-on-read); foi extraido para cá para que
+  // SELECTs nunca disparem UPDATEs como efeito colateral.
+  const hoje = new Date().toISOString().slice(0, 10)
+  const fechadas = new FaturaRepository(database).fecharVencidas(hoje)
+  if (is.dev && fechadas > 0) {
+    console.log(`[faturas] ${fechadas} fatura(s) Aberta vencidas → Fechada`)
+  }
   return database
 }
 
@@ -79,6 +94,55 @@ function encerrarComFalha(motivo: string, err: unknown): never {
   throw new Error('unreachable')
 }
 
+// Content-Security-Policy aplicada no renderer.
+// 'unsafe-inline' em style-src é exigido pelo emit do Vite (CSS Modules + recharts inline styles).
+// Em dev, 'unsafe-eval' adicional para HMR do Vite; em produção, política mais estrita.
+function cspHeader(): string {
+  if (is.dev) {
+    // Dev: Vite HMR injeta inline scripts (preamble do @vitejs/plugin-react)
+    // e usa eval para hot-update. unsafe-inline + unsafe-eval necessarios.
+    // ws:/wss: para o websocket do HMR.
+    return (
+      "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+      "style-src 'self' 'unsafe-inline'; " +
+      "img-src 'self' data:; " +
+      "font-src 'self' data:; " +
+      "connect-src 'self' ws: wss: http://localhost:*; " +
+      "object-src 'none'; " +
+      "base-uri 'self'; " +
+      "frame-ancestors 'none'"
+    )
+  }
+  return (
+    "default-src 'self'; " +
+    "script-src 'self'; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data:; " +
+    "font-src 'self' data:; " +
+    "connect-src 'self'; " +
+    "object-src 'none'; " +
+    "base-uri 'self'; " +
+    "frame-ancestors 'none'"
+  )
+}
+
+// CSP aplicada apenas em dev (renderer via http://localhost). Em producao o
+// renderer carrega via file:// onde 'self' e ambiguo no Electron — scripts
+// legítimos podem ser bloqueados. Producao ja esta protegida por
+// contextIsolation + nodeIntegration: false + webSecurity: true.
+function instalarCSP(): void {
+  if (!is.dev) return
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [cspHeader()]
+      }
+    })
+  })
+}
+
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1280,
@@ -86,7 +150,39 @@ function createWindow(): void {
     title: 'Tally',
     webPreferences: {
       preload: join(__dirname, '../preload/preload.cjs'),
-      sandbox: false
+      contextIsolation: true,
+      nodeIntegration: false,
+      // sandbox: false porque o preload importa @shared/ipc/* que dependem de
+      // zod (runtime). Com sandbox: true, require('zod') falha — o sandbox
+      // restringe o preload a APIs do Electron puro (contextBridge, ipcRenderer).
+      // Para ativar sandbox seria preciso mover toda validacao Zod para o main
+      // e deixar o preload apenas com channel strings literais.
+      sandbox: false,
+      webSecurity: true,
+      allowRunningInsecureContent: false
+    }
+  })
+
+  // window.open() abre no navegador externo do SO, nunca em uma nova janela do app.
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      shell.openExternal(url)
+    }
+    return { action: 'deny' }
+  })
+
+  // Bloqueia navegação para fora do app (preserva apenas o renderer atual).
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const rendererUrl = process.env['ELECTRON_RENDERER_URL']
+    const ehInterno =
+      (rendererUrl && url.startsWith(rendererUrl)) ||
+      url.startsWith('file://') ||
+      url.startsWith(mainWindow.webContents.getURL())
+    if (!ehInterno) {
+      event.preventDefault()
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        shell.openExternal(url)
+      }
     }
   })
 
@@ -110,6 +206,7 @@ if (!obteveLock) {
 
   app.whenReady().then(() => {
     try {
+      instalarCSP()
       db = inicializarBancoDeDados()
       registerCartaoHandlers(db, ipcMain)
       registerCategoriaHandlers(db, ipcMain)

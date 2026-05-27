@@ -30,11 +30,22 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Test
-        run: npm run test:run
+      - name: Test with coverage (RNF-06 — 80% domain / 60% global)
+        run: npm run test:coverage
 
       - name: Build
         run: npm run build
         env:
-          # Suppress Electron download during build-only CI
           ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+      - name: npm audit (warning-only)
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true

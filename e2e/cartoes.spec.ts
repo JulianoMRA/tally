@@ -1,20 +1,13 @@
-import { test, expect, _electron as electron } from '@playwright/test'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
+import { test, expect } from './fixtures/electron-app'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Cartões CRUD', () => {
-  test('criar, editar, arquivar e desarquivar um cartão', async () => {
-    const app = await electron.launch({
-      args: [join(__dirname, '../out/main/index.cjs')]
-    })
-
+  test('criar, editar, arquivar e desarquivar um cartão', async ({ app }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
-    // Navega automaticamente para /cartoes via redirect raiz
+    // Landing page é /mensal desde Slice 11 — navega para Cartões via sidebar
+    await page.getByRole('link', { name: 'Cartões' }).click()
     await expect(page.getByRole('heading', { name: 'Cartões' })).toBeVisible()
 
     // --- Criar cartão Inter ---
@@ -53,7 +46,5 @@ test.describe('Cartões CRUD', () => {
     // Volta na lista sem badge
     await expect(page.getByText('Inter Black')).toBeVisible()
     await expect(page.getByText('Arquivado')).not.toBeVisible()
-
-    await app.close()
   })
 })

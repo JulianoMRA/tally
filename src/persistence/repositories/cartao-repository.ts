@@ -2,30 +2,7 @@ import type { Database } from '../database'
 import type { Cartao } from '../../domain/entities/cartao'
 import type { CartaoInput, ListCartaoOptions } from '../../shared/ipc/cartao'
 import type { Repository } from './types'
-
-type CartaoRow = {
-  id: number
-  nome: string
-  dia_fechamento: number
-  dia_vencimento: number
-  cor: string
-  ativo: 0 | 1
-  created_at: string
-  updated_at: string
-}
-
-function mapRow(row: CartaoRow): Cartao {
-  return {
-    id: row.id,
-    nome: row.nome,
-    diaFechamento: row.dia_fechamento,
-    diaVencimento: row.dia_vencimento,
-    cor: row.cor,
-    ativo: row.ativo === 1,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
-  }
-}
+import { mapCartao, type CartaoRow } from './row-mappers'
 
 export class CartaoRepository implements Repository {
   constructor(public readonly db: Database) {}
@@ -34,7 +11,7 @@ export class CartaoRepository implements Repository {
     const row = this.db.prepare('SELECT * FROM cartao WHERE id = ?').get(id) as
       | CartaoRow
       | undefined
-    return row ? mapRow(row) : null
+    return row ? mapCartao(row) : null
   }
 
   list(options?: ListCartaoOptions): Cartao[] {
@@ -43,7 +20,7 @@ export class CartaoRepository implements Repository {
       ? 'SELECT * FROM cartao ORDER BY nome ASC'
       : 'SELECT * FROM cartao WHERE ativo = 1 ORDER BY nome ASC'
     const rows = this.db.prepare(sql).all() as CartaoRow[]
-    return rows.map(mapRow)
+    return rows.map(mapCartao)
   }
 
   create(input: CartaoInput): Cartao {

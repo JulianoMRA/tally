@@ -4,6 +4,7 @@ import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
 import { PageHead } from '../../components/layout/PageHead'
 import { Badge, Button, ConfirmDialog, EmptyState, Panel, useToast } from '../../components/ui'
+import { formatBRL } from '../../lib/format-brl'
 import { useAssinaturas } from './hooks/use-assinaturas'
 import { ReajustarValorModal } from './ReajustarValorModal'
 import styles from './assinaturas.module.css'
@@ -11,10 +12,6 @@ import styles from './assinaturas.module.css'
 type Confirmacao =
   | { tipo: 'cancelar'; assinatura: Despesa }
   | { tipo: 'excluir'; assinatura: Despesa }
-
-function formatBRL(centavos: number): string {
-  return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
 
 export default function AssinaturasPage() {
   const { assinaturas, loading, erro, recarregar } = useAssinaturas()

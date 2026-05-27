@@ -1,5 +1,5 @@
 import type { Database } from '../database'
-import type { Renda, TipoRenda } from '../../domain/entities/renda'
+import type { Renda } from '../../domain/entities/renda'
 import type { Recebimento } from '../../domain/entities/recebimento'
 import type {
   CriarRendaAvulsaInput,
@@ -11,56 +11,9 @@ import type { Repository } from './types'
 import { calcularExtensaoNecessaria } from '../../domain/services/calcular-extensao-horizonte'
 import { gerarRecebimentosRecorrentes } from '../../domain/services/gerar-recebimentos-recorrentes'
 import { clampDiaNoMes } from '../../domain/services/mes-referencia'
+import { mapRenda, mapRecebimento, type RendaRow, type RecebimentoRow } from './row-mappers'
 
 const HORIZONTE_RECEBIMENTOS_MESES = 12
-
-type RendaRow = {
-  id: number
-  nome: string
-  tipo: TipoRenda
-  valor_padrao_centavos: number
-  dia_esperado: number | null
-  ativa: 0 | 1
-  created_at: string
-  updated_at: string
-}
-
-function mapRow(row: RendaRow): Renda {
-  return {
-    id: row.id,
-    nome: row.nome,
-    tipo: row.tipo,
-    valorPadraoCentavos: row.valor_padrao_centavos,
-    diaEsperado: row.dia_esperado,
-    ativa: row.ativa === 1,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
-  }
-}
-
-type RecebimentoRow = {
-  id: number
-  renda_id: number | null
-  valor_centavos: number
-  data_esperada: string
-  data_recebida: string | null
-  status: 'Esperado' | 'Recebido'
-  created_at: string
-  updated_at: string
-}
-
-function mapRecebimentoRow(row: RecebimentoRow): Recebimento {
-  return {
-    id: row.id,
-    rendaId: row.renda_id,
-    valorCentavos: row.valor_centavos,
-    dataEsperada: row.data_esperada,
-    dataRecebida: row.data_recebida,
-    status: row.status,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
-  }
-}
 
 export type ResultadoCriarRecorrente = {
   renda: Renda
@@ -72,7 +25,7 @@ export class RendaRepository implements Repository {
 
   findById(id: number): Renda | null {
     const row = this.db.prepare('SELECT * FROM renda WHERE id = ?').get(id) as RendaRow | undefined
-    return row ? mapRow(row) : null
+    return row ? mapRenda(row) : null
   }
 
   list(options?: ListRendaOptions): Renda[] {
@@ -81,7 +34,7 @@ export class RendaRepository implements Repository {
       ? 'SELECT * FROM renda ORDER BY ativa DESC, nome ASC'
       : 'SELECT * FROM renda WHERE ativa = 1 ORDER BY nome ASC'
     const rows = this.db.prepare(sql).all() as RendaRow[]
-    return rows.map(mapRow)
+    return rows.map(mapRenda)
   }
 
   criarAvulsa(input: CriarRendaAvulsaInput): Renda {
@@ -125,7 +78,7 @@ export class RendaRepository implements Repository {
         const row = this.db
           .prepare('SELECT * FROM recebimento WHERE id = ?')
           .get(Number(r.lastInsertRowid)) as RecebimentoRow
-        recebimentos.push(mapRecebimentoRow(row))
+        recebimentos.push(mapRecebimento(row))
       }
 
       return { renda, recebimentos }

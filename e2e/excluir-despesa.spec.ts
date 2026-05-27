@@ -1,16 +1,8 @@
-import { test, expect, _electron as electron } from '@playwright/test'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
+import { test, expect } from './fixtures/electron-app'
 
 // RF-DES-09 — Excluir despesa com confirmação; bloqueia se houver parcela paga.
 test.describe('Excluir despesa (RF-DES-09)', () => {
-  test('cria assinatura, exclui via AssinaturasPage e confirma que sumiu', async () => {
-    const app = await electron.launch({
-      args: [join(__dirname, '../out/main/index.cjs')]
-    })
-
+  test('cria assinatura, exclui via AssinaturasPage e confirma que sumiu', async ({ app }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
@@ -51,7 +43,5 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
 
     // Após exclusão, a assinatura não deve mais aparecer
     await expect(page.getByText('Spotify Excluir E2E')).toHaveCount(0)
-
-    await app.close()
   })
 })

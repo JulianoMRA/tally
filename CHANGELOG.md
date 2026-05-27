@@ -1,99 +1,12 @@
-# Tally
+# Changelog
 
-> A desktop app for monthly personal finance tracking. Replaces the spreadsheet I duplicated every month with something that does the math itself.
-
-![status](https://img.shields.io/badge/status-in%20development-yellow)
-![license](https://img.shields.io/badge/license-MIT-blue)
-![tests](https://img.shields.io/badge/tests-362%20passing-brightgreen)
-![ci](https://img.shields.io/badge/CI-ubuntu%20%2B%20windows-blue)
-
-Tally is a personal project built to replace a Google Sheets workflow that demanded manual work every month: copying the previous month's tab, incrementing parcela numbers (`7/12` → `8/12`), and recalculating credit card statement totals. Tally does all of it automatically.
-
-It's also a portfolio piece for my repositioning to **QA / Test Automation Engineer** — built with test-driven development from the ground up, comprehensive automated test coverage, and a full CI pipeline.
+Histórico de slices entregues. O slice mais recente fica no topo. Cada entrada
+referencia os RF/RN do PRD cobertos e descreve o que foi entregue do ponto de
+vista técnico.
 
 ---
 
-## Why
-
-Brazilian personal finance often involves credit card installments (parcelamentos), monthly subscriptions, and multiple cards with different closing/due dates. The spreadsheets people build around this get repetitive fast:
-
-- Each month is a near-copy of the last, with parcela counters incremented by hand
-- Future projection is impossible without manually building each upcoming month
-- Categorization and "how much did I spend on subscriptions last quarter" require rebuilding the structure every time
-- Off-card spending (Pix, debit, cash) lives in a different sheet — never consolidated with credit-card totals
-
-Tally solves these with first-class support for installment plans, recurring subscriptions, per-card statement cycles, off-card spending, recurring/one-off income tracking, and multi-month projection.
-
----
-
-## Tech stack
-
-| Layer          | Technology                       |
-| -------------- | -------------------------------- |
-| Runtime        | Node.js 20 LTS                   |
-| Desktop shell  | Electron 30+                     |
-| Bundler        | Vite 5+                          |
-| UI             | React 18 + TypeScript 5 (strict) |
-| Database       | SQLite via node-sqlite3-wasm     |
-| Unit testing   | Vitest                           |
-| E2E testing    | Playwright                       |
-| Lint / Format  | ESLint + Prettier                |
-| Commit hygiene | commitlint + Husky + lint-staged |
-| CI             | GitHub Actions                   |
-
-Architecture follows clean separation across four layers: **domain** (pure business rules, zero external dependencies), **persistence** (SQLite repositories), **main process** (Electron lifecycle and IPC), and **renderer** (React UI). See [`CLAUDE.md`](./CLAUDE.md) for full conventions.
-
----
-
-## Quality engineering
-
-Quality strategy is treated as a first-class concern, not an afterthought.
-
-- **TDD mandatory in the domain layer.** All business rules (RN-01 through RN-08 documented in [`PRD.md`](./PRD.md)) start with a failing test before any implementation.
-- **Coverage minimums:** 80% in the domain layer, 60% global.
-- **Integration tests** run against in-memory SQLite to validate repositories without mocking the database.
-- **E2E tests** cover the critical user flows: registering an in-progress installment plan, advancing parcelas, marking a contribution as received, navigating to a projected future month.
-- **CI pipeline** runs lint, typecheck, tests with coverage, and build on every pull request. Branch protection requires a green pipeline before merge.
-- **Conventional Commits** enforced via commitlint, enabling automated changelog generation.
-
-Bug reports during development follow a structured template (preconditions, steps, expected vs actual, severity, evidence) and live as GitHub Issues.
-
----
-
-## Status
-
-This project is in active development. The implementation is being delivered in vertical slices — each one a thin end-to-end feature with UI, logic, persistence, and tests.
-
-### Roadmap
-
-- [x] **Slice 0** — Project setup (Electron + Vite + React + TS + SQLite + test runners + CI)
-- [x] **Slice 1** — Domain foundation: migrations, base entities, statement-from-purchase-date rule
-- [x] **Slice 2** — Cards CRUD with closing and due dates
-- [x] **Slice 3** — Categories CRUD
-- [x] **Slice 4** — One-shot expenses + statement creation
-- [x] **Slice 4.5** — Visual identity: design system (tokens, Geist font, logo, UI primitives), full app restyle
-- [x] **Slice 5** — Statement lifecycle (Open → Closed → Paid)
-- [x] **Slice 6** — Installment expenses (new + in-progress migration + advancing parcelas + cancel pending)
-- [x] **Slice 7** — Subscriptions (register, lazy occurrence generation, cancel, monthly value adjustment)
-- [x] **Slice 8** — Off-card expenses (debit, Pix, cash) with month-grouped listing
-- [x] **Slice 9** — Contributors and shared expenses with "owe me" dashboard, recurring aid replication, net-of-aid statement total
-- [x] **Slice 10** — Income sources (recurring and one-off) with monthly receipt tracking, default-value adjustment, one-shot entries
-- [x] **Slice 11** — Monthly consolidated view with cards, net balance (realized + projected), per-month navigation
-- [x] **Slice 12** — Multi-month navigation and projection (lazy horizon extension up to 24 months ahead)
-- [x] **Slice 12.1** — Cleanup and simplification: visual bug fixes, RF-DES-09 (expense deletion), Slice 9 rollback (Contributors + Aids removed), category icon and renda category removed
-- [x] **Slice 12.2** — Rendas and Recebimentos screens unified under `/rendas` with segmented tabs (Recebimentos do mês / Fontes de renda)
-- [x] **Slice 13** — Reports and visualizations (recharts: balance evolution + monthly category pie/ranking + per-category temporal line)
-- [x] **Slice 14** — Hardening and polish (electron-builder NSIS + portable, coverage RNF-06, Toast/ConfirmDialog/useEscapeKey)
-- [x] **Slice 14.1** — Post-MVP polish from real-use feedback: visual fixes, expense editing (RF-DES-10), income editing (RF-REN-06), per-row "Adiantar", column sorting, expense descriptions in invoice detail, Rendas grouped by type
-- [x] **Slice 15** — Hardening, QA e cleanup pós-MVP: isolação E2E (TALLY_USER_DATA), hardening Electron + CSP, row-mappers consolidados, migrations 0003 (drop colunas mortas) + 0004 (normaliza `data_referencia`), Zod em todos os canais IPC, `noImplicitAny`, CI matriz Windows+Ubuntu com coverage gating, pre-push hook
-
-Detalhes técnicos de cada slice em [`CHANGELOG.md`](./CHANGELOG.md).
-
-### Changelog histórico (extraído)
-
-> **Nota:** A partir do Slice 15 o changelog completo vive em
-> [`CHANGELOG.md`](./CHANGELOG.md). Entradas abaixo ficam aqui apenas como
-> registro do que vivia inline no README durante o MVP.
+**Slice 15** — Hardening, QA e cleanup pós-MVP. Auditoria completa do repositório identificou 23 problemas distribuídos entre segurança, arquitetura, testes/CI, tipagem e documentação; este slice fecha todos. Sete blocos: (a) **Isolação E2E**: fixture Playwright em `e2e/fixtures/electron-app.ts` cria/limpa pasta `userData` temporária por teste; `electron/main.ts` respeita `TALLY_USER_DATA` (antes E2E escreviam em `%APPDATA%\Tally\tally.db` real). (b) **Hardening Electron**: `BrowserWindow` agora declara explicitamente `contextIsolation`, `nodeIntegration: false`, `sandbox: true`, `webSecurity`; `setWindowOpenHandler` nega `window.open` e desvia http(s) para `shell.openExternal`; `will-navigate` bloqueia navegação fora do renderer; CSP estrita via `session.webRequest.onHeadersReceived`. (c) **Refactor persistence**: row-mappers consolidados em `src/persistence/repositories/row-mappers.ts` (elimina triplicate de `FaturaRow`/`DespesaRow`/`CartaoRow`); `FaturaRepository.list` deixa de mutar (auto-fechamento de vencidas vai para o boot via `inicializarBancoDeDados`); `fatura-handlers` chama `DespesaRepository.listarPorIds` em vez de SQL direto (respeita arquitetura §4.3); filtros de `cancelarPendentes`/`cancelarAssinatura` agora exigem `parcela.status='Pendente'` (defense in depth). (d) **Migration 0003 + 0004**: `0003` dropa colunas mortas `categoria.icone` e `renda.categoria_id` via recreate-table com `PRAGMA defer_foreign_keys = ON` (resolve débito documentado em 0002); `0004` normaliza `parcela.data_referencia` para sempre `YYYY-MM-DD` (sufixa `-01` em registros antigos `YYYY-MM`). (e) **Tipagem + Zod**: `noImplicitAny: true` override nos tsconfigs (alinha com CLAUDE.md "strict"); schemas Zod adicionados em todos os canais IPC restantes (`fatura.*`, `cartao.findById/list/arquivar/desarquivar`, etc.). (f) **DRY renderer + UI fixes**: `formatBRL` e `mesAtual` deduplicados (era 6+ cópias) via `src/renderer/lib/format-brl.ts` e novo `mes-atual.ts`; 2 `window.confirm` restantes migrados para `ConfirmDialog` (RendaList arquivar + RendasPage excluir); `ConfirmDialog` usa `useId()` em vez de literal `confirm-title`; `ToastProvider` guarda timeouts em ref e limpa em unmount; remove cast `0 as unknown as number` em `DespesaForm`. (g) **CI multi-plataforma + gating**: matriz `ubuntu-latest + windows-latest`; `test:coverage` substitui `test:run` (thresholds RNF-06 — 80% domain, 60% global — finalmente são gate); E2E Playwright roda no Windows (alvo per RNF-02); artifacts `playwright-report` e `coverage-report` (7 dias); `npm audit --audit-level=high` não-bloqueante; novo `.husky/pre-push` (typecheck + test:run); smoke placebo removido. (h) **Documentação**: PRD §6 (Modelo de Dados) reescrito com colunas reais do schema (era stale desde 12.1); README "Why" sem menções a "ajudas"; badge `tests-coming-soon` → `362 passing` + nova badge CI ubuntu+windows. **362 testes** (+5 dos migrations 0003/0004, −1 do smoke placebo). 17 commits atômicos.
 
 **Slice 14.1** — Post-MVP polish driven by real-use feedback (the user spent two weeks with the `.exe` populated with real finances and reported 7 friction points in a PDF). Three buckets, all on top of the existing schema (no migrations): (a) **Visual fixes**: VisaoMensal table columns aligned (Recebimentos reordered to Fonte/Esperada/Status/Valor with fixed `.colValor` width matching Faturas' Total); `.formaBtnActive` (Crédito/Pix/Débito/Dinheiro segmented in Despesas) gets the same high-contrast treatment as `.tipoBtnActive` from 12.1 (ink background + bg-elev text); Assinaturas list `<li>` now uses `grid-template-columns: 14px 1fr 140px 90px auto` for vertical alignment regardless of name length. (b) **UX**: "Valor restante" label in Em andamento renamed to **"Valor da parcela"** (more intuitive — backend still receives `valorRestanteCentavos = valorParcela × parcelasRestantes`); **Rendas** "Fontes" tab now shows two separate Panels (Recorrentes sorted by `diaEsperado`, Avulsas alphabetical) with totals; **FaturaDetalhe** parcelas table replaces internal `#` column with **expense description** (fetched via single `SELECT * FROM despesa WHERE id IN (...)` per detail request), supports click-to-sort on every column (Descrição/Parcela/Data/Valor/Status with asc/desc indicator); **Adiantar parcelas** moved from top button to per-row action with redesigned modal (despesaId pre-filled, dropdown of available open invoices on same card). (c) **RF-DES-10 / RF-REN-06 (edit features)**: new pure domain `podeEditarDespesa` + `recalcularParcelasPendentes` (TDD, 16 tests including last-cent distribution and Paid preservation); `DespesaRepository.atualizar` updates description/category/value always, date only for Unica (re-routes to new invoice via RN-01), Parcelada redistributes new value among pending installments via `recalcularParcelasPendentes`; new IPC `despesa:atualizar` with Zod validation; new `EditarDespesaModal` accessible per parcela row (disabled for paid). `RendaRepository.update` now accepts `diaEsperado` for Recorrente and recalculates `data_esperada` of Esperado receipts with `clampDiaNoMes` (e.g., dia 31 in April → 30). New `EditarRendaModal` for both Recorrente and Avulsa. `FaturaDetalhada` extended with `despesasPorParcela: Record<number, Despesa>` so both display (description) and edit (full snapshot) work with a single round-trip. **357 tests passing** (+21 from 336), lint, typecheck and build clean.
 
@@ -112,6 +25,10 @@ Detalhes técnicos de cada slice em [`CHANGELOG.md`](./CHANGELOG.md).
 **Slice 10** — Income sources and receipts (RF-REN-01..05). Pure domain service `gerarRecebimentosRecorrentes` generates N monthly receipt dates from a start date and an expected day-of-month — clamps to last day of short months (Feb 28/29, Apr 30, etc.) via a new `clampDiaNoMes` helper extracted to `mes-referencia.ts`. 13 unit tests cover quantity, day clamping (incl. leap year), year boundary, late-start cycles, and validations. `RendaRepository` adds `criarAvulsa`, `criarRecorrente` (atomic insert of renda + 12 `recebimento` rows with status `Esperado`), `update` (RF-REN-05: when value changes on a Recurring source, propagates to all future `Esperado` receipts only — `Recebido` preserved), `arquivar` (deletes future `Esperado`, preserves `Recebido` history) and `desarquivar`. `RecebimentoRepository` adds `criar`, `criarAvulsoCompleto` (transactionally creates an Avulsa `renda` + receipt for one-shot income with optional `dataRecebida` so users can register past entries), `listar` with month and status filters (LEFT JOIN to surface `rendaNome`), `marcarRecebido`, `excluir`, `totaisPorMes`. 27 integration tests. Two new IPC namespaces (`api.renda` and `api.recebimento`) with 11 typed channels. New route `/rendas` with `RendaForm` (segmented Recorrente/Avulsa, category from `Renda`+`Ambos`) and `RendaList` with Arquivar/Desarquivar. New route `/recebimentos` with month picker, status toggle (Todos/Esperado/Recebido), per-row "Marcar recebido" with date picker modal, "Novo avulso" modal (with "Já recebi" checkbox), and three total cards in the footer (Esperado / Recebido / Total). Sidebar gains "Rendas" and "Recebimentos" in the Finanças group between Assinaturas and Ajudas. 303 tests passing, lint and typecheck clean.
 
 **Slice 9** — Contributors and shared expenses (RF-AJU-01..06, RN-05, RN-07). Pure domain service `selecionarParcelasParaReplicarAjuda` filters future parcelas in `Aberta` statements for recurring-aid replication — 8 unit tests cover boundary cases. `ContribuidorRepository` adds standard CRUD (12 tests). `AjudaRepository` adds `criar` with atomic replication (when `recorrente=true` on Parcelada/Assinatura, copies the aid to every future parcela in `Aberta` statements; Fechada/Paga preserved), `listarPorParcela`, `listarPorFatura`, `totaisPorFatura`, `marcarRecebida`, `excluir` and `listarAgrupadoPorContribuidor` for the dashboard (15 tests). `FaturaDetalhada` extended with `totalAjudasCentavos` and `totalLiquidoCentavos`; the IPC handler now joins the aid totals. Six new typed IPC channels (contribuidor CRUD + 5 of ajuda). New route `/contribuidores` (Configuração) mirrors Cartões/Categorias pattern. `FaturaDetalhe` gains an "Ajudas" column per parcela with `AjudaChip` (name+value, click × to delete) and a `+` button that opens `AdicionarAjudaModal` — the "Replicar nas próximas parcelas" checkbox only appears for Parcelada/Assinatura. Footer now shows three lines: Total bruto / Ajudas (− value) / **Líquido** (highlighted). New route `/ajudas` with `AjudasPage` dashboard grouped by contribuidor, toggle Pendentes/Recebidas, "Marcar recebida" modal with date picker, and Excluir action. 263 tests passing, lint and typecheck clean.
+
+> **Nota:** Slice 9 (Contribuidores + Ajudas) foi revertido no Slice 12.1. Os
+> arquivos não existem mais no codebase. A entrada permanece aqui para registrar
+> a evolução do projeto.
 
 **Slice 8** — Off-card expenses (RF-DES-01, RF-VIS-01 partial). `DespesaRepository.criarUnicaForaCartao` persists Pix/Débito/Dinheiro expenses atomically with `cartao_id = NULL` and a single parcela 1/1 with `fatura_id = NULL` — no statement is generated since RN-01 doesn't apply. `listarGastosForaCartao({ mesReferencia })` queries by calendar month via `substr(data_compra, 1, 7)`. Schema CHECK already enforced the invariant; tests verify both forward (Pix without card) and reverse (Credito without card / Pix with card) cases. Two new typed IPC channels + Zod schemas (`despesaUnicaForaCartaoInputSchema`, `listarGastosForaCartaoInputSchema`). The "Única" tab in `DespesaForm` gains a secondary payment-method selector (Crédito / Pix / Débito / Dinheiro); when non-Crédito, the card field is hidden and a separate `FormUnicaForaCartao` subform routes to the new IPC. `CamposComuns` refactored with a `mostrarCartao` flag instead of duplication. New route `/gastos` with `GastosPage` that takes a `<input type="month">` filter, shows colour-chipped lines (Pix green, Débito blue, Dinheiro neutral) and a month total in the footer. New Sidebar item "Gastos" in the Finanças group between Despesas and Assinaturas. 228 tests passing, lint and typecheck clean.
 
@@ -132,53 +49,3 @@ Detalhes técnicos de cada slice em [`CHANGELOG.md`](./CHANGELOG.md).
 **Slice 1** — Domain foundation. SQLite migrations, all entities defined, RN-01 (`calcularReferenciaFaturaDaCompra`) implemented with full edge-case coverage (leap year, month-end clamp, exact closing-day boundary).
 
 **Slice 0** — Project scaffolding. Electron + Vite + React + TypeScript strict + node-sqlite3-wasm + Vitest + Playwright + ESLint + Prettier + Husky + commitlint + GitHub Actions CI.
-
----
-
-## Installation
-
-Pre-built Windows binaries are produced via `npm run dist` and land in `release/`:
-
-- **`Tally Setup 0.1.0.exe`** — NSIS installer. Creates desktop + Start Menu shortcuts, lets you pick the install dir, supports clean uninstall.
-- **`Tally-0.1.0-portable.exe`** — single-file executable. Just double-click — no install. Good for USB drives or restricted machines.
-
-On first launch Windows SmartScreen may warn that the publisher is unverified (the binary is unsigned — this is a personal project, not a commercial app). Click **More info → Run anyway** to proceed.
-
-Your data lives in `%APPDATA%\tally\tally.db` regardless of which build you use (NSIS, portable, or `npm run dev`). Back it up by copying that file.
-
----
-
-## Getting started (development)
-
-> **Prerequisites:** Node.js 20 LTS and npm.
-
-```bash
-git clone https://github.com/JulianoMRA/tally.git
-cd tally
-npm install
-npm run dev
-```
-
-> _Commands will be defined in `package.json` after Slice 0. Expected scripts include `dev`, `build`, `test`, `test:coverage`, `e2e`, `lint`, `typecheck`._
-
----
-
-## Project documentation
-
-| Document                                               | Purpose                                                                       |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| [`PRD.md`](./PRD.md)                                   | Product requirements, business rules (RN-01..RN-08), data model, full roadmap |
-| [`CLAUDE.md`](./CLAUDE.md)                             | Operational guide: stack, architecture, conventions, glossary                 |
-| [`CLAUDE_CODE_STRATEGY.md`](./CLAUDE_CODE_STRATEGY.md) | Per-slice strategy for AI-assisted development (model and effort selection)   |
-
----
-
-## About the author
-
-Built by [Juliano Melo Rodrigues Alencar](https://github.com/JulianoMRA), Computer Science student at UFC (Universidade Federal do Ceará). Currently pursuing a QA / Test Automation Engineering internship in Brazil.
-
----
-
-## License
-
-[MIT](./LICENSE)

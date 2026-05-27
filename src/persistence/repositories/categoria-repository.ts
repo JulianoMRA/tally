@@ -1,29 +1,8 @@
 import type { Database } from '../database'
-import type { Categoria, TipoCategoria } from '../../domain/entities/categoria'
+import type { Categoria } from '../../domain/entities/categoria'
 import type { CategoriaInput, ListCategoriaOptions } from '../../shared/ipc/categoria'
 import type { Repository } from './types'
-
-type CategoriaRow = {
-  id: number
-  nome: string
-  tipo: TipoCategoria
-  cor: string
-  ativo: 0 | 1
-  created_at: string
-  updated_at: string
-}
-
-function mapRow(row: CategoriaRow): Categoria {
-  return {
-    id: row.id,
-    nome: row.nome,
-    tipo: row.tipo,
-    cor: row.cor,
-    ativo: row.ativo === 1,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
-  }
-}
+import { mapCategoria, type CategoriaRow } from './row-mappers'
 
 export class CategoriaRepository implements Repository {
   constructor(public readonly db: Database) {}
@@ -32,7 +11,7 @@ export class CategoriaRepository implements Repository {
     const row = this.db.prepare('SELECT * FROM categoria WHERE id = ?').get(id) as
       | CategoriaRow
       | undefined
-    return row ? mapRow(row) : null
+    return row ? mapCategoria(row) : null
   }
 
   list(options?: ListCategoriaOptions): Categoria[] {
@@ -54,7 +33,7 @@ export class CategoriaRepository implements Repository {
     sql += ' ORDER BY nome ASC'
 
     const rows = this.db.prepare(sql).all(...params) as CategoriaRow[]
-    return rows.map(mapRow)
+    return rows.map(mapCategoria)
   }
 
   create(input: CategoriaInput): Categoria {

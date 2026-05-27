@@ -2,7 +2,16 @@
 
 > **Status:** Em desenvolvimento ativo.
 > **Owner:** Juliano Melo Rodrigues Alencar
-> **Última atualização:** 20 de maio de 2026 (Slice 12.1 — simplificação)
+> **Última atualização:** 24 de maio de 2026 (Slice 15 — hardening, QA e cleanup pós-MVP)
+>
+> **Mudanças no Slice 15:** isolação E2E (sem mais poluição do banco real),
+> hardening do Electron (CSP estrita, contextIsolation, sandbox), consolidação
+> de row-mappers, fim de mutate-on-read em `FaturaRepository.list`, schemas
+> Zod em todos os canais IPC, `parcela.data_referencia` normalizada para
+> `YYYY-MM-DD` (migration 0004), drop de colunas mortas `categoria.icone` e
+> `renda.categoria_id` (migration 0003), `noImplicitAny` reativado, CI em
+> matriz Windows+Ubuntu com E2E e coverage gating. Modelo de dados (seção 6)
+> revisado para refletir o schema real.
 >
 > **Mudança no Slice 12.1:** Ajudas, Contribuidores, ícones de Categoria e
 > categoria em Renda foram **removidos** do escopo. Cobranças a terceiros agora
@@ -132,6 +141,8 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 ## 6. Modelo de Dados
 
 Resumo das entidades. Detalhes de tipos e índices ficam na implementação das migrations.
+Valores monetários são armazenados como `INTEGER` em centavos (evita ponto flutuante).
+Datas: `TEXT` ISO-8601. `mes_referencia` é `YYYY-MM`; demais datas são `YYYY-MM-DD`.
 
 ### Cartao
 
@@ -139,31 +150,40 @@ Resumo das entidades. Detalhes de tipos e índices ficam na implementação das 
 
 ### Fatura
 
-`id, cartao_id, mes_referencia (yyyy-mm), data_fechamento, data_vencimento, status (Aberta|Fechada|Paga), valor_total_bruto (calculado), valor_total_ajudas (calculado), valor_total_liquido (calculado), data_pagamento, created_at, updated_at`
+`id, cartao_id, mes_referencia (YYYY-MM), data_fechamento (YYYY-MM-DD), data_vencimento (YYYY-MM-DD), status (Aberta|Fechada|Paga), data_pagamento (nullable), created_at, updated_at`
 
 Unique constraint: `(cartao_id, mes_referencia)`.
+Total da fatura é calculado em tempo de leitura (soma das parcelas vinculadas) — não persistido.
 
 ### Categoria
 
 `id, nome, tipo (Despesa|Renda|Ambos), cor, ativo, created_at, updated_at`
 
+> Coluna `icone` removida na migration 0003 (era código morto desde Slice 12.1).
+
 ### Despesa
 
-`id, descricao, categoria_id, tipo (Unica|Parcelada|Assinatura), forma_pagamento (Credito|Debito|Pix|Dinheiro), cartao_id (nullable), valor_parcela, total_parcelas (nullable), data_compra, ativa, created_at, updated_at`
+`id, descricao, categoria_id, tipo (Unica|Parcelada|Assinatura), forma_pagamento (Credito|Debito|Pix|Dinheiro), cartao_id (nullable se forma_pagamento ≠ Credito), valor_centavos, total_parcelas (nullable para Assinatura), data_compra, ativa, created_at, updated_at`
 
-Nota: `valor_parcela` é o valor de cada ocorrência. Para única, igual ao valor total. Para parcelada, valor de cada parcela. Para assinatura, valor mensal.
+Nota: `valor_centavos` é o valor de cada ocorrência. Para Única, igual ao valor total. Para Parcelada, valor de cada parcela. Para Assinatura, valor mensal.
+CHECK constraint: `forma_pagamento = 'Credito'` ⇔ `cartao_id IS NOT NULL`.
 
 ### Parcela
 
-`id, despesa_id, fatura_id (nullable se forma_pagamento ≠ Credito), numero, total (nullable para assinatura), valor, data_referencia (data esperada, usada para gastos fora de cartão), status (Pendente|Paga), data_pagamento, created_at, updated_at`
+`id, despesa_id, fatura_id (nullable se forma_pagamento ≠ Credito), numero, total (nullable para Assinatura), valor_centavos, data_referencia (YYYY-MM-DD), status (Pendente|Paga), data_pagamento (nullable), created_at, updated_at`
+
+`data_referencia` sempre `YYYY-MM-DD` (normalizado na migration 0004). Para parcelas de Parcelada/Assinatura, usa-se dia `01` do mês de referência da fatura.
 
 ### Renda
 
-`id, nome, tipo (Avulsa|Recorrente), valor_padrao, dia_esperado (nullable), ativa, created_at, updated_at`
+`id, nome, tipo (Avulsa|Recorrente), valor_padrao_centavos, dia_esperado (1–31, nullable para Avulsa), ativa, created_at, updated_at`
+
+> Coluna `categoria_id` removida na migration 0003 (cobranças a terceiros viraram rendas avulsas — Slice 12.1).
+> CHECK: `tipo = 'Recorrente'` ⇒ `dia_esperado IS NOT NULL`.
 
 ### Recebimento
 
-`id, renda_id, valor, data_esperada, data_recebida, status (Esperado|Recebido), created_at, updated_at`
+`id, renda_id (nullable), valor_centavos, data_esperada, data_recebida (nullable), status (Esperado|Recebido), created_at, updated_at`
 
 ---
 
@@ -235,7 +255,7 @@ Despesa do tipo Assinatura gera ocorrências mês a mês conforme o tempo avanç
 ### 8.1 Testes unitários (Vitest)
 
 - **Cobertura mínima**: 80% no domain layer (regras de negócio RN-01 a RN-08), 60% global.
-- **Foco**: cálculo de fatura por data de compra, geração de parcelas, adiantamento, ciclo de vida da fatura, replicação de ajuda recorrente, cálculo de líquido e saldo.
+- **Foco**: cálculo de fatura por data de compra (RN-01), geração de parcelas (RN-02), adiantamento (RN-03), geração de ocorrências de assinatura (RN-04), ciclo de vida da fatura (RN-06), total da fatura (RN-07), balanço mensal (RN-08).
 - **TDD obrigatório** no domain layer: teste antes da implementação.
 
 ### 8.2 Testes de integração (Vitest + node-sqlite3-wasm em memória)
@@ -245,27 +265,34 @@ Despesa do tipo Assinatura gera ocorrências mês a mês conforme o tempo avanç
 
 ### 8.3 Testes E2E (Playwright)
 
+Cada teste roda contra uma instância isolada do app: a fixture em `e2e/fixtures/electron-app.ts` cria uma pasta `userData` temporária (via `TALLY_USER_DATA`) e a remove ao fim — testes nunca tocam na base real do usuário.
+
 Fluxos críticos cobertos:
 
-- Cadastrar cartão e categoria
+- Cadastrar cartão e categoria (CRUD)
+- Cadastrar despesa única e visualizar fatura
 - Cadastrar despesa parcelada nova
 - Cadastrar despesa parcelada em andamento (migração)
-- Adiantar parcelas
-- Cadastrar ajuda recorrente
-- Marcar ajuda como recebida no dashboard
-- Cadastrar e marcar recebimento de renda
-- Navegação entre meses com projeção
+- Cadastrar, reajustar e cancelar assinatura
+- Excluir despesa (RF-DES-09)
+- Cadastrar gasto fora de cartão (Pix/Débito/Dinheiro)
+- Cadastrar e marcar recebimento de renda (recorrente + avulso)
+- Visão mensal consolidada
+- Navegação entre meses com projeção (RF-VIS-04)
+- Relatórios e gráficos (RF-VIS-05, RF-VIS-06)
 
 ### 8.4 CI/CD (GitHub Actions)
 
-Pipeline em PR e push para main:
+Pipeline em PR e push para main, em matriz `ubuntu-latest + windows-latest`:
 
 1. Install dependencies (com cache)
 2. Lint (ESLint)
-3. Typecheck (tsc --noEmit)
-4. Test (Vitest com cobertura)
-5. Build (Electron build dry-run)
-6. E2E (Playwright, em release branches)
+3. Typecheck (`tsc --noEmit`)
+4. Test (`vitest run --coverage` — thresholds RNF-06 são gate)
+5. Build (Electron build)
+6. E2E (`playwright test`, apenas Windows — alvo primário per RNF-02)
+7. Upload de artifacts: `playwright-report` (Windows) e `coverage-report` (Ubuntu)
+8. `npm audit --audit-level=high` não-bloqueante (warning-only)
 
 Branch `main` protegida: PR obrigatório, CI verde obrigatório, conventional commits.
 

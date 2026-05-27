@@ -2,17 +2,10 @@ import { useEffect, useState } from 'react'
 import type { Categoria } from '@domain/entities/categoria'
 import { PageHead } from '../../components/layout/PageHead'
 import { EmptyState, Field, Input, Panel } from '../../components/ui'
+import { formatBRL } from '../../lib/format-brl'
+import { mesAtualReferencia } from '../../lib/mes-atual'
 import { useGastosForaCartao } from './hooks/use-gastos'
 import styles from './gastos.module.css'
-
-function formatBRL(centavos: number): string {
-  return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
-
-function mesAtual(): string {
-  const hoje = new Date()
-  return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`
-}
 
 function chipClass(forma: string): string {
   if (forma === 'Pix') return styles.chipPix
@@ -26,7 +19,7 @@ function rotuloForma(forma: string): string {
 }
 
 export default function GastosPage() {
-  const [mes, setMes] = useState(mesAtual())
+  const [mes, setMes] = useState(mesAtualReferencia())
   const { gastos, loading, erro } = useGastosForaCartao(mes)
   const [categorias, setCategorias] = useState<Categoria[]>([])
 

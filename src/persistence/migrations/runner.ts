@@ -73,6 +73,15 @@ export function buildMigrationFile(version: string, sql: string): MigrationFile 
   }
 }
 
+/**
+ * Migrations com a diretiva `-- @no-transaction` no header rodam FORA da
+ * transação padrão. Necessário para PRAGMAs que precisam estar em modo
+ * autocommit (ex.: `foreign_keys = OFF` para DROP de tabela referenciada).
+ * Nesse modo a migration controla seu próprio BEGIN/COMMIT — se quebrar,
+ * o estado do schema pode ficar parcial. Use com cuidado.
+ */
+const NO_TRANSACTION_DIRECTIVE = /^\s*--\s*@no-transaction\b/
+
 export function runMigrations(
   db: Database,
   files: MigrationFile[] = loadBundledMigrations()
@@ -102,11 +111,20 @@ export function runMigrations(
       continue
     }
 
-    const apply = db.transaction(() => {
+    if (NO_TRANSACTION_DIRECTIVE.test(file.sql)) {
+      // Migration controla seu próprio BEGIN/COMMIT (ou roda em autocommit).
+      // Inserimos em schema_migrations só depois — se a migration quebrou no
+      // meio, o checksum não é registrado e o próximo boot tentará reaplicar
+      // (com schema parcial, vai quebrar de novo com mensagem clara).
       db.exec(file.sql)
       insertStmt.run(file.version, file.checksum)
-    })
-    apply()
+    } else {
+      const apply = db.transaction(() => {
+        db.exec(file.sql)
+        insertStmt.run(file.version, file.checksum)
+      })
+      apply()
+    }
     applied.push(file.version)
   }
 

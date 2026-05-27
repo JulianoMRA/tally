@@ -17,6 +17,7 @@ import {
   Input,
   useToast
 } from '../../components/ui'
+import { formatBRL } from '../../lib/format-brl'
 import styles from './faturas.module.css'
 
 type DialogoConfirma =
@@ -57,10 +58,6 @@ type Props = {
   onVoltar: () => void
   onFaturaAtualizada: (fatura: Fatura) => void
   onDetalheAtualizado: (detalhe: FaturaDetalhada) => void
-}
-
-function formatBRL(centavos: number): string {
-  return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 function statusVariant(kind: string): 'open' | 'closed' | 'paid' {

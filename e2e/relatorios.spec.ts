@@ -1,16 +1,10 @@
-import { test, expect, _electron as electron } from '@playwright/test'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
+import { test, expect } from './fixtures/electron-app'
 
 // RF-VIS-05 + RF-VIS-06 — relatórios: ranking por categoria + pizza + evolução
 test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
-  test('cadastra 2 despesas em categorias distintas e valida ranking em /relatorios', async () => {
-    const app = await electron.launch({
-      args: [join(__dirname, '../out/main/index.cjs')]
-    })
-
+  test('cadastra 2 despesas em categorias distintas e valida ranking em /relatorios', async ({
+    app
+  }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
@@ -67,7 +61,5 @@ test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
     await expect(page.getByText('Lazer E2E')).toBeVisible()
     await expect(page.getByText('R$ 80,00')).toBeVisible()
     await expect(page.getByText('R$ 30,00')).toBeVisible()
-
-    await app.close()
   })
 })
