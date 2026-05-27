@@ -429,7 +429,7 @@ export class DespesaRepository implements Repository {
   listarGastosForaCartao(filtro?: { mesReferencia?: string }): Despesa[] {
     let sql =
       "SELECT * FROM despesa WHERE tipo = 'Unica' AND forma_pagamento != 'Credito' AND ativa = 1"
-    const params: unknown[] = []
+    const params: string[] = []
     if (filtro?.mesReferencia) {
       sql += ' AND substr(data_compra, 1, 7) = ?'
       params.push(filtro.mesReferencia)
@@ -582,7 +582,7 @@ export class DespesaRepository implements Repository {
 
   listarAssinaturas(filtro?: { ativa?: boolean }): Despesa[] {
     let sql = "SELECT * FROM despesa WHERE tipo = 'Assinatura'"
-    const params: unknown[] = []
+    const params: number[] = []
     if (filtro?.ativa !== undefined) {
       sql += ' AND ativa = ?'
       params.push(filtro.ativa ? 1 : 0)

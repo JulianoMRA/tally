@@ -83,7 +83,7 @@ export class RecebimentoRepository implements Repository {
       LEFT JOIN renda rd ON rd.id = r.renda_id
     `
     const where: string[] = []
-    const params: unknown[] = []
+    const params: string[] = []
     if (input?.mesReferencia) {
       where.push('substr(r.data_esperada, 1, 7) = ?')
       params.push(input.mesReferencia)

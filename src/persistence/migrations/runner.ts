@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { createHash } from 'node:crypto'
 import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
