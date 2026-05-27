@@ -107,7 +107,7 @@ export const parcelaAtualNaoExcedeTotal = {
     d.parcelaAtual <= d.totalParcelas,
   params: {
     message: 'Parcela atual não pode ser maior que total de parcelas',
-    path: ['parcelaAtual'] as const
+    path: ['parcelaAtual'] as PropertyKey[]
   }
 }
 

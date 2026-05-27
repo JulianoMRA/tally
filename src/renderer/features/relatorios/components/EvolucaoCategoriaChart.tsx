@@ -30,7 +30,7 @@ export function EvolucaoCategoriaChart({ dados, cor, nome }: Props) {
           tickFormatter={(v: number) => formatBRLCompacto(v * 100)}
         />
         <Tooltip
-          formatter={(v: number) => formatBRL(v * 100)}
+          formatter={(v) => formatBRL(Number(v) * 100)}
           contentStyle={{
             background: 'var(--bg-elev)',
             border: '1px solid var(--rule)',

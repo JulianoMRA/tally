@@ -29,7 +29,7 @@ export function CategoriaPieChart({ dados }: Props) {
           ))}
         </Pie>
         <Tooltip
-          formatter={(v: number) => formatBRL(v)}
+          formatter={(v) => formatBRL(Number(v))}
           contentStyle={{
             background: 'var(--bg-elev)',
             border: '1px solid var(--rule)',

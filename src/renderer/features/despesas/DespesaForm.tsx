@@ -1,5 +1,11 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import {
+  useForm,
+  type FieldErrors,
+  type FieldValues,
+  type Path,
+  type UseFormRegister
+} from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
@@ -82,36 +88,39 @@ function parseCentavos(reais: string): number {
   return Math.round(parseFloat(reais.replace(',', '.')) * 100)
 }
 
-function CamposComuns({
+function CamposComuns<T extends FieldValues>({
   register,
   errors,
   cartoes,
   categorias,
   mostrarCartao = true
 }: {
-  register: ReturnType<typeof useForm>['register']
-  errors: Record<string, { message?: string } | undefined>
+  register: UseFormRegister<T>
+  errors: FieldErrors<T>
   cartoes: Cartao[]
   categorias: Categoria[]
   mostrarCartao?: boolean
 }) {
+  const descricao = 'descricao' as Path<T>
+  const categoriaId = 'categoriaId' as Path<T>
+  const cartaoId = 'cartaoId' as Path<T>
+  const errDescricao = errors.descricao as { message?: string } | undefined
+  const errCategoria = errors.categoriaId as { message?: string } | undefined
+  const errCartao = errors.cartaoId as { message?: string } | undefined
   return (
     <>
-      <Field label="Descrição" error={errors.descricao?.message} required>
+      <Field label="Descrição" error={errDescricao?.message} required>
         <Input
           type="text"
-          {...register('descricao')}
+          {...register(descricao)}
           placeholder="Ex: Notebook"
-          error={!!errors.descricao}
+          error={!!errDescricao}
         />
       </Field>
 
       <div className={styles.fieldRow}>
-        <Field label="Categoria" error={errors.categoriaId?.message} required>
-          <Select
-            {...register('categoriaId', { valueAsNumber: true })}
-            error={!!errors.categoriaId}
-          >
+        <Field label="Categoria" error={errCategoria?.message} required>
+          <Select {...register(categoriaId, { valueAsNumber: true })} error={!!errCategoria}>
             <option value="">Selecione…</option>
             {categorias.map((c) => (
               <option key={c.id} value={c.id}>
@@ -122,8 +131,8 @@ function CamposComuns({
         </Field>
 
         {mostrarCartao && (
-          <Field label="Cartão" error={errors.cartaoId?.message} required>
-            <Select {...register('cartaoId', { valueAsNumber: true })} error={!!errors.cartaoId}>
+          <Field label="Cartão" error={errCartao?.message} required>
+            <Select {...register(cartaoId, { valueAsNumber: true })} error={!!errCartao}>
               <option value="">Selecione…</option>
               {cartoes.map((c) => (
                 <option key={c.id} value={c.id}>
