@@ -1,11 +1,7 @@
 import { z } from 'zod'
 import type { Renda } from '../../domain/entities/renda'
 import type { Recebimento } from '../../domain/entities/recebimento'
-
-const dataBRSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data deve estar no formato YYYY-MM-DD')
-  .refine((d) => !isNaN(new Date(d).getTime()), 'Data inválida')
+import { dataIsoSchema } from './date-schema'
 
 const nomeSchema = z
   .string()
@@ -33,7 +29,7 @@ export const criarRendaRecorrenteInputSchema = z.object({
     .int()
     .min(1, 'Dia deve ser entre 1 e 31')
     .max(31, 'Dia deve ser entre 1 e 31'),
-  dataInicio: dataBRSchema
+  dataInicio: dataIsoSchema
 })
 
 export type CriarRendaRecorrenteInput = z.infer<typeof criarRendaRecorrenteInputSchema>

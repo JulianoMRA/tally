@@ -2,11 +2,7 @@ import { z } from 'zod'
 import type { Despesa } from '../../domain/entities/despesa'
 import type { Fatura } from '../../domain/entities/fatura'
 import type { Parcela } from '../../domain/entities/parcela'
-
-const dataBRSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data deve estar no formato YYYY-MM-DD')
-  .refine((d) => !isNaN(new Date(d).getTime()), 'Data inválida')
+import { dataIsoSchema } from './date-schema'
 
 export const despesaUnicaCreditoInputSchema = z.object({
   descricao: z
@@ -23,7 +19,7 @@ export const despesaUnicaCreditoInputSchema = z.object({
     .number({ message: 'Valor é obrigatório' })
     .int()
     .min(1, 'Valor deve ser maior que zero'),
-  dataCompra: dataBRSchema
+  dataCompra: dataIsoSchema
 })
 
 export type DespesaUnicaCreditoInput = z.infer<typeof despesaUnicaCreditoInputSchema>
@@ -45,7 +41,7 @@ export const despesaUnicaForaCartaoInputSchema = z.object({
     .number({ message: 'Valor é obrigatório' })
     .int()
     .min(1, 'Valor deve ser maior que zero'),
-  dataCompra: dataBRSchema
+  dataCompra: dataIsoSchema
 })
 
 export type DespesaUnicaForaCartaoInput = z.infer<typeof despesaUnicaForaCartaoInputSchema>
@@ -85,7 +81,7 @@ export const despesaParceladaCreditoInputSchema = z.object({
     .number({ message: 'Valor é obrigatório' })
     .int()
     .min(1, 'Valor deve ser maior que zero'),
-  dataCompra: dataBRSchema
+  dataCompra: dataIsoSchema
 })
 
 export type DespesaParceladaCreditoInput = z.infer<typeof despesaParceladaCreditoInputSchema>
@@ -133,7 +129,7 @@ export const despesaAssinaturaCreditoInputSchema = z.object({
     .number({ message: 'Valor mensal é obrigatório' })
     .int()
     .min(1, 'Valor deve ser maior que zero'),
-  dataInicio: dataBRSchema
+  dataInicio: dataIsoSchema
 })
 
 export type DespesaAssinaturaCreditoInput = z.infer<typeof despesaAssinaturaCreditoInputSchema>
@@ -218,13 +214,14 @@ export type ResultadoExcluirDespesa = {
 
 export const atualizarDespesaInputSchema = z.object({
   despesaId: z.number().int().positive(),
-  descricao: z.string().trim().min(1, 'Descrição é obrigatória').max(80),
+  descricao: z
+    .string()
+    .trim()
+    .min(1, 'Descrição é obrigatória')
+    .max(120, 'Descrição deve ter no máximo 120 caracteres'),
   categoriaId: z.number().int().positive(),
   valorCentavos: z.number().int().min(1, 'Valor deve ser maior que zero'),
-  dataCompra: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data deve estar no formato YYYY-MM-DD')
-    .optional()
+  dataCompra: dataIsoSchema.optional()
 })
 
 export type AtualizarDespesaInput = z.infer<typeof atualizarDespesaInputSchema>
