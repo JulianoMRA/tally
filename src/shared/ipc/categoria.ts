@@ -37,11 +37,4 @@ export type CategoriaApi = {
   desarquivar: (id: number) => Promise<Categoria>
 }
 
-export const CATEGORIA_IPC_CHANNELS = {
-  list: 'categoria:list',
-  findById: 'categoria:findById',
-  create: 'categoria:create',
-  update: 'categoria:update',
-  arquivar: 'categoria:arquivar',
-  desarquivar: 'categoria:desarquivar'
-} as const
+export { CATEGORIA_IPC_CHANNELS } from './channels'

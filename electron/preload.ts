@@ -1,9 +1,19 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { CARTAO_IPC_CHANNELS } from '@shared/ipc/cartao'
+// Canais importados do módulo zero-zod para que o bundle do preload não arraste
+// zod — pré-requisito para `sandbox: true`. Os demais imports são `import type`
+// (apagados em compile, sem custo de runtime).
+import {
+  CARTAO_IPC_CHANNELS,
+  CATEGORIA_IPC_CHANNELS,
+  DESPESA_IPC_CHANNELS,
+  FATURA_IPC_CHANNELS,
+  RENDA_IPC_CHANNELS,
+  RECEBIMENTO_IPC_CHANNELS,
+  VISAO_MENSAL_IPC_CHANNELS,
+  RELATORIO_IPC_CHANNELS
+} from '@shared/ipc/channels'
 import type { CartaoInput, ListCartaoOptions } from '@shared/ipc/cartao'
-import { CATEGORIA_IPC_CHANNELS } from '@shared/ipc/categoria'
 import type { CategoriaInput, ListCategoriaOptions } from '@shared/ipc/categoria'
-import { DESPESA_IPC_CHANNELS } from '@shared/ipc/despesa'
 import type {
   DespesaUnicaCreditoInput,
   DespesaParceladaCreditoInput,
@@ -19,24 +29,19 @@ import type {
   ExcluirDespesaInput,
   AtualizarDespesaInput
 } from '@shared/ipc/despesa'
-import { FATURA_IPC_CHANNELS } from '@shared/ipc/fatura'
-import { RENDA_IPC_CHANNELS } from '@shared/ipc/renda'
 import type {
   CriarRendaAvulsaInput,
   CriarRendaRecorrenteInput,
   UpdateRendaInput,
   ListRendaOptions
 } from '@shared/ipc/renda'
-import { RECEBIMENTO_IPC_CHANNELS } from '@shared/ipc/recebimento'
 import type {
   CriarRecebimentoAvulsoInput,
   MarcarRecebidoInput,
   ExcluirRecebimentoInput,
   ListarRecebimentosInput
 } from '@shared/ipc/recebimento'
-import { VISAO_MENSAL_IPC_CHANNELS } from '@shared/ipc/visao-mensal'
 import type { DetalharMesInput } from '@shared/ipc/visao-mensal'
-import { RELATORIO_IPC_CHANNELS } from '@shared/ipc/relatorio'
 import type {
   TotaisPorCategoriaInput,
   EvolucaoSaldoInput,

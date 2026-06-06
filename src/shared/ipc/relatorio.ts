@@ -52,8 +52,4 @@ export type RelatorioApi = {
   evolucaoCategoria: (input: EvolucaoCategoriaInput) => Promise<PontoEvolucaoCategoria[]>
 }
 
-export const RELATORIO_IPC_CHANNELS = {
-  totaisPorCategoria: 'relatorio:totaisPorCategoria',
-  evolucaoSaldo: 'relatorio:evolucaoSaldo',
-  evolucaoCategoria: 'relatorio:evolucaoCategoria'
-} as const
+export { RELATORIO_IPC_CHANNELS } from './channels'

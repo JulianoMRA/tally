@@ -29,8 +29,6 @@ export type VisaoMensalApi = {
   detalhar: (input: DetalharMesInput) => Promise<VisaoMensalDetalhada>
 }
 
-export const VISAO_MENSAL_IPC_CHANNELS = {
-  detalhar: 'visao-mensal:detalhar'
-} as const
+export { VISAO_MENSAL_IPC_CHANNELS } from './channels'
 
 export type { BalancoMensal }
