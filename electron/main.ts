@@ -143,6 +143,21 @@ function instalarCSP(): void {
   })
 }
 
+// Abre uma URL no navegador externo apenas se for http(s) bem-formada.
+// new URL() rejeita strings malformadas e a checagem exata de protocolo evita
+// esquemas perigosos (file:, javascript:, etc.) que um startsWith deixaria passar.
+function abrirExternoSeguro(rawUrl: string): void {
+  let parsed: URL
+  try {
+    parsed = new URL(rawUrl)
+  } catch {
+    return
+  }
+  if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+    shell.openExternal(parsed.href)
+  }
+}
+
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1280,
@@ -165,9 +180,7 @@ function createWindow(): void {
 
   // window.open() abre no navegador externo do SO, nunca em uma nova janela do app.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      shell.openExternal(url)
-    }
+    abrirExternoSeguro(url)
     return { action: 'deny' }
   })
 
@@ -180,9 +193,7 @@ function createWindow(): void {
       url.startsWith(mainWindow.webContents.getURL())
     if (!ehInterno) {
       event.preventDefault()
-      if (url.startsWith('http://') || url.startsWith('https://')) {
-        shell.openExternal(url)
-      }
+      abrirExternoSeguro(url)
     }
   })
 
