@@ -248,18 +248,4 @@ export type DespesaApi = {
   atualizar: (input: AtualizarDespesaInput) => Promise<Despesa>
 }
 
-export const DESPESA_IPC_CHANNELS = {
-  criarUnicaCredito: 'despesa:criar-unica-credito',
-  criarParceladaCredito: 'despesa:criar-parcelada-credito',
-  criarParceladaEmAndamento: 'despesa:criar-parcelada-em-andamento',
-  adiantarParcelas: 'despesa:adiantar-parcelas',
-  cancelarPendentes: 'despesa:cancelar-pendentes',
-  criarAssinaturaCredito: 'despesa:criar-assinatura-credito',
-  cancelarAssinatura: 'despesa:cancelar-assinatura',
-  reajustarValorMensalAssinatura: 'despesa:reajustar-valor-mensal-assinatura',
-  listarAssinaturas: 'despesa:listar-assinaturas',
-  criarUnicaForaCartao: 'despesa:criar-unica-fora-cartao',
-  listarGastosForaCartao: 'despesa:listar-gastos-fora-cartao',
-  excluir: 'despesa:excluir',
-  atualizar: 'despesa:atualizar'
-} as const
+export { DESPESA_IPC_CHANNELS } from './channels'

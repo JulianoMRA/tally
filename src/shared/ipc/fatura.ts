@@ -35,10 +35,4 @@ export type FaturaApi = {
   reabrir: (faturaId: number) => Promise<Fatura>
 }
 
-export const FATURA_IPC_CHANNELS = {
-  listarPorCartao: 'fatura:listarPorCartao',
-  detalharComParcelas: 'fatura:detalharComParcelas',
-  fechar: 'fatura:fechar',
-  pagar: 'fatura:pagar',
-  reabrir: 'fatura:reabrir'
-} as const
+export { FATURA_IPC_CHANNELS } from './channels'

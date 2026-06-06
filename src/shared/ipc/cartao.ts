@@ -50,11 +50,4 @@ export type CartaoApi = {
   desarquivar: (id: number) => Promise<Cartao>
 }
 
-export const CARTAO_IPC_CHANNELS = {
-  list: 'cartao:list',
-  findById: 'cartao:findById',
-  create: 'cartao:create',
-  update: 'cartao:update',
-  arquivar: 'cartao:arquivar',
-  desarquivar: 'cartao:desarquivar'
-} as const
+export { CARTAO_IPC_CHANNELS } from './channels'

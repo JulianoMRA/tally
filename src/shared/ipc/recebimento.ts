@@ -58,11 +58,6 @@ export type RecebimentoApi = {
   excluir: (input: ExcluirRecebimentoInput) => Promise<void>
 }
 
-export const RECEBIMENTO_IPC_CHANNELS = {
-  criarAvulso: 'recebimento:criar-avulso',
-  listar: 'recebimento:listar',
-  marcarRecebido: 'recebimento:marcar-recebido',
-  excluir: 'recebimento:excluir'
-} as const
+export { RECEBIMENTO_IPC_CHANNELS } from './channels'
 
 export type { StatusRecebimento }

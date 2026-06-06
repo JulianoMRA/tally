@@ -167,12 +167,11 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      // sandbox: false porque o preload importa @shared/ipc/* que dependem de
-      // zod (runtime). Com sandbox: true, require('zod') falha — o sandbox
-      // restringe o preload a APIs do Electron puro (contextBridge, ipcRenderer).
-      // Para ativar sandbox seria preciso mover toda validacao Zod para o main
-      // e deixar o preload apenas com channel strings literais.
-      sandbox: false,
+      // sandbox: true — o preload importa apenas constantes de canal do módulo
+      // zero-zod (@shared/ipc/channels) e tipos (apagados em compile), então seu
+      // bundle não arrasta zod nem precisa de require() proibido no sandbox. Toda
+      // validação Zod já vive nos handlers do main, não no preload.
+      sandbox: true,
       webSecurity: true,
       allowRunningInsecureContent: false
     }

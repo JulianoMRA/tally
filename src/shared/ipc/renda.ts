@@ -67,12 +67,4 @@ export type RendaApi = {
   desarquivar: (id: number) => Promise<Renda>
 }
 
-export const RENDA_IPC_CHANNELS = {
-  list: 'renda:list',
-  findById: 'renda:findById',
-  criarAvulsa: 'renda:criar-avulsa',
-  criarRecorrente: 'renda:criar-recorrente',
-  update: 'renda:update',
-  arquivar: 'renda:arquivar',
-  desarquivar: 'renda:desarquivar'
-} as const
+export { RENDA_IPC_CHANNELS } from './channels'
