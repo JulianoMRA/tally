@@ -338,10 +338,14 @@ function FormParcelada({
   } = useForm<ParceladaValues>({ resolver: zodResolver(parceladaSchema) })
 
   const valorReais = watch('valorReais') ?? ''
-  const totalParcelas = watch('totalParcelas') ?? 1
+  const totalParcelas = watch('totalParcelas')
+  const valorNumerico = parseFloat(valorReais.replace(',', '.'))
   const valorParcela =
-    valorReais && !isNaN(parseFloat(valorReais.replace(',', '.')))
-      ? (parseFloat(valorReais.replace(',', '.')) / Number(totalParcelas)).toFixed(2)
+    Number.isFinite(valorNumerico) &&
+    typeof totalParcelas === 'number' &&
+    Number.isInteger(totalParcelas) &&
+    totalParcelas > 0
+      ? (valorNumerico / totalParcelas).toFixed(2)
       : null
 
   async function onSubmit(values: ParceladaValues) {
