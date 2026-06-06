@@ -3,7 +3,7 @@ import {
   calcularReferenciaFaturaDaCompra,
   formatarMesReferencia
 } from './calcular-fatura-da-compra'
-import { proxMesReferencia } from './mes-referencia'
+import { mesReferenciaParaData, proxMesReferencia } from './mes-referencia'
 
 export type OcorrenciaPlanejada = {
   numero: number
@@ -55,7 +55,7 @@ export function gerarOcorrenciasAssinatura(
     ocorrencias.push({
       numero: ocorrenciaInicial + i,
       total: null,
-      dataReferencia: `${mesRef}-01`,
+      dataReferencia: mesReferenciaParaData(mesRef),
       valorCentavos: valorMensalCentavos
     })
     mesRef = proxMesReferencia(mesRef)

@@ -43,6 +43,17 @@ export function clampDiaNoMes(ano: number, mes: number, dia: number): string {
 }
 
 /**
+ * Converte um mês de referência "YYYY-MM" na data ISO do primeiro dia do mês.
+ * Ex.: mesReferenciaParaData('2026-06') → '2026-06-01'.
+ *
+ * Slice 15: parcelas/ocorrências geradas a partir de mês de referência usam
+ * sempre o dia 01, mantendo `data_referencia` homogênea como YYYY-MM-DD.
+ */
+export function mesReferenciaParaData(mesRef: string): string {
+  return `${mesRef}-01`
+}
+
+/**
  * Diferença em meses entre dois meses de referência (b − a).
  * Ex.: diferencaEmMeses('2026-05', '2026-08') === 3
  *      diferencaEmMeses('2026-08', '2026-05') === -3

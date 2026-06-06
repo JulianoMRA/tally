@@ -1,3 +1,5 @@
+import { diasNoMes } from './mes-referencia'
+
 export type ReferenciaFatura = {
   ano: number
   mes: number
@@ -21,15 +23,6 @@ function parseDataIso(data: string): { ano: number; mes: number; dia: number } {
     throw new Error(`Dia inválido em '${data}': ${dia}`)
   }
   return { ano, mes, dia }
-}
-
-function diasNoMes(ano: number, mes: number): number {
-  if (mes === 2) {
-    const bissexto = (ano % 4 === 0 && ano % 100 !== 0) || ano % 400 === 0
-    return bissexto ? 29 : 28
-  }
-  if ([4, 6, 9, 11].includes(mes)) return 30
-  return 31
 }
 
 function validarDiaFechamento(dia: number): void {
