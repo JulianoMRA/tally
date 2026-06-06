@@ -12,8 +12,8 @@ test.describe('Cartões CRUD', () => {
 
     // --- Criar cartão Inter ---
     await page.getByLabel('Nome').fill('Inter')
-    await page.getByLabel('Dia fechamento').fill('5')
-    await page.getByLabel('Dia vencimento').fill('12')
+    await page.getByLabel('Dia de fechamento').fill('5')
+    await page.getByLabel('Dia de vencimento').fill('12')
     await page.getByRole('button', { name: 'Salvar' }).click()
 
     // Aparece na lista
@@ -38,13 +38,13 @@ test.describe('Cartões CRUD', () => {
     await page.getByLabel('Mostrar arquivados').check()
 
     await expect(page.getByText('Inter Black')).toBeVisible()
-    await expect(page.getByText('Arquivado')).toBeVisible()
+    await expect(page.getByText('Arquivado', { exact: true })).toBeVisible()
 
     // --- Desarquivar ---
     await page.getByRole('button', { name: 'Desarquivar' }).first().click()
 
     // Volta na lista sem badge
     await expect(page.getByText('Inter Black')).toBeVisible()
-    await expect(page.getByText('Arquivado')).not.toBeVisible()
+    await expect(page.getByText('Arquivado', { exact: true })).not.toBeVisible()
   })
 })

@@ -17,7 +17,12 @@ test.describe('Categorias CRUD', () => {
 
     // Aparece na lista com badge de tipo
     await expect(page.getByText('Mercado')).toBeVisible()
-    await expect(page.getByText('Despesa')).toBeVisible()
+    await expect(
+      page
+        .getByRole('listitem')
+        .filter({ hasText: 'Mercado' })
+        .getByText('Despesa', { exact: true })
+    ).toBeVisible()
 
     // --- Editar: renomear para Supermercado ---
     await page.getByRole('button', { name: 'Editar' }).first().click()
@@ -37,13 +42,13 @@ test.describe('Categorias CRUD', () => {
     await page.getByLabel('Mostrar arquivados').check()
 
     await expect(page.getByText('Supermercado')).toBeVisible()
-    await expect(page.getByText('Arquivado')).toBeVisible()
+    await expect(page.getByText('Arquivado', { exact: true })).toBeVisible()
 
     // --- Desarquivar ---
     await page.getByRole('button', { name: 'Desarquivar' }).first().click()
 
     // Volta na lista sem badge de arquivado
     await expect(page.getByText('Supermercado')).toBeVisible()
-    await expect(page.getByText('Arquivado')).not.toBeVisible()
+    await expect(page.getByText('Arquivado', { exact: true })).not.toBeVisible()
   })
 })

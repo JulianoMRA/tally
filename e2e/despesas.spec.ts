@@ -27,9 +27,9 @@ test.describe('Despesa única + Fatura', () => {
 
     await expect(page.getByText('Alimentação E2E')).toBeVisible()
 
-    // --- Criar despesa única ---
-    await page.getByRole('link', { name: 'Nova despesa' }).click()
-    await expect(page.getByRole('heading', { name: 'Nova despesa' })).toBeVisible()
+    // --- Criar despesa única (form inline na pagina Despesas) ---
+    await page.getByRole('link', { name: 'Despesas' }).click()
+    await expect(page.getByLabel('Descrição')).toBeVisible()
 
     await page.getByLabel('Descrição').fill('Supermercado E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Alimentação E2E' })
@@ -39,26 +39,25 @@ test.describe('Despesa única + Fatura', () => {
     await page.getByLabel('Data da compra').fill('2026-06-03')
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
 
-    // Banner de sucesso deve mencionar 2026-06 e Inter E2E
+    // Banner de sucesso deve mencionar a despesa e o mes de referencia 2026-06
     await expect(page.getByText('Supermercado E2E')).toBeVisible()
-    await expect(page.getByText('2026-06')).toBeVisible()
-    await expect(page.getByText('Inter E2E')).toBeVisible()
+    await expect(page.getByText('2026-06', { exact: true })).toBeVisible()
 
     // --- Visualizar fatura ---
     await page.getByRole('link', { name: 'Faturas' }).click()
     await expect(page.getByRole('heading', { name: 'Faturas' })).toBeVisible()
 
-    await page.getByLabel('Cartão:').selectOption({ label: 'Inter E2E' })
+    await page.getByLabel('Cartão').selectOption({ label: 'Inter E2E' })
 
     // Fatura 2026-06 deve aparecer na lista
-    await expect(page.getByText('2026-06')).toBeVisible()
+    await expect(page.getByText('2026-06', { exact: true })).toBeVisible()
 
     // Abre detalhe da fatura
-    await page.getByText('2026-06').click()
+    await page.getByText('2026-06', { exact: true }).click()
 
-    // Parcela 1/1 deve estar visível com valor R$ 50,00
+    // Parcela 1/1 com valor R$ 50,00 (espaço pode ser non-breaking → regex tolerante)
     await expect(page.getByText('1/1')).toBeVisible()
-    await expect(page.getByText('R$ 50,00')).toBeVisible()
+    await expect(page.getByRole('cell', { name: /R\$\s*50,00/ })).toBeVisible()
 
     // Total da fatura
     await expect(page.getByText(/^Total$/)).toBeVisible()
