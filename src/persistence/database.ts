@@ -50,6 +50,7 @@ class Statement {
 
 export class Database {
   private readonly inner: WasmDatabase
+  private savepointSeq = 0
 
   constructor(filename: string) {
     this.inner = new WasmDatabase(filename)
@@ -67,15 +68,23 @@ export class Database {
     this.inner.exec(`PRAGMA ${sql}`)
   }
 
+  // Suporta aninhamento: uma transacao dentro de outra usa SAVEPOINT em vez de
+  // BEGIN (que o SQLite rejeitaria). A interna so reverte seu proprio savepoint;
+  // se o erro propagar, a externa reverte tudo. Sem aninhamento, BEGIN/COMMIT.
   transaction<TFn extends (...args: unknown[]) => unknown>(fn: TFn): TFn {
     const wrapped = ((...args: unknown[]) => {
-      this.inner.exec('BEGIN')
+      const aninhada = this.inner.inTransaction
+      const savepoint = `sp_${(this.savepointSeq += 1)}`
+      this.inner.exec(aninhada ? `SAVEPOINT ${savepoint}` : 'BEGIN')
       try {
         const result = fn(...args)
-        this.inner.exec('COMMIT')
+        this.inner.exec(aninhada ? `RELEASE ${savepoint}` : 'COMMIT')
         return result
       } catch (err) {
-        if (this.inner.inTransaction) {
+        if (aninhada) {
+          this.inner.exec(`ROLLBACK TO ${savepoint}`)
+          this.inner.exec(`RELEASE ${savepoint}`)
+        } else if (this.inner.inTransaction) {
           this.inner.exec('ROLLBACK')
         }
         throw err
