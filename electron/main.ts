@@ -1,10 +1,22 @@
-import { app, BrowserWindow, dialog, ipcMain, session, shell } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  Menu,
+  session,
+  shell,
+  type MenuItemConstructorOptions
+} from 'electron'
 import { join } from 'path'
-import { mkdirSync, rmSync, existsSync } from 'fs'
+import { mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from 'fs'
 import { is } from '@electron-toolkit/utils'
 import type { Database } from '../src/persistence/database'
 import { openDatabase } from '../src/persistence/database'
+import { backupDatabase } from '../src/persistence/backup'
 import { runMigrations } from '../src/persistence/migrations/runner'
+import { DadosRepository } from '../src/persistence/repositories/dados-repository'
+import { exportPayloadSchema } from '../src/shared/ipc/dados'
 import { FaturaRepository } from '../src/persistence/repositories/fatura-repository'
 import { registerCartaoHandlers } from './ipc/cartao-handlers'
 import { registerCategoriaHandlers } from './ipc/categoria-handlers'
@@ -16,6 +28,8 @@ import { registerVisaoMensalHandlers } from './ipc/visao-mensal-handlers'
 import { registerRelatorioHandlers } from './ipc/relatorio-handlers'
 
 let db: Database | null = null
+let mainWindow: BrowserWindow | null = null
+let dbPathAtual: string | null = null
 let isShuttingDown = false
 
 // TALLY_USER_DATA permite redirecionar o diretório de dados para uma pasta
@@ -51,7 +65,14 @@ function limparLockOrfao(dbPath: string): void {
 
 function inicializarBancoDeDados(): Database {
   const dbPath = resolveDbPath()
+  dbPathAtual = dbPath
   limparLockOrfao(dbPath)
+  // Copia de seguranca do arquivo ANTES de abrir/migrar: se uma migration
+  // corromper o schema, o estado pre-migration fica preservado em backups/.
+  const backupPath = backupDatabase(dbPath)
+  if (is.dev && backupPath) {
+    console.log(`[db] backup criado: ${backupPath}`)
+  }
   const database = openDatabase(dbPath)
   const result = runMigrations(database)
   if (is.dev && result.applied.length > 0) {
@@ -158,8 +179,108 @@ function abrirExternoSeguro(rawUrl: string): void {
   }
 }
 
+function janelaAtual(): BrowserWindow | undefined {
+  return mainWindow ?? BrowserWindow.getAllWindows()[0]
+}
+
+async function exportarDados(): Promise<void> {
+  if (!db) return
+  const win = janelaAtual()
+  if (!win) return
+  const padrao = `tally-export-${new Date().toISOString().slice(0, 10)}.json`
+  const { canceled, filePath } = await dialog.showSaveDialog(win, {
+    title: 'Exportar dados do Tally',
+    defaultPath: padrao,
+    filters: [{ name: 'JSON', extensions: ['json'] }]
+  })
+  if (canceled || !filePath) return
+  try {
+    const payload = new DadosRepository(db).exportar()
+    writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf8')
+    await dialog.showMessageBox(win, {
+      type: 'info',
+      title: 'Exportação concluída',
+      message: 'Dados exportados com sucesso.',
+      detail: filePath
+    })
+  } catch (err) {
+    dialog.showErrorBox('Falha ao exportar', err instanceof Error ? err.message : String(err))
+  }
+}
+
+async function importarDados(): Promise<void> {
+  if (!db || !dbPathAtual) return
+  const win = janelaAtual()
+  if (!win) return
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    title: 'Importar dados para o Tally',
+    properties: ['openFile'],
+    filters: [{ name: 'JSON', extensions: ['json'] }]
+  })
+  if (canceled || filePaths.length === 0) return
+
+  const confirma = await dialog.showMessageBox(win, {
+    type: 'warning',
+    buttons: ['Cancelar', 'Importar e substituir'],
+    defaultId: 0,
+    cancelId: 0,
+    title: 'Substituir todos os dados?',
+    message: 'A importação substitui TODOS os dados atuais pelos do arquivo.',
+    detail: 'Um backup automático do estado atual é criado antes. Deseja continuar?'
+  })
+  if (confirma.response !== 1) return
+
+  try {
+    const conteudo = readFileSync(filePaths[0], 'utf8')
+    const payload = exportPayloadSchema.parse(JSON.parse(conteudo))
+    backupDatabase(dbPathAtual)
+    const { totalLinhas } = new DadosRepository(db).importar(payload)
+    await dialog.showMessageBox(win, {
+      type: 'info',
+      title: 'Importação concluída',
+      message: `${totalLinhas} registro(s) importado(s). A janela será recarregada.`
+    })
+    mainWindow?.webContents.reload()
+  } catch (err) {
+    dialog.showErrorBox('Falha ao importar', err instanceof Error ? err.message : String(err))
+  }
+}
+
+function construirMenuApp(): void {
+  const template: MenuItemConstructorOptions[] = [
+    {
+      label: 'Arquivo',
+      submenu: [
+        { label: 'Exportar dados…', click: () => void exportarDados() },
+        { label: 'Importar dados…', click: () => void importarDados() },
+        { type: 'separator' },
+        { role: 'quit', label: 'Sair' }
+      ]
+    },
+    {
+      label: 'Editar',
+      submenu: [
+        { role: 'undo', label: 'Desfazer' },
+        { role: 'redo', label: 'Refazer' },
+        { type: 'separator' },
+        { role: 'cut', label: 'Recortar' },
+        { role: 'copy', label: 'Copiar' },
+        { role: 'paste', label: 'Colar' },
+        { role: 'selectAll', label: 'Selecionar tudo' }
+      ]
+    }
+  ]
+  if (is.dev) {
+    template.push({
+      label: 'Desenvolvimento',
+      submenu: [{ role: 'reload' }, { role: 'forceReload' }, { role: 'toggleDevTools' }]
+    })
+  }
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+}
+
 function createWindow(): void {
-  const mainWindow = new BrowserWindow({
+  const win = new BrowserWindow({
     width: 1280,
     height: 800,
     title: 'Tally',
@@ -177,19 +298,24 @@ function createWindow(): void {
     }
   })
 
+  mainWindow = win
+  win.on('closed', () => {
+    mainWindow = null
+  })
+
   // window.open() abre no navegador externo do SO, nunca em uma nova janela do app.
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  win.webContents.setWindowOpenHandler(({ url }) => {
     abrirExternoSeguro(url)
     return { action: 'deny' }
   })
 
   // Bloqueia navegação para fora do app (preserva apenas o renderer atual).
-  mainWindow.webContents.on('will-navigate', (event, url) => {
+  win.webContents.on('will-navigate', (event, url) => {
     const rendererUrl = process.env['ELECTRON_RENDERER_URL']
     const ehInterno =
       (rendererUrl && url.startsWith(rendererUrl)) ||
       url.startsWith('file://') ||
-      url.startsWith(mainWindow.webContents.getURL())
+      url.startsWith(win.webContents.getURL())
     if (!ehInterno) {
       event.preventDefault()
       abrirExternoSeguro(url)
@@ -197,9 +323,9 @@ function createWindow(): void {
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    win.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    win.loadFile(join(__dirname, '../renderer/index.html'))
   }
 }
 
@@ -226,6 +352,7 @@ if (!obteveLock) {
       registerRecebimentoHandlers(db, ipcMain)
       registerVisaoMensalHandlers(db, ipcMain)
       registerRelatorioHandlers(db, ipcMain)
+      construirMenuApp()
       createWindow()
 
       app.on('activate', () => {
