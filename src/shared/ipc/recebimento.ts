@@ -1,10 +1,6 @@
 import { z } from 'zod'
 import type { Recebimento, StatusRecebimento } from '../../domain/entities/recebimento'
-
-const dataBRSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data deve estar no formato YYYY-MM-DD')
-  .refine((d) => !isNaN(new Date(d).getTime()), 'Data inválida')
+import { dataIsoSchema } from './date-schema'
 
 const valorSchema = z
   .number({ message: 'Valor é obrigatório' })
@@ -18,15 +14,15 @@ export const criarRecebimentoAvulsoInputSchema = z.object({
     .min(1, 'Descrição é obrigatória')
     .max(80, 'Descrição deve ter no máximo 80 caracteres'),
   valorCentavos: valorSchema,
-  dataEsperada: dataBRSchema,
-  dataRecebida: dataBRSchema.optional()
+  dataEsperada: dataIsoSchema,
+  dataRecebida: dataIsoSchema.optional()
 })
 
 export type CriarRecebimentoAvulsoInput = z.infer<typeof criarRecebimentoAvulsoInputSchema>
 
 export const marcarRecebidoInputSchema = z.object({
   recebimentoId: z.number().int().positive(),
-  dataRecebida: dataBRSchema
+  dataRecebida: dataIsoSchema
 })
 
 export type MarcarRecebidoInput = z.infer<typeof marcarRecebidoInputSchema>
@@ -62,11 +58,6 @@ export type RecebimentoApi = {
   excluir: (input: ExcluirRecebimentoInput) => Promise<void>
 }
 
-export const RECEBIMENTO_IPC_CHANNELS = {
-  criarAvulso: 'recebimento:criar-avulso',
-  listar: 'recebimento:listar',
-  marcarRecebido: 'recebimento:marcar-recebido',
-  excluir: 'recebimento:excluir'
-} as const
+export { RECEBIMENTO_IPC_CHANNELS } from './channels'
 
 export type { StatusRecebimento }

@@ -29,5 +29,25 @@ export default [
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }]
     }
+  },
+  {
+    // Testes E2E (Playwright): regras TS, sem os plugins React. O callback `use`
+    // dos fixtures do Playwright não é um React Hook — react-hooks daria falso positivo.
+    files: ['e2e/**/*.ts'],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module'
+      }
+    },
+    plugins: {
+      '@typescript-eslint': tseslint
+    },
+    rules: {
+      ...tseslint.configs.recommended.rules,
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }]
+    }
   }
 ]

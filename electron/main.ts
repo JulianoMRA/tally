@@ -143,6 +143,21 @@ function instalarCSP(): void {
   })
 }
 
+// Abre uma URL no navegador externo apenas se for http(s) bem-formada.
+// new URL() rejeita strings malformadas e a checagem exata de protocolo evita
+// esquemas perigosos (file:, javascript:, etc.) que um startsWith deixaria passar.
+function abrirExternoSeguro(rawUrl: string): void {
+  let parsed: URL
+  try {
+    parsed = new URL(rawUrl)
+  } catch {
+    return
+  }
+  if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+    shell.openExternal(parsed.href)
+  }
+}
+
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1280,
@@ -152,12 +167,11 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      // sandbox: false porque o preload importa @shared/ipc/* que dependem de
-      // zod (runtime). Com sandbox: true, require('zod') falha — o sandbox
-      // restringe o preload a APIs do Electron puro (contextBridge, ipcRenderer).
-      // Para ativar sandbox seria preciso mover toda validacao Zod para o main
-      // e deixar o preload apenas com channel strings literais.
-      sandbox: false,
+      // sandbox: true — o preload importa apenas constantes de canal do módulo
+      // zero-zod (@shared/ipc/channels) e tipos (apagados em compile), então seu
+      // bundle não arrasta zod nem precisa de require() proibido no sandbox. Toda
+      // validação Zod já vive nos handlers do main, não no preload.
+      sandbox: true,
       webSecurity: true,
       allowRunningInsecureContent: false
     }
@@ -165,9 +179,7 @@ function createWindow(): void {
 
   // window.open() abre no navegador externo do SO, nunca em uma nova janela do app.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      shell.openExternal(url)
-    }
+    abrirExternoSeguro(url)
     return { action: 'deny' }
   })
 
@@ -180,9 +192,7 @@ function createWindow(): void {
       url.startsWith(mainWindow.webContents.getURL())
     if (!ehInterno) {
       event.preventDefault()
-      if (url.startsWith('http://') || url.startsWith('https://')) {
-        shell.openExternal(url)
-      }
+      abrirExternoSeguro(url)
     }
   })
 

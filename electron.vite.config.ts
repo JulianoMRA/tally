@@ -1,6 +1,31 @@
 import { resolve } from 'path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
+import type { Plugin } from 'vite'
+
+// CSP estrita aplicada APENAS no build de producao, via <meta> no index.html.
+// O index.html e compartilhado com o dev server, onde a CSP chega por header
+// (electron/main.ts) e precisa ser permissiva para o HMR do Vite. Por isso o
+// plugin roda so em `apply: 'build'` e nao afeta `electron-vite dev`.
+// 'unsafe-inline' em style-src e exigido por CSS Modules + estilos inline do recharts.
+const PROD_CSP =
+  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
+  "img-src 'self' data:; font-src 'self' data:; connect-src 'self'; " +
+  "object-src 'none'; base-uri 'self'"
+
+function cspMetaPlugin(): Plugin {
+  return {
+    name: 'tally-csp-meta',
+    apply: 'build',
+    transformIndexHtml(html) {
+      // Injeta logo apos o charset para que a CSP preceda as tags de script/link
+      // que o Vite adiciona ao final do <head> — uma CSP via <meta> so governa o
+      // que vem depois dela no documento.
+      const meta = `\n    <meta http-equiv="Content-Security-Policy" content="${PROD_CSP}" />`
+      return html.replace(/(<meta charset=["'][^"']*["']\s*\/>)/i, `$1${meta}`)
+    }
+  }
+}
 
 export default defineConfig({
   main: {
@@ -43,7 +68,7 @@ export default defineConfig({
   },
   renderer: {
     root: resolve(__dirname, 'src/renderer'),
-    plugins: [react()],
+    plugins: [react(), cspMetaPlugin()],
     resolve: {
       alias: {
         '@renderer': resolve(__dirname, 'src/renderer'),
