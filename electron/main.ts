@@ -4,6 +4,7 @@ import { mkdirSync, rmSync, existsSync } from 'fs'
 import { is } from '@electron-toolkit/utils'
 import type { Database } from '../src/persistence/database'
 import { openDatabase } from '../src/persistence/database'
+import { backupDatabase } from '../src/persistence/backup'
 import { runMigrations } from '../src/persistence/migrations/runner'
 import { FaturaRepository } from '../src/persistence/repositories/fatura-repository'
 import { registerCartaoHandlers } from './ipc/cartao-handlers'
@@ -52,6 +53,12 @@ function limparLockOrfao(dbPath: string): void {
 function inicializarBancoDeDados(): Database {
   const dbPath = resolveDbPath()
   limparLockOrfao(dbPath)
+  // Copia de seguranca do arquivo ANTES de abrir/migrar: se uma migration
+  // corromper o schema, o estado pre-migration fica preservado em backups/.
+  const backupPath = backupDatabase(dbPath)
+  if (is.dev && backupPath) {
+    console.log(`[db] backup criado: ${backupPath}`)
+  }
   const database = openDatabase(dbPath)
   const result = runMigrations(database)
   if (is.dev && result.applied.length > 0) {
