@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from './components/layout/Sidebar'
 import { ToastProvider } from './components/ui'
@@ -10,7 +11,9 @@ function App(): React.JSX.Element {
         <Sidebar />
         <div className={styles.content}>
           <div className={styles.scrollable}>
-            <Outlet />
+            <Suspense fallback={<div className={styles.pageLoading}>Carregando…</div>}>
+              <Outlet />
+            </Suspense>
           </div>
         </div>
       </div>

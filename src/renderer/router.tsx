@@ -1,15 +1,19 @@
+import { lazy } from 'react'
 import { createHashRouter, Navigate } from 'react-router-dom'
 import App from './App'
 import { RouteErrorBoundary } from './components/ui/ErrorBoundary'
-import CartoesPage from './features/cartoes/CartoesPage'
-import CategoriasPage from './features/categorias/CategoriasPage'
-import DespesasPage from './features/despesas/DespesasPage'
-import FaturasPage from './features/faturas/FaturasPage'
-import AssinaturasPage from './features/assinaturas/AssinaturasPage'
-import GastosPage from './features/gastos/GastosPage'
-import RelatoriosPage from './features/relatorios/RelatoriosPage'
-import RendasPage from './features/rendas/RendasPage'
-import VisaoMensalPage from './features/visao-mensal/VisaoMensalPage'
+
+// Páginas carregadas sob demanda (code splitting por rota). Cada uma vira um
+// chunk separado, reduzindo o bundle inicial; o Suspense do App exibe o fallback.
+const VisaoMensalPage = lazy(() => import('./features/visao-mensal/VisaoMensalPage'))
+const CartoesPage = lazy(() => import('./features/cartoes/CartoesPage'))
+const CategoriasPage = lazy(() => import('./features/categorias/CategoriasPage'))
+const DespesasPage = lazy(() => import('./features/despesas/DespesasPage'))
+const FaturasPage = lazy(() => import('./features/faturas/FaturasPage'))
+const AssinaturasPage = lazy(() => import('./features/assinaturas/AssinaturasPage'))
+const GastosPage = lazy(() => import('./features/gastos/GastosPage'))
+const RelatoriosPage = lazy(() => import('./features/relatorios/RelatoriosPage'))
+const RendasPage = lazy(() => import('./features/rendas/RendasPage'))
 
 export const router = createHashRouter([
   {
