@@ -69,6 +69,18 @@ export default defineConfig({
   renderer: {
     root: resolve(__dirname, 'src/renderer'),
     plugins: [react(), cspMetaPlugin()],
+    build: {
+      rollupOptions: {
+        output: {
+          // Isola libs pesadas em chunks proprios: recharts so carrega na rota de
+          // relatorios; o vendor React fica num chunk cacheavel a parte.
+          manualChunks: {
+            recharts: ['recharts'],
+            react: ['react', 'react-dom', 'react-router-dom']
+          }
+        }
+      }
+    },
     resolve: {
       alias: {
         '@renderer': resolve(__dirname, 'src/renderer'),
