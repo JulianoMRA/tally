@@ -2,7 +2,7 @@ import { test, expect } from './fixtures/electron-app'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 // TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
-test.describe.skip('Rendas (RF-REN-01..05) — tela unificada Recebimentos + Fontes', () => {
+test.describe('Rendas (RF-REN-01..05) — tela unificada Recebimentos + Fontes', () => {
   test('cadastrar Recorrente na aba Fontes, marcar recebido na aba Recebimentos, criar avulso', async ({
     app
   }) => {
@@ -21,15 +21,16 @@ test.describe.skip('Rendas (RF-REN-01..05) — tela unificada Recebimentos + Fon
     await page.getByLabel('Data de início').fill('2026-06-01')
     await page.getByRole('button', { name: 'Cadastrar renda' }).click()
     await expect(page.getByText('Bolsa PET E2E')).toBeVisible()
-    await expect(page.getByText('R$ 1.200,00')).toBeVisible()
+    await expect(page.getByText(/R\$\s*1\.200,00/).first()).toBeVisible()
 
     // --- Aba "Recebimentos do mês": mês 2026-06 mostra a Bolsa ---
     await page.getByRole('button', { name: 'Recebimentos do mês' }).click()
     await page.getByLabel('Mês').fill('2026-06')
     await expect(page.getByText('Bolsa PET E2E').first()).toBeVisible()
-    await expect(page.getByText('R$ 1.200,00').first()).toBeVisible()
+    await expect(page.getByText(/R\$\s*1\.200,00/).first()).toBeVisible()
 
-    // --- Marcar recebido ---
+    // --- Marcar recebido: o botão da linha abre o modal; o botão do modal (último
+    // no DOM) confirma com a data já preenchida ---
     await page.getByRole('button', { name: 'Marcar recebido' }).first().click()
     await page.getByRole('button', { name: 'Marcar recebido' }).last().click()
     await expect(page.getByText(/Recebido/).first()).toBeVisible()
@@ -42,6 +43,6 @@ test.describe.skip('Rendas (RF-REN-01..05) — tela unificada Recebimentos + Fon
     await page.getByRole('button', { name: 'Registrar' }).click()
 
     await expect(page.getByText('Freela teste E2E')).toBeVisible()
-    await expect(page.getByText('R$ 500,00')).toBeVisible()
+    await expect(page.getByText(/R\$\s*500,00/).first()).toBeVisible()
   })
 })

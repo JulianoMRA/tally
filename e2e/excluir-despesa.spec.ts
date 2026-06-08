@@ -2,7 +2,7 @@ import { test, expect } from './fixtures/electron-app'
 
 // RF-DES-09 — Excluir despesa com confirmação; bloqueia se houver parcela paga.
 // TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
-test.describe.skip('Excluir despesa (RF-DES-09)', () => {
+test.describe('Excluir despesa (RF-DES-09)', () => {
   test('cria assinatura, exclui via AssinaturasPage e confirma que sumiu', async ({ app }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
@@ -24,13 +24,13 @@ test.describe.skip('Excluir despesa (RF-DES-09)', () => {
     // Cria assinatura
     const hoje = new Date()
     const inicio = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
-    await page.getByRole('link', { name: 'Nova despesa' }).click()
-    await page.getByRole('button', { name: 'Assinatura' }).click()
+    await page.getByRole('link', { name: 'Despesas' }).click()
+    await page.getByRole('button', { name: 'Assinatura', exact: true }).click()
     await page.getByLabel('Descrição').fill('Spotify Excluir E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Streaming Excluir E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Excluir E2E' })
     await page.getByLabel('Valor mensal (R$)').fill('20,00')
-    await page.getByLabel('Início').fill(inicio)
+    await page.getByLabel('Data de início').fill(inicio)
     await page.getByRole('button', { name: 'Registrar assinatura' }).click()
     await expect(page.getByText('Spotify Excluir E2E')).toBeVisible()
 
@@ -38,11 +38,11 @@ test.describe.skip('Excluir despesa (RF-DES-09)', () => {
     await page.getByRole('link', { name: 'Assinaturas' }).click()
     await expect(page.getByText('Spotify Excluir E2E')).toBeVisible()
 
-    // Confirma exclusão via dialog do navegador
-    page.once('dialog', (dialog) => dialog.accept())
+    // Confirma exclusão via ConfirmDialog in-app: botão da linha abre, botão do diálogo confirma
     await page.getByRole('button', { name: 'Excluir' }).first().click()
+    await page.getByRole('button', { name: 'Excluir' }).last().click()
 
-    // Após exclusão, a assinatura não deve mais aparecer
-    await expect(page.getByText('Spotify Excluir E2E')).toHaveCount(0)
+    // Após exclusão, a assinatura não deve mais aparecer (exact evita o toast "... excluída.")
+    await expect(page.getByText('Spotify Excluir E2E', { exact: true })).toHaveCount(0)
   })
 })

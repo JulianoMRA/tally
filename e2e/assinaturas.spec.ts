@@ -2,7 +2,7 @@ import { test, expect } from './fixtures/electron-app'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 // TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
-test.describe.skip('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
+test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
   test('cadastrar, reajustar e cancelar uma assinatura', async ({ app }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
@@ -24,10 +24,10 @@ test.describe.skip('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     await page.getByRole('button', { name: 'Salvar' }).click()
     await expect(page.getByText('Streaming E2E')).toBeVisible()
 
-    // --- Cadastrar assinatura ---
-    await page.getByRole('link', { name: 'Nova despesa' }).click()
-    await expect(page.getByRole('heading', { name: 'Nova despesa', exact: true })).toBeVisible()
-    await page.getByRole('button', { name: 'Assinatura' }).click()
+    // --- Cadastrar assinatura (form inline em Despesas, tipo Assinatura) ---
+    await page.getByRole('link', { name: 'Despesas' }).click()
+    await expect(page.getByLabel('Descrição')).toBeVisible()
+    await page.getByRole('button', { name: 'Assinatura', exact: true }).click()
 
     await page.getByLabel('Descrição').fill('Spotify E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Streaming E2E' })
@@ -38,37 +38,37 @@ test.describe.skip('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
 
     await expect(page.getByText('Spotify E2E')).toBeVisible()
     // Banner cita a primeira referência (2026-06) e o cartão
-    await expect(page.getByText(/2026-06/)).toBeVisible()
+    await expect(page.getByText(/2026-06/).first()).toBeVisible()
 
     // --- Página de assinaturas: ver a assinatura ativa ---
     await page.getByRole('link', { name: 'Assinaturas' }).click()
     await expect(page.getByRole('heading', { name: 'Assinaturas', exact: true })).toBeVisible()
     await expect(page.getByText('Spotify E2E')).toBeVisible()
-    await expect(page.getByText('R$ 21,90/mês')).toBeVisible()
+    await expect(page.getByText(/R\$\s*21,90\/mês/)).toBeVisible()
 
     // --- Reajustar valor para R$ 24,90 ---
     await page.getByRole('button', { name: 'Reajustar' }).click()
     const input = page.getByLabel('Novo valor mensal (R$)')
     await input.fill('24,90')
     await page.getByRole('button', { name: 'Aplicar reajuste' }).click()
-    await expect(page.getByText('R$ 24,90/mês')).toBeVisible()
+    await expect(page.getByText(/R\$\s*24,90\/mês/)).toBeVisible()
 
     // --- Conferir na fatura junho/2026 ---
     await page.getByRole('link', { name: 'Faturas' }).click()
-    await page.getByLabel('Cartão:').selectOption({ label: 'Inter Assinatura E2E' })
+    await page.getByLabel('Cartão').selectOption({ label: 'Inter Assinatura E2E' })
     await page.getByText('2026-06').first().click()
-    await expect(page.getByText('R$ 24,90')).toBeVisible()
+    await expect(page.getByText(/R\$\s*24,90/).first()).toBeVisible()
 
-    // --- Cancelar assinatura ---
-    page.once('dialog', (d) => d.accept())
+    // --- Cancelar assinatura (ConfirmDialog in-app: botão da linha abre, confirma no diálogo) ---
     await page.getByRole('link', { name: 'Assinaturas' }).click()
-    await page.getByRole('button', { name: 'Cancelar' }).click()
+    await page.getByRole('button', { name: 'Cancelar', exact: true }).click()
+    await page.getByRole('button', { name: 'Cancelar assinatura' }).click()
 
     // Após cancelar, lista de ativas fica vazia
     await expect(page.getByText('Você não tem assinaturas ativas.')).toBeVisible()
 
-    // Aba "Canceladas" mostra a Spotify
+    // Aba "Canceladas" mostra a Spotify (exact evita colidir com o toast "... cancelada.")
     await page.getByRole('button', { name: 'Canceladas' }).click()
-    await expect(page.getByText('Spotify E2E')).toBeVisible()
+    await expect(page.getByText('Spotify E2E', { exact: true })).toBeVisible()
   })
 })

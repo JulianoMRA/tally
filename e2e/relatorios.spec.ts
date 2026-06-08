@@ -2,7 +2,7 @@ import { test, expect } from './fixtures/electron-app'
 
 // RF-VIS-05 + RF-VIS-06 — relatórios: ranking por categoria + pizza + evolução
 // TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
-test.describe.skip('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
+test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
   test('cadastra 2 despesas em categorias distintas e valida ranking em /relatorios', async ({
     app
   }) => {
@@ -36,7 +36,7 @@ test.describe.skip('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
     const dataMercado = `${yyyy}-${mm}-03`
     const dataLazer = `${yyyy}-${mm}-04`
 
-    await page.getByRole('link', { name: 'Nova despesa' }).click()
+    await page.getByRole('link', { name: 'Despesas' }).click()
     await page.getByLabel('Descrição').fill('Compra mercado')
     await page.getByLabel('Categoria').selectOption({ label: 'Mercado E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Rel E2E' })
@@ -57,10 +57,19 @@ test.describe.skip('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
     await page.getByRole('link', { name: 'Relatórios' }).click()
     await expect(page.getByRole('heading', { name: 'Relatórios' })).toBeVisible()
 
-    // Ranking deve listar Mercado primeiro (maior valor) e Lazer depois
-    await expect(page.getByText('Mercado E2E')).toBeVisible()
-    await expect(page.getByText('Lazer E2E')).toBeVisible()
-    await expect(page.getByText('R$ 80,00')).toBeVisible()
-    await expect(page.getByText('R$ 30,00')).toBeVisible()
+    // Ranking deve listar Mercado e Lazer com seus valores (escopado ao item da lista,
+    // pois os nomes também aparecem nos selects de categoria da página)
+    // O nome aparece também na legenda do gráfico (recharts) e nos selects; o item do
+    // ranking é o único listitem que também contém o valor em R$.
+    const rankingMercado = page
+      .getByRole('listitem')
+      .filter({ hasText: 'Mercado E2E' })
+      .filter({ hasText: 'R$' })
+    const rankingLazer = page
+      .getByRole('listitem')
+      .filter({ hasText: 'Lazer E2E' })
+      .filter({ hasText: 'R$' })
+    await expect(rankingMercado.getByText(/R\$\s*80,00/)).toBeVisible()
+    await expect(rankingLazer.getByText(/R\$\s*30,00/)).toBeVisible()
   })
 })
