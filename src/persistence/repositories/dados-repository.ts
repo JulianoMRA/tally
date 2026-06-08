@@ -11,12 +11,14 @@ const ORDEM_DELETE = [
   'fatura',
   'despesa',
   'renda',
+  'orcamento',
   'categoria',
   'cartao'
 ] as const
 const ORDEM_INSERT = [
   'cartao',
   'categoria',
+  'orcamento',
   'renda',
   'despesa',
   'fatura',
@@ -48,6 +50,7 @@ export class DadosRepository implements Repository {
       tables: {
         cartao: this.lerTabela('cartao'),
         categoria: this.lerTabela('categoria'),
+        orcamento: this.lerTabela('orcamento'),
         despesa: this.lerTabela('despesa'),
         fatura: this.lerTabela('fatura'),
         parcela: this.lerTabela('parcela'),

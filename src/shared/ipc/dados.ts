@@ -16,6 +16,7 @@ export const exportPayloadSchema = z.object({
   tables: z.object({
     cartao: z.array(rowSchema),
     categoria: z.array(rowSchema),
+    orcamento: z.array(rowSchema),
     despesa: z.array(rowSchema),
     fatura: z.array(rowSchema),
     parcela: z.array(rowSchema),
