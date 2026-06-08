@@ -15,6 +15,9 @@ function seedBasico(db: Database): void {
   )
   db.exec(`INSERT INTO categoria (id, nome, tipo, cor) VALUES (1, 'Mercado', 'Despesa', '#abcdef')`)
   db.exec(
+    `INSERT INTO orcamento (id, categoria_id, mes_referencia, valor_limite_centavos) VALUES (1, 1, NULL, 50000)`
+  )
+  db.exec(
     `INSERT INTO despesa (id, descricao, categoria_id, tipo, forma_pagamento, cartao_id, valor_centavos, total_parcelas, data_compra)
      VALUES (1, 'Compra', 1, 'Unica', 'Credito', 1, 5000, 1, '2026-06-03')`
   )
@@ -47,8 +50,9 @@ describe('DadosRepository', () => {
     const payload = new DadosRepository(db).exportar()
 
     expect(payload.formatVersion).toBe(1)
-    expect(payload.app.schemaVersion).toMatch(/^0004/)
+    expect(payload.app.schemaVersion).toMatch(/^0005/)
     expect(payload.tables.cartao).toHaveLength(1)
+    expect(payload.tables.orcamento).toHaveLength(1)
     expect(payload.tables.parcela).toHaveLength(1)
     expect(payload.tables.recebimento).toHaveLength(1)
     db.close()
@@ -62,8 +66,9 @@ describe('DadosRepository', () => {
     const destino = novoBanco()
     const { totalLinhas } = new DadosRepository(destino).importar(payload)
 
-    expect(totalLinhas).toBe(7)
+    expect(totalLinhas).toBe(8)
     expect(contar(destino, 'cartao')).toBe(1)
+    expect(contar(destino, 'orcamento')).toBe(1)
     expect(contar(destino, 'despesa')).toBe(1)
     expect(contar(destino, 'parcela')).toBe(1)
     const despesa = destino.prepare('SELECT descricao FROM despesa WHERE id = 1').get() as {

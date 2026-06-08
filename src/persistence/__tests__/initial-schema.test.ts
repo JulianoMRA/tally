@@ -8,6 +8,7 @@ const EXPECTED_TABLES = [
   'categoria',
   'despesa',
   'fatura',
+  'orcamento',
   'parcela',
   'recebimento',
   'renda',
@@ -32,7 +33,7 @@ describe('migration 0001_initial_schema', () => {
     runMigrations(db)
   })
 
-  it('cria as 7 tabelas do PRD §6 + schema_migrations apos as tres migrations', () => {
+  it('cria as 8 tabelas de dados + schema_migrations apos as migrations', () => {
     expect(listTables(db)).toEqual(EXPECTED_TABLES)
   })
 
@@ -170,7 +171,8 @@ describe('migration 0001_initial_schema', () => {
       '0001_initial_schema',
       '0002_simplificacao_pre_slice_13',
       '0003_drop_colunas_mortas',
-      '0004_normaliza_data_referencia'
+      '0004_normaliza_data_referencia',
+      '0005_orcamento'
     ])
   })
 })

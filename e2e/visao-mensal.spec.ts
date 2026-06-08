@@ -2,7 +2,7 @@ import { test, expect } from './fixtures/electron-app'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 // TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
-test.describe.skip('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
+test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
   test('consolida dados do mês escolhido', async ({ app }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
@@ -26,7 +26,7 @@ test.describe.skip('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     await expect(page.getByText('Geral Mensal E2E')).toBeVisible()
 
     // Despesa única R$ 100 em 2026-06-03 → fatura junho/2026
-    await page.getByRole('link', { name: 'Nova despesa' }).click()
+    await page.getByRole('link', { name: 'Despesas' }).click()
     await page.getByLabel('Descrição').fill('Compra Mensal E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Geral Mensal E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Mensal E2E' })
@@ -36,7 +36,7 @@ test.describe.skip('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     await expect(page.getByText('Compra Mensal E2E')).toBeVisible()
 
     // Pix R$ 50 em 2026-06-10
-    await page.getByRole('button', { name: 'Pix' }).click()
+    await page.getByRole('button', { name: 'Pix', exact: true }).click()
     await page.getByLabel('Descrição').fill('Pix Mensal E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Geral Mensal E2E' })
     await page.getByLabel('Valor (R$)').fill('50,00')
@@ -46,11 +46,11 @@ test.describe.skip('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
 
     // --- /mensal: filtrar 2026-06 ---
     await page.getByRole('link', { name: 'Visão mensal' }).click()
-    await page.getByLabel('Mês').fill('2026-06')
+    await page.getByLabel('Mês', { exact: true }).fill('2026-06')
 
-    // Cards devem mostrar valores
-    await expect(page.getByText('R$ 100,00').first()).toBeVisible()
-    await expect(page.getByText('R$ 50,00').first()).toBeVisible()
+    // Cards devem mostrar valores (moeda usa espaço não-quebrável)
+    await expect(page.getByText(/R\$\s*100,00/).first()).toBeVisible()
+    await expect(page.getByText(/R\$\s*50,00/).first()).toBeVisible()
 
     // Tabela "Faturas" deve mostrar Inter
     await expect(page.getByText('Inter Mensal E2E')).toBeVisible()
@@ -60,7 +60,7 @@ test.describe.skip('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
 
     // Navegar para julho via seta direita
     await page.getByRole('button', { name: 'Próximo mês' }).click()
-    await expect(page.getByLabel('Mês')).toHaveValue('2026-07')
+    await expect(page.getByLabel('Mês', { exact: true })).toHaveValue('2026-07')
   })
 
   test('projeção: navegar além do horizonte estende parcelas e recebimentos (RF-VIS-04, RN-04)', async ({
@@ -87,28 +87,28 @@ test.describe.skip('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     await page.getByRole('button', { name: 'Salvar' }).click()
     await expect(page.getByText('Bolsa Projecao E2E')).toBeVisible()
 
-    // Assinatura mensal de R$ 30,00 começando hoje
+    // Assinatura mensal de R$ 30,00 começando hoje (form inline em Despesas, tipo Assinatura)
     const hoje = new Date()
     const isoHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
-    await page.getByRole('link', { name: 'Assinaturas' }).click()
-    await page.getByRole('link', { name: 'Nova assinatura' }).click()
+    await page.getByRole('link', { name: 'Despesas' }).click()
+    await page.getByRole('button', { name: 'Assinatura', exact: true }).click()
     await page.getByLabel('Descrição').fill('Spotify Projecao E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Streaming Projecao E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Projecao E2E' })
     await page.getByLabel('Valor mensal (R$)').fill('30,00')
-    await page.getByLabel('Início').fill(isoHoje)
+    await page.getByLabel('Data de início').fill(isoHoje)
     await page.getByRole('button', { name: 'Registrar assinatura' }).click()
     await expect(page.getByText('Spotify Projecao E2E')).toBeVisible()
 
-    // Renda recorrente R$ 800,00 dia 5
+    // Renda recorrente R$ 800,00 dia 5 (aba "Fontes de renda")
     await page.getByRole('link', { name: 'Rendas' }).click()
-    await page.getByRole('radio', { name: 'Recorrente' }).check()
+    await page.getByRole('button', { name: 'Fontes de renda' }).click()
+    await page.getByRole('button', { name: 'Recorrente' }).click()
     await page.getByLabel('Nome').fill('Bolsa Mensal E2E')
-    await page.getByLabel('Categoria').selectOption({ label: 'Bolsa Projecao E2E' })
     await page.getByLabel('Valor padrão (R$)').fill('800,00')
     await page.getByLabel('Dia esperado').fill('5')
-    await page.getByLabel('Início').fill(isoHoje)
-    await page.getByRole('button', { name: 'Salvar' }).click()
+    await page.getByLabel('Data de início').fill(isoHoje)
+    await page.getByRole('button', { name: 'Cadastrar renda' }).click()
     await expect(page.getByText('Bolsa Mensal E2E')).toBeVisible()
 
     // Navega para 15 meses adiante (além do horizonte pré-gerado de 12)
@@ -116,16 +116,16 @@ test.describe.skip('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     const mesAlvo = `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, '0')}`
 
     await page.getByRole('link', { name: 'Visão mensal' }).click()
-    await page.getByLabel('Mês').fill(mesAlvo)
+    await page.getByLabel('Mês', { exact: true }).fill(mesAlvo)
 
     // Badge "Projeção" visível
-    await expect(page.getByText('Projeção')).toBeVisible()
+    await expect(page.getByText('Projeção').first()).toBeVisible()
 
     // Fatura projetada da assinatura aparece
     await expect(page.getByText('Inter Projecao E2E')).toBeVisible()
-    await expect(page.getByText('R$ 30,00').first()).toBeVisible()
+    await expect(page.getByText(/R\$\s*30,00/).first()).toBeVisible()
 
     // Recebimento projetado
-    await expect(page.getByText('R$ 800,00').first()).toBeVisible()
+    await expect(page.getByText(/R\$\s*800,00/).first()).toBeVisible()
   })
 })

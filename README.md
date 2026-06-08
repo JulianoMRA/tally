@@ -86,6 +86,8 @@ This project is in active development. The implementation is being delivered in 
 - [x] **Slice 14** — Hardening and polish (electron-builder NSIS + portable, coverage RNF-06, Toast/ConfirmDialog/useEscapeKey)
 - [x] **Slice 14.1** — Post-MVP polish from real-use feedback: visual fixes, expense editing (RF-DES-10), income editing (RF-REN-06), per-row "Adiantar", column sorting, expense descriptions in invoice detail, Rendas grouped by type
 - [x] **Slice 15** — Hardening, QA e cleanup pós-MVP: isolação E2E (TALLY_USER_DATA), hardening Electron + CSP, row-mappers consolidados, migrations 0003 (drop colunas mortas) + 0004 (normaliza `data_referencia`), Zod em todos os canais IPC, `noImplicitAny`, CI matriz Windows+Ubuntu com coverage gating, pre-push hook
+- [x] **Bloco D — Orçamento por categoria** — limite mensal por categoria com status visual (ok/alerta/estourado, alerta >= 80%) integrado aos Relatórios; domínio puro em TDD, migration 0005 (índices parciais para o limite global), repositório, IPC tipado e cobertura no export/import
+- [x] **Slice 19 — Reativação dos E2E** — os 6 specs Playwright pulados (`gastos`, `rendas`, `relatorios`, `assinaturas`, `excluir-despesa`, `visao-mensal`) realinhados à UI atual + novo spec de orçamento. 12 specs E2E verdes, zero skips
 
 Detalhes técnicos de cada slice em [`CHANGELOG.md`](./CHANGELOG.md).
 

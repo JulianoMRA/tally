@@ -10,7 +10,8 @@ import {
   RENDA_IPC_CHANNELS,
   RECEBIMENTO_IPC_CHANNELS,
   VISAO_MENSAL_IPC_CHANNELS,
-  RELATORIO_IPC_CHANNELS
+  RELATORIO_IPC_CHANNELS,
+  ORCAMENTO_IPC_CHANNELS
 } from '@shared/ipc/channels'
 import type { CartaoInput, ListCartaoOptions } from '@shared/ipc/cartao'
 import type { CategoriaInput, ListCategoriaOptions } from '@shared/ipc/categoria'
@@ -47,6 +48,7 @@ import type {
   EvolucaoSaldoInput,
   EvolucaoCategoriaInput
 } from '@shared/ipc/relatorio'
+import type { DefinirLimiteInput, ListarProgressoInput } from '@shared/ipc/orcamento'
 
 contextBridge.exposeInMainWorld('api', {
   cartao: {
@@ -139,5 +141,13 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke(RELATORIO_IPC_CHANNELS.evolucaoSaldo, input),
     evolucaoCategoria: (input: EvolucaoCategoriaInput) =>
       ipcRenderer.invoke(RELATORIO_IPC_CHANNELS.evolucaoCategoria, input)
+  },
+  orcamento: {
+    definirLimite: (input: DefinirLimiteInput) =>
+      ipcRenderer.invoke(ORCAMENTO_IPC_CHANNELS.definirLimite, input),
+    removerLimite: (categoriaId: number) =>
+      ipcRenderer.invoke(ORCAMENTO_IPC_CHANNELS.removerLimite, categoriaId),
+    listarProgresso: (input: ListarProgressoInput) =>
+      ipcRenderer.invoke(ORCAMENTO_IPC_CHANNELS.listarProgresso, input)
   }
 })

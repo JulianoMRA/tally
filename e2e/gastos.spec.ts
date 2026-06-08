@@ -2,7 +2,7 @@ import { test, expect } from './fixtures/electron-app'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 // TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
-test.describe.skip('Gastos fora de cartão (RF-DES-01)', () => {
+test.describe('Gastos fora de cartão (RF-DES-01)', () => {
   test('cadastrar Pix e visualizar em /gastos com filtro de mês', async ({ app }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
@@ -15,12 +15,12 @@ test.describe.skip('Gastos fora de cartão (RF-DES-01)', () => {
     await page.getByRole('button', { name: 'Salvar' }).click()
     await expect(page.getByText('Mercado E2E')).toBeVisible()
 
-    // --- Cadastrar despesa Pix ---
-    await page.getByRole('link', { name: 'Nova despesa' }).click()
-    await expect(page.getByRole('heading', { name: 'Nova despesa', exact: true })).toBeVisible()
+    // --- Cadastrar despesa Pix (form inline na pagina Despesas) ---
+    await page.getByRole('link', { name: 'Despesas' }).click()
+    await expect(page.getByLabel('Descrição')).toBeVisible()
 
     // Aba Única está selecionada por default; trocar forma para Pix
-    await page.getByRole('button', { name: 'Pix' }).click()
+    await page.getByRole('button', { name: 'Pix', exact: true }).click()
 
     await page.getByLabel('Descrição').fill('Feira E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Mercado E2E' })
@@ -30,7 +30,7 @@ test.describe.skip('Gastos fora de cartão (RF-DES-01)', () => {
 
     // Banner cita Pix e 2026-06
     await expect(page.getByText('Feira E2E')).toBeVisible()
-    await expect(page.getByText(/Pix/)).toBeVisible()
+    await expect(page.getByRole('strong').filter({ hasText: 'Pix' })).toBeVisible()
 
     // --- /gastos com mês 2026-06 deve mostrar a despesa ---
     await page.getByRole('link', { name: 'Gastos' }).click()
@@ -38,7 +38,12 @@ test.describe.skip('Gastos fora de cartão (RF-DES-01)', () => {
     await page.getByLabel('Mês').fill('2026-06')
 
     await expect(page.getByText('Feira E2E')).toBeVisible()
-    await expect(page.getByText('R$ 35,00')).toBeVisible()
+    await expect(
+      page
+        .getByRole('listitem')
+        .filter({ hasText: 'Feira E2E' })
+        .getByText(/R\$\s*35,00/)
+    ).toBeVisible()
 
     // --- mês vazio (2026-07) ---
     await page.getByLabel('Mês').fill('2026-07')

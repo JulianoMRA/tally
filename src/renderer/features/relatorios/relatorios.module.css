@@ -108,6 +108,100 @@
   min-height: 240px;
 }
 
+.orcForm {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.orcList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.orcItem {
+  display: grid;
+  grid-template-columns: 14px minmax(120px, 1.2fr) 2fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+}
+
+.orcInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.orcValores {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.orcBarTrack {
+  height: 8px;
+  width: 100%;
+  background: var(--rule);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+
+.orcBarFill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  transition: width 0.2s ease;
+}
+
+.fillOk {
+  background: var(--income);
+}
+
+.fillAlerta {
+  background: var(--pending);
+}
+
+.fillEstourado {
+  background: var(--expense);
+}
+
+.orcPct {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.textOk {
+  color: var(--income);
+}
+
+.textAlerta {
+  color: var(--pending);
+}
+
+.textEstourado {
+  color: var(--expense);
+}
+
+@media (max-width: 900px) {
+  .orcItem {
+    grid-template-columns: 14px 1fr auto;
+    row-gap: 8px;
+  }
+}
+
 .erro {
   font-size: 12px;
   color: var(--expense);

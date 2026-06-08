@@ -7,6 +7,7 @@ import { CategoriaPieChart } from './components/CategoriaPieChart'
 import { CategoriaRanking } from './components/CategoriaRanking'
 import { EvolucaoCategoriaChart } from './components/EvolucaoCategoriaChart'
 import { EvolucaoLineChart } from './components/EvolucaoLineChart'
+import { OrcamentoPanel } from './components/OrcamentoPanel'
 import { useEvolucaoCategoria } from './hooks/use-evolucao-categoria'
 import { useEvolucaoSaldo } from './hooks/use-evolucao-saldo'
 import { useTotaisCategoria } from './hooks/use-totais-categoria'
@@ -94,6 +95,13 @@ export default function RelatoriosPage() {
               <CategoriaRanking dados={totais} />
             </div>
           )}
+        </Panel>
+
+        <Panel
+          title="Orçamento por categoria"
+          meta="Defina um limite mensal por categoria e acompanhe o quanto já foi gasto"
+        >
+          <OrcamentoPanel mes={mes} categorias={categorias} />
         </Panel>
 
         <Panel

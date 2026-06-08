@@ -26,6 +26,7 @@ import { registerRendaHandlers } from './ipc/renda-handlers'
 import { registerRecebimentoHandlers } from './ipc/recebimento-handlers'
 import { registerVisaoMensalHandlers } from './ipc/visao-mensal-handlers'
 import { registerRelatorioHandlers } from './ipc/relatorio-handlers'
+import { registerOrcamentoHandlers } from './ipc/orcamento-handlers'
 
 let db: Database | null = null
 let mainWindow: BrowserWindow | null = null
@@ -352,6 +353,7 @@ if (!obteveLock) {
       registerRecebimentoHandlers(db, ipcMain)
       registerVisaoMensalHandlers(db, ipcMain)
       registerRelatorioHandlers(db, ipcMain)
+      registerOrcamentoHandlers(db, ipcMain)
       construirMenuApp()
       createWindow()
 

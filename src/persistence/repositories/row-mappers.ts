@@ -14,6 +14,7 @@ import type { Cartao } from '../../domain/entities/cartao'
 import type { Categoria, TipoCategoria } from '../../domain/entities/categoria'
 import type { Despesa, FormaPagamento, TipoDespesa } from '../../domain/entities/despesa'
 import type { Fatura, StatusFatura } from '../../domain/entities/fatura'
+import type { Orcamento } from '../../domain/entities/orcamento'
 import type { Parcela, StatusParcela } from '../../domain/entities/parcela'
 import type { Recebimento, StatusRecebimento } from '../../domain/entities/recebimento'
 import type { Renda, TipoRenda } from '../../domain/entities/renda'
@@ -223,6 +224,28 @@ export function mapRecebimento(row: RecebimentoRow): Recebimento {
     dataEsperada: row.data_esperada,
     dataRecebida: row.data_recebida,
     status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }
+}
+
+// ────── Orcamento ────────────────────────────────────────────────
+
+export type OrcamentoRow = {
+  id: number
+  categoria_id: number
+  mes_referencia: string | null
+  valor_limite_centavos: number
+  created_at: string
+  updated_at: string
+}
+
+export function mapOrcamento(row: OrcamentoRow): Orcamento {
+  return {
+    id: row.id,
+    categoriaId: row.categoria_id,
+    mesReferencia: row.mes_referencia,
+    valorLimiteCentavos: row.valor_limite_centavos,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
