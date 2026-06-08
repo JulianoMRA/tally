@@ -73,3 +73,9 @@ export const RELATORIO_IPC_CHANNELS = {
   evolucaoSaldo: 'relatorio:evolucaoSaldo',
   evolucaoCategoria: 'relatorio:evolucaoCategoria'
 } as const
+
+export const ORCAMENTO_IPC_CHANNELS = {
+  definirLimite: 'orcamento:definir-limite',
+  removerLimite: 'orcamento:remover-limite',
+  listarProgresso: 'orcamento:listar-progresso'
+} as const
