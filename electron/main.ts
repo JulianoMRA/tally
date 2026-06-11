@@ -36,12 +36,17 @@ let isShuttingDown = false
 
 // TALLY_USER_DATA permite redirecionar o diretório de dados para uma pasta
 // isolada — usado pelos testes E2E para nunca tocar na base real do usuário.
+// Aplicado no topo do módulo, ANTES do requestSingleInstanceLock: o lock do
+// Electron é por diretório userData, então instâncias E2E (cada uma com seu
+// diretório isolado) não competem entre si nem com o app real — pré-requisito
+// para specs Playwright em paralelo.
+const userDataOverride = process.env.TALLY_USER_DATA
+if (userDataOverride) {
+  app.setPath('userData', userDataOverride)
+}
+
 function resolveDbPath(): string {
-  const override = process.env.TALLY_USER_DATA
-  if (override) {
-    app.setPath('userData', override)
-  }
-  const userDataDir = override ?? app.getPath('userData')
+  const userDataDir = app.getPath('userData')
   mkdirSync(userDataDir, { recursive: true })
   return join(userDataDir, 'tally.db')
 }
