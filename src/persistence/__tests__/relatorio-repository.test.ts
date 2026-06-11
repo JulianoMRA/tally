@@ -122,6 +122,25 @@ describe('RelatorioRepository.evolucaoSaldoMensal (RF-VIS-05)', () => {
     repo = new RelatorioRepository(db)
   })
 
+  it('é somente leitura: não fecha faturas vencidas nem cria parcelas de horizonte', () => {
+    const cartaoId = inserirCartao(db, 'Inter')
+    db.prepare(
+      `INSERT INTO fatura (cartao_id, mes_referencia, data_fechamento, data_vencimento, status)
+       VALUES (?, '2000-01', '2000-01-05', '2000-01-12', 'Aberta')`
+    ).run(cartaoId)
+    const parcelasAntes = (db.prepare('SELECT COUNT(*) AS n FROM parcela').get() as { n: number }).n
+
+    repo.evolucaoSaldoMensal('2000-01', 3)
+
+    const fatura = db
+      .prepare("SELECT status FROM fatura WHERE mes_referencia = '2000-01'")
+      .get() as { status: string }
+    expect(fatura.status).toBe('Aberta')
+    const parcelasDepois = (db.prepare('SELECT COUNT(*) AS n FROM parcela').get() as { n: number })
+      .n
+    expect(parcelasDepois).toBe(parcelasAntes)
+  })
+
   it('gera N meses com zeros quando não há dados', () => {
     const r = repo.evolucaoSaldoMensal('2026-06', 6)
     expect(r).toHaveLength(6)
