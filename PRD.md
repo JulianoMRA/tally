@@ -111,7 +111,7 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - **RF-REN-01** — Cadastrar fonte de renda com nome, tipo (Avulsa ou Recorrente), valor padrão, dia esperado de recebimento (se recorrente) e flag ativo.
 - **RF-REN-02** — Renda recorrente gera recebimentos esperados para os próximos N meses (configurável, default 12).
 - **RF-REN-03** — Marcar recebimento como recebido, com data efetiva.
-- **RF-REN-04** — Cadastrar recebimento avulso (freela, presente, etc.) sem fonte recorrente vinculada.
+- **RF-REN-04** — Cadastrar recebimento avulso (freela, presente, etc.) sem fonte recorrente vinculada. Internamente cria uma fonte Avulsa com o mesmo nome; excluir o último recebimento dessa fonte exclui a fonte junto (sem órfãs na lista de rendas).
 - **RF-REN-05** — Editar valor padrão da fonte recorrente afeta recebimentos futuros ainda não recebidos.
 - **RF-REN-06** — Editar fonte de renda: nome, valor padrão e (Recorrente) dia esperado. Mudar dia esperado recalcula `data_esperada` dos recebimentos Esperado, clampando ao último dia de meses curtos. Recebidos preservam.
 
@@ -218,8 +218,9 @@ Ao cadastrar despesa parcelada com `total_parcelas = N` e parcela inicial = `K` 
 
 Ao adiantar M parcelas de uma despesa:
 
-- Identifica as M parcelas pendentes mais futuras (maior numero).
-- Move o `fatura_id` dessas parcelas para a fatura de destino (default: fatura aberta corrente do mesmo cartão).
+- Adiantamento é exclusivo de despesa Parcelada de crédito (Única e Assinatura não adiantam).
+- Identifica as M parcelas pendentes mais futuras (maior numero). Parcelas Paga ou em fatura Fechada/Paga não são elegíveis.
+- Move o `fatura_id` dessas parcelas para a fatura de destino (default: fatura aberta corrente do mesmo cartão). A fatura de destino deve estar Aberta.
 - Mantém a numeração original.
 - Recalcula totais das faturas afetadas (origem e destino).
 
@@ -234,7 +235,7 @@ Despesa do tipo Assinatura gera ocorrências mês a mês conforme o tempo avanç
 ### RN-06 — Ciclo de vida da fatura
 
 - `Aberta`: data atual < `data_fechamento`. Aceita novas parcelas.
-- `Fechada`: `data_fechamento <= data atual < data_vencimento` ou usuário fechou manualmente. Não aceita novas parcelas exceto via adiantamento explícito. Parcelas dentro dela não recebem redistribuição de valor nem mudança de data, e a despesa correspondente não pode ser excluída.
+- `Fechada`: `data_fechamento <= data atual < data_vencimento` ou usuário fechou manualmente. Não aceita novas parcelas (nem como destino de adiantamento). Parcelas dentro dela não recebem redistribuição de valor nem mudança de data, e a despesa correspondente não pode ser excluída.
 - `Paga`: usuário registrou pagamento. Imutável exceto via reabertura.
 
 Pagar a fatura marca todas as parcelas dela como `Paga` (com a mesma data de pagamento); reabrir reverte as parcelas para `Pendente`. É essa sincronização que arma os bloqueios de RF-DES-09/10.
