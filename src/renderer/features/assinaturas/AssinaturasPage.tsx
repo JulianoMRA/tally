@@ -5,6 +5,7 @@ import type { Despesa } from '@domain/entities/despesa'
 import { PageHead } from '../../components/layout/PageHead'
 import { Badge, Button, ConfirmDialog, EmptyState, Panel, useToast } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
+import { mensagemErro } from '../../lib/mensagem-erro'
 import { useAssinaturas } from './hooks/use-assinaturas'
 import { ReajustarValorModal } from './ReajustarValorModal'
 import styles from './assinaturas.module.css'
@@ -35,7 +36,7 @@ export default function AssinaturasPage() {
       toast.show(`"${assinatura.descricao}" cancelada.`, 'success')
       await recarregar()
     } catch (e) {
-      toast.show(e instanceof Error ? e.message : 'Erro ao cancelar assinatura.', 'error')
+      toast.show(mensagemErro(e, 'Erro ao cancelar assinatura.'), 'error')
     } finally {
       setConfirmacao(null)
     }
@@ -47,7 +48,7 @@ export default function AssinaturasPage() {
       toast.show(`"${assinatura.descricao}" excluída.`, 'success')
       await recarregar()
     } catch (e) {
-      toast.show(e instanceof Error ? e.message : 'Erro ao excluir assinatura.', 'error')
+      toast.show(mensagemErro(e, 'Erro ao excluir assinatura.'), 'error')
     } finally {
       setConfirmacao(null)
     }
