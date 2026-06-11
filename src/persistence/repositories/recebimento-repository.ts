@@ -116,9 +116,32 @@ export class RecebimentoRepository implements Repository {
     return recebimento
   }
 
+  /**
+   * RF-REN — exclui o recebimento e, quando ele era o último de uma renda
+   * Avulsa, exclui a renda junto. `criarAvulsoCompleto` cria a renda Avulsa
+   * implicitamente; sem esta limpeza ela ficaria órfã na lista de fontes.
+   * Rendas Recorrentes nunca são excluídas por aqui.
+   */
   excluir(recebimentoId: number): void {
-    const info = this.db.prepare('DELETE FROM recebimento WHERE id = ?').run(recebimentoId)
-    if (info.changes === 0) throw new Error(`Recebimento #${recebimentoId} não encontrado`)
+    const recebimento = this.findById(recebimentoId)
+    if (!recebimento) throw new Error(`Recebimento #${recebimentoId} não encontrado`)
+
+    this.db.transaction(() => {
+      this.db.prepare('DELETE FROM recebimento WHERE id = ?').run(recebimentoId)
+
+      if (recebimento.rendaId === null) return
+      const renda = this.db
+        .prepare('SELECT tipo FROM renda WHERE id = ?')
+        .get(recebimento.rendaId) as { tipo: string } | undefined
+      if (renda?.tipo !== 'Avulsa') return
+
+      const restantes = this.db
+        .prepare('SELECT COUNT(*) AS n FROM recebimento WHERE renda_id = ?')
+        .get(recebimento.rendaId) as { n: number }
+      if (restantes.n === 0) {
+        this.db.prepare('DELETE FROM renda WHERE id = ?').run(recebimento.rendaId)
+      }
+    })()
   }
 
   totaisPorMes(mesReferencia: string): {

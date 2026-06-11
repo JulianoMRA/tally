@@ -18,9 +18,14 @@ export function selecionarParcelasParaAdiantar(
   if (faturaDestino.status.kind === 'Paga') {
     throw new Error('Não é possível adiantar parcelas para uma fatura já paga')
   }
+  // RN-06: fatura Fechada é imutável — receber parcelas alteraria seu total.
+  if (faturaDestino.status.kind === 'Fechada') {
+    throw new Error('Não é possível adiantar parcelas para uma fatura fechada')
+  }
 
   const elegiveis = parcelas
     .filter((p) => {
+      if (p.status !== 'Pendente') return false
       if (p.faturaId === faturaDestino.id) return false
       if (p.faturaId === null) return true
       const fat = faturasIndex.get(p.faturaId)

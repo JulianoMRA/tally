@@ -4,6 +4,7 @@ import type { Fatura } from '../../domain/entities/fatura'
 import type { Parcela } from '../../domain/entities/parcela'
 import type { Repository } from './types'
 import { CartaoRepository } from './cartao-repository'
+import { CategoriaRepository } from './categoria-repository'
 import { FaturaRepository } from './fatura-repository'
 import { ParcelaRepository } from './parcela-repository'
 import { mapDespesa, mapParcela, type DespesaRow, type ParcelaRow } from './row-mappers'
@@ -106,6 +107,7 @@ export class DespesaRepository implements Repository {
 
     const cartao = cartaoRepo.findById(input.cartaoId)
     if (!cartao) throw new Error(`Cartão #${input.cartaoId} não encontrado`)
+    this.validarCategoria(input.categoriaId)
 
     return this.db.transaction(() => {
       const info = this.db
@@ -149,6 +151,7 @@ export class DespesaRepository implements Repository {
 
     const cartao = cartaoRepo.findById(input.cartaoId)
     if (!cartao) throw new Error(`Cartão #${input.cartaoId} não encontrado`)
+    this.validarCategoria(input.categoriaId)
 
     const planejadas = gerarParcelas({
       cartao,
@@ -203,6 +206,7 @@ export class DespesaRepository implements Repository {
 
     const cartao = cartaoRepo.findById(input.cartaoId)
     if (!cartao) throw new Error(`Cartão #${input.cartaoId} não encontrado`)
+    this.validarCategoria(input.categoriaId)
 
     const planejadas = gerarParcelas({
       cartao,
@@ -258,6 +262,7 @@ export class DespesaRepository implements Repository {
 
     const cartao = cartaoRepo.findById(input.cartaoId)
     if (!cartao) throw new Error(`Cartão #${input.cartaoId} não encontrado`)
+    this.validarCategoria(input.categoriaId)
 
     const planejadas = gerarOcorrenciasAssinatura({
       cartao,
@@ -388,6 +393,7 @@ export class DespesaRepository implements Repository {
 
   criarUnicaForaCartao(input: CriarDespesaUnicaForaCartaoInput): ResultadoCriarUnicaForaCartao {
     const parcelaRepo = new ParcelaRepository(this.db)
+    this.validarCategoria(input.categoriaId)
 
     return this.db.transaction(() => {
       const info = this.db
@@ -513,6 +519,7 @@ export class DespesaRepository implements Repository {
     if (despesaRow.tipo === 'Assinatura') {
       throw new Error(`Use reajustarValorMensalAssinatura para assinaturas.`)
     }
+    this.validarCategoria(input.categoriaId)
 
     const parcelaRepo = new ParcelaRepository(this.db)
     const parcelas = parcelaRepo.listarPorDespesa(despesaId)
@@ -702,6 +709,16 @@ export class DespesaRepository implements Repository {
 
       return { parcelasCriadas, faturasCriadas }
     })()
+  }
+
+  /**
+   * Valida a existência da categoria antes do INSERT/UPDATE — a FK RESTRICT
+   * pegaria de qualquer forma, mas com "FOREIGN KEY constraint failed" em vez
+   * de uma mensagem acionável.
+   */
+  private validarCategoria(categoriaId: number): void {
+    const categoria = new CategoriaRepository(this.db).findById(categoriaId)
+    if (!categoria) throw new Error(`Categoria #${categoriaId} não encontrada`)
   }
 
   /** Anexa o status da fatura de cada parcela (null para fora de cartão). */

@@ -32,14 +32,15 @@ function inserirDespesa(
   categoriaId: number,
   cartaoId: number,
   dataCompra: string,
-  valorCentavos: number
+  valorCentavos: number,
+  tipo: 'Unica' | 'Parcelada' | 'Assinatura' = 'Unica'
 ): number {
   const info = db
     .prepare(
       `INSERT INTO despesa (descricao, categoria_id, tipo, forma_pagamento, cartao_id, valor_centavos, data_compra)
-       VALUES ('Teste', ?, 'Unica', 'Credito', ?, ?, ?)`
+       VALUES ('Teste', ?, ?, 'Credito', ?, ?, ?)`
     )
-    .run(categoriaId, cartaoId, valorCentavos, dataCompra)
+    .run(categoriaId, tipo, cartaoId, valorCentavos, dataCompra)
   return Number(info.lastInsertRowid)
 }
 
@@ -165,7 +166,7 @@ describe('ParcelaRepository', () => {
       const f2 = inserirFatura(db, cartaoId, '2026-06')
       const f3 = inserirFatura(db, cartaoId, '2026-07')
       const destino = inserirFatura(db, cartaoId, '2026-04')
-      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-05-01', 3000)
+      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-05-01', 3000, 'Parcelada')
 
       repo.criar({
         despesaId,
@@ -209,7 +210,7 @@ describe('ParcelaRepository', () => {
       const f1 = inserirFatura(db, cartaoId, '2026-05')
       const f2 = inserirFatura(db, cartaoId, '2026-06')
       const destino = inserirFatura(db, cartaoId, '2026-04')
-      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-05-01', 2000)
+      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-05-01', 2000, 'Parcelada')
 
       repo.criar({
         despesaId,
@@ -241,7 +242,7 @@ describe('ParcelaRepository', () => {
       const f1 = inserirFatura(db, cartaoId, '2026-05')
       const f2 = inserirFatura(db, cartaoId, '2026-06')
       const destino = inserirFatura(db, cartaoId, '2026-04')
-      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-05-01', 2000)
+      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-05-01', 2000, 'Parcelada')
 
       repo.criar({
         despesaId,
@@ -264,6 +265,57 @@ describe('ParcelaRepository', () => {
 
       expect(resultado.faturasAfetadas).toContain(f2)
       expect(resultado.faturasAfetadas).toContain(destino)
+    })
+
+    it('lança erro para despesa Unica (adiantamento é exclusivo de Parcelada)', () => {
+      const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+      const catId = inserirCategoria(db)
+      const f1 = inserirFatura(db, cartaoId, '2026-05')
+      const destino = inserirFatura(db, cartaoId, '2026-04')
+      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-05-01', 1000, 'Unica')
+
+      repo.criar({
+        despesaId,
+        faturaId: f1,
+        numero: 1,
+        total: 1,
+        valorCentavos: 1000,
+        dataReferencia: '2026-05-01'
+      })
+
+      expect(() => repo.adiantar({ despesaId, quantidade: 1, faturaDestinoId: destino })).toThrow(
+        /parcelada/i
+      )
+    })
+
+    it('lança erro para despesa Assinatura', () => {
+      const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+      const catId = inserirCategoria(db)
+      const f1 = inserirFatura(db, cartaoId, '2026-05')
+      const destino = inserirFatura(db, cartaoId, '2026-04')
+      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-05-01', 1000, 'Assinatura')
+
+      repo.criar({
+        despesaId,
+        faturaId: f1,
+        numero: 1,
+        total: null,
+        valorCentavos: 1000,
+        dataReferencia: '2026-05-01'
+      })
+
+      expect(() => repo.adiantar({ despesaId, quantidade: 1, faturaDestinoId: destino })).toThrow(
+        /parcelada/i
+      )
+    })
+
+    it('lança erro para despesa inexistente', () => {
+      const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+      const destino = inserirFatura(db, cartaoId, '2026-04')
+
+      expect(() =>
+        repo.adiantar({ despesaId: 9999, quantidade: 1, faturaDestinoId: destino })
+      ).toThrow(/não encontrada/i)
     })
   })
 

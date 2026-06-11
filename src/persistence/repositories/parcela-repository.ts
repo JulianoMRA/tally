@@ -56,6 +56,16 @@ export class ParcelaRepository implements Repository {
     movidas: Parcela[]
     faturasAfetadas: number[]
   } {
+    const despesaRow = this.db
+      .prepare('SELECT tipo, forma_pagamento FROM despesa WHERE id = ?')
+      .get(input.despesaId) as { tipo: string; forma_pagamento: string } | undefined
+    if (!despesaRow) throw new Error(`Despesa #${input.despesaId} não encontrada`)
+    if (despesaRow.tipo !== 'Parcelada' || despesaRow.forma_pagamento !== 'Credito') {
+      throw new Error(
+        `Adiantamento é exclusivo de despesa Parcelada de crédito (despesa #${input.despesaId} é ${despesaRow.tipo}/${despesaRow.forma_pagamento}).`
+      )
+    }
+
     const faturaDestinoRow = this.db
       .prepare('SELECT * FROM fatura WHERE id = ?')
       .get(input.faturaDestinoId) as FaturaRow | undefined

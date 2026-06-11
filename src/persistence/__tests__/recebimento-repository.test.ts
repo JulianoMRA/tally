@@ -150,6 +150,51 @@ describe('RecebimentoRepository', () => {
     it('lança erro para id inexistente', () => {
       expect(() => repo.excluir(9999)).toThrow()
     })
+
+    it('excluir o último recebimento de renda Avulsa também exclui a renda (sem órfã)', () => {
+      const r = repo.criarAvulsoCompleto({
+        nome: 'Freela órfã',
+        valorCentavos: 50000,
+        dataEsperada: '2026-06-10',
+        dataRecebida: '2026-06-12'
+      })
+
+      repo.excluir(r.id)
+
+      expect(repo.findById(r.id)).toBeNull()
+      expect(rendaRepo.findById(r.rendaId!)).toBeNull()
+    })
+
+    it('excluir recebimento de renda Avulsa que ainda tem outros recebimentos preserva a renda', () => {
+      const r1 = repo.criarAvulsoCompleto({
+        nome: 'Freela duplo',
+        valorCentavos: 50000,
+        dataEsperada: '2026-06-10'
+      })
+      repo.criar({
+        rendaId: r1.rendaId,
+        valorCentavos: 30000,
+        dataEsperada: '2026-07-10'
+      })
+
+      repo.excluir(r1.id)
+
+      expect(rendaRepo.findById(r1.rendaId!)).not.toBeNull()
+    })
+
+    it('excluir recebimento de renda Recorrente preserva a renda mesmo sem outros recebimentos', () => {
+      const { renda, recebimentos } = rendaRepo.criarRecorrente({
+        nome: 'Bolsa',
+        valorPadraoCentavos: 100000,
+        diaEsperado: 5,
+        dataInicio: '2026-06-01'
+      })
+      expect(recebimentos.length).toBeGreaterThan(0)
+
+      for (const r of recebimentos) repo.excluir(r.id)
+
+      expect(rendaRepo.findById(renda.id)).not.toBeNull()
+    })
   })
 
   describe('totaisPorMes', () => {
