@@ -17,13 +17,24 @@ const HORIZONTE_PROJECAO_MAX_MESES = 24
 export class VisaoMensalRepository implements Repository {
   constructor(public readonly db: Database) {}
 
+  /**
+   * Visão do mês com os efeitos de manutenção: fecha faturas vencidas (RN-06)
+   * e estende o horizonte de assinaturas/recorrências (RN-04). É o caminho do
+   * IPC da tela de visão mensal — sem isso, só o boot fechava faturas e uma
+   * sessão longa exibia faturas Abertas já vencidas.
+   */
   detalhar(mesReferencia: string): VisaoMensalDetalhada {
-    // RN-06: auto-fechamento de faturas vencidas também ao consultar a visão
-    // mensal — sem isso, só o boot do app fechava faturas e uma sessão longa
-    // exibia faturas Abertas já vencidas.
     new FaturaRepository(this.db).fecharVencidas(hojeIsoLocal())
     this.estenderHorizonteSeNecessario(mesReferencia)
+    return this.detalharSomenteLeitura(mesReferencia)
+  }
 
+  /**
+   * Leitura pura do mês, sem nenhuma escrita. Usada pelos relatórios
+   * (evolução de saldo consulta vários meses — disparar manutenção a cada
+   * ponto da série seria escrita desnecessária em um caminho de leitura).
+   */
+  detalharSomenteLeitura(mesReferencia: string): VisaoMensalDetalhada {
     const despesaRepo = new DespesaRepository(this.db)
     const parcelaRepo = new ParcelaRepository(this.db)
     const recebimentoRepo = new RecebimentoRepository(this.db)

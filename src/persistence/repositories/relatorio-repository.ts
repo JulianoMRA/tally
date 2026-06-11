@@ -72,14 +72,15 @@ export class RelatorioRepository implements Repository {
 
   /**
    * RF-VIS-05 — evolução do saldo nos últimos N meses.
-   * Reusa VisaoMensalRepository.detalhar() para cada mês da série.
-   * Retorna ordem cronológica crescente.
+   * Reusa a leitura pura de VisaoMensalRepository para cada mês da série —
+   * relatório nunca dispara escrita (fechamento de fatura, extensão de
+   * horizonte). Retorna ordem cronológica crescente.
    */
   evolucaoSaldoMensal(mesFinal: string, meses: number): PontoEvolucaoSaldo[] {
     const visaoRepo = new VisaoMensalRepository(this.db)
     const serie = gerarSerieMensal(mesFinal, meses)
     return serie.map((mes) => {
-      const detalhe = visaoRepo.detalhar(mes)
+      const detalhe = visaoRepo.detalharSomenteLeitura(mes)
       const entradasCentavos = detalhe.totais.totalEntradasRecebidasCentavos
       const saidasCentavos = detalhe.totais.totalSaidasCentavos
       return {
