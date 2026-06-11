@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { hojeIsoLocal } from '@shared/datas-locais'
 import { Button, Field, Input } from '../../components/ui'
 import { useEscapeKey } from '../../hooks/use-escape-key'
 import styles from './rendas.module.css'
@@ -10,12 +11,8 @@ type Props = {
   onCancelar: () => void
 }
 
-function dataHoje(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
 export function MarcarRecebidoModal({ descricao, valorReais, onConfirmar, onCancelar }: Props) {
-  const [data, setData] = useState(dataHoje)
+  const [data, setData] = useState(hojeIsoLocal)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   useEscapeKey(onCancelar)

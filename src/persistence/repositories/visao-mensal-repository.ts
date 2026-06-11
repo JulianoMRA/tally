@@ -4,7 +4,9 @@ import type { FaturaResumida, VisaoMensalDetalhada } from '../../shared/ipc/visa
 import type { Repository } from './types'
 import { calcularBalancoMensal } from '../../domain/services/calcular-balanco-mensal'
 import { diferencaEmMeses } from '../../domain/services/mes-referencia'
+import { hojeIsoLocal, mesAtualReferencia } from '../../shared/datas-locais'
 import { DespesaRepository } from './despesa-repository'
+import { FaturaRepository } from './fatura-repository'
 import { ParcelaRepository } from './parcela-repository'
 import { RecebimentoRepository } from './recebimento-repository'
 import { RendaRepository } from './renda-repository'
@@ -12,15 +14,14 @@ import { mapCartao, mapFatura, type CartaoRow, type FaturaRow } from './row-mapp
 
 const HORIZONTE_PROJECAO_MAX_MESES = 24
 
-function mesAtualReferencia(): string {
-  const hoje = new Date()
-  return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`
-}
-
 export class VisaoMensalRepository implements Repository {
   constructor(public readonly db: Database) {}
 
   detalhar(mesReferencia: string): VisaoMensalDetalhada {
+    // RN-06: auto-fechamento de faturas vencidas também ao consultar a visão
+    // mensal — sem isso, só o boot do app fechava faturas e uma sessão longa
+    // exibia faturas Abertas já vencidas.
+    new FaturaRepository(this.db).fecharVencidas(hojeIsoLocal())
     this.estenderHorizonteSeNecessario(mesReferencia)
 
     const despesaRepo = new DespesaRepository(this.db)

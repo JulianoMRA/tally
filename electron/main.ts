@@ -17,6 +17,7 @@ import { backupDatabase } from '../src/persistence/backup'
 import { runMigrations } from '../src/persistence/migrations/runner'
 import { DadosRepository } from '../src/persistence/repositories/dados-repository'
 import { exportPayloadSchema } from '../src/shared/ipc/dados'
+import { hojeIsoLocal } from '../src/shared/datas-locais'
 import { FaturaRepository } from '../src/persistence/repositories/fatura-repository'
 import { registerCartaoHandlers } from './ipc/cartao-handlers'
 import { registerCategoriaHandlers } from './ipc/categoria-handlers'
@@ -81,9 +82,9 @@ function inicializarBancoDeDados(): Database {
   }
   // RN-06: auto-fechamento de faturas vencidas no boot. Antes vivia em
   // FaturaRepository.list (mutate-on-read); foi extraido para cá para que
-  // SELECTs nunca disparem UPDATEs como efeito colateral.
-  const hoje = new Date().toISOString().slice(0, 10)
-  const fechadas = new FaturaRepository(database).fecharVencidas(hoje)
+  // SELECTs nunca disparem UPDATEs como efeito colateral. Data LOCAL — com
+  // toISOString (UTC) faturas fechavam ate 3h mais cedo em UTC-3.
+  const fechadas = new FaturaRepository(database).fecharVencidas(hojeIsoLocal())
   if (is.dev && fechadas > 0) {
     console.log(`[faturas] ${fechadas} fatura(s) Aberta vencidas → Fechada`)
   }
@@ -188,7 +189,7 @@ async function exportarDados(): Promise<void> {
   if (!db) return
   const win = janelaAtual()
   if (!win) return
-  const padrao = `tally-export-${new Date().toISOString().slice(0, 10)}.json`
+  const padrao = `tally-export-${hojeIsoLocal()}.json`
   const { canceled, filePath } = await dialog.showSaveDialog(win, {
     title: 'Exportar dados do Tally',
     defaultPath: padrao,

@@ -39,6 +39,32 @@ describe('VisaoMensalRepository.detalhar (RF-VIS-01/02 + RN-08)', () => {
     expect(result.totais.saldoProjetadoCentavos).toBe(0)
   })
 
+  it('RN-06: detalhar fecha faturas Abertas vencidas sem exigir reinício do app', () => {
+    const cartaoId = inserirCartao(db, 'Inter')
+    db.prepare(
+      `INSERT INTO fatura (cartao_id, mes_referencia, data_fechamento, data_vencimento, status)
+       VALUES (?, '2000-01', '2000-01-05', '2000-01-12', 'Aberta')`
+    ).run(cartaoId)
+
+    const result = repo.detalhar('2000-01')
+
+    expect(result.faturas).toHaveLength(1)
+    expect(result.faturas[0].fatura.status).toEqual({ kind: 'Fechada' })
+  })
+
+  it('RN-06: fatura com fechamento futuro permanece Aberta após detalhar', () => {
+    const cartaoId = inserirCartao(db, 'Inter')
+    db.prepare(
+      `INSERT INTO fatura (cartao_id, mes_referencia, data_fechamento, data_vencimento, status)
+       VALUES (?, '2999-01', '2999-01-05', '2999-01-12', 'Aberta')`
+    ).run(cartaoId)
+
+    const result = repo.detalhar('2999-01')
+
+    expect(result.faturas).toHaveLength(1)
+    expect(result.faturas[0].fatura.status).toEqual({ kind: 'Aberta' })
+  })
+
   it('consolida faturas + gastos fora cartão + recebimentos do mês', () => {
     const cartaoInter = inserirCartao(db, 'Inter', 5, 12)
     const cartaoNubank = inserirCartao(db, 'Nubank', 15, 22)
