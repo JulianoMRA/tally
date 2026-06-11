@@ -8,15 +8,20 @@ import type { Parcela } from '../entities/parcela'
  * `Math.floor(novoValorTotal / qtdPendentes)` centavos; o resto vai para a
  * última pendente (maior número).
  *
- * Devolve o array original com as pendentes atualizadas (mesma ordem).
+ * `elegiveis` (opcional) restringe a redistribuição a um subconjunto de ids —
+ * usado para travar parcelas em fatura Fechada/Paga (RN-06). Sem o conjunto,
+ * toda Pendente é elegível. Parcela Paga nunca é elegível, mesmo se listada.
+ *
+ * Devolve o array original com as elegíveis atualizadas (mesma ordem).
  * Não muta o input.
  *
- * @throws se `novoValorTotalCentavos < 0` ou se não houver parcela pendente
+ * @throws se `novoValorTotalCentavos < 0` ou se não houver parcela elegível
  *         quando `novoValorTotalCentavos > 0`.
  */
 export function recalcularParcelasPendentes(
   parcelas: readonly Parcela[],
-  novoValorTotalCentavos: number
+  novoValorTotalCentavos: number,
+  elegiveis?: ReadonlySet<number>
 ): Parcela[] {
   if (novoValorTotalCentavos < 0) {
     throw new Error(`novoValorTotalCentavos deve ser >= 0, recebido: ${novoValorTotalCentavos}`)
@@ -24,11 +29,13 @@ export function recalcularParcelasPendentes(
 
   const pendentesIndex = parcelas
     .map((p, i) => ({ p, i }))
-    .filter(({ p }) => p.status === 'Pendente')
+    .filter(({ p }) => p.status === 'Pendente' && (elegiveis === undefined || elegiveis.has(p.id)))
 
   if (pendentesIndex.length === 0) {
     if (novoValorTotalCentavos > 0) {
-      throw new Error('Sem parcelas pendentes para receber o novo valor.')
+      throw new Error(
+        'Sem parcelas pendentes em fatura aberta para receber o novo valor. Edição de valor bloqueada.'
+      )
     }
     return [...parcelas]
   }
