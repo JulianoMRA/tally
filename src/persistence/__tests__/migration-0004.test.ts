@@ -56,6 +56,6 @@ describe('migration 0004_normaliza_data_referencia', () => {
     runMigrations(db)
     const second = runMigrations(db)
     expect(second.applied).toEqual([])
-    expect(second.skipped).toHaveLength(5)
+    expect(second.skipped).toHaveLength(6)
   })
 })

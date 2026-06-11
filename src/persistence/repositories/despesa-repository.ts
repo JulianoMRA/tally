@@ -10,7 +10,12 @@ import { mapDespesa, mapParcela, type DespesaRow, type ParcelaRow } from './row-
 import { calcularExtensaoNecessaria } from '../../domain/services/calcular-extensao-horizonte'
 import { gerarParcelas } from '../../domain/services/gerar-parcelas'
 import { gerarOcorrenciasAssinatura } from '../../domain/services/gerar-ocorrencias-assinatura'
-import { podeDeletarDespesa, podeEditarDespesa } from '../../domain/services/regras-despesa'
+import {
+  parcelasElegiveisParaRecalculo,
+  podeDeletarDespesa,
+  podeEditarDespesa,
+  type ParcelaComStatusFatura
+} from '../../domain/services/regras-despesa'
 import { recalcularParcelasPendentes } from '../../domain/services/recalcular-parcelas'
 
 const HORIZONTE_ASSINATURA_MESES = 12
@@ -454,10 +459,15 @@ export class DespesaRepository implements Repository {
     const parcelaRepo = new ParcelaRepository(this.db)
     const parcelas = parcelaRepo.listarPorDespesa(despesaId)
 
-    const regra = podeDeletarDespesa(parcelas)
+    const regra = podeDeletarDespesa(this.comStatusFatura(parcelas))
     if (!regra.ok) {
+      if (regra.motivo === 'has-parcela-paga') {
+        throw new Error(
+          `Despesa #${despesaId} possui parcela(s) paga(s): ${regra.parcelasPagas.join(', ')}. Exclusão bloqueada.`
+        )
+      }
       throw new Error(
-        `Despesa #${despesaId} possui parcela(s) paga(s): ${regra.parcelasPagas.join(', ')}. Exclusão bloqueada.`
+        `Despesa #${despesaId} possui parcela(s) em fatura fechada ou paga: ${regra.parcelasBloqueadas.join(', ')}. Exclusão bloqueada.`
       )
     }
 
@@ -506,7 +516,8 @@ export class DespesaRepository implements Repository {
 
     const parcelaRepo = new ParcelaRepository(this.db)
     const parcelas = parcelaRepo.listarPorDespesa(despesaId)
-    const regra = podeEditarDespesa(parcelas)
+    const itens = this.comStatusFatura(parcelas)
+    const regra = podeEditarDespesa(itens)
     if (!regra.ok) {
       throw new Error(
         `Despesa #${despesaId} possui parcela(s) paga(s): ${regra.parcelasPagas.join(', ')}. Edição bloqueada.`
@@ -521,6 +532,10 @@ export class DespesaRepository implements Repository {
         `Edição de data não suportada para despesas Parceladas (exclua e recadastre).`
       )
     }
+
+    // RN-06: somente parcelas em fatura Aberta (ou sem fatura) recebem
+    // redistribuição de valor ou mudança de data.
+    const elegiveis = parcelasElegiveisParaRecalculo(itens)
 
     return this.db.transaction(() => {
       this.db
@@ -539,6 +554,12 @@ export class DespesaRepository implements Repository {
 
       if (valorMudou) {
         if (despesaRow.tipo === 'Unica') {
+          const unica = parcelas[0]
+          if (!unica || !elegiveis.has(unica.id)) {
+            throw new Error(
+              `Parcela da despesa #${despesaId} não está em fatura aberta. Edição de valor bloqueada.`
+            )
+          }
           this.db
             .prepare(
               `UPDATE parcela SET valor_centavos = ?, updated_at = datetime('now') WHERE despesa_id = ?`
@@ -546,7 +567,7 @@ export class DespesaRepository implements Repository {
             .run(input.valorCentavos, despesaId)
         } else {
           // Parcelada
-          const novas = recalcularParcelasPendentes(parcelas, input.valorCentavos)
+          const novas = recalcularParcelasPendentes(parcelas, input.valorCentavos, elegiveis)
           const upd = this.db.prepare(
             `UPDATE parcela SET valor_centavos = ?, updated_at = datetime('now') WHERE id = ?`
           )
@@ -558,19 +579,35 @@ export class DespesaRepository implements Repository {
         }
       }
 
-      if (dataMudou && despesaRow.tipo === 'Unica' && despesaRow.cartao_id !== null) {
-        // Recalcula fatura de destino via RN-01
-        const cartaoRepo = new CartaoRepository(this.db)
-        const cartao = cartaoRepo.findById(despesaRow.cartao_id)
-        if (!cartao) throw new Error(`Cartão #${despesaRow.cartao_id} não encontrado`)
-        const faturaRepo = new FaturaRepository(this.db)
-        const novaFatura = faturaRepo.upsertParaCompra(cartao, input.dataCompra!)
-        // Move a unica parcela — data_referencia sempre YYYY-MM-DD (Slice 15)
-        this.db
-          .prepare(
-            `UPDATE parcela SET fatura_id = ?, data_referencia = ?, updated_at = datetime('now') WHERE despesa_id = ?`
+      if (dataMudou && despesaRow.tipo === 'Unica') {
+        const unica = parcelas[0]
+        if (!unica || !elegiveis.has(unica.id)) {
+          throw new Error(
+            `Parcela da despesa #${despesaId} não está em fatura aberta. Edição de data bloqueada.`
           )
-          .run(novaFatura.id, input.dataCompra!, despesaId)
+        }
+        if (despesaRow.cartao_id !== null) {
+          // Recalcula fatura de destino via RN-01
+          const cartaoRepo = new CartaoRepository(this.db)
+          const cartao = cartaoRepo.findById(despesaRow.cartao_id)
+          if (!cartao) throw new Error(`Cartão #${despesaRow.cartao_id} não encontrado`)
+          const faturaRepo = new FaturaRepository(this.db)
+          const novaFatura = faturaRepo.upsertParaCompra(cartao, input.dataCompra!)
+          // Move a unica parcela — data_referencia sempre YYYY-MM-DD (Slice 15)
+          this.db
+            .prepare(
+              `UPDATE parcela SET fatura_id = ?, data_referencia = ?, updated_at = datetime('now') WHERE despesa_id = ?`
+            )
+            .run(novaFatura.id, input.dataCompra!, despesaId)
+        } else {
+          // Fora de cartão: mantém data_referencia da parcela alinhada à
+          // data_compra (relatórios agrupam pela parcela, não pela despesa).
+          this.db
+            .prepare(
+              `UPDATE parcela SET data_referencia = ?, updated_at = datetime('now') WHERE despesa_id = ?`
+            )
+            .run(input.dataCompra!, despesaId)
+        }
       }
 
       const atualizadaRow = this.db
@@ -665,5 +702,18 @@ export class DespesaRepository implements Repository {
 
       return { parcelasCriadas, faturasCriadas }
     })()
+  }
+
+  /** Anexa o status da fatura de cada parcela (null para fora de cartão). */
+  private comStatusFatura(parcelas: readonly Parcela[]): ParcelaComStatusFatura[] {
+    const faturaRepo = new FaturaRepository(this.db)
+    const idsFatura = [
+      ...new Set(parcelas.map((p) => p.faturaId).filter((id): id is number => id !== null))
+    ]
+    const statusPorId = faturaRepo.statusPorIds(idsFatura)
+    return parcelas.map((parcela) => ({
+      parcela,
+      statusFatura: parcela.faturaId === null ? null : (statusPorId.get(parcela.faturaId) ?? null)
+    }))
   }
 }

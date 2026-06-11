@@ -2,7 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import type { Database } from '../database'
 import { openInMemoryDatabase } from '../database'
 import { runMigrations } from '../migrations/runner'
+import { DespesaRepository } from '../repositories/despesa-repository'
 import { FaturaRepository } from '../repositories/fatura-repository'
+import { ParcelaRepository } from '../repositories/parcela-repository'
 
 type CartaoFixture = { id: number; diaFechamento: number; diaVencimento: number }
 
@@ -105,5 +107,88 @@ describe('FaturaRepository.upsertParaCompra', () => {
     repo.upsertParaCompra(nubank, '2026-06-10')
 
     expect(repo.list()).toHaveLength(2)
+  })
+})
+
+describe('FaturaRepository — sincronização parcela <-> fatura (RN-06)', () => {
+  let db: Database
+  let repo: FaturaRepository
+  let despesaRepo: DespesaRepository
+  let parcelaRepo: ParcelaRepository
+  let categoriaId: number
+
+  beforeEach(() => {
+    db = openInMemoryDatabase()
+    runMigrations(db)
+    repo = new FaturaRepository(db)
+    despesaRepo = new DespesaRepository(db)
+    parcelaRepo = new ParcelaRepository(db)
+    categoriaId = Number(
+      db
+        .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Mercado', 'Despesa', '#aaa')")
+        .run().lastInsertRowid
+    )
+  })
+
+  function criarFaturaComParcelas(): { faturaId: number; despesaId: number } {
+    const cartao = inserirCartao(db, 'Inter', 5, 12)
+    const r = despesaRepo.criarParceladaCredito({
+      descricao: 'Geladeira',
+      categoriaId,
+      cartaoId: cartao.id,
+      totalParcelas: 3,
+      valorTotalCentavos: 3000,
+      dataCompra: '2026-06-03'
+    })
+    const faturaId = r.parcelas[0].faturaId
+    if (faturaId === null) throw new Error('setup: parcela de crédito sem fatura')
+    return { faturaId, despesaId: r.despesa.id }
+  }
+
+  it('pagar marca as parcelas Pendente da fatura como Paga com a data do pagamento', () => {
+    const { faturaId } = criarFaturaComParcelas()
+    repo.fechar(faturaId)
+
+    repo.pagar(faturaId, '2026-06-12')
+
+    const parcelas = parcelaRepo.listarPorFatura(faturaId)
+    expect(parcelas).toHaveLength(1)
+    expect(parcelas[0].status).toBe('Paga')
+    expect(parcelas[0].dataPagamento).toBe('2026-06-12')
+  })
+
+  it('pagar não toca parcelas de outras faturas da mesma despesa', () => {
+    const { faturaId, despesaId } = criarFaturaComParcelas()
+    repo.fechar(faturaId)
+
+    repo.pagar(faturaId, '2026-06-12')
+
+    const outras = parcelaRepo.listarPorDespesa(despesaId).filter((p) => p.faturaId !== faturaId)
+    expect(outras).toHaveLength(2)
+    for (const p of outras) {
+      expect(p.status).toBe('Pendente')
+      expect(p.dataPagamento).toBeNull()
+    }
+  })
+
+  it('reabrir reverte as parcelas da fatura para Pendente e limpa data_pagamento', () => {
+    const { faturaId } = criarFaturaComParcelas()
+    repo.fechar(faturaId)
+    repo.pagar(faturaId, '2026-06-12')
+
+    repo.reabrir(faturaId)
+
+    const parcelas = parcelaRepo.listarPorFatura(faturaId)
+    expect(parcelas[0].status).toBe('Pendente')
+    expect(parcelas[0].dataPagamento).toBeNull()
+  })
+
+  it('fechar não altera o status das parcelas', () => {
+    const { faturaId } = criarFaturaComParcelas()
+
+    repo.fechar(faturaId)
+
+    const parcelas = parcelaRepo.listarPorFatura(faturaId)
+    expect(parcelas[0].status).toBe('Pendente')
   })
 })

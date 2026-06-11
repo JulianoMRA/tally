@@ -172,7 +172,8 @@ describe('migration 0001_initial_schema', () => {
       '0002_simplificacao_pre_slice_13',
       '0003_drop_colunas_mortas',
       '0004_normaliza_data_referencia',
-      '0005_orcamento'
+      '0005_orcamento',
+      '0006_backfill_parcelas_pagas'
     ])
   })
 })

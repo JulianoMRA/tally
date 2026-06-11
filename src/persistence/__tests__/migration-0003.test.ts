@@ -82,12 +82,13 @@ describe('migration 0003_drop_colunas_mortas', () => {
       '0002_simplificacao_pre_slice_13',
       '0003_drop_colunas_mortas',
       '0004_normaliza_data_referencia',
-      '0005_orcamento'
+      '0005_orcamento',
+      '0006_backfill_parcelas_pagas'
     ])
 
     const second = runMigrations(db, files)
     expect(second.applied).toEqual([])
-    expect(second.skipped).toHaveLength(5)
+    expect(second.skipped).toHaveLength(6)
   })
 
   it('preserva categoria + renda inseridas antes do upgrade (simulacao real)', () => {
