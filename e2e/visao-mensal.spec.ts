@@ -12,6 +12,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
 
     // --- Setup: cartão Inter F=5 V=12 ---
     await page.getByRole('link', { name: 'Cartões' }).click()
+    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
     await page.getByLabel('Nome').fill('Inter Mensal E2E')
     await page.getByLabel('Dia de fechamento').fill('5')
     await page.getByLabel('Dia de vencimento').fill('12')
@@ -20,6 +21,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
 
     // Categoria
     await page.getByRole('link', { name: 'Categorias' }).click()
+    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
     await page.getByLabel('Nome').fill('Geral Mensal E2E')
     await page.getByRole('radio', { name: 'Despesa' }).check()
     await page.getByRole('button', { name: 'Salvar' }).click()
@@ -71,6 +73,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
 
     // Setup: cartão e categoria
     await page.getByRole('link', { name: 'Cartões' }).click()
+    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
     await page.getByLabel('Nome').fill('Inter Projecao E2E')
     await page.getByLabel('Dia de fechamento').fill('5')
     await page.getByLabel('Dia de vencimento').fill('12')
@@ -78,6 +81,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     await expect(page.getByText('Inter Projecao E2E')).toBeVisible()
 
     await page.getByRole('link', { name: 'Categorias' }).click()
+    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
     await page.getByLabel('Nome').fill('Streaming Projecao E2E')
     await page.getByRole('radio', { name: 'Despesa' }).check()
     await page.getByRole('button', { name: 'Salvar' }).click()

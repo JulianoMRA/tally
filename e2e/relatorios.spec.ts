@@ -11,6 +11,7 @@ test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
 
     // Cartão
     await page.getByRole('link', { name: 'Cartões' }).click()
+    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
     await page.getByLabel('Nome').fill('Inter Rel E2E')
     await page.getByLabel('Dia de fechamento').fill('5')
     await page.getByLabel('Dia de vencimento').fill('12')
@@ -19,6 +20,7 @@ test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
 
     // Duas categorias
     await page.getByRole('link', { name: 'Categorias' }).click()
+    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
     await page.getByLabel('Nome').fill('Mercado E2E')
     await page.getByRole('radio', { name: 'Despesa' }).check()
     await page.getByRole('button', { name: 'Salvar' }).click()

@@ -9,6 +9,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
 
     // Setup: cartão e categoria
     await page.getByRole('link', { name: 'Cartões' }).click()
+    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
     await page.getByLabel('Nome').fill('Inter Excluir E2E')
     await page.getByLabel('Dia de fechamento').fill('5')
     await page.getByLabel('Dia de vencimento').fill('12')
@@ -16,6 +17,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await expect(page.getByText('Inter Excluir E2E')).toBeVisible()
 
     await page.getByRole('link', { name: 'Categorias' }).click()
+    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
     await page.getByLabel('Nome').fill('Streaming Excluir E2E')
     await page.getByRole('radio', { name: 'Despesa' }).check()
     await page.getByRole('button', { name: 'Salvar' }).click()
@@ -54,6 +56,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
 
     // Setup: cartão e categoria
     await page.getByRole('link', { name: 'Cartões' }).click()
+    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
     await page.getByLabel('Nome').fill('Inter Paga E2E')
     await page.getByLabel('Dia de fechamento').fill('5')
     await page.getByLabel('Dia de vencimento').fill('12')
@@ -61,6 +64,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await expect(page.getByText('Inter Paga E2E')).toBeVisible()
 
     await page.getByRole('link', { name: 'Categorias' }).click()
+    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
     await page.getByLabel('Nome').fill('Mercado Paga E2E')
     await page.getByRole('radio', { name: 'Despesa' }).check()
     await page.getByRole('button', { name: 'Salvar' }).click()
