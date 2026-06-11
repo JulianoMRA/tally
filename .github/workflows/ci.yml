@@ -8,8 +8,12 @@ on:
 
 jobs:
   ci:
-    name: lint / typecheck / test / build
-    runs-on: ubuntu-latest
+    name: lint / typecheck / test / build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout
@@ -39,7 +43,7 @@ jobs:
           ELECTRON_SKIP_BINARY_DOWNLOAD: 1
 
       - name: Upload coverage report
-        if: always()
+        if: always() && matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
@@ -50,9 +54,11 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
         continue-on-error: true
 
+  # E2E roda no Windows — alvo primario do app (PRD 8.4). Sem xvfb: o runner
+  # Windows tem sessao grafica propria para o Electron.
   e2e:
-    name: e2e (Playwright + Electron)
-    runs-on: ubuntu-latest
+    name: e2e (Playwright + Electron, windows)
+    runs-on: windows-latest
 
     steps:
       - name: Checkout
@@ -67,17 +73,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install system dependencies (Electron libs + xvfb)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
-          npx playwright install-deps chromium
-
       - name: Build
         run: npm run build
 
-      - name: Run E2E under xvfb
-        run: xvfb-run -a npm run e2e
+      - name: Run E2E
+        run: npm run e2e
 
       - name: Upload Playwright report
         if: always()
