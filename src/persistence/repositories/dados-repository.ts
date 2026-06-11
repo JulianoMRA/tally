@@ -1,6 +1,6 @@
 import type { Database } from '../database'
 import type { Repository } from './types'
-import type { ExportPayload } from '../../shared/ipc/dados'
+import { exportPayloadSchema, type ExportPayload } from '../../shared/ipc/dados'
 
 // Nomes de tabela sao constantes do proprio codigo (nunca vem do arquivo),
 // entao a interpolacao em SQL aqui e segura. Os valores sao sempre parametrizados.
@@ -41,9 +41,13 @@ export class DadosRepository implements Repository {
     return rows.map((r) => r.name)
   }
 
-  /** Dump de todas as tabelas de dados em um payload versionado. */
+  /**
+   * Dump de todas as tabelas de dados em um payload versionado. O parse no
+   * final garante que todo arquivo exportado passa na mesma validação usada
+   * no import (round-trip sempre íntegro).
+   */
   exportar(): ExportPayload {
-    return {
+    return exportPayloadSchema.parse({
       formatVersion: 1,
       exportedAt: new Date().toISOString(),
       app: { name: 'tally', schemaVersion: this.schemaVersion() },
@@ -57,7 +61,7 @@ export class DadosRepository implements Repository {
         renda: this.lerTabela('renda'),
         recebimento: this.lerTabela('recebimento')
       }
-    }
+    })
   }
 
   private lerTabela(tabela: (typeof ORDEM_INSERT)[number]): Record<string, unknown>[] {
