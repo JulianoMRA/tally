@@ -202,6 +202,31 @@ describe('selecionarParcelasParaAdiantar (RN-03)', () => {
       expect(() => selecionarParcelasParaAdiantar(parcelas, faturas, 1, destinoPago)).toThrow()
     })
 
+    it('lança erro se fatura destino tem status Fechada (RN-06: fatura fechada é imutável)', () => {
+      const faturas = new Map<number, Fatura>([[10, fatura(10, '2026-05')]])
+      const destinoFechado = fatura(99, '2026-04', { kind: 'Fechada' })
+      const parcelas = [parcela(1, 1, 1, 10)]
+
+      expect(() => selecionarParcelasParaAdiantar(parcelas, faturas, 1, destinoFechado)).toThrow(
+        /fechada/i
+      )
+    })
+
+    it('parcela Paga não é elegível mesmo em fatura Aberta', () => {
+      const faturas = new Map<number, Fatura>([
+        [10, fatura(10, '2026-05')],
+        [11, fatura(11, '2026-06')]
+      ])
+      const destino = fatura(99, '2026-04')
+      const paga: Parcela = { ...parcela(1, 1, 2, 10), status: 'Paga', dataPagamento: '2026-05-01' }
+      const pendente = parcela(2, 2, 2, 11)
+
+      const resultado = selecionarParcelasParaAdiantar([paga, pendente], faturas, 2, destino)
+
+      expect(resultado.mover.map((p) => p.id)).toEqual([2])
+      expect(resultado.razao).toBe('insuficientes')
+    })
+
     it('lança erro se quantidade <= 0', () => {
       const faturas = new Map<number, Fatura>([[10, fatura(10, '2026-05')]])
       const destino = fatura(99, '2026-04')

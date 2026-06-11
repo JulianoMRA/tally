@@ -338,16 +338,18 @@ export function FaturaDetalhe({
                             Editar
                           </Button>
                         )}
-                        {kind === 'Aberta' && p.status === 'Pendente' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setParcelaAdiantar(p)}
-                            title="Adiantar para outra fatura"
-                          >
-                            Adiantar
-                          </Button>
-                        )}
+                        {kind === 'Aberta' &&
+                          p.status === 'Pendente' &&
+                          detalhe.despesasPorParcela?.[p.id]?.tipo === 'Parcelada' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setParcelaAdiantar(p)}
+                              title="Adiantar para outra fatura"
+                            >
+                              Adiantar
+                            </Button>
+                          )}
                         <Button
                           variant="ghost"
                           size="sm"
