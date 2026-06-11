@@ -3,6 +3,7 @@ import type { Database } from '../database'
 import { openInMemoryDatabase } from '../database'
 import { runMigrations } from '../migrations/runner'
 import { DespesaRepository } from '../repositories/despesa-repository'
+import { FaturaRepository } from '../repositories/fatura-repository'
 import { ParcelaRepository } from '../repositories/parcela-repository'
 
 function inserirCartao(db: Database, nome: string, dF: number, dV: number): number {
@@ -770,6 +771,58 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
 
       expect(resultado.parcelasExcluidas).toBe(1)
     })
+
+    it('fluxo real: pagar fatura via repositório bloqueia exclusão (sem SQL manual)', () => {
+      const r = repo.criarUnicaCredito({
+        descricao: 'Almoço',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 2500,
+        dataCompra: '2026-06-03'
+      })
+      const faturaRepo = new FaturaRepository(db)
+      faturaRepo.fechar(r.fatura.id)
+      faturaRepo.pagar(r.fatura.id, '2026-06-12')
+
+      expect(() => repo.excluir(r.despesa.id)).toThrow(/paga/i)
+    })
+
+    it('fluxo real: reabrir fatura paga volta a permitir exclusão', () => {
+      const r = repo.criarUnicaCredito({
+        descricao: 'Almoço',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 2500,
+        dataCompra: '2026-06-03'
+      })
+      const faturaRepo = new FaturaRepository(db)
+      faturaRepo.fechar(r.fatura.id)
+      faturaRepo.pagar(r.fatura.id, '2026-06-12')
+      faturaRepo.reabrir(r.fatura.id)
+
+      const resultado = repo.excluir(r.despesa.id)
+      expect(resultado.parcelasExcluidas).toBe(1)
+    })
+
+    it('bloqueia exclusão quando parcela está em fatura Fechada (RN-06)', () => {
+      const r = repo.criarParceladaCredito({
+        descricao: 'TV',
+        categoriaId: catId,
+        cartaoId,
+        totalParcelas: 3,
+        valorTotalCentavos: 3000,
+        dataCompra: '2026-06-03'
+      })
+      const faturaRepo = new FaturaRepository(db)
+      faturaRepo.fechar(r.parcelas[0].faturaId!)
+
+      expect(() => repo.excluir(r.despesa.id)).toThrow(/fechada/i)
+
+      const ainda = db
+        .prepare('SELECT count(*) as n FROM despesa WHERE id = ?')
+        .get(r.despesa.id) as { n: number }
+      expect(ainda.n).toBe(1)
+    })
   })
 
   describe('atualizar (RF-DES-10)', () => {
@@ -941,6 +994,132 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
           valorCentavos: 1000
         })
       ).toThrow(/não encontrada/i)
+    })
+
+    it('fluxo real: pagar fatura via repositório bloqueia edição (sem SQL manual)', () => {
+      const r = repo.criarUnicaCredito({
+        descricao: 'Mercado',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 5000,
+        dataCompra: '2026-06-03'
+      })
+      const faturaRepo = new FaturaRepository(db)
+      faturaRepo.fechar(r.fatura.id)
+      faturaRepo.pagar(r.fatura.id, '2026-06-12')
+
+      expect(() =>
+        repo.atualizar(r.despesa.id, {
+          descricao: 'Mercadinho',
+          categoriaId: catId,
+          valorCentavos: 7500
+        })
+      ).toThrow(/edição bloqueada/i)
+    })
+
+    it('Parcelada com 1ª fatura Fechada: redistribui novo valor só entre parcelas em fatura Aberta', () => {
+      const r = repo.criarParceladaCredito({
+        descricao: 'TV',
+        categoriaId: catId,
+        cartaoId,
+        totalParcelas: 4,
+        valorTotalCentavos: 4000,
+        dataCompra: '2026-06-03'
+      })
+      const faturaRepo = new FaturaRepository(db)
+      faturaRepo.fechar(r.parcelas[0].faturaId!)
+
+      repo.atualizar(r.despesa.id, {
+        descricao: 'TV',
+        categoriaId: catId,
+        valorCentavos: 9000
+      })
+
+      const parcelas = parcelaRepo.listarPorDespesa(r.despesa.id)
+      const travada = parcelas.find((p) => p.numero === 1)!
+      expect(travada.valorCentavos).toBe(1000) // fatura Fechada intacta
+
+      const abertas = parcelas.filter((p) => p.numero > 1)
+      const somaAbertas = abertas.reduce((s, p) => s + p.valorCentavos, 0)
+      expect(somaAbertas).toBe(9000)
+      expect(abertas.map((p) => p.valorCentavos)).toEqual([3000, 3000, 3000])
+    })
+
+    it('Única em fatura Fechada: editar valor lança erro claro', () => {
+      const r = repo.criarUnicaCredito({
+        descricao: 'Mercado',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 5000,
+        dataCompra: '2026-06-03'
+      })
+      new FaturaRepository(db).fechar(r.fatura.id)
+
+      expect(() =>
+        repo.atualizar(r.despesa.id, {
+          descricao: 'Mercado',
+          categoriaId: catId,
+          valorCentavos: 7500
+        })
+      ).toThrow(/fatura aberta/i)
+    })
+
+    it('Única em fatura Fechada: mudar dataCompra lança erro claro', () => {
+      const r = repo.criarUnicaCredito({
+        descricao: 'Mercado',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 5000,
+        dataCompra: '2026-06-03'
+      })
+      new FaturaRepository(db).fechar(r.fatura.id)
+
+      expect(() =>
+        repo.atualizar(r.despesa.id, {
+          descricao: 'Mercado',
+          categoriaId: catId,
+          valorCentavos: 5000,
+          dataCompra: '2026-06-10'
+        })
+      ).toThrow(/fatura aberta/i)
+    })
+
+    it('Única em fatura Fechada: editar apenas descrição e categoria continua permitido', () => {
+      const r = repo.criarUnicaCredito({
+        descricao: 'Mercado',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 5000,
+        dataCompra: '2026-06-03'
+      })
+      new FaturaRepository(db).fechar(r.fatura.id)
+
+      const atualizada = repo.atualizar(r.despesa.id, {
+        descricao: 'Mercadinho',
+        categoriaId: catId,
+        valorCentavos: 5000
+      })
+      expect(atualizada.descricao).toBe('Mercadinho')
+    })
+
+    it('fora de cartão: mudar dataCompra atualiza data_referencia da parcela', () => {
+      const r = repo.criarUnicaForaCartao({
+        descricao: 'Pix academia',
+        categoriaId: catId,
+        formaPagamento: 'Pix',
+        valorCentavos: 9900,
+        dataCompra: '2026-06-03'
+      })
+
+      repo.atualizar(r.despesa.id, {
+        descricao: 'Pix academia',
+        categoriaId: catId,
+        valorCentavos: 9900,
+        dataCompra: '2026-07-15'
+      })
+
+      const parcela = parcelaRepo.listarPorDespesa(r.despesa.id)[0]
+      expect(parcela.dataReferencia).toBe('2026-07-15')
     })
   })
 })

@@ -53,4 +53,33 @@ describe('recalcularParcelasPendentes (propriedades)', () => {
       )
     )
   })
+
+  it('com conjunto de elegíveis: soma das elegíveis = novo total; todas as demais intactas', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 24 }),
+        fc.integer({ min: 1, max: 100_000_000 }),
+        // mascara de elegibilidade por indice (garantimos ao menos uma abaixo)
+        fc.array(fc.boolean(), { minLength: 24, maxLength: 24 }),
+        (qtd, novoTotal, mascara) => {
+          if (!mascara.slice(0, qtd).includes(true)) mascara[0] = true
+
+          const original = Array.from({ length: qtd }, (_, i) =>
+            parcela(i + 1, 'Pendente', 1000 + i)
+          )
+          const elegiveis = new Set(original.filter((_, i) => mascara[i]).map((p) => p.id))
+
+          const novas = recalcularParcelasPendentes(original, novoTotal, elegiveis)
+
+          const somaElegiveis = novas
+            .filter((p) => elegiveis.has(p.id))
+            .reduce((acc, p) => acc + p.valorCentavos, 0)
+          expect(somaElegiveis).toBe(novoTotal)
+
+          const intactas = novas.filter((p) => !elegiveis.has(p.id))
+          expect(intactas).toEqual(original.filter((p) => !elegiveis.has(p.id)))
+        }
+      )
+    )
+  })
 })

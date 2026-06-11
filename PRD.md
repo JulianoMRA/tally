@@ -89,8 +89,8 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - **RF-DES-06** — **Cancelar parcelas futuras** de uma despesa parcelada (caso de estorno).
 - **RF-DES-07** — **Cancelar assinatura**: para de gerar ocorrências futuras a partir do mês seguinte ao cancelamento.
 - **RF-DES-08** — Editar valor das parcelas restantes (caso de reajuste de assinatura).
-- **RF-DES-09** — Excluir despesa: requer confirmação explícita. Se houver parcelas pagas, exclusão é bloqueada (apenas arquivamento).
-- **RF-DES-10** — Editar despesa (Única/Parcelada): descrição, categoria e valor sempre; data apenas para Única (move fatura via RN-01). Bloqueia se houver parcela paga. Em Parcelada, novo valor é redistribuído entre parcelas pendentes (paga preserva).
+- **RF-DES-09** — Excluir despesa: requer confirmação explícita. Exclusão é bloqueada se houver parcela paga ou parcela em fatura Fechada/Paga (apenas arquivamento).
+- **RF-DES-10** — Editar despesa (Única/Parcelada): descrição e categoria sempre; data apenas para Única em fatura Aberta (move fatura via RN-01). Bloqueia se houver parcela paga. Novo valor é redistribuído apenas entre parcelas pendentes em fatura Aberta ou sem fatura (parcelas em fatura Fechada/Paga preservam o valor). Única com a parcela em fatura Fechada não aceita mudança de valor nem de data.
 
 ### 4.4 Faturas (RF-FAT)
 
@@ -234,8 +234,10 @@ Despesa do tipo Assinatura gera ocorrências mês a mês conforme o tempo avanç
 ### RN-06 — Ciclo de vida da fatura
 
 - `Aberta`: data atual < `data_fechamento`. Aceita novas parcelas.
-- `Fechada`: `data_fechamento <= data atual < data_vencimento` ou usuário fechou manualmente. Não aceita novas parcelas exceto via adiantamento explícito.
+- `Fechada`: `data_fechamento <= data atual < data_vencimento` ou usuário fechou manualmente. Não aceita novas parcelas exceto via adiantamento explícito. Parcelas dentro dela não recebem redistribuição de valor nem mudança de data, e a despesa correspondente não pode ser excluída.
 - `Paga`: usuário registrou pagamento. Imutável exceto via reabertura.
+
+Pagar a fatura marca todas as parcelas dela como `Paga` (com a mesma data de pagamento); reabrir reverte as parcelas para `Pendente`. É essa sincronização que arma os bloqueios de RF-DES-09/10.
 
 ### RN-07 — Cálculo do total da fatura
 

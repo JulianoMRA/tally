@@ -85,4 +85,44 @@ describe('recalcularParcelasPendentes (RF-DES-10)', () => {
     recalcularParcelasPendentes(parcelas, 500)
     expect(parcelas).toEqual(snapshot)
   })
+
+  describe('com conjunto de elegíveis (parcelas em fatura Fechada/Paga ficam travadas)', () => {
+    it('distribui o novo valor apenas entre as elegíveis, preservando as demais', () => {
+      const parcelas = [
+        parcela(1, 'Pendente', 100), // travada (ex.: fatura Fechada)
+        parcela(2, 'Pendente', 100),
+        parcela(3, 'Pendente', 100)
+      ]
+      const resultado = recalcularParcelasPendentes(parcelas, 600, new Set([2, 3]))
+      expect(resultado[0].valorCentavos).toBe(100) // travada intacta
+      expect(resultado[1].valorCentavos).toBe(300)
+      expect(resultado[2].valorCentavos).toBe(300)
+    })
+
+    it('centavo extra vai para a elegível de maior número', () => {
+      const parcelas = [
+        parcela(1, 'Pendente', 100),
+        parcela(2, 'Pendente', 100),
+        parcela(3, 'Pendente', 100)
+      ]
+      const resultado = recalcularParcelasPendentes(parcelas, 101, new Set([1, 2]))
+      expect(resultado[0].valorCentavos).toBe(50)
+      expect(resultado[1].valorCentavos).toBe(51)
+      expect(resultado[2].valorCentavos).toBe(100) // fora do conjunto, intacta
+    })
+
+    it('parcela Paga nunca recebe valor mesmo se incluída no conjunto', () => {
+      const parcelas = [parcela(1, 'Paga', 100), parcela(2, 'Pendente', 100)]
+      const resultado = recalcularParcelasPendentes(parcelas, 500, new Set([1, 2]))
+      expect(resultado[0].valorCentavos).toBe(100)
+      expect(resultado[1].valorCentavos).toBe(500)
+    })
+
+    it('lanca erro claro quando o conjunto de elegíveis esvazia e valor > 0', () => {
+      const parcelas = [parcela(1, 'Pendente', 100)]
+      expect(() => recalcularParcelasPendentes(parcelas, 500, new Set())).toThrow(
+        /sem parcelas pendentes/i
+      )
+    })
+  })
 })

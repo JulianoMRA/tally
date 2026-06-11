@@ -63,30 +63,66 @@ export class FaturaRepository implements Repository {
     return fatura
   }
 
+  /**
+   * RN-06 — pagar a fatura também marca suas parcelas Pendente como Paga,
+   * com a mesma data de pagamento. É essa sincronização que arma as regras
+   * RF-DES-09/10 (despesa com parcela paga não pode ser excluída/editada).
+   */
   pagar(id: number, dataPagamento: string): Fatura {
-    this.db
-      .prepare(
-        `UPDATE fatura
-         SET status = 'Paga', data_pagamento = ?, updated_at = datetime('now')
-         WHERE id = ?`
-      )
-      .run(dataPagamento, id)
-    const fatura = this.findById(id)
-    if (!fatura) throw new Error(`pagar: fatura #${id} não encontrada`)
-    return fatura
+    return this.db.transaction(() => {
+      this.db
+        .prepare(
+          `UPDATE fatura
+           SET status = 'Paga', data_pagamento = ?, updated_at = datetime('now')
+           WHERE id = ?`
+        )
+        .run(dataPagamento, id)
+      this.db
+        .prepare(
+          `UPDATE parcela
+           SET status = 'Paga', data_pagamento = ?, updated_at = datetime('now')
+           WHERE fatura_id = ? AND status = 'Pendente'`
+        )
+        .run(dataPagamento, id)
+      const fatura = this.findById(id)
+      if (!fatura) throw new Error(`pagar: fatura #${id} não encontrada`)
+      return fatura
+    })()
   }
 
+  /** Reverte o pagamento: fatura volta a Aberta e as parcelas a Pendente. */
   reabrir(id: number): Fatura {
-    this.db
-      .prepare(
-        `UPDATE fatura
-         SET status = 'Aberta', data_pagamento = NULL, updated_at = datetime('now')
-         WHERE id = ?`
-      )
-      .run(id)
-    const fatura = this.findById(id)
-    if (!fatura) throw new Error(`reabrir: fatura #${id} não encontrada`)
-    return fatura
+    return this.db.transaction(() => {
+      this.db
+        .prepare(
+          `UPDATE fatura
+           SET status = 'Aberta', data_pagamento = NULL, updated_at = datetime('now')
+           WHERE id = ?`
+        )
+        .run(id)
+      this.db
+        .prepare(
+          `UPDATE parcela
+           SET status = 'Pendente', data_pagamento = NULL, updated_at = datetime('now')
+           WHERE fatura_id = ? AND status = 'Paga'`
+        )
+        .run(id)
+      const fatura = this.findById(id)
+      if (!fatura) throw new Error(`reabrir: fatura #${id} não encontrada`)
+      return fatura
+    })()
+  }
+
+  /** Mapa id da fatura -> status, em uma única query. */
+  statusPorIds(ids: readonly number[]): Map<number, 'Aberta' | 'Fechada' | 'Paga'> {
+    const mapa = new Map<number, 'Aberta' | 'Fechada' | 'Paga'>()
+    if (ids.length === 0) return mapa
+    const placeholders = ids.map(() => '?').join(',')
+    const rows = this.db
+      .prepare(`SELECT id, status FROM fatura WHERE id IN (${placeholders})`)
+      .all(...ids) as { id: number; status: 'Aberta' | 'Fechada' | 'Paga' }[]
+    for (const row of rows) mapa.set(row.id, row.status)
+    return mapa
   }
 
   /**
