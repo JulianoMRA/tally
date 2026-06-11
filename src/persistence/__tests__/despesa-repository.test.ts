@@ -64,6 +64,20 @@ describe('DespesaRepository.criarUnicaCredito', () => {
     expect(resultado.parcela.status).toBe('Pendente')
   })
 
+  it('lança erro claro quando a categoria não existe', () => {
+    const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+
+    expect(() =>
+      repo.criarUnicaCredito({
+        descricao: 'Sem categoria',
+        categoriaId: 9999,
+        cartaoId,
+        valorCentavos: 1000,
+        dataCompra: '2026-06-03'
+      })
+    ).toThrow(/categoria #9999 não encontrada/i)
+  })
+
   it('RN-01: compra após fechamento cria fatura no mês seguinte', () => {
     const cartaoId = inserirCartao(db, 'Inter', 5, 12)
     const catId = inserirCategoria(db)
@@ -994,6 +1008,24 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
           valorCentavos: 1000
         })
       ).toThrow(/não encontrada/i)
+    })
+
+    it('lanca erro claro quando a nova categoria não existe', () => {
+      const r = repo.criarUnicaCredito({
+        descricao: 'Mercado',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 5000,
+        dataCompra: '2026-06-03'
+      })
+
+      expect(() =>
+        repo.atualizar(r.despesa.id, {
+          descricao: 'Mercado',
+          categoriaId: 9999,
+          valorCentavos: 5000
+        })
+      ).toThrow(/categoria #9999 não encontrada/i)
     })
 
     it('fluxo real: pagar fatura via repositório bloqueia edição (sem SQL manual)', () => {
