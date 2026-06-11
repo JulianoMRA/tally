@@ -102,15 +102,15 @@ function fecharBanco(): void {
   }
 }
 
+// Mostra o diálogo também em produção: sem ele, uma falha de boot (migration,
+// banco corrompido) fechava o app silenciosamente, sem qualquer pista ao usuário.
 function encerrarComFalha(motivo: string, err: unknown): never {
   console.error(`[main] ${motivo}:`, err)
-  if (is.dev) {
-    const mensagem = err instanceof Error ? err.message : String(err)
-    try {
-      dialog.showErrorBox('Erro ao inicializar o Tally', `${motivo}\n\n${mensagem}`)
-    } catch {
-      // dialog pode não estar disponível antes do ready; ignorar.
-    }
+  const mensagem = err instanceof Error ? err.message : String(err)
+  try {
+    dialog.showErrorBox('Erro ao inicializar o Tally', `${motivo}\n\n${mensagem}`)
+  } catch {
+    // dialog pode não estar disponível antes do ready; ignorar.
   }
   fecharBanco()
   app.exit(1)
