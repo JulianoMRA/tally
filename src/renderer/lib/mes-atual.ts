@@ -1,9 +1,6 @@
 /**
- * Mes de referencia (YYYY-MM) do mes calendario corrente no fuso local.
- * Usado para inicializar pickers de mes em VisaoMensal, Gastos, Rendas,
- * Relatorios. Antes existia uma copia local em 5+ arquivos.
+ * Re-export do módulo compartilhado: a fonte única de "hoje"/"mês atual"
+ * no fuso local vive em src/shared/datas-locais.ts (usada também pelo main
+ * process e pela persistence).
  */
-export function mesAtualReferencia(): string {
-  const hoje = new Date()
-  return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`
-}
+export { mesAtualReferencia } from '@shared/datas-locais'

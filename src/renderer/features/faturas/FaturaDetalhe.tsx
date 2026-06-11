@@ -4,6 +4,7 @@ import type { Despesa } from '@domain/entities/despesa'
 import type { Fatura } from '@domain/entities/fatura'
 import type { Parcela } from '@domain/entities/parcela'
 import type { FaturaDetalhada } from '@shared/ipc/fatura'
+import { hojeIsoLocal } from '@shared/datas-locais'
 import { useCicloFatura } from './hooks/use-faturas'
 import { AdiantarParcelasModal } from './AdiantarParcelasModal'
 import { EditarDespesaModal } from './EditarDespesaModal'
@@ -66,10 +67,6 @@ function statusVariant(kind: string): 'open' | 'closed' | 'paid' {
   return 'paid'
 }
 
-function dataHoje(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
 export function FaturaDetalhe({
   detalhe,
   cartaoNome,
@@ -82,7 +79,7 @@ export function FaturaDetalhe({
   const kind = fatura.status.kind
 
   const [modoPagar, setModoPagar] = useState(false)
-  const [dataPagamento, setDataPagamento] = useState(dataHoje)
+  const [dataPagamento, setDataPagamento] = useState(hojeIsoLocal)
   const [parcelaAdiantar, setParcelaAdiantar] = useState<Parcela | null>(null)
   const [despesaEditar, setDespesaEditar] = useState<Despesa | null>(null)
   const [categorias, setCategorias] = useState<Categoria[]>([])

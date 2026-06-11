@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { CriarRecebimentoAvulsoInput } from '@shared/ipc/recebimento'
+import { hojeIsoLocal } from '@shared/datas-locais'
 import { Button, Field, Input } from '../../components/ui'
 import { useEscapeKey } from '../../hooks/use-escape-key'
 import styles from './rendas.module.css'
@@ -13,16 +14,12 @@ function parseCentavos(reais: string): number {
   return Math.round(parseFloat(reais.replace(',', '.')) * 100)
 }
 
-function dataHoje(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
 export function NovoAvulsoModal({ onConfirmar, onCancelar }: Props) {
   const [nome, setNome] = useState('')
   const [valorReais, setValorReais] = useState('')
-  const [dataEsperada, setDataEsperada] = useState(dataHoje)
+  const [dataEsperada, setDataEsperada] = useState(hojeIsoLocal)
   const [jaRecebido, setJaRecebido] = useState(true)
-  const [dataRecebida, setDataRecebida] = useState(dataHoje)
+  const [dataRecebida, setDataRecebida] = useState(hojeIsoLocal)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   useEscapeKey(onCancelar)
