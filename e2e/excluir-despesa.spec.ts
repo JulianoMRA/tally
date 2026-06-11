@@ -45,4 +45,56 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     // Após exclusão, a assinatura não deve mais aparecer (exact evita o toast "... excluída.")
     await expect(page.getByText('Spotify Excluir E2E', { exact: true })).toHaveCount(0)
   })
+
+  test('pagar fatura marca parcela como Paga e bloqueia exclusão; reabrir libera (RN-06)', async ({
+    app
+  }) => {
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+
+    // Setup: cartão e categoria
+    await page.getByRole('link', { name: 'Cartões' }).click()
+    await page.getByLabel('Nome').fill('Inter Paga E2E')
+    await page.getByLabel('Dia de fechamento').fill('5')
+    await page.getByLabel('Dia de vencimento').fill('12')
+    await page.getByRole('button', { name: 'Salvar' }).click()
+    await expect(page.getByText('Inter Paga E2E')).toBeVisible()
+
+    await page.getByRole('link', { name: 'Categorias' }).click()
+    await page.getByLabel('Nome').fill('Mercado Paga E2E')
+    await page.getByRole('radio', { name: 'Despesa' }).check()
+    await page.getByRole('button', { name: 'Salvar' }).click()
+    await expect(page.getByText('Mercado Paga E2E')).toBeVisible()
+
+    // Despesa única no cartão (dia 03 <= F=05 → fatura 2026-06)
+    await page.getByRole('link', { name: 'Despesas' }).click()
+    await page.getByLabel('Descrição').fill('Compra Paga E2E')
+    await page.getByLabel('Categoria').selectOption({ label: 'Mercado Paga E2E' })
+    await page.getByLabel('Cartão').selectOption({ label: 'Inter Paga E2E' })
+    await page.getByLabel('Valor (R$)').fill('80,00')
+    await page.getByLabel('Data da compra').fill('2026-06-03')
+    await page.getByRole('button', { name: 'Registrar despesa' }).click()
+    await expect(page.getByText('Compra Paga E2E')).toBeVisible()
+
+    // Abre o detalhe da fatura
+    await page.getByRole('link', { name: 'Faturas' }).click()
+    await page.getByLabel('Cartão').selectOption({ label: 'Inter Paga E2E' })
+    await page.getByText('2026-06', { exact: true }).click()
+    await expect(page.getByText('1/1')).toBeVisible()
+
+    // Fecha e paga a fatura
+    await page.getByRole('button', { name: 'Fechar fatura' }).click()
+    await page.getByRole('button', { name: 'Fechar', exact: true }).click()
+    await page.getByRole('button', { name: 'Marcar como paga' }).click()
+    await page.getByRole('button', { name: 'Confirmar pagamento' }).click()
+
+    // Sincronização RN-06: parcela vira Paga e a exclusão é bloqueada na UI
+    const excluir = page.getByRole('button', { name: 'Excluir' })
+    await expect(excluir).toBeDisabled()
+
+    // Reabrir reverte a parcela para Pendente e libera a exclusão
+    await page.getByRole('button', { name: 'Reabrir fatura' }).click()
+    await page.getByRole('button', { name: 'Reabrir', exact: true }).click()
+    await expect(excluir).toBeEnabled()
+  })
 })
