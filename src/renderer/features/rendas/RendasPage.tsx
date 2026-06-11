@@ -14,6 +14,7 @@ import {
   useToast
 } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
+import { mensagemErro } from '../../lib/mensagem-erro'
 import { mesAtualReferencia } from '../../lib/mes-atual'
 import { useRendas } from './hooks/use-rendas'
 import { useRecebimentos } from './hooks/use-recebimentos'
@@ -259,7 +260,7 @@ function AbaFontes() {
       setRendaEditar(null)
       await refetch()
     } catch (e) {
-      toast.show(e instanceof Error ? e.message : 'Erro ao salvar.', 'error')
+      toast.show(mensagemErro(e, 'Erro ao salvar.'), 'error')
       throw e
     }
   }

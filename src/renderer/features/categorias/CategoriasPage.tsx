@@ -5,6 +5,8 @@ import { useCategorias } from './hooks/use-categorias'
 import { CategoriaForm } from './CategoriaForm'
 import { CategoriaList } from './CategoriaList'
 import { PageHead } from '../../components/layout/PageHead'
+import { useToast } from '../../components/ui'
+import { mensagemErro } from '../../lib/mensagem-erro'
 import styles from './categorias.module.css'
 
 type Modo = { kind: 'criar' } | { kind: 'editar'; categoria: Categoria }
@@ -22,14 +24,37 @@ export default function CategoriasPage() {
     desarquivar
   } = useCategorias()
   const [modo, setModo] = useState<Modo>({ kind: 'criar' })
+  const toast = useToast()
 
   async function handleSalvar(input: CategoriaInput) {
-    if (modo.kind === 'criar') {
-      await criar(input)
-    } else {
-      await atualizar(modo.categoria.id, input)
+    try {
+      if (modo.kind === 'criar') {
+        await criar(input)
+        toast.show('Categoria criada.', 'success')
+      } else {
+        await atualizar(modo.categoria.id, input)
+        toast.show('Categoria atualizada.', 'success')
+      }
+      setModo({ kind: 'criar' })
+    } catch (e) {
+      toast.show(mensagemErro(e, 'Erro ao salvar categoria.'), 'error')
     }
-    setModo({ kind: 'criar' })
+  }
+
+  async function handleArquivar(id: number) {
+    try {
+      await arquivar(id)
+    } catch (e) {
+      toast.show(mensagemErro(e, 'Erro ao arquivar categoria.'), 'error')
+    }
+  }
+
+  async function handleDesarquivar(id: number) {
+    try {
+      await desarquivar(id)
+    } catch (e) {
+      toast.show(mensagemErro(e, 'Erro ao desarquivar categoria.'), 'error')
+    }
   }
 
   return (
@@ -57,8 +82,8 @@ export default function CategoriasPage() {
             <CategoriaList
               categorias={categorias}
               onEditar={(c) => setModo({ kind: 'editar', categoria: c })}
-              onArquivar={arquivar}
-              onDesarquivar={desarquivar}
+              onArquivar={handleArquivar}
+              onDesarquivar={handleDesarquivar}
             />
           )}
         </section>

@@ -5,6 +5,8 @@ import { useCartoes } from './hooks/use-cartoes'
 import { CartaoForm } from './CartaoForm'
 import { CartaoList } from './CartaoList'
 import { PageHead } from '../../components/layout/PageHead'
+import { useToast } from '../../components/ui'
+import { mensagemErro } from '../../lib/mensagem-erro'
 import styles from './cartoes.module.css'
 
 type Modo = { kind: 'criar' } | { kind: 'editar'; cartao: Cartao }
@@ -22,14 +24,37 @@ export default function CartoesPage() {
     desarquivar
   } = useCartoes()
   const [modo, setModo] = useState<Modo>({ kind: 'criar' })
+  const toast = useToast()
 
   async function handleSalvar(input: CartaoInput) {
-    if (modo.kind === 'criar') {
-      await criar(input)
-    } else {
-      await atualizar(modo.cartao.id, input)
+    try {
+      if (modo.kind === 'criar') {
+        await criar(input)
+        toast.show('Cartão criado.', 'success')
+      } else {
+        await atualizar(modo.cartao.id, input)
+        toast.show('Cartão atualizado.', 'success')
+      }
+      setModo({ kind: 'criar' })
+    } catch (e) {
+      toast.show(mensagemErro(e, 'Erro ao salvar cartão.'), 'error')
     }
-    setModo({ kind: 'criar' })
+  }
+
+  async function handleArquivar(id: number) {
+    try {
+      await arquivar(id)
+    } catch (e) {
+      toast.show(mensagemErro(e, 'Erro ao arquivar cartão.'), 'error')
+    }
+  }
+
+  async function handleDesarquivar(id: number) {
+    try {
+      await desarquivar(id)
+    } catch (e) {
+      toast.show(mensagemErro(e, 'Erro ao desarquivar cartão.'), 'error')
+    }
   }
 
   return (
@@ -57,8 +82,8 @@ export default function CartoesPage() {
             <CartaoList
               cartoes={cartoes}
               onEditar={(c) => setModo({ kind: 'editar', cartao: c })}
-              onArquivar={arquivar}
-              onDesarquivar={desarquivar}
+              onArquivar={handleArquivar}
+              onDesarquivar={handleDesarquivar}
             />
           )}
         </section>

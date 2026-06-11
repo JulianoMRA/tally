@@ -19,6 +19,7 @@ import {
   useToast
 } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
+import { mensagemErro } from '../../lib/mensagem-erro'
 import styles from './faturas.module.css'
 
 type DialogoConfirma =
@@ -148,7 +149,7 @@ export function FaturaDetalhe({
       setDespesaEditar(null)
       await recarregarDetalhe()
     } catch (e) {
-      toast.show(e instanceof Error ? e.message : 'Erro ao atualizar despesa.', 'error')
+      toast.show(mensagemErro(e, 'Erro ao atualizar despesa.'), 'error')
       throw e
     }
   }
@@ -159,7 +160,7 @@ export function FaturaDetalhe({
       toast.show('Despesa excluída.', 'success')
       await recarregarDetalhe()
     } catch (e) {
-      toast.show(e instanceof Error ? e.message : 'Erro ao excluir despesa.', 'error')
+      toast.show(mensagemErro(e, 'Erro ao excluir despesa.'), 'error')
     } finally {
       setDialogo(null)
     }
