@@ -4,8 +4,8 @@
 
 ![status](https://img.shields.io/badge/status-in%20development-yellow)
 ![license](https://img.shields.io/badge/license-MIT-blue)
-![tests](https://img.shields.io/badge/tests-362%20passing-brightgreen)
-![ci](https://img.shields.io/badge/CI-ubuntu%20%2B%20windows-blue)
+![tests](https://img.shields.io/badge/tests-507%20passing-brightgreen)
+[![CI](https://github.com/JulianoMRA/tally/actions/workflows/ci.yml/badge.svg)](https://github.com/JulianoMRA/tally/actions/workflows/ci.yml)
 
 Tally is a personal project built to replace a Google Sheets workflow that demanded manual work every month: copying the previous month's tab, incrementing parcela numbers (`7/12` → `8/12`), and recalculating credit card statement totals. Tally does all of it automatically.
 
@@ -41,7 +41,7 @@ Tally solves these with first-class support for installment plans, recurring sub
 | Commit hygiene | commitlint + Husky + lint-staged |
 | CI             | GitHub Actions                   |
 
-Architecture follows clean separation across four layers: **domain** (pure business rules, zero external dependencies), **persistence** (SQLite repositories), **main process** (Electron lifecycle and IPC), and **renderer** (React UI). See [`CLAUDE.md`](./CLAUDE.md) for full conventions.
+Architecture follows clean separation across four layers: **domain** (pure business rules, zero external dependencies), **persistence** (SQLite repositories), **main process** (Electron lifecycle and IPC), and **renderer** (React UI). See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for setup and conventions.
 
 ---
 
@@ -52,8 +52,8 @@ Quality strategy is treated as a first-class concern, not an afterthought.
 - **TDD mandatory in the domain layer.** All business rules (RN-01 through RN-08 documented in [`PRD.md`](./PRD.md)) start with a failing test before any implementation.
 - **Coverage minimums:** 80% in the domain layer, 60% global.
 - **Integration tests** run against in-memory SQLite to validate repositories without mocking the database.
-- **E2E tests** cover the critical user flows: registering an in-progress installment plan, advancing parcelas, marking a contribution as received, navigating to a projected future month.
-- **CI pipeline** runs lint, typecheck, tests with coverage, and build on every pull request. Branch protection requires a green pipeline before merge.
+- **E2E tests** (13 Playwright specs against the real Electron app, each in an isolated temp database) cover the critical user flows: registering an in-progress installment plan, advancing parcelas, paying a statement — which locks its expenses against edit/deletion (RN-06) —, deleting expenses, navigating to a projected future month, per-category budgets, and reports.
+- **CI pipeline** runs lint, typecheck, tests with coverage gating, and build on an ubuntu + windows matrix, plus the full Playwright E2E suite on Windows (the app's primary target). Branch protection requires a green pipeline before merge.
 - **Conventional Commits** enforced via commitlint, enabling automated changelog generation.
 
 Bug reports during development follow a structured template (preconditions, steps, expected vs actual, severity, evidence) and live as GitHub Issues.
@@ -88,6 +88,7 @@ This project is in active development. The implementation is being delivered in 
 - [x] **Slice 15** — Hardening, QA e cleanup pós-MVP: isolação E2E (TALLY_USER_DATA), hardening Electron + CSP, row-mappers consolidados, migrations 0003 (drop colunas mortas) + 0004 (normaliza `data_referencia`), Zod em todos os canais IPC, `noImplicitAny`, CI matriz Windows+Ubuntu com coverage gating, pre-push hook
 - [x] **Bloco D — Orçamento por categoria** — limite mensal por categoria com status visual (ok/alerta/estourado, alerta >= 80%) integrado aos Relatórios; domínio puro em TDD, migration 0005 (índices parciais para o limite global), repositório, IPC tipado e cobertura no export/import
 - [x] **Slice 19 — Reativação dos E2E** — os 6 specs Playwright pulados (`gastos`, `rendas`, `relatorios`, `assinaturas`, `excluir-despesa`, `visao-mensal`) realinhados à UI atual + novo spec de orçamento. 12 specs E2E verdes, zero skips
+- [x] **Hardening pós-auditoria (jun/2026)** — auditoria completa do app fechada em 6 PRs: pagar fatura sincroniza parcelas para Paga (RN-06 passa a valer de fato, com migration de backfill e proteção de fatura Fechada contra edição/exclusão); datas "hoje" no fuso local em vez de UTC; feedback de erro em todas as telas (helper `mensagem-erro` + toasts); exclusão de recebimento avulso limpa a renda órfã; import valida cada tabela com Zod; E2E em paralelo (lock por `userData` isolado) + typecheck dos specs; CI matriz ubuntu + windows com E2E no Windows
 
 Detalhes técnicos de cada slice em [`CHANGELOG.md`](./CHANGELOG.md).
 
@@ -141,8 +142,8 @@ Detalhes técnicos de cada slice em [`CHANGELOG.md`](./CHANGELOG.md).
 
 Pre-built Windows binaries are produced via `npm run dist` and land in `release/`:
 
-- **`Tally Setup 0.1.0.exe`** — NSIS installer. Creates desktop + Start Menu shortcuts, lets you pick the install dir, supports clean uninstall.
-- **`Tally-0.1.0-portable.exe`** — single-file executable. Just double-click — no install. Good for USB drives or restricted machines.
+- **`Tally Setup <version>.exe`** — NSIS installer. Creates desktop + Start Menu shortcuts, lets you pick the install dir, supports clean uninstall.
+- **`Tally-<version>-portable.exe`** — single-file executable. Just double-click — no install. Good for USB drives or restricted machines.
 
 On first launch Windows SmartScreen may warn that the publisher is unverified (the binary is unsigned — this is a personal project, not a commercial app). Click **More info → Run anyway** to proceed.
 
@@ -161,17 +162,28 @@ npm install
 npm run dev
 ```
 
-> _Commands will be defined in `package.json` after Slice 0. Expected scripts include `dev`, `build`, `test`, `test:coverage`, `e2e`, `lint`, `typecheck`._
+Useful scripts:
+
+```bash
+npm run dev            # Electron + Vite with hot reload
+npm run test:run       # Vitest single run
+npm run test:coverage  # Vitest with coverage (80% domain / 60% global gates)
+npm run e2e            # Playwright E2E (requires npm run build first)
+npm run lint           # ESLint
+npm run typecheck      # tsc -b --noEmit (includes e2e specs)
+npm run dist           # Windows installer + portable via electron-builder
+```
 
 ---
 
 ## Project documentation
 
-| Document                                               | Purpose                                                                       |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| [`PRD.md`](./PRD.md)                                   | Product requirements, business rules (RN-01..RN-08), data model, full roadmap |
-| [`CLAUDE.md`](./CLAUDE.md)                             | Operational guide: stack, architecture, conventions, glossary                 |
-| [`CLAUDE_CODE_STRATEGY.md`](./CLAUDE_CODE_STRATEGY.md) | Per-slice strategy for AI-assisted development (model and effort selection)   |
+| Document                               | Purpose                                                                       |
+| -------------------------------------- | ----------------------------------------------------------------------------- |
+| [`PRD.md`](./PRD.md)                   | Product requirements, business rules (RN-01..RN-08), data model, full roadmap |
+| [`CHANGELOG.md`](./CHANGELOG.md)       | Technical history of every delivered slice                                    |
+| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Setup, conventions, commit standards, test guidelines                         |
+| [`SECURITY.md`](./SECURITY.md)         | Electron hardening posture and data-safety notes                              |
 
 ---
 

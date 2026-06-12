@@ -278,6 +278,7 @@ Fluxos críticos cobertos:
 - Cadastrar despesa parcelada em andamento (migração)
 - Cadastrar, reajustar e cancelar assinatura
 - Excluir despesa (RF-DES-09)
+- Pagar fatura bloqueia exclusão da despesa; reabrir libera (RN-06)
 - Cadastrar gasto fora de cartão (Pix/Débito/Dinheiro)
 - Cadastrar e marcar recebimento de renda (recorrente + avulso)
 - Visão mensal consolidada
