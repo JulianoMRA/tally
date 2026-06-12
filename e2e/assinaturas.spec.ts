@@ -37,8 +37,8 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     await page.getByRole('button', { name: 'Registrar assinatura' }).click()
 
     await expect(page.getByText('Spotify E2E')).toBeVisible()
-    // Banner cita a primeira referência (2026-06) e o cartão
-    await expect(page.getByText(/2026-06/).first()).toBeVisible()
+    // Banner cita a primeira referência (junho de 2026) e o cartão
+    await expect(page.getByText(/junho de 2026/).first()).toBeVisible()
 
     // --- Página de assinaturas: ver a assinatura ativa ---
     await page.getByRole('link', { name: 'Assinaturas' }).click()
@@ -56,7 +56,7 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     // --- Conferir na fatura junho/2026 ---
     await page.getByRole('link', { name: 'Faturas' }).click()
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Assinatura E2E' })
-    await page.getByText('2026-06').first().click()
+    await page.getByText('junho de 2026').first().click()
     await expect(page.getByText(/R\$\s*24,90/).first()).toBeVisible()
 
     // --- Cancelar assinatura (ConfirmDialog in-app: botão da linha abre, confirma no diálogo) ---

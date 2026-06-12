@@ -3,6 +3,7 @@ import type { Categoria } from '@domain/entities/categoria'
 import { PageHead } from '../../components/layout/PageHead'
 import { EmptyState, Field, Input, Panel } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
+import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { mesAtualReferencia } from '../../lib/mes-atual'
 import { useGastosForaCartao } from './hooks/use-gastos'
 import styles from './gastos.module.css'
@@ -49,7 +50,7 @@ export default function GastosPage() {
 
         {erro && <p className={styles.erro}>{erro}</p>}
 
-        <Panel title={`Lançamentos · ${mes}`} flush>
+        <Panel title={`Lançamentos · ${formatarMesReferencia(mes)}`} flush>
           {loading ? (
             <EmptyState title="Carregando…" />
           ) : gastos.length === 0 ? (
@@ -65,7 +66,7 @@ export default function GastosPage() {
                   </div>
                   <span className={styles.forma}>{rotuloForma(g.formaPagamento)}</span>
                   <span className={styles.valor}>{formatBRL(g.valorCentavos)}</span>
-                  <span className={styles.data}>{g.dataCompra}</span>
+                  <span className={styles.data}>{formatarDataIso(g.dataCompra)}</span>
                 </li>
               ))}
             </ul>

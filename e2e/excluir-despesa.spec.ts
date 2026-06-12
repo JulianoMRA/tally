@@ -83,7 +83,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     // Abre o detalhe da fatura
     await page.getByRole('link', { name: 'Faturas' }).click()
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Paga E2E' })
-    await page.getByText('2026-06', { exact: true }).click()
+    await page.getByText('junho de 2026', { exact: true }).click()
     await expect(page.getByText('1/1')).toBeVisible()
 
     // Fecha e paga a fatura

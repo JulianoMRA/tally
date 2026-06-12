@@ -14,6 +14,7 @@ import {
   useToast
 } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
+import { formatarDataIso } from '../../lib/formatar-data'
 import { mensagemErro } from '../../lib/mensagem-erro'
 import { mesAtualReferencia } from '../../lib/mes-atual'
 import { useRendas } from './hooks/use-rendas'
@@ -153,11 +154,13 @@ function AbaRecebimentos() {
                   {r.rendaId === null ? 'sem fonte' : 'fonte cadastrada'}
                 </span>
               </div>
-              <span className={styles.data}>esperada {r.dataEsperada}</span>
+              <span className={styles.data}>esperada {formatarDataIso(r.dataEsperada)}</span>
               <span className={styles.valor}>{formatBRL(r.valorCentavos)}</span>
               <span className={styles.data}>
                 {r.status === 'Recebido' ? (
-                  <span className={styles.recebidaInfo}>Recebido {r.dataRecebida}</span>
+                  <span className={styles.recebidaInfo}>
+                    Recebido {formatarDataIso(r.dataRecebida)}
+                  </span>
                 ) : (
                   <span>Pendente</span>
                 )}

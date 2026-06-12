@@ -5,6 +5,7 @@ import { useFaturasPorCartao, useFaturaDetalhe } from './hooks/use-faturas'
 import { FaturaDetalhe } from './FaturaDetalhe'
 import { PageHead } from '../../components/layout/PageHead'
 import { Badge, EmptyState, Select } from '../../components/ui'
+import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import styles from './faturas.module.css'
 
 type Modo = { kind: 'lista' } | { kind: 'detalhe'; faturaId: number }
@@ -112,9 +113,12 @@ export default function FaturasPage() {
                       style={{ background: cartaoSelecionado?.cor ?? 'var(--ink-3)' }}
                     />
                     <div className={styles.faturaInfo}>
-                      <span className={styles.faturaMes}>{f.mesReferencia}</span>
+                      <span className={styles.faturaMes}>
+                        {formatarMesReferencia(f.mesReferencia)}
+                      </span>
                       <span className={styles.faturaSub}>
-                        Fecha {f.dataFechamento} · Vence {f.dataVencimento}
+                        Fecha {formatarDataIso(f.dataFechamento)} · Vence{' '}
+                        {formatarDataIso(f.dataVencimento)}
                       </span>
                     </div>
                     <Badge variant={statusVariant(f.status.kind)} />
