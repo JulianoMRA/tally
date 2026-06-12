@@ -5,6 +5,7 @@ import type { Despesa } from '@domain/entities/despesa'
 import { PageHead } from '../../components/layout/PageHead'
 import { Badge, Button, ConfirmDialog, EmptyState, Panel, useToast } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
+import { formatarDataIso } from '../../lib/formatar-data'
 import { mensagemErro } from '../../lib/mensagem-erro'
 import { useAssinaturas } from './hooks/use-assinaturas'
 import { ReajustarValorModal } from './ReajustarValorModal'
@@ -120,7 +121,7 @@ export default function AssinaturasPage() {
                     <span className={styles.descricao}>{a.descricao}</span>
                     <span className={styles.meta}>
                       {nomeCartao(a.cartaoId)} · {nomeCategoria(a.categoriaId)} · início{' '}
-                      {a.dataCompra}
+                      {formatarDataIso(a.dataCompra)}
                     </span>
                   </div>
                   <span className={styles.valor}>{formatBRL(a.valorCentavos)}/mês</span>

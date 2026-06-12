@@ -7,18 +7,11 @@ import {
 import { PageHead } from '../../components/layout/PageHead'
 import { Badge, EmptyState, Input, Panel } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
+import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { mesAtualReferencia } from '../../lib/mes-atual'
 import { pluralizar } from '../../lib/pluralizar'
 import { useVisaoMensal } from './hooks/use-visao-mensal'
 import styles from './visao-mensal.module.css'
-
-function rotuloMes(mes: string): string {
-  const [ano, m] = mes.split('-').map(Number)
-  const data = new Date(ano, m - 1, 1)
-  const formatador = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' })
-  const bruto = formatador.format(data)
-  return bruto.charAt(0).toUpperCase() + bruto.slice(1)
-}
 
 export default function VisaoMensalPage() {
   const [mes, setMes] = useState(mesAtualReferencia())
@@ -63,7 +56,9 @@ export default function VisaoMensalPage() {
           >
             →
           </button>
-          <span className={styles.mesLabel}>{rotuloMes(mes)}</span>
+          <span className={styles.mesLabel}>
+            {formatarMesReferencia(mes, { capitalizar: true })}
+          </span>
           {ehProjecao && (
             <span className={styles.headerBadges}>
               <Badge variant="projection" />
@@ -160,7 +155,7 @@ export default function VisaoMensalPage() {
                           <span className={styles.cardChip} style={{ background: f.cartaoCor }} />
                           {f.cartaoNome}
                         </td>
-                        <td className="mono">{f.fatura.dataVencimento}</td>
+                        <td className="mono">{formatarDataIso(f.fatura.dataVencimento)}</td>
                         <td className={`${styles.colValor} tnum`}>
                           <strong>{formatBRL(f.totalCentavos)}</strong>
                         </td>
@@ -193,11 +188,11 @@ export default function VisaoMensalPage() {
                     {detalhe.recebimentos.map((r) => (
                       <tr key={r.id}>
                         <td>{r.rendaNome ?? '—'}</td>
-                        <td className="mono">{r.dataEsperada}</td>
+                        <td className="mono">{formatarDataIso(r.dataEsperada)}</td>
                         <td className={styles.colStatus}>
                           {r.status === 'Recebido' ? (
                             <span className={styles.recebimentoStatusBadgeRecebido}>
-                              Recebido {r.dataRecebida}
+                              Recebido {formatarDataIso(r.dataRecebida)}
                             </span>
                           ) : (
                             <span className={styles.recebimentoStatusBadgePendente}>Esperado</span>
@@ -234,7 +229,7 @@ export default function VisaoMensalPage() {
                       <tr key={g.id}>
                         <td>{g.descricao}</td>
                         <td className="mono">{g.formaPagamento}</td>
-                        <td className="mono">{g.dataCompra}</td>
+                        <td className="mono">{formatarDataIso(g.dataCompra)}</td>
                         <td className={`${styles.colValor} tnum`}>{formatBRL(g.valorCentavos)}</td>
                       </tr>
                     ))}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Fatura } from '@domain/entities/fatura'
 import { Button, Field, Input, Select } from '../../components/ui'
 import { useEscapeKey } from '../../hooks/use-escape-key'
+import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import styles from './faturas.module.css'
 
 type Props = {
@@ -96,7 +97,8 @@ export function AdiantarParcelasModal({
               ) : (
                 faturasDestino.map((f) => (
                   <option key={f.id} value={f.id}>
-                    {f.mesReferencia} (vence {f.dataVencimento})
+                    {formatarMesReferencia(f.mesReferencia)} (vence{' '}
+                    {formatarDataIso(f.dataVencimento)})
                   </option>
                 ))
               )}

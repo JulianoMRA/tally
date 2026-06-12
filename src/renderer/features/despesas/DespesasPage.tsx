@@ -11,6 +11,7 @@ import { useCartoesAtivos } from './hooks/use-cartoes-ativos'
 import { useCategoriasDespesa } from './hooks/use-categorias-despesa'
 import { PageHead } from '../../components/layout/PageHead'
 import { useToast } from '../../components/ui'
+import { formatarMesReferencia } from '../../lib/formatar-data'
 import { mensagemErro } from '../../lib/mensagem-erro'
 import styles from './despesas.module.css'
 
@@ -118,14 +119,14 @@ export default function DespesasPage() {
               <>
                 {' '}
                 registrada via <strong>{ultimaRegistrada.formaForaCartao}</strong> em{' '}
-                <strong>{ultimaRegistrada.mesReferencia}</strong>.
+                <strong>{formatarMesReferencia(ultimaRegistrada.mesReferencia)}</strong>.
               </>
             ) : (
               <>
                 {ultimaRegistrada.parcelas
                   ? ` registrada com ${ultimaRegistrada.parcelas} parcelas a partir de `
                   : ' registrada na fatura '}
-                <strong>{ultimaRegistrada.mesReferencia}</strong> · cartão{' '}
+                <strong>{formatarMesReferencia(ultimaRegistrada.mesReferencia)}</strong> · cartão{' '}
                 <strong>{ultimaRegistrada.cartaoNome}</strong>.
               </>
             )}
