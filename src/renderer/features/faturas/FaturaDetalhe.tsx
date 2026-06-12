@@ -7,6 +7,7 @@ import type { FaturaDetalhada } from '@shared/ipc/fatura'
 import { hojeIsoLocal } from '@shared/datas-locais'
 import { useCicloFatura } from './hooks/use-faturas'
 import { AdiantarParcelasModal } from './AdiantarParcelasModal'
+import { dataParcelaExibida } from './data-parcela'
 import { EditarDespesaModal } from './EditarDespesaModal'
 import {
   Badge,
@@ -19,6 +20,7 @@ import {
   useToast
 } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
+import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { mensagemErro } from '../../lib/mensagem-erro'
 import styles from './faturas.module.css'
 
@@ -34,7 +36,7 @@ function compararParcelas(
   a: Parcela,
   b: Parcela,
   by: SortBy,
-  despesas: Record<number, { descricao: string }> | undefined
+  despesas: FaturaDetalhada['despesasPorParcela']
 ): number {
   switch (by) {
     case 'descricao': {
@@ -45,7 +47,9 @@ function compararParcelas(
     case 'parcela':
       return a.numero - b.numero || (a.total ?? 0) - (b.total ?? 0)
     case 'data':
-      return a.dataReferencia.localeCompare(b.dataReferencia)
+      return dataParcelaExibida(a, despesas?.[a.id]).localeCompare(
+        dataParcelaExibida(b, despesas?.[b.id])
+      )
     case 'valor':
       return a.valorCentavos - b.valorCentavos
     case 'status':
@@ -177,10 +181,11 @@ export function FaturaDetalhe({
           {cartaoCor && <span className={styles.cardChip} style={{ background: cartaoCor }} />}
           <div>
             <h2 className={styles.detalheTitleText}>
-              {cartaoNome} · {fatura.mesReferencia}
+              {cartaoNome} · {formatarMesReferencia(fatura.mesReferencia)}
             </h2>
             <p className={styles.detalheMeta}>
-              Fecha {fatura.dataFechamento} · Vence {fatura.dataVencimento}
+              Fecha {formatarDataIso(fatura.dataFechamento)} · Vence{' '}
+              {formatarDataIso(fatura.dataVencimento)}
             </p>
           </div>
         </div>
@@ -316,7 +321,9 @@ export function FaturaDetalhe({
                     <td className="mono">
                       {p.numero}/{p.total ?? '?'}
                     </td>
-                    <td>{p.dataReferencia}</td>
+                    <td>
+                      {formatarDataIso(dataParcelaExibida(p, detalhe.despesasPorParcela?.[p.id]))}
+                    </td>
                     <td className={`${styles.colValor} tnum`}>{formatBRL(p.valorCentavos)}</td>
                     <td>
                       <Badge variant={p.status === 'Paga' ? 'paid' : 'pending'} />
