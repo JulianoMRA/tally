@@ -35,7 +35,7 @@
   gap: 12px;
   background: var(--bg-elev);
   border: 1px solid var(--rule);
-  border-radius: var(--r-2);
+  border-radius: var(--r-3);
   padding: 12px 16px;
   box-shadow: var(--shadow-1);
 }
@@ -271,7 +271,7 @@
   gap: 14px;
   background: var(--bg-elev);
   border: 1px solid var(--rule);
-  border-radius: var(--r-2);
+  border-radius: var(--r-3);
   padding: 12px 16px;
   box-shadow: var(--shadow-1);
 }
@@ -336,8 +336,9 @@
 .totalCard {
   background: var(--bg-sunk);
   border: 1px solid var(--rule);
-  border-radius: var(--r-2);
+  border-radius: var(--r-3);
   padding: 12px 16px;
+  box-shadow: var(--shadow-1);
 }
 
 .totalLabel {

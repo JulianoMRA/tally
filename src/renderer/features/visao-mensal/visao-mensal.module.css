@@ -13,7 +13,7 @@
 
 .navBtn {
   background: var(--bg-elev);
-  border: 1px solid var(--rule-strong);
+  border: 1px solid var(--rule);
   border-radius: var(--r-2);
   width: 34px;
   height: 34px;
