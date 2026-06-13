@@ -24,6 +24,7 @@ import {
 import type { Cartao } from '@domain/entities/cartao'
 import type { Categoria } from '@domain/entities/categoria'
 import { Button, Field, Input, Select } from '../../components/ui'
+import { parseCentavos, valorTotalCentavosParcelada, type ModoValorParcela } from './parcela-valor'
 import styles from './despesas.module.css'
 
 type TipoDespesa = 'unica' | 'parcelada' | 'em-andamento' | 'assinatura'
@@ -83,10 +84,6 @@ type Props = {
 }
 
 type FormaPagamento = 'Credito' | 'Pix' | 'Debito' | 'Dinheiro'
-
-function parseCentavos(reais: string): number {
-  return Math.round(parseFloat(reais.replace(',', '.')) * 100)
-}
 
 function CamposComuns<T extends FieldValues>({
   register,
@@ -337,16 +334,20 @@ function FormParcelada({
     formState: { errors, isSubmitting }
   } = useForm<ParceladaValues>({ resolver: zodResolver(parceladaSchema) })
 
+  const [modoValor, setModoValor] = useState<ModoValorParcela>('total')
   const valorReais = watch('valorReais') ?? ''
   const totalParcelas = watch('totalParcelas')
   const valorNumerico = parseFloat(valorReais.replace(',', '.'))
-  const valorParcela =
+  const previewValido =
     Number.isFinite(valorNumerico) &&
     typeof totalParcelas === 'number' &&
     Number.isInteger(totalParcelas) &&
     totalParcelas > 0
-      ? (valorNumerico / totalParcelas).toFixed(2)
-      : null
+  const previewTexto = !previewValido
+    ? null
+    : modoValor === 'total'
+      ? `≈ R$ ${(valorNumerico / totalParcelas).toFixed(2)} por parcela`
+      : `= R$ ${(valorNumerico * totalParcelas).toFixed(2)} no total`
 
   async function onSubmit(values: ParceladaValues) {
     await onSalvar({
@@ -354,7 +355,11 @@ function FormParcelada({
       categoriaId: Number(values.categoriaId),
       cartaoId: Number(values.cartaoId),
       totalParcelas: Number(values.totalParcelas),
-      valorTotalCentavos: parseCentavos(values.valorReais),
+      valorTotalCentavos: valorTotalCentavosParcelada(
+        modoValor,
+        values.valorReais,
+        Number(values.totalParcelas)
+      ),
       dataCompra: values.dataCompra
     })
     reset()
@@ -364,8 +369,30 @@ function FormParcelada({
     <form onSubmit={handleSubmit(onSubmit)} className={styles.formInner}>
       <CamposComuns register={register} errors={errors} cartoes={cartoes} categorias={categorias} />
 
+      <div className={styles.formaSelector}>
+        {(
+          [
+            { value: 'total', label: 'Valor total' },
+            { value: 'parcela', label: 'Valor por parcela' }
+          ] as const
+        ).map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            className={`${styles.formaBtn} ${modoValor === value ? styles.formaBtnActive : ''}`}
+            onClick={() => setModoValor(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className={styles.fieldRow}>
-        <Field label="Valor total (R$)" error={errors.valorReais?.message} required>
+        <Field
+          label={modoValor === 'total' ? 'Valor total (R$)' : 'Valor por parcela (R$)'}
+          error={errors.valorReais?.message}
+          required
+        >
           <Input
             type="text"
             inputMode="decimal"
@@ -386,7 +413,7 @@ function FormParcelada({
         </Field>
       </div>
 
-      {valorParcela && <p className={styles.valorParcela}>≈ R$ {valorParcela} por parcela</p>}
+      {previewTexto && <p className={styles.valorParcela}>{previewTexto}</p>}
 
       <Field label="Data da compra" error={errors.dataCompra?.message} required>
         <Input type="date" {...register('dataCompra')} error={!!errors.dataCompra} />
