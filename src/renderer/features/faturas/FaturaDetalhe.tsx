@@ -333,9 +333,14 @@ export function FaturaDetalhe({
                 <tbody>
                   {parcelasOrdenadas.map((p) => (
                     <tr key={p.id}>
-                      <td>{detalhe.despesasPorParcela?.[p.id]?.descricao ?? `#${p.despesaId}`}</td>
+                      <td>
+                        {detalhe.despesasPorParcela?.[p.id]?.descricao ?? `#${p.despesaId}`}
+                        {detalhe.despesasPorParcela?.[p.id]?.tipo === 'Assinatura' && (
+                          <span className={styles.tagAssinatura}>Assinatura</span>
+                        )}
+                      </td>
                       <td className="mono">
-                        {p.numero}/{p.total ?? '?'}
+                        {p.total === null ? 'Mensal' : `${p.numero}/${p.total}`}
                       </td>
                       <td>
                         {formatarDataIso(dataParcelaExibida(p, detalhe.despesasPorParcela?.[p.id]))}
@@ -354,7 +359,7 @@ export function FaturaDetalhe({
                               disabled={detalhe.despesasPorParcela[p.id].tipo === 'Assinatura'}
                               title={
                                 detalhe.despesasPorParcela[p.id].tipo === 'Assinatura'
-                                  ? 'Use Reajustar em Assinaturas'
+                                  ? 'Edite assinaturas na tela Assinaturas'
                                   : 'Editar despesa'
                               }
                             >
