@@ -983,7 +983,7 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
       ).toThrow(/data.*não suportada/i)
     })
 
-    it('Assinatura: rejeita atualizar (deve usar reajustarValorMensalAssinatura)', () => {
+    it('Assinatura: atualiza descricao e categoria mantendo as ocorrencias', () => {
       const r = repo.criarAssinaturaCredito({
         descricao: 'Spotify',
         categoriaId: catId,
@@ -991,13 +991,78 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
         valorMensalCentavos: 1990,
         dataInicio: '2026-06-03'
       })
+      const cat2 = db
+        .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Lazer', 'Despesa', '#abc')")
+        .run().lastInsertRowid as number
+
+      const atualizada = repo.atualizar(r.despesa.id, {
+        descricao: 'Spotify Premium',
+        categoriaId: cat2,
+        valorCentavos: 1990
+      })
+
+      expect(atualizada.descricao).toBe('Spotify Premium')
+      expect(atualizada.categoriaId).toBe(cat2)
+
+      const ocorrencias = parcelaRepo.listarPorDespesa(r.despesa.id)
+      for (const p of ocorrencias) {
+        expect(p.valorCentavos).toBe(1990)
+      }
+    })
+
+    it('Assinatura: novo valor mensal aplica integral nas pendentes em fatura aberta', () => {
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 1990,
+        dataInicio: '2026-06-03'
+      })
+      const ocorrencias = parcelaRepo.listarPorDespesa(r.despesa.id)
+      // Fecha a fatura da primeira ocorrência: ela deve preservar o valor antigo.
+      db.prepare("UPDATE fatura SET status = 'Fechada' WHERE id = ?").run(ocorrencias[0].faturaId)
+
+      const atualizada = repo.atualizar(r.despesa.id, {
+        descricao: 'Spotify Família',
+        categoriaId: catId,
+        valorCentavos: 2990
+      })
+      expect(atualizada.valorCentavos).toBe(2990)
+
+      const depois = parcelaRepo.listarPorDespesa(r.despesa.id)
+      const fechada = depois.find((p) => p.id === ocorrencias[0].id)!
+      expect(fechada.valorCentavos).toBe(1990)
+      // Cada pendente em aberta recebe o valor mensal INTEGRAL (não distribuído).
+      for (const p of depois.filter((p) => p.id !== ocorrencias[0].id)) {
+        expect(p.valorCentavos).toBe(2990)
+      }
+    })
+
+    it('Assinatura: preserva ocorrencia paga e nao lanca ao editar', () => {
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId,
+        valorMensalCentavos: 1990,
+        dataInicio: '2026-06-03'
+      })
+      const ocorrencias = parcelaRepo.listarPorDespesa(r.despesa.id)
+      db.prepare(
+        "UPDATE parcela SET status = 'Paga', data_pagamento = '2026-06-12' WHERE id = ?"
+      ).run(ocorrencias[0].id)
+
       expect(() =>
         repo.atualizar(r.despesa.id, {
-          descricao: 'X',
+          descricao: 'Spotify Duo',
           categoriaId: catId,
-          valorCentavos: 2000
+          valorCentavos: 2990
         })
-      ).toThrow(/reajustarValorMensalAssinatura/)
+      ).not.toThrow()
+
+      const depois = parcelaRepo.listarPorDespesa(r.despesa.id)
+      const paga = depois.find((p) => p.id === ocorrencias[0].id)!
+      expect(paga.valorCentavos).toBe(1990)
+      expect(paga.status).toBe('Paga')
     })
 
     it('lanca erro para despesa inexistente', () => {

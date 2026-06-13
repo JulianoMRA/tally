@@ -367,15 +367,7 @@ export class DespesaRepository implements Repository {
     const parcelaRepo = new ParcelaRepository(this.db)
 
     return this.db.transaction(() => {
-      this.db
-        .prepare(
-          `UPDATE parcela
-           SET valor_centavos = ?, updated_at = datetime('now')
-           WHERE despesa_id = ?
-             AND status = 'Pendente'
-             AND fatura_id IN (SELECT id FROM fatura WHERE status = 'Aberta')`
-        )
-        .run(novoValorCentavos, despesaId)
+      this.aplicarValorMensal(despesaId, novoValorCentavos)
 
       this.db
         .prepare(`UPDATE despesa SET valor_centavos = ?, updated_at = datetime('now') WHERE id = ?`)
@@ -388,6 +380,50 @@ export class DespesaRepository implements Repository {
       const atualizadas = todasParcelas.filter((p) => p.valorCentavos === novoValorCentavos)
 
       return { despesa: mapDespesa(atualizadaRow), atualizadas }
+    })()
+  }
+
+  /**
+   * Aplica o valor mensal INTEGRAL às ocorrências Pendentes de uma assinatura
+   * que estejam em fatura Aberta. Ocorrências pagas ou em faturas Fechada/Paga
+   * preservam o histórico. Base comum de `reajustarValorMensalAssinatura` e
+   * `atualizarAssinatura`.
+   */
+  private aplicarValorMensal(despesaId: number, valorCentavos: number): void {
+    this.db
+      .prepare(
+        `UPDATE parcela
+         SET valor_centavos = ?, updated_at = datetime('now')
+         WHERE despesa_id = ?
+           AND status = 'Pendente'
+           AND fatura_id IN (SELECT id FROM fatura WHERE status = 'Aberta')`
+      )
+      .run(valorCentavos, despesaId)
+  }
+
+  private atualizarAssinatura(
+    despesaId: number,
+    despesaRow: DespesaRow,
+    input: { descricao: string; categoriaId: number; valorCentavos: number }
+  ): Despesa {
+    const valorMudou = despesaRow.valor_centavos !== input.valorCentavos
+    return this.db.transaction(() => {
+      this.db
+        .prepare(
+          `UPDATE despesa
+           SET descricao = ?, categoria_id = ?, valor_centavos = ?, updated_at = datetime('now')
+           WHERE id = ?`
+        )
+        .run(input.descricao, input.categoriaId, input.valorCentavos, despesaId)
+
+      if (valorMudou) {
+        this.aplicarValorMensal(despesaId, input.valorCentavos)
+      }
+
+      const atualizadaRow = this.db
+        .prepare('SELECT * FROM despesa WHERE id = ?')
+        .get(despesaId) as DespesaRow
+      return mapDespesa(atualizadaRow)
     })()
   }
 
@@ -492,16 +528,17 @@ export class DespesaRepository implements Repository {
 
   /**
    * RF-DES-10 — atualiza descricao, categoria e valor de uma despesa
-   * Unica ou Parcelada. Para Unica, tambem aceita nova `dataCompra` (move
-   * a parcela para a fatura calculada via RN-01). Bloqueia quando ha
-   * parcela paga.
+   * Unica, Parcelada ou Assinatura. Para Unica, tambem aceita nova
+   * `dataCompra` (move a parcela para a fatura calculada via RN-01).
    *
    * Se `valorCentavos` mudou:
    * - Unica: atualiza a unica parcela.
    * - Parcelada: distribui o novo valor entre as parcelas pendentes via
-   *   `recalcularParcelasPendentes` (resto vai para a ultima).
-   *
-   * Assinatura nao usa este metodo — usar `reajustarValorMensalAssinatura`.
+   *   `recalcularParcelasPendentes` (resto vai para a ultima). Bloqueia
+   *   quando ha parcela paga.
+   * - Assinatura: aplica o novo valor mensal INTEGRAL as ocorrencias
+   *   pendentes em fatura Aberta (RN-04). `dataCompra` (inicio) e historica
+   *   e nao muda; ocorrencias pagas sao apenas preservadas.
    */
   atualizar(
     despesaId: number,
@@ -516,10 +553,11 @@ export class DespesaRepository implements Repository {
       | DespesaRow
       | undefined
     if (!despesaRow) throw new Error(`Despesa #${despesaId} não encontrada`)
-    if (despesaRow.tipo === 'Assinatura') {
-      throw new Error(`Use reajustarValorMensalAssinatura para assinaturas.`)
-    }
     this.validarCategoria(input.categoriaId)
+
+    if (despesaRow.tipo === 'Assinatura') {
+      return this.atualizarAssinatura(despesaId, despesaRow, input)
+    }
 
     const parcelaRepo = new ParcelaRepository(this.db)
     const parcelas = parcelaRepo.listarPorDespesa(despesaId)
