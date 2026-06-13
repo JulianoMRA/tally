@@ -1,6 +1,5 @@
 .body {
   padding: 0 32px 32px;
-  max-width: 1080px;
 }
 
 .header {
@@ -9,6 +8,29 @@
   gap: 10px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+}
+
+/* Empilhado por padrão (janelas estreitas mantêm o comportamento anterior).
+   Em telas largas vira duas colunas: operacional (55%) + gráficos (45%). */
+.layout {
+  display: flex;
+  flex-direction: column;
+  max-width: 1080px;
+}
+
+.colunaOperacional,
+.colunaGraficos {
+  min-width: 0;
+}
+
+@media (min-width: 1440px) {
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
+    gap: 28px;
+    max-width: 1760px;
+    align-items: start;
+  }
 }
 
 .navBtn {

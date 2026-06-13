@@ -55,9 +55,10 @@ test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
     await expect(page.getByText('Cinema')).toBeVisible()
 
-    // Relatórios
-    await page.getByRole('link', { name: 'Relatórios' }).click()
-    await expect(page.getByRole('heading', { name: 'Relatórios' })).toBeVisible()
+    // Relatórios agora vivem na Visão mensal (coluna de gráficos)
+    await page.getByRole('link', { name: 'Visão mensal' }).click()
+    await expect(page.getByRole('heading', { name: 'Visão mensal' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Gastos do mês por categoria' })).toBeVisible()
 
     // Ranking deve listar Mercado e Lazer com seus valores (escopado ao item da lista,
     // pois os nomes também aparecem nos selects de categoria da página)
