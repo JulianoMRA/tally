@@ -250,10 +250,6 @@
   font-weight: 600;
 }
 
-.actionsRight {
-  margin-left: auto;
-}
-
 .lista {
   list-style: none;
   padding: 0;
@@ -261,7 +257,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-width: 880px;
+  max-width: 1280px;
 }
 
 .item {
@@ -329,31 +325,35 @@
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 12px;
-  margin-top: 12px;
-  max-width: 880px;
+  margin: 0 0 16px;
+  max-width: 1280px;
 }
 
 .totalCard {
-  background: var(--bg-sunk);
+  background: var(--bg-elev);
   border: 1px solid var(--rule);
   border-radius: var(--r-3);
-  padding: 12px 16px;
+  padding: 16px 18px;
   box-shadow: var(--shadow-1);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .totalLabel {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--ink-3);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  font-family: var(--font-mono);
 }
 
 .totalValor {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 800;
   color: var(--ink);
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
-  margin-top: 4px;
 }
 
 .totalValorIncome {

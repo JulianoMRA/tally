@@ -31,12 +31,20 @@ type StatusFiltro = 'Todos' | StatusRecebimento
 
 export default function RendasPage() {
   const [aba, setAba] = useState<Aba>('recebimentos')
+  const [novoAvulsoAberto, setNovoAvulsoAberto] = useState(false)
 
   return (
     <div>
       <PageHead
         title="Rendas"
         subtitle="Recebimentos do mês e fontes de entrada — recorrentes (bolsa, salário) ou avulsas (freela, presente)."
+        actions={
+          aba === 'recebimentos' ? (
+            <Button variant="primary" size="sm" onClick={() => setNovoAvulsoAberto(true)}>
+              + Novo avulso
+            </Button>
+          ) : undefined
+        }
       />
 
       <div className={styles.tabs}>
@@ -56,12 +64,25 @@ export default function RendasPage() {
         </button>
       </div>
 
-      {aba === 'recebimentos' ? <AbaRecebimentos /> : <AbaFontes />}
+      {aba === 'recebimentos' ? (
+        <AbaRecebimentos
+          novoAvulsoAberto={novoAvulsoAberto}
+          onFecharNovoAvulso={() => setNovoAvulsoAberto(false)}
+        />
+      ) : (
+        <AbaFontes />
+      )}
     </div>
   )
 }
 
-function AbaRecebimentos() {
+function AbaRecebimentos({
+  novoAvulsoAberto,
+  onFecharNovoAvulso
+}: {
+  novoAvulsoAberto: boolean
+  onFecharNovoAvulso: () => void
+}) {
   const [mes, setMes] = useState(mesAtualReferencia())
   const [statusFiltro, setStatusFiltro] = useState<StatusFiltro>('Todos')
   const { recebimentos, loading, erro, recarregar } = useRecebimentos({
@@ -69,7 +90,6 @@ function AbaRecebimentos() {
     status: statusFiltro === 'Todos' ? undefined : statusFiltro
   })
   const [alvoMarcar, setAlvoMarcar] = useState<RecebimentoComContexto | null>(null)
-  const [novoAvulso, setNovoAvulso] = useState(false)
   const [acaoErro, setAcaoErro] = useState<string | null>(null)
   const [alvoExcluir, setAlvoExcluir] = useState<RecebimentoComContexto | null>(null)
 
@@ -85,7 +105,7 @@ function AbaRecebimentos() {
 
   async function handleCriarAvulso(input: CriarRecebimentoAvulsoInput) {
     await window.api.recebimento.criarAvulso(input)
-    setNovoAvulso(false)
+    onFecharNovoAvulso()
     await recarregar()
   }
 
@@ -129,16 +149,29 @@ function AbaRecebimentos() {
             </button>
           ))}
         </div>
-
-        <div className={styles.actionsRight}>
-          <Button variant="primary" size="sm" onClick={() => setNovoAvulso(true)}>
-            + Novo avulso
-          </Button>
-        </div>
       </div>
 
       {erro && <p className={styles.erro}>{erro}</p>}
       {acaoErro && <p className={styles.erro}>{acaoErro}</p>}
+
+      {recebimentos.length > 0 && (
+        <div className={styles.totaisRow}>
+          <div className={styles.totalCard}>
+            <div className={styles.totalLabel}>Esperado</div>
+            <div className={styles.totalValor}>{formatBRL(totalEsperado)}</div>
+          </div>
+          <div className={styles.totalCard}>
+            <div className={styles.totalLabel}>Recebido</div>
+            <div className={`${styles.totalValor} ${styles.totalValorIncome}`}>
+              {formatBRL(totalRecebido)}
+            </div>
+          </div>
+          <div className={styles.totalCard}>
+            <div className={styles.totalLabel}>Total do mês</div>
+            <div className={styles.totalValor}>{formatBRL(total)}</div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <EmptyState title="Carregando…" />
@@ -180,25 +213,6 @@ function AbaRecebimentos() {
         </ul>
       )}
 
-      {recebimentos.length > 0 && (
-        <div className={styles.totaisRow}>
-          <div className={styles.totalCard}>
-            <div className={styles.totalLabel}>Esperado</div>
-            <div className={styles.totalValor}>{formatBRL(totalEsperado)}</div>
-          </div>
-          <div className={styles.totalCard}>
-            <div className={styles.totalLabel}>Recebido</div>
-            <div className={`${styles.totalValor} ${styles.totalValorIncome}`}>
-              {formatBRL(totalRecebido)}
-            </div>
-          </div>
-          <div className={styles.totalCard}>
-            <div className={styles.totalLabel}>Total do mês</div>
-            <div className={styles.totalValor}>{formatBRL(total)}</div>
-          </div>
-        </div>
-      )}
-
       {alvoMarcar && (
         <MarcarRecebidoModal
           descricao={alvoMarcar.rendaNome ?? `Recebimento #${alvoMarcar.id}`}
@@ -208,8 +222,8 @@ function AbaRecebimentos() {
         />
       )}
 
-      {novoAvulso && (
-        <NovoAvulsoModal onConfirmar={handleCriarAvulso} onCancelar={() => setNovoAvulso(false)} />
+      {novoAvulsoAberto && (
+        <NovoAvulsoModal onConfirmar={handleCriarAvulso} onCancelar={onFecharNovoAvulso} />
       )}
 
       {alvoExcluir && (
