@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatarDataIso, formatarMesReferencia } from '../formatar-data'
+import { formatarDataIso, formatarDiaMes, formatarMesReferencia } from '../formatar-data'
 
 // A implementação NÃO deve usar new Date('YYYY-MM-DD'): o parse é UTC e em
 // fusos negativos (UTC-3) a data exibida voltaria um dia. Split de string.
@@ -55,5 +55,23 @@ describe('formatarMesReferencia', () => {
     expect(formatarMesReferencia('abc')).toBe('abc')
     expect(formatarMesReferencia('2026-13')).toBe('2026-13')
     expect(formatarMesReferencia('2026-00')).toBe('2026-00')
+  })
+})
+
+describe('formatarDiaMes', () => {
+  it('converte ISO para DD/MM preservando zeros à esquerda', () => {
+    expect(formatarDiaMes('2026-06-12')).toBe('12/06')
+    expect(formatarDiaMes('2026-01-05')).toBe('05/01')
+  })
+
+  it('devolve travessão para valores ausentes', () => {
+    expect(formatarDiaMes(null)).toBe('—')
+    expect(formatarDiaMes(undefined)).toBe('—')
+    expect(formatarDiaMes('')).toBe('—')
+  })
+
+  it('devolve a string original quando o formato não é ISO completo', () => {
+    expect(formatarDiaMes('abc')).toBe('abc')
+    expect(formatarDiaMes('2026-06')).toBe('2026-06')
   })
 })

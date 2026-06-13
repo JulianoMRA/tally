@@ -6,15 +6,10 @@ import { FaturaDetalhe } from './FaturaDetalhe'
 import { PageHead } from '../../components/layout/PageHead'
 import { Badge, EmptyState, Select } from '../../components/ui'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
+import { statusVariant } from './status-variant'
 import styles from './faturas.module.css'
 
 type Modo = { kind: 'lista' } | { kind: 'detalhe'; faturaId: number }
-
-function statusVariant(kind: string): 'open' | 'closed' | 'paid' {
-  if (kind === 'Aberta') return 'open'
-  if (kind === 'Fechada') return 'closed'
-  return 'paid'
-}
 
 export default function FaturasPage() {
   const [cartaoId, setCartaoId] = useState<number | null>(null)

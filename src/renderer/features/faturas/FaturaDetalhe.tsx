@@ -22,6 +22,7 @@ import {
 import { formatBRL } from '../../lib/format-brl'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { mensagemErro } from '../../lib/mensagem-erro'
+import { statusVariant } from './status-variant'
 import styles from './faturas.module.css'
 
 type DialogoConfirma =
@@ -64,12 +65,6 @@ type Props = {
   onVoltar: () => void
   onFaturaAtualizada: (fatura: Fatura) => void
   onDetalheAtualizado: (detalhe: FaturaDetalhada) => void
-}
-
-function statusVariant(kind: string): 'open' | 'closed' | 'paid' {
-  if (kind === 'Aberta') return 'open'
-  if (kind === 'Fechada') return 'closed'
-  return 'paid'
 }
 
 export function FaturaDetalhe({

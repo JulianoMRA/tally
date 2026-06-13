@@ -31,6 +31,18 @@ export function formatarDataIso(iso: string | null | undefined): string {
 }
 
 /**
+ * Converte 'YYYY-MM-DD' em 'DD/MM' (ex.: '2026-06-12' -> '12/06'), formato curto
+ * para resumos onde o ano é redundante. Mesma política de valores ausentes/inválidos.
+ */
+export function formatarDiaMes(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const match = DATA_ISO_REGEX.exec(iso)
+  if (!match) return iso
+  const [, , mes, dia] = match
+  return `${dia}/${mes}`
+}
+
+/**
  * Converte 'YYYY-MM' (ou 'YYYY-MM-DD', ignorando o dia) em mês por extenso
  * (ex.: '2026-06' -> 'junho de 2026'). Valores ausentes viram '—'; formatos
  * inesperados passam intactos.
