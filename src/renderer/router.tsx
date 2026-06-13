@@ -12,7 +12,6 @@ const DespesasPage = lazy(() => import('./features/despesas/DespesasPage'))
 const FaturasPage = lazy(() => import('./features/faturas/FaturasPage'))
 const AssinaturasPage = lazy(() => import('./features/assinaturas/AssinaturasPage'))
 const GastosPage = lazy(() => import('./features/gastos/GastosPage'))
-const RelatoriosPage = lazy(() => import('./features/relatorios/RelatoriosPage'))
 const RendasPage = lazy(() => import('./features/rendas/RendasPage'))
 
 export const router = createHashRouter([
@@ -30,7 +29,7 @@ export const router = createHashRouter([
       { path: 'assinaturas', element: <AssinaturasPage /> },
       { path: 'gastos', element: <GastosPage /> },
       { path: 'rendas', element: <RendasPage /> },
-      { path: 'relatorios', element: <RelatoriosPage /> },
+      { path: 'relatorios', element: <Navigate to="/mensal" replace /> },
       { path: 'recebimentos', element: <Navigate to="/rendas" replace /> }
     ]
   }

@@ -34,10 +34,10 @@ test.describe('Orçamento por categoria (Bloco D)', () => {
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
     await expect(page.getByText('Compra Orc E2E')).toBeVisible()
 
-    // --- Relatórios: definir limite de R$ 100,00 para a categoria no mês 2026-06 ---
-    await page.getByRole('link', { name: 'Relatórios' }).click()
-    await expect(page.getByRole('heading', { name: 'Relatórios' })).toBeVisible()
-    await page.getByLabel('Mês').fill('2026-06')
+    // --- Visão mensal (coluna de gráficos): definir limite de R$ 100,00 no mês 2026-06 ---
+    await page.getByRole('link', { name: 'Visão mensal' }).click()
+    await expect(page.getByRole('heading', { name: 'Visão mensal' })).toBeVisible()
+    await page.getByLabel('Mês', { exact: true }).fill('2026-06')
 
     // Escopa ao painel de Orçamento (a página tem outro select "Categoria").
     // Estrutura do Panel: h3 (título) → div.head → div.panel.

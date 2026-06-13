@@ -22,6 +22,7 @@ import {
 import { formatBRL } from '../../lib/format-brl'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { mensagemErro } from '../../lib/mensagem-erro'
+import { statusVariant } from './status-variant'
 import styles from './faturas.module.css'
 
 type DialogoConfirma =
@@ -64,12 +65,6 @@ type Props = {
   onVoltar: () => void
   onFaturaAtualizada: (fatura: Fatura) => void
   onDetalheAtualizado: (detalhe: FaturaDetalhada) => void
-}
-
-function statusVariant(kind: string): 'open' | 'closed' | 'paid' {
-  if (kind === 'Aberta') return 'open'
-  if (kind === 'Fechada') return 'closed'
-  return 'paid'
 }
 
 export function FaturaDetalhe({
@@ -176,87 +171,107 @@ export function FaturaDetalhe({
 
   return (
     <div className={styles.detalhe}>
-      <div className={styles.detalheHeader}>
+      <div className={`${styles.detalheHeader} ${styles.areaHeader}`}>
         <div className={styles.detalheTitle}>
           {cartaoCor && <span className={styles.cardChip} style={{ background: cartaoCor }} />}
-          <div>
-            <h2 className={styles.detalheTitleText}>
-              {cartaoNome} · {formatarMesReferencia(fatura.mesReferencia)}
-            </h2>
-            <p className={styles.detalheMeta}>
-              Fecha {formatarDataIso(fatura.dataFechamento)} · Vence{' '}
-              {formatarDataIso(fatura.dataVencimento)}
-            </p>
-          </div>
+          <h2 className={styles.detalheTitleText}>
+            {cartaoNome} · {formatarMesReferencia(fatura.mesReferencia)}
+          </h2>
         </div>
         <div className={styles.detalheActions}>
-          <Badge variant={statusVariant(kind)} />
           <Button variant="ghost" size="sm" onClick={onVoltar}>
             ← Voltar
           </Button>
         </div>
       </div>
 
-      <div className={styles.cicloActions}>
-        {kind === 'Aberta' && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setDialogo({ tipo: 'fechar' })}
-            disabled={ciclo.loading}
-          >
-            Fechar fatura
-          </Button>
-        )}
-        {kind === 'Fechada' && !modoPagar && (
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setModoPagar(true)}
-            disabled={ciclo.loading}
-          >
-            Marcar como paga
-          </Button>
-        )}
-        {kind === 'Fechada' && modoPagar && (
-          <div className={styles.pagarForm}>
-            <Field label="Data de pagamento">
-              <Input
-                type="date"
-                value={dataPagamento}
-                onChange={(e) => setDataPagamento(e.target.value)}
-              />
-            </Field>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handlePagarConfirmar}
-              disabled={ciclo.loading}
-            >
-              Confirmar pagamento
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setModoPagar(false)}
-              disabled={ciclo.loading}
-            >
-              Cancelar
-            </Button>
+      <aside className={styles.areaAside}>
+        <div className={styles.resumoCard}>
+          <div className={styles.resumoLinha}>
+            <span className={styles.resumoLabel}>Mês</span>
+            <span className={styles.resumoValor}>
+              {formatarMesReferencia(fatura.mesReferencia)}
+            </span>
           </div>
-        )}
-        {kind === 'Paga' && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setDialogo({ tipo: 'reabrir' })}
-            disabled={ciclo.loading}
-          >
-            Reabrir fatura
-          </Button>
-        )}
-        {ciclo.erro && <p className={styles.erroAcao}>{ciclo.erro}</p>}
-      </div>
+          <div className={styles.resumoLinha}>
+            <span className={styles.resumoLabel}>Fechamento</span>
+            <span className={styles.resumoValor}>{formatarDataIso(fatura.dataFechamento)}</span>
+          </div>
+          <div className={styles.resumoLinha}>
+            <span className={styles.resumoLabel}>Vencimento</span>
+            <span className={styles.resumoValor}>{formatarDataIso(fatura.dataVencimento)}</span>
+          </div>
+          <div className={styles.resumoLinha}>
+            <span className={styles.resumoLabel}>Status</span>
+            <Badge variant={statusVariant(kind)} />
+          </div>
+          <div className={`${styles.resumoLinha} ${styles.resumoTotalLinha}`}>
+            <span className={styles.resumoLabel}>Total da fatura</span>
+            <span className={styles.resumoTotalValor}>{formatBRL(totalCentavos)}</span>
+          </div>
+
+          <div className={styles.cicloActions}>
+            {kind === 'Aberta' && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setDialogo({ tipo: 'fechar' })}
+                disabled={ciclo.loading}
+              >
+                Fechar fatura
+              </Button>
+            )}
+            {kind === 'Fechada' && !modoPagar && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setModoPagar(true)}
+                disabled={ciclo.loading}
+              >
+                Marcar como paga
+              </Button>
+            )}
+            {kind === 'Fechada' && modoPagar && (
+              <div className={styles.pagarForm}>
+                <Field label="Data de pagamento">
+                  <Input
+                    type="date"
+                    value={dataPagamento}
+                    onChange={(e) => setDataPagamento(e.target.value)}
+                  />
+                </Field>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handlePagarConfirmar}
+                  disabled={ciclo.loading}
+                >
+                  Confirmar pagamento
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setModoPagar(false)}
+                  disabled={ciclo.loading}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            )}
+            {kind === 'Paga' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDialogo({ tipo: 'reabrir' })}
+                disabled={ciclo.loading}
+              >
+                Reabrir fatura
+              </Button>
+            )}
+            {ciclo.erro && <p className={styles.erroAcao}>{ciclo.erro}</p>}
+          </div>
+        </div>
+      </aside>
 
       {despesaEditar && (
         <EditarDespesaModal
@@ -281,112 +296,114 @@ export function FaturaDetalhe({
         />
       )}
 
-      <Panel
-        title="Parcelas"
-        meta={`${parcelas.length} lançamento${parcelas.length !== 1 ? 's' : ''}`}
-        flush
-      >
-        {parcelas.length === 0 ? (
-          <EmptyState title="Nenhuma parcela nesta fatura." />
-        ) : (
-          <>
-            <table className={styles.tabela}>
-              <thead>
-                <tr>
-                  <th className={styles.thSortavel} onClick={() => handleSort('descricao')}>
-                    Descrição{sortIndicator('descricao')}
-                  </th>
-                  <th className={styles.thSortavel} onClick={() => handleSort('parcela')}>
-                    Parcela{sortIndicator('parcela')}
-                  </th>
-                  <th className={styles.thSortavel} onClick={() => handleSort('data')}>
-                    Data{sortIndicator('data')}
-                  </th>
-                  <th
-                    className={`${styles.colValor} ${styles.thSortavel}`}
-                    onClick={() => handleSort('valor')}
-                  >
-                    Valor{sortIndicator('valor')}
-                  </th>
-                  <th className={styles.thSortavel} onClick={() => handleSort('status')}>
-                    Status{sortIndicator('status')}
-                  </th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {parcelasOrdenadas.map((p) => (
-                  <tr key={p.id}>
-                    <td>{detalhe.despesasPorParcela?.[p.id]?.descricao ?? `#${p.despesaId}`}</td>
-                    <td className="mono">
-                      {p.numero}/{p.total ?? '?'}
-                    </td>
-                    <td>
-                      {formatarDataIso(dataParcelaExibida(p, detalhe.despesasPorParcela?.[p.id]))}
-                    </td>
-                    <td className={`${styles.colValor} tnum`}>{formatBRL(p.valorCentavos)}</td>
-                    <td>
-                      <Badge variant={p.status === 'Paga' ? 'paid' : 'pending'} />
-                    </td>
-                    <td>
-                      <div className={styles.rowActions}>
-                        {p.status === 'Pendente' && detalhe.despesasPorParcela?.[p.id] && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDespesaEditar(detalhe.despesasPorParcela![p.id])}
-                            disabled={detalhe.despesasPorParcela[p.id].tipo === 'Assinatura'}
-                            title={
-                              detalhe.despesasPorParcela[p.id].tipo === 'Assinatura'
-                                ? 'Use Reajustar em Assinaturas'
-                                : 'Editar despesa'
-                            }
-                          >
-                            Editar
-                          </Button>
-                        )}
-                        {kind === 'Aberta' &&
-                          p.status === 'Pendente' &&
-                          detalhe.despesasPorParcela?.[p.id]?.tipo === 'Parcelada' && (
+      <div className={styles.areaMain}>
+        <Panel
+          title="Parcelas"
+          meta={`${parcelas.length} lançamento${parcelas.length !== 1 ? 's' : ''}`}
+          flush
+        >
+          {parcelas.length === 0 ? (
+            <EmptyState title="Nenhuma parcela nesta fatura." />
+          ) : (
+            <>
+              <table className={styles.tabela}>
+                <thead>
+                  <tr>
+                    <th className={styles.thSortavel} onClick={() => handleSort('descricao')}>
+                      Descrição{sortIndicator('descricao')}
+                    </th>
+                    <th className={styles.thSortavel} onClick={() => handleSort('parcela')}>
+                      Parcela{sortIndicator('parcela')}
+                    </th>
+                    <th className={styles.thSortavel} onClick={() => handleSort('data')}>
+                      Data{sortIndicator('data')}
+                    </th>
+                    <th
+                      className={`${styles.colValor} ${styles.thSortavel}`}
+                      onClick={() => handleSort('valor')}
+                    >
+                      Valor{sortIndicator('valor')}
+                    </th>
+                    <th className={styles.thSortavel} onClick={() => handleSort('status')}>
+                      Status{sortIndicator('status')}
+                    </th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {parcelasOrdenadas.map((p) => (
+                    <tr key={p.id}>
+                      <td>{detalhe.despesasPorParcela?.[p.id]?.descricao ?? `#${p.despesaId}`}</td>
+                      <td className="mono">
+                        {p.numero}/{p.total ?? '?'}
+                      </td>
+                      <td>
+                        {formatarDataIso(dataParcelaExibida(p, detalhe.despesasPorParcela?.[p.id]))}
+                      </td>
+                      <td className={`${styles.colValor} tnum`}>{formatBRL(p.valorCentavos)}</td>
+                      <td>
+                        <Badge variant={p.status === 'Paga' ? 'paid' : 'pending'} />
+                      </td>
+                      <td>
+                        <div className={styles.rowActions}>
+                          {p.status === 'Pendente' && detalhe.despesasPorParcela?.[p.id] && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setParcelaAdiantar(p)}
-                              title="Adiantar para outra fatura"
+                              onClick={() => setDespesaEditar(detalhe.despesasPorParcela![p.id])}
+                              disabled={detalhe.despesasPorParcela[p.id].tipo === 'Assinatura'}
+                              title={
+                                detalhe.despesasPorParcela[p.id].tipo === 'Assinatura'
+                                  ? 'Use Reajustar em Assinaturas'
+                                  : 'Editar despesa'
+                              }
                             >
-                              Adiantar
+                              Editar
                             </Button>
                           )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDialogo({ tipo: 'excluir', despesaId: p.despesaId })}
-                          disabled={p.status === 'Paga'}
-                          title={
-                            p.status === 'Paga'
-                              ? 'Não é possível excluir uma despesa com parcela paga'
-                              : 'Excluir despesa inteira'
-                          }
-                        >
-                          Excluir
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className={styles.totaisFooter}>
-              <div className={`${styles.totalLinha} ${styles.totalLiquidoLinha}`}>
-                <span className={styles.totalLabel}>Total</span>
-                <span className={`${styles.totalLiquidoValor} tnum`}>
-                  {formatBRL(totalCentavos)}
-                </span>
+                          {kind === 'Aberta' &&
+                            p.status === 'Pendente' &&
+                            detalhe.despesasPorParcela?.[p.id]?.tipo === 'Parcelada' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setParcelaAdiantar(p)}
+                                title="Adiantar para outra fatura"
+                              >
+                                Adiantar
+                              </Button>
+                            )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDialogo({ tipo: 'excluir', despesaId: p.despesaId })}
+                            disabled={p.status === 'Paga'}
+                            title={
+                              p.status === 'Paga'
+                                ? 'Não é possível excluir uma despesa com parcela paga'
+                                : 'Excluir despesa inteira'
+                            }
+                          >
+                            Excluir
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className={styles.totaisFooter}>
+                <div className={`${styles.totalLinha} ${styles.totalLiquidoLinha}`}>
+                  <span className={styles.totalLabel}>Total</span>
+                  <span className={`${styles.totalLiquidoValor} tnum`}>
+                    {formatBRL(totalCentavos)}
+                  </span>
+                </div>
               </div>
-            </div>
-          </>
-        )}
-      </Panel>
+            </>
+          )}
+        </Panel>
+      </div>
 
       {dialogo?.tipo === 'fechar' && (
         <ConfirmDialog

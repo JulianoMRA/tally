@@ -1,24 +1,30 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import type { Fatura } from '@domain/entities/fatura'
 import { useCartoesAtivos } from '../despesas/hooks/use-cartoes-ativos'
 import { useFaturasPorCartao, useFaturaDetalhe } from './hooks/use-faturas'
 import { FaturaDetalhe } from './FaturaDetalhe'
 import { PageHead } from '../../components/layout/PageHead'
-import { Badge, EmptyState, Select } from '../../components/ui'
+import { Badge, Button, EmptyState, Select } from '../../components/ui'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
+import { buildFaturasSearch, parseFaturasSearch } from './faturas-search'
+import { statusVariant } from './status-variant'
 import styles from './faturas.module.css'
 
 type Modo = { kind: 'lista' } | { kind: 'detalhe'; faturaId: number }
 
-function statusVariant(kind: string): 'open' | 'closed' | 'paid' {
-  if (kind === 'Aberta') return 'open'
-  if (kind === 'Fechada') return 'closed'
-  return 'paid'
-}
-
 export default function FaturasPage() {
-  const [cartaoId, setCartaoId] = useState<number | null>(null)
-  const [modo, setModo] = useState<Modo>({ kind: 'lista' })
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Lê o deep-link uma única vez na montagem; a partir daí o estado é a fonte
+  // de verdade e os handlers reescrevem a URL (replace) para manter o link
+  // estável em refresh/voltar.
+  const [cartaoId, setCartaoId] = useState<number | null>(
+    () => parseFaturasSearch(searchParams).cartaoId
+  )
+  const [modo, setModo] = useState<Modo>(() => {
+    const { faturaId } = parseFaturasSearch(searchParams)
+    return faturaId !== null ? { kind: 'detalhe', faturaId } : { kind: 'lista' }
+  })
 
   const { cartoes, loading: loadingCartoes } = useCartoesAtivos()
   const {
@@ -34,12 +40,31 @@ export default function FaturasPage() {
 
   const cartaoSelecionado = cartoes.find((c) => c.id === cartaoId)
 
+  function sincronizarUrl(proxCartaoId: number | null, proxFaturaId: number | null) {
+    if (proxCartaoId !== null && proxFaturaId !== null) {
+      setSearchParams(buildFaturasSearch(proxCartaoId, proxFaturaId), { replace: true })
+    } else if (proxCartaoId !== null) {
+      setSearchParams({ cartaoId: String(proxCartaoId) }, { replace: true })
+    } else {
+      setSearchParams({}, { replace: true })
+    }
+  }
+
+  function handleSelecionarCartao(val: string) {
+    const prox = val ? Number(val) : null
+    setCartaoId(prox)
+    setModo({ kind: 'lista' })
+    sincronizarUrl(prox, null)
+  }
+
   function handleAbrirDetalhe(fatura: Fatura) {
     setModo({ kind: 'detalhe', faturaId: fatura.id })
+    sincronizarUrl(cartaoId, fatura.id)
   }
 
   function handleVoltar() {
     setModo({ kind: 'lista' })
+    sincronizarUrl(cartaoId, null)
   }
 
   return (
@@ -58,11 +83,7 @@ export default function FaturasPage() {
             id="cartaoSelect"
             value={cartaoId ?? ''}
             disabled={loadingCartoes}
-            onChange={(e) => {
-              const val = e.target.value
-              setCartaoId(val ? Number(val) : null)
-              setModo({ kind: 'lista' })
-            }}
+            onChange={(e) => handleSelecionarCartao(e.target.value)}
             style={{ maxWidth: 240 }}
           >
             {loadingCartoes ? (
@@ -145,6 +166,13 @@ export default function FaturasPage() {
                 onDetalheAtualizado={() => {
                   refetchDetalhe()
                 }}
+              />
+            )}
+            {!loadingDetalhe && !detalhe && (
+              <EmptyState
+                title="Fatura não encontrada"
+                description="A fatura informada não existe ou foi removida."
+                action={<Button onClick={handleVoltar}>Voltar</Button>}
               />
             )}
           </>

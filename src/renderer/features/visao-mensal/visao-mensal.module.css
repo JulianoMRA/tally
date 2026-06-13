@@ -1,6 +1,5 @@
 .body {
   padding: 0 32px 32px;
-  max-width: 1080px;
 }
 
 .header {
@@ -9,6 +8,29 @@
   gap: 10px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+}
+
+/* Empilhado por padrão (janelas estreitas mantêm o comportamento anterior).
+   Em telas largas vira duas colunas: operacional (55%) + gráficos (45%). */
+.layout {
+  display: flex;
+  flex-direction: column;
+  max-width: 1080px;
+}
+
+.colunaOperacional,
+.colunaGraficos {
+  min-width: 0;
+}
+
+@media (min-width: 1440px) {
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
+    gap: 28px;
+    max-width: 1760px;
+    align-items: start;
+  }
 }
 
 .navBtn {
@@ -211,6 +233,60 @@
 
 .panel {
   margin-bottom: 16px;
+}
+
+.faturaCompactaList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.faturaCompactaItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.faturaCompactaItem:last-child {
+  border-bottom: none;
+}
+
+.faturaCompactaNome {
+  justify-self: start;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--forest);
+  cursor: pointer;
+  letter-spacing: -0.01em;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.faturaCompactaNome:hover {
+  text-decoration: underline;
+}
+
+.faturaCompactaVence {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+}
+
+.faturaCompactaTotal {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 
 .recebimentoStatusBadgeRecebido {
