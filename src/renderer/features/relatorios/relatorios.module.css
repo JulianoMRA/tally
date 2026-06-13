@@ -63,8 +63,16 @@
 
 .gastosMesGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+
+/* Na coluna estreita da Visão mensal a pizza e o ranking empilham, dando
+   largura total ao ranking (nomes de categoria longos cabem em uma linha). */
+@container (max-width: 760px) {
+  .gastosMesGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .ranking {
@@ -78,7 +86,7 @@
 
 .rankItem {
   display: grid;
-  grid-template-columns: 16px 1fr auto 50px;
+  grid-template-columns: 16px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
@@ -98,6 +106,8 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--ink);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .rankValor {
