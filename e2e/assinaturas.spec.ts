@@ -46,11 +46,11 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     await expect(page.getByText('Spotify E2E')).toBeVisible()
     await expect(page.getByText(/R\$\s*21,90\/mês/)).toBeVisible()
 
-    // --- Reajustar valor para R$ 24,90 ---
-    await page.getByRole('button', { name: 'Reajustar' }).click()
-    const input = page.getByLabel('Novo valor mensal (R$)')
+    // --- Editar: reajusta o valor mensal para R$ 24,90 ---
+    await page.getByRole('button', { name: 'Editar' }).click()
+    const input = page.getByLabel('Valor mensal (R$)')
     await input.fill('24,90')
-    await page.getByRole('button', { name: 'Aplicar reajuste' }).click()
+    await page.getByRole('button', { name: 'Salvar' }).click()
     await expect(page.getByText(/R\$\s*24,90\/mês/)).toBeVisible()
 
     // --- Conferir na fatura junho/2026 ---
