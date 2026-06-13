@@ -193,6 +193,15 @@
   background: var(--bg-sunk);
 }
 
+.thSortavel {
+  cursor: pointer;
+  user-select: none;
+}
+
+.thSortavel:hover {
+  color: var(--ink);
+}
+
 .tabela td {
   padding: 10px 16px;
   border-bottom: 1px solid var(--rule);

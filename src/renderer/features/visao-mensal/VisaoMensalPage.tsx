@@ -1,15 +1,19 @@
 import { lazy, Suspense, useState } from 'react'
+import type { Despesa } from '@domain/entities/despesa'
 import {
   diferencaEmMeses,
   mesReferenciaAnterior,
   proxMesReferencia
 } from '@domain/services/mes-referencia'
+import type { RecebimentoComContexto } from '@shared/ipc/recebimento'
 import { PageHead } from '../../components/layout/PageHead'
 import { Badge, EmptyState, Input, Panel } from '../../components/ui'
+import { alfabetico, porData, porNumero } from '../../lib/comparadores'
 import { formatBRL } from '../../lib/format-brl'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { mesAtualReferencia } from '../../lib/mes-atual'
 import { pluralizar } from '../../lib/pluralizar'
+import { useOrdenacao } from '../../lib/use-ordenacao'
 import { FaturasCardCompacto } from './FaturasCardCompacto'
 import { useVisaoMensal } from './hooks/use-visao-mensal'
 import styles from './visao-mensal.module.css'
@@ -18,9 +22,35 @@ import styles from './visao-mensal.module.css'
 // quando há dados para renderizar na coluna direita.
 const PaineisRelatorios = lazy(() => import('../relatorios/PaineisRelatorios'))
 
+// Comparadores estáveis (módulo) para a ordenação dos painéis. Gastos fora do
+// cartão não têm status, então só recebimentos ordenam por status.
+const COMPARADORES_RECEBIMENTOS = {
+  fonte: alfabetico<RecebimentoComContexto>((r) => r.rendaNome),
+  data: porData<RecebimentoComContexto>((r) => r.dataEsperada),
+  status: alfabetico<RecebimentoComContexto>((r) => r.status),
+  valor: porNumero<RecebimentoComContexto>((r) => r.valorCentavos)
+}
+
+const COMPARADORES_GASTOS = {
+  descricao: alfabetico<Despesa>((g) => g.descricao),
+  forma: alfabetico<Despesa>((g) => g.formaPagamento),
+  data: porData<Despesa>((g) => g.dataCompra),
+  valor: porNumero<Despesa>((g) => g.valorCentavos)
+}
+
+const SEM_RECEBIMENTOS: RecebimentoComContexto[] = []
+const SEM_GASTOS: Despesa[] = []
+
 export default function VisaoMensalPage() {
   const [mes, setMes] = useState(mesAtualReferencia())
   const { detalhe, loading, erro } = useVisaoMensal(mes)
+
+  const recebimentos = useOrdenacao(
+    detalhe?.recebimentos ?? SEM_RECEBIMENTOS,
+    COMPARADORES_RECEBIMENTOS,
+    'data'
+  )
+  const gastos = useOrdenacao(detalhe?.gastosForaCartao ?? SEM_GASTOS, COMPARADORES_GASTOS, 'data')
 
   function irAnterior() {
     setMes(mesReferenciaAnterior(mes))
@@ -153,14 +183,34 @@ export default function VisaoMensalPage() {
                   <table className={styles.tabela}>
                     <thead>
                       <tr>
-                        <th>Fonte</th>
-                        <th>Esperada</th>
-                        <th className={styles.colStatus}>Status</th>
-                        <th className={styles.colValor}>Valor</th>
+                        <th
+                          className={styles.thSortavel}
+                          onClick={() => recebimentos.handleSort('fonte')}
+                        >
+                          Fonte{recebimentos.sortIndicator('fonte')}
+                        </th>
+                        <th
+                          className={styles.thSortavel}
+                          onClick={() => recebimentos.handleSort('data')}
+                        >
+                          Esperada{recebimentos.sortIndicator('data')}
+                        </th>
+                        <th
+                          className={`${styles.colStatus} ${styles.thSortavel}`}
+                          onClick={() => recebimentos.handleSort('status')}
+                        >
+                          Status{recebimentos.sortIndicator('status')}
+                        </th>
+                        <th
+                          className={`${styles.colValor} ${styles.thSortavel}`}
+                          onClick={() => recebimentos.handleSort('valor')}
+                        >
+                          Valor{recebimentos.sortIndicator('valor')}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {detalhe.recebimentos.map((r) => (
+                      {recebimentos.itensOrdenados.map((r) => (
                         <tr key={r.id}>
                           <td>{r.rendaNome ?? '—'}</td>
                           <td className="mono">{formatarDataIso(r.dataEsperada)}</td>
@@ -197,14 +247,31 @@ export default function VisaoMensalPage() {
                   <table className={styles.tabela}>
                     <thead>
                       <tr>
-                        <th>Descrição</th>
-                        <th>Forma</th>
-                        <th>Data</th>
-                        <th className={styles.colValor}>Valor</th>
+                        <th
+                          className={styles.thSortavel}
+                          onClick={() => gastos.handleSort('descricao')}
+                        >
+                          Descrição{gastos.sortIndicator('descricao')}
+                        </th>
+                        <th
+                          className={styles.thSortavel}
+                          onClick={() => gastos.handleSort('forma')}
+                        >
+                          Forma{gastos.sortIndicator('forma')}
+                        </th>
+                        <th className={styles.thSortavel} onClick={() => gastos.handleSort('data')}>
+                          Data{gastos.sortIndicator('data')}
+                        </th>
+                        <th
+                          className={`${styles.colValor} ${styles.thSortavel}`}
+                          onClick={() => gastos.handleSort('valor')}
+                        >
+                          Valor{gastos.sortIndicator('valor')}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {detalhe.gastosForaCartao.map((g) => (
+                      {gastos.itensOrdenados.map((g) => (
                         <tr key={g.id}>
                           <td>{g.descricao}</td>
                           <td className="mono">{g.formaPagamento}</td>
