@@ -5,6 +5,14 @@
   gap: 20px;
 }
 
+/* Coluna de painéis reutilizável: dentro da página de Relatórios e também
+   aninhada na coluna direita da Visão mensal (sem padding lateral próprio). */
+.coluna {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .toolbar {
   display: flex;
   align-items: center;
