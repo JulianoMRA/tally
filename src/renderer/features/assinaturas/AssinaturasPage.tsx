@@ -8,7 +8,7 @@ import { formatBRL } from '../../lib/format-brl'
 import { formatarDataIso } from '../../lib/formatar-data'
 import { mensagemErro } from '../../lib/mensagem-erro'
 import { useAssinaturas } from './hooks/use-assinaturas'
-import { ReajustarValorModal } from './ReajustarValorModal'
+import { EditarAssinaturaModal } from './EditarAssinaturaModal'
 import styles from './assinaturas.module.css'
 
 type Confirmacao =
@@ -20,13 +20,13 @@ export default function AssinaturasPage() {
   const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [filtroAtivas, setFiltroAtivas] = useState(true)
-  const [reajustando, setReajustando] = useState<Despesa | null>(null)
+  const [editando, setEditando] = useState<Despesa | null>(null)
   const [confirmacao, setConfirmacao] = useState<Confirmacao | null>(null)
   const toast = useToast()
 
   useEffect(() => {
     window.api.cartao.list({ incluirArquivados: true }).then(setCartoes)
-    window.api.categoria.list().then(setCategorias)
+    window.api.categoria.list({ tipo: 'Despesa' }).then(setCategorias)
   }, [])
 
   const exibidas = assinaturas.filter((a) => (filtroAtivas ? a.ativa : !a.ativa))
@@ -55,13 +55,15 @@ export default function AssinaturasPage() {
     }
   }
 
-  async function handleReajustarConfirmar(novoValorCentavos: number) {
-    if (!reajustando) return
-    await window.api.despesa.reajustarValorMensalAssinatura({
-      despesaId: reajustando.id,
-      novoValorCentavos
-    })
-    setReajustando(null)
+  async function handleEditarConfirmar(input: {
+    descricao: string
+    categoriaId: number
+    valorCentavos: number
+  }) {
+    if (!editando) return
+    await window.api.despesa.atualizar({ despesaId: editando.id, ...input })
+    toast.show('Assinatura atualizada.', 'success')
+    setEditando(null)
     await recarregar()
   }
 
@@ -132,8 +134,8 @@ export default function AssinaturasPage() {
                   <div className={styles.actions}>
                     {a.ativa && (
                       <>
-                        <Button variant="ghost" size="sm" onClick={() => setReajustando(a)}>
-                          Reajustar
+                        <Button variant="ghost" size="sm" onClick={() => setEditando(a)}>
+                          Editar
                         </Button>
                         <Button
                           variant="ghost"
@@ -158,12 +160,12 @@ export default function AssinaturasPage() {
           )}
         </Panel>
 
-        {reajustando && (
-          <ReajustarValorModal
-            descricao={reajustando.descricao}
-            valorAtualCentavos={reajustando.valorCentavos}
-            onConfirmar={handleReajustarConfirmar}
-            onCancelar={() => setReajustando(null)}
+        {editando && (
+          <EditarAssinaturaModal
+            assinatura={editando}
+            categorias={categorias}
+            onConfirmar={handleEditarConfirmar}
+            onCancelar={() => setEditando(null)}
           />
         )}
 
