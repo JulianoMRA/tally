@@ -10,6 +10,7 @@ import { formatBRL } from '../../lib/format-brl'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { mesAtualReferencia } from '../../lib/mes-atual'
 import { pluralizar } from '../../lib/pluralizar'
+import { FaturasCardCompacto } from './FaturasCardCompacto'
 import { useVisaoMensal } from './hooks/use-visao-mensal'
 import styles from './visao-mensal.module.css'
 
@@ -131,40 +132,7 @@ export default function VisaoMensalPage() {
               </div>
             </div>
 
-            <Panel
-              title="Faturas"
-              meta={`${detalhe.faturas.length} ${pluralizar('cartão', detalhe.faturas.length, 'ões')}`}
-              flush
-              className={styles.panel}
-            >
-              {detalhe.faturas.length === 0 ? (
-                <EmptyState title="Nenhuma fatura neste mês." />
-              ) : (
-                <table className={styles.tabela}>
-                  <thead>
-                    <tr>
-                      <th>Cartão</th>
-                      <th>Vencimento</th>
-                      <th className={styles.colValor}>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {detalhe.faturas.map((f) => (
-                      <tr key={f.fatura.id}>
-                        <td>
-                          <span className={styles.cardChip} style={{ background: f.cartaoCor }} />
-                          {f.cartaoNome}
-                        </td>
-                        <td className="mono">{formatarDataIso(f.fatura.dataVencimento)}</td>
-                        <td className={`${styles.colValor} tnum`}>
-                          <strong>{formatBRL(f.totalCentavos)}</strong>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </Panel>
+            <FaturasCardCompacto faturas={detalhe.faturas} />
 
             <Panel
               title="Recebimentos"
