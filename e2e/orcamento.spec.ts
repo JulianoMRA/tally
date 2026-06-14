@@ -25,14 +25,14 @@ test.describe('Orçamento por categoria (Bloco D)', () => {
     await expect(page.getByText('Mercado Orc E2E')).toBeVisible()
 
     // --- Despesa única R$ 80,00 em 2026-06-03 → realizado de junho/2026 ---
-    await page.getByRole('link', { name: 'Despesas' }).click()
+    await page.getByRole('link', { name: 'Saídas' }).click()
     await page.getByLabel('Descrição').fill('Compra Orc E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Mercado Orc E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Orc E2E' })
     await page.getByLabel('Valor (R$)').fill('80,00')
     await page.getByLabel('Data da compra').fill('2026-06-03')
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
-    await expect(page.getByText('Compra Orc E2E')).toBeVisible()
+    await expect(page.getByRole('cell', { name: 'Compra Orc E2E' })).toBeVisible()
 
     // --- Visão mensal (coluna de gráficos): definir limite de R$ 100,00 no mês 2026-06 ---
     await page.getByRole('link', { name: 'Visão mensal' }).click()

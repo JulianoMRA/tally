@@ -1,9 +1,8 @@
 import { test, expect } from './fixtures/electron-app'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
-// TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
 test.describe('Gastos fora de cartão (RF-DES-01)', () => {
-  test('cadastrar Pix e visualizar em /gastos com filtro de mês', async ({ app }) => {
+  test('cadastrar Pix na tela Saídas e filtrar por Fora do cartão + mês', async ({ app }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
@@ -15,8 +14,8 @@ test.describe('Gastos fora de cartão (RF-DES-01)', () => {
     await page.getByRole('button', { name: 'Salvar' }).click()
     await expect(page.getByText('Mercado E2E')).toBeVisible()
 
-    // --- Cadastrar despesa Pix (form inline na pagina Despesas) ---
-    await page.getByRole('link', { name: 'Despesas' }).click()
+    // --- Cadastrar despesa Pix (form inline na tela Saídas) ---
+    await page.getByRole('link', { name: 'Saídas' }).click()
     await expect(page.getByLabel('Descrição')).toBeVisible()
 
     // Aba Única está selecionada por default; trocar forma para Pix
@@ -28,25 +27,21 @@ test.describe('Gastos fora de cartão (RF-DES-01)', () => {
     await page.getByLabel('Data da compra').fill('2026-06-10')
     await page.getByRole('button', { name: 'Registrar pix' }).click()
 
-    // Banner cita Pix e 2026-06
-    await expect(page.getByText('Feira E2E')).toBeVisible()
+    // Banner cita Pix
     await expect(page.getByRole('strong').filter({ hasText: 'Pix' })).toBeVisible()
 
-    // --- /gastos com mês 2026-06 deve mostrar a despesa ---
-    await page.getByRole('link', { name: 'Gastos' }).click()
-    await expect(page.getByRole('heading', { name: 'Gastos fora de cartão' })).toBeVisible()
-    await page.getByLabel('Mês').fill('2026-06')
-
-    await expect(page.getByText('Feira E2E')).toBeVisible()
+    // --- Filtro "Fora do cartão" mostra a despesa ---
+    await page.getByRole('button', { name: 'Fora do cartão', exact: true }).click()
+    await expect(page.getByRole('cell', { name: 'Feira E2E' })).toBeVisible()
     await expect(
       page
-        .getByRole('listitem')
+        .getByRole('row')
         .filter({ hasText: 'Feira E2E' })
         .getByText(/R\$\s*35,00/)
     ).toBeVisible()
 
-    // --- mês vazio (2026-07) ---
+    // --- Sub-filtro de mês: 2026-07 não tem lançamentos ---
     await page.getByLabel('Mês').fill('2026-07')
-    await expect(page.getByText('Nenhum gasto fora de cartão neste mês.')).toBeVisible()
+    await expect(page.getByText('Nenhuma saída para este filtro.')).toBeVisible()
   })
 })

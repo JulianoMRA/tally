@@ -24,7 +24,7 @@ test.describe('Faturas — visão geral sem cartão selecionado', () => {
     await expect(page.getByText('Alimentação Overview E2E')).toBeVisible()
 
     // --- Despesa no crédito → gera a fatura de junho/2026 ---
-    await page.getByRole('link', { name: 'Despesas' }).click()
+    await page.getByRole('link', { name: 'Saídas' }).click()
     await expect(page.getByLabel('Descrição')).toBeVisible()
     await page.getByLabel('Descrição').fill('Mercado Overview E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Alimentação Overview E2E' })

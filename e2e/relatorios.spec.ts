@@ -38,14 +38,14 @@ test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
     const dataMercado = `${yyyy}-${mm}-03`
     const dataLazer = `${yyyy}-${mm}-04`
 
-    await page.getByRole('link', { name: 'Despesas' }).click()
+    await page.getByRole('link', { name: 'Saídas' }).click()
     await page.getByLabel('Descrição').fill('Compra mercado')
     await page.getByLabel('Categoria').selectOption({ label: 'Mercado E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Rel E2E' })
     await page.getByLabel('Valor (R$)').fill('80,00')
     await page.getByLabel('Data da compra').fill(dataMercado)
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
-    await expect(page.getByText('Compra mercado')).toBeVisible()
+    await expect(page.getByRole('cell', { name: 'Compra mercado' })).toBeVisible()
 
     await page.getByLabel('Descrição').fill('Cinema')
     await page.getByLabel('Categoria').selectOption({ label: 'Lazer E2E' })
@@ -53,7 +53,7 @@ test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
     await page.getByLabel('Valor (R$)').fill('30,00')
     await page.getByLabel('Data da compra').fill(dataLazer)
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
-    await expect(page.getByText('Cinema')).toBeVisible()
+    await expect(page.getByRole('cell', { name: 'Cinema' })).toBeVisible()
 
     // Relatórios agora vivem na Visão mensal (coluna de gráficos)
     await page.getByRole('link', { name: 'Visão mensal' }).click()

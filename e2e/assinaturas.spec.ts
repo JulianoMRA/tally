@@ -1,9 +1,8 @@
 import { test, expect } from './fixtures/electron-app'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
-// TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
 test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
-  test('cadastrar, reajustar e cancelar uma assinatura', async ({ app }) => {
+  test('cadastrar, editar e cancelar uma assinatura na tela Saídas', async ({ app }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
@@ -24,8 +23,8 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     await page.getByRole('button', { name: 'Salvar' }).click()
     await expect(page.getByText('Streaming E2E')).toBeVisible()
 
-    // --- Cadastrar assinatura (form inline em Despesas, tipo Assinatura) ---
-    await page.getByRole('link', { name: 'Despesas' }).click()
+    // --- Cadastrar assinatura (form inline em Saídas, tipo Assinatura) ---
+    await page.getByRole('link', { name: 'Saídas' }).click()
     await expect(page.getByLabel('Descrição')).toBeVisible()
     await page.getByRole('button', { name: 'Assinatura', exact: true }).click()
 
@@ -36,22 +35,25 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     await page.getByLabel('Data de início').fill('2026-06-03')
     await page.getByRole('button', { name: 'Registrar assinatura' }).click()
 
-    await expect(page.getByText('Spotify E2E')).toBeVisible()
-    // Banner cita a primeira referência (junho de 2026) e o cartão
+    // Banner cita a primeira referência (junho de 2026)
     await expect(page.getByText(/junho de 2026/).first()).toBeVisible()
 
-    // --- Página de assinaturas: ver a assinatura ativa ---
-    await page.getByRole('link', { name: 'Assinaturas' }).click()
-    await expect(page.getByRole('heading', { name: 'Assinaturas', exact: true })).toBeVisible()
-    await expect(page.getByText('Spotify E2E')).toBeVisible()
-    await expect(page.getByText(/R\$\s*21,90\/mês/)).toBeVisible()
+    // --- Filtro Assinaturas: ver a assinatura ativa ---
+    await page.getByRole('button', { name: 'Assinaturas', exact: true }).click()
+    const linha = page.getByRole('row').filter({ hasText: 'Spotify E2E' })
+    await expect(linha.getByText(/R\$\s*21,90\/mês/)).toBeVisible()
 
-    // --- Editar: reajusta o valor mensal para R$ 24,90 ---
-    await page.getByRole('button', { name: 'Editar' }).click()
-    const input = page.getByLabel('Valor mensal (R$)')
-    await input.fill('24,90')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText(/R\$\s*24,90\/mês/)).toBeVisible()
+    // --- Editar: reajusta o valor mensal para R$ 24,90 (modal escopado) ---
+    await linha.getByRole('button', { name: 'Editar' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Editar assinatura' })
+    await dialog.getByLabel('Valor mensal (R$)').fill('24,90')
+    await dialog.getByRole('button', { name: 'Salvar' }).click()
+    await expect(
+      page
+        .getByRole('row')
+        .filter({ hasText: 'Spotify E2E' })
+        .getByText(/R\$\s*24,90\/mês/)
+    ).toBeVisible()
 
     // --- Conferir na fatura junho/2026 ---
     await page.getByRole('link', { name: 'Faturas' }).click()
@@ -59,16 +61,22 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     await page.getByText('junho de 2026').first().click()
     await expect(page.getByText(/R\$\s*24,90/).first()).toBeVisible()
 
-    // --- Cancelar assinatura (ConfirmDialog in-app: botão da linha abre, confirma no diálogo) ---
-    await page.getByRole('link', { name: 'Assinaturas' }).click()
-    await page.getByRole('button', { name: 'Cancelar', exact: true }).click()
+    // --- Cancelar assinatura pela tela Saídas ---
+    await page.getByRole('link', { name: 'Saídas' }).click()
+    await page.getByRole('button', { name: 'Assinaturas', exact: true }).click()
+    await page
+      .getByRole('row')
+      .filter({ hasText: 'Spotify E2E' })
+      .getByRole('button', { name: 'Cancelar', exact: true })
+      .click()
     await page.getByRole('button', { name: 'Cancelar assinatura' }).click()
 
-    // Após cancelar, lista de ativas fica vazia
-    await expect(page.getByText('Você não tem assinaturas ativas.')).toBeVisible()
-
-    // Aba "Canceladas" mostra a Spotify (exact evita colidir com o toast "... cancelada.")
-    await page.getByRole('button', { name: 'Canceladas' }).click()
-    await expect(page.getByText('Spotify E2E', { exact: true })).toBeVisible()
+    // Após cancelar, a linha mostra o badge "Cancelada"
+    await expect(
+      page
+        .getByRole('row')
+        .filter({ hasText: 'Spotify E2E' })
+        .getByText('Cancelada', { exact: true })
+    ).toBeVisible()
   })
 })
