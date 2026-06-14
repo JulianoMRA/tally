@@ -1,9 +1,15 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import type { Cartao } from '@domain/entities/cartao'
 import type { Fatura } from '@domain/entities/fatura'
 import { useCartoesAtivos } from '../despesas/hooks/use-cartoes-ativos'
-import { useFaturasPorCartao, useFaturaDetalhe } from './hooks/use-faturas'
+import {
+  useFaturasPorCartao,
+  useFaturaDetalhe,
+  useFaturasDeTodosCartoes
+} from './hooks/use-faturas'
 import { FaturaDetalhe } from './FaturaDetalhe'
+import { FaturasOverview } from './FaturasOverview'
 import { PageHead } from '../../components/layout/PageHead'
 import { Badge, Button, EmptyState, Select } from '../../components/ui'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
@@ -27,6 +33,11 @@ export default function FaturasPage() {
   })
 
   const { cartoes, loading: loadingCartoes } = useCartoesAtivos()
+  const {
+    grupos,
+    loading: loadingOverview,
+    refetch: refetchOverview
+  } = useFaturasDeTodosCartoes(cartoes)
   const {
     faturas,
     loading: loadingFaturas,
@@ -62,9 +73,18 @@ export default function FaturasPage() {
     sincronizarUrl(cartaoId, fatura.id)
   }
 
+  // A partir da visão geral é preciso fixar o cartão antes (nome/cor do detalhe
+  // e o deep-link derivam dele).
+  function handleAbrirDetalheOverview(fatura: Fatura, cartao: Cartao) {
+    setCartaoId(cartao.id)
+    setModo({ kind: 'detalhe', faturaId: fatura.id })
+    sincronizarUrl(cartao.id, fatura.id)
+  }
+
   function handleVoltar() {
     setModo({ kind: 'lista' })
     sincronizarUrl(cartaoId, null)
+    refetchOverview()
   }
 
   return (
@@ -105,11 +125,9 @@ export default function FaturasPage() {
 
         {modo.kind === 'lista' && (
           <>
-            {cartaoId === null && (
-              <EmptyState
-                title="Selecione um cartão"
-                description="Escolha um cartão acima para ver as faturas."
-              />
+            {cartaoId === null && loadingOverview && <p className={styles.empty}>Carregando…</p>}
+            {cartaoId === null && !loadingOverview && (
+              <FaturasOverview grupos={grupos} onAbrir={handleAbrirDetalheOverview} />
             )}
             {cartaoId !== null && loadingFaturas && <p className={styles.empty}>Carregando…</p>}
             {cartaoId !== null && !loadingFaturas && faturas.length === 0 && (
