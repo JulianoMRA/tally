@@ -131,7 +131,7 @@ export function Sidebar() {
       <div className={styles.brand}>
         <Mark variant="primary" size={22} />
         <Wordmark size={20} />
-        <span className={styles.ver}>v0.1</span>
+        <span className={styles.ver}>v1.0</span>
       </div>
 
       {NAV.map((group) => (
