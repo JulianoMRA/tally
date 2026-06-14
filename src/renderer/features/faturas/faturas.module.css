@@ -24,7 +24,47 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-width: 1080px;
+  max-width: 1280px;
+}
+
+/* Visão geral: um Panel por cartão com suas faturas. Empilha por padrão;
+   em telas largas distribui os cartões em duas colunas. */
+.overviewGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1280px;
+}
+
+.overviewList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.overviewItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+}
+
+.overviewItem:last-child {
+  border-bottom: none;
+}
+
+.overviewItem:hover {
+  background: var(--bg-sunk);
+}
+
+@media (min-width: 1440px) {
+  .overviewGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
 }
 
 .faturaItem {
@@ -101,7 +141,7 @@
       'main aside';
     align-items: start;
     gap: 20px 24px;
-    max-width: none;
+    max-width: 1280px;
   }
 
   .areaHeader {
