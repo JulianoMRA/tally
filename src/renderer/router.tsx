@@ -8,10 +8,8 @@ import { RouteErrorBoundary } from './components/ui/ErrorBoundary'
 const VisaoMensalPage = lazy(() => import('./features/visao-mensal/VisaoMensalPage'))
 const CartoesPage = lazy(() => import('./features/cartoes/CartoesPage'))
 const CategoriasPage = lazy(() => import('./features/categorias/CategoriasPage'))
-const DespesasPage = lazy(() => import('./features/despesas/DespesasPage'))
+const SaidasPage = lazy(() => import('./features/saidas/SaidasPage'))
 const FaturasPage = lazy(() => import('./features/faturas/FaturasPage'))
-const AssinaturasPage = lazy(() => import('./features/assinaturas/AssinaturasPage'))
-const GastosPage = lazy(() => import('./features/gastos/GastosPage'))
 const RendasPage = lazy(() => import('./features/rendas/RendasPage'))
 
 export const router = createHashRouter([
@@ -24,11 +22,12 @@ export const router = createHashRouter([
       { path: 'mensal', element: <VisaoMensalPage /> },
       { path: 'cartoes', element: <CartoesPage /> },
       { path: 'categorias', element: <CategoriasPage /> },
-      { path: 'despesas', element: <DespesasPage /> },
+      { path: 'saidas', element: <SaidasPage /> },
       { path: 'faturas', element: <FaturasPage /> },
-      { path: 'assinaturas', element: <AssinaturasPage /> },
-      { path: 'gastos', element: <GastosPage /> },
       { path: 'rendas', element: <RendasPage /> },
+      { path: 'despesas', element: <Navigate to="/saidas" replace /> },
+      { path: 'gastos', element: <Navigate to="/saidas" replace /> },
+      { path: 'assinaturas', element: <Navigate to="/saidas" replace /> },
       { path: 'relatorios', element: <Navigate to="/mensal" replace /> },
       { path: 'recebimentos', element: <Navigate to="/rendas" replace /> }
     ]
