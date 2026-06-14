@@ -27,6 +27,7 @@ import type {
   CancelarPendentesInput,
   DespesaUnicaForaCartaoInput,
   ListarGastosForaCartaoInput,
+  ListarDespesasInput,
   ExcluirDespesaInput,
   AtualizarDespesaInput
 } from '@shared/ipc/despesa'
@@ -93,6 +94,8 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.criarUnicaForaCartao, input),
     listarGastosForaCartao: (input?: ListarGastosForaCartaoInput) =>
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.listarGastosForaCartao, input ?? {}),
+    listarDespesas: (input?: ListarDespesasInput) =>
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.listarDespesas, input ?? {}),
     excluir: (input: ExcluirDespesaInput) =>
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.excluir, input),
     atualizar: (input: AtualizarDespesaInput) =>

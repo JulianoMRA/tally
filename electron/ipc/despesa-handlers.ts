@@ -14,6 +14,7 @@ import {
   cancelarPendentesInputSchema,
   despesaUnicaForaCartaoInputSchema,
   listarGastosForaCartaoInputSchema,
+  listarDespesasInputSchema,
   excluirDespesaInputSchema,
   atualizarDespesaInputSchema,
   DESPESA_IPC_CHANNELS
@@ -79,6 +80,11 @@ export function registerDespesaHandlers(db: Database, ipcMain: IpcMain): void {
   ipcMain.handle(DESPESA_IPC_CHANNELS.listarGastosForaCartao, (_event, payload: unknown) => {
     const filtro = listarGastosForaCartaoInputSchema.parse(payload ?? {})
     return repo.listarGastosForaCartao(filtro)
+  })
+
+  ipcMain.handle(DESPESA_IPC_CHANNELS.listarDespesas, (_event, payload: unknown) => {
+    const filtro = listarDespesasInputSchema.parse(payload ?? {})
+    return repo.listarDespesas(filtro)
   })
 
   ipcMain.handle(DESPESA_IPC_CHANNELS.excluir, (_event, payload: unknown) => {
