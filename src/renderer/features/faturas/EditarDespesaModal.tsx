@@ -75,7 +75,7 @@ export function EditarDespesaModal({ despesa, categorias, onConfirmar, onCancela
 
   return (
     <div className={styles.modalOverlay}>
-      <div className={styles.modal}>
+      <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Editar despesa">
         <h3 className={styles.modalTitle}>Editar despesa</h3>
         <p className={styles.modalDesc}>
           Tipo: <strong>{despesa.tipo}</strong>.{' '}
