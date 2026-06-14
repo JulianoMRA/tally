@@ -28,14 +28,14 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     await expect(page.getByText('Geral Mensal E2E')).toBeVisible()
 
     // Despesa única R$ 100 em 2026-06-03 → fatura junho/2026
-    await page.getByRole('link', { name: 'Despesas' }).click()
+    await page.getByRole('link', { name: 'Saídas' }).click()
     await page.getByLabel('Descrição').fill('Compra Mensal E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Geral Mensal E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Mensal E2E' })
     await page.getByLabel('Valor (R$)').fill('100,00')
     await page.getByLabel('Data da compra').fill('2026-06-03')
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
-    await expect(page.getByText('Compra Mensal E2E')).toBeVisible()
+    await expect(page.getByRole('cell', { name: 'Compra Mensal E2E' })).toBeVisible()
 
     // Pix R$ 50 em 2026-06-10
     await page.getByRole('button', { name: 'Pix', exact: true }).click()
@@ -44,7 +44,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     await page.getByLabel('Valor (R$)').fill('50,00')
     await page.getByLabel('Data da compra').fill('2026-06-10')
     await page.getByRole('button', { name: 'Registrar pix' }).click()
-    await expect(page.getByText('Pix Mensal E2E')).toBeVisible()
+    await expect(page.getByRole('cell', { name: 'Pix Mensal E2E' })).toBeVisible()
 
     // --- /mensal: filtrar 2026-06 ---
     await page.getByRole('link', { name: 'Visão mensal' }).click()
@@ -94,7 +94,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     // Assinatura mensal de R$ 30,00 começando hoje (form inline em Despesas, tipo Assinatura)
     const hoje = new Date()
     const isoHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
-    await page.getByRole('link', { name: 'Despesas' }).click()
+    await page.getByRole('link', { name: 'Saídas' }).click()
     await page.getByRole('button', { name: 'Assinatura', exact: true }).click()
     await page.getByLabel('Descrição').fill('Spotify Projecao E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Streaming Projecao E2E' })
@@ -102,7 +102,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     await page.getByLabel('Valor mensal (R$)').fill('30,00')
     await page.getByLabel('Data de início').fill(isoHoje)
     await page.getByRole('button', { name: 'Registrar assinatura' }).click()
-    await expect(page.getByText('Spotify Projecao E2E')).toBeVisible()
+    await expect(page.getByRole('cell', { name: 'Spotify Projecao E2E' })).toBeVisible()
 
     // Renda recorrente R$ 800,00 dia 5 (aba "Fontes de renda")
     await page.getByRole('link', { name: 'Rendas' }).click()

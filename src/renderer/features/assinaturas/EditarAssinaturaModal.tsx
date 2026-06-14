@@ -58,7 +58,7 @@ export function EditarAssinaturaModal({ assinatura, categorias, onConfirmar, onC
 
   return (
     <div className={styles.modalOverlay}>
-      <div className={styles.modal}>
+      <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Editar assinatura">
         <h3 className={styles.modalTitle}>Editar assinatura</h3>
         <p className={styles.modalDesc}>
           Mudar o valor mensal aplica o novo valor às ocorrências pendentes em faturas abertas;

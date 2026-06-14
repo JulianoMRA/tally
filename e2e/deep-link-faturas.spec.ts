@@ -20,14 +20,14 @@ test.describe('Deep-link de faturas (query string)', () => {
     await page.getByRole('button', { name: 'Salvar' }).click()
     await expect(page.getByText('Alimentação Deep E2E')).toBeVisible()
 
-    await page.getByRole('link', { name: 'Despesas' }).click()
+    await page.getByRole('link', { name: 'Saídas' }).click()
     await page.getByLabel('Descrição').fill('Mercado Deep E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Alimentação Deep E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Deep E2E' })
     await page.getByLabel('Valor (R$)').fill('50,00')
     await page.getByLabel('Data da compra').fill('2026-06-03')
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
-    await expect(page.getByText('Mercado Deep E2E')).toBeVisible()
+    await expect(page.getByRole('cell', { name: 'Mercado Deep E2E' })).toBeVisible()
 
     // --- Abre a fatura pelo fluxo normal e captura a URL com deep-link ---
     await page.getByRole('link', { name: 'Faturas' }).click()

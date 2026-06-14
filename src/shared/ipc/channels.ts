@@ -35,6 +35,7 @@ export const DESPESA_IPC_CHANNELS = {
   listarAssinaturas: 'despesa:listar-assinaturas',
   criarUnicaForaCartao: 'despesa:criar-unica-fora-cartao',
   listarGastosForaCartao: 'despesa:listar-gastos-fora-cartao',
+  listarDespesas: 'despesa:listar-despesas',
   excluir: 'despesa:excluir',
   atualizar: 'despesa:atualizar'
 } as const

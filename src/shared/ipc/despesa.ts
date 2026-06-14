@@ -153,6 +153,17 @@ export const listarAssinaturasInputSchema = z.object({
 
 export type ListarAssinaturasInput = z.infer<typeof listarAssinaturasInputSchema>
 
+export const listarDespesasInputSchema = z.object({
+  tipo: z.enum(['foraCartao', 'parcelada', 'assinatura']).optional(),
+  apenasAtivas: z.boolean().optional(),
+  mesReferencia: z
+    .string()
+    .regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Mês deve estar no formato YYYY-MM')
+    .optional()
+})
+
+export type ListarDespesasInput = z.infer<typeof listarDespesasInputSchema>
+
 export const adiantarParcelasInputSchema = z.object({
   despesaId: z.number().int().positive(),
   quantidade: z.number().int().min(1, 'Quantidade deve ser >= 1'),
@@ -244,6 +255,7 @@ export type DespesaApi = {
     input: DespesaUnicaForaCartaoInput
   ) => Promise<ResultadoCriarUnicaForaCartao>
   listarGastosForaCartao: (input?: ListarGastosForaCartaoInput) => Promise<Despesa[]>
+  listarDespesas: (input?: ListarDespesasInput) => Promise<Despesa[]>
   excluir: (input: ExcluirDespesaInput) => Promise<ResultadoExcluirDespesa>
   atualizar: (input: AtualizarDespesaInput) => Promise<Despesa>
 }

@@ -49,8 +49,8 @@ const NAV: NavGroup[] = [
         )
       },
       {
-        to: '/despesas',
-        label: 'Despesas',
+        to: '/saidas',
+        label: 'Saídas',
         icon: (
           <svg
             viewBox="0 0 24 24"
@@ -60,41 +60,8 @@ const NAV: NavGroup[] = [
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        )
-      },
-      {
-        to: '/gastos',
-        label: 'Gastos',
-        icon: (
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M4 7h16M4 12h16M4 17h10" />
-            <circle cx="18" cy="17" r="2" />
-          </svg>
-        )
-      },
-      {
-        to: '/assinaturas',
-        label: 'Assinaturas',
-        icon: (
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M21 12a9 9 0 1 1-3-6.7" />
-            <polyline points="21 4 21 10 15 10" />
+            <path d="M4 7h11M4 12h11M4 17h7" />
+            <path d="M17 9l4 3-4 3" />
           </svg>
         )
       },

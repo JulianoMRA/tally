@@ -1,9 +1,8 @@
 import { test, expect } from './fixtures/electron-app'
 
 // RF-DES-09 — Excluir despesa com confirmação; bloqueia se houver parcela paga.
-// TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
 test.describe('Excluir despesa (RF-DES-09)', () => {
-  test('cria assinatura, exclui via AssinaturasPage e confirma que sumiu', async ({ app }) => {
+  test('cria assinatura, exclui pela tela Saídas e confirma que sumiu', async ({ app }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
@@ -23,10 +22,10 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await page.getByRole('button', { name: 'Salvar' }).click()
     await expect(page.getByText('Streaming Excluir E2E')).toBeVisible()
 
-    // Cria assinatura
+    // Cria assinatura na tela Saídas
     const hoje = new Date()
     const inicio = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
-    await page.getByRole('link', { name: 'Despesas' }).click()
+    await page.getByRole('link', { name: 'Saídas' }).click()
     await page.getByRole('button', { name: 'Assinatura', exact: true }).click()
     await page.getByLabel('Descrição').fill('Spotify Excluir E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Streaming Excluir E2E' })
@@ -34,18 +33,19 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await page.getByLabel('Valor mensal (R$)').fill('20,00')
     await page.getByLabel('Data de início').fill(inicio)
     await page.getByRole('button', { name: 'Registrar assinatura' }).click()
-    await expect(page.getByText('Spotify Excluir E2E')).toBeVisible()
 
-    // Vai para AssinaturasPage
-    await page.getByRole('link', { name: 'Assinaturas' }).click()
-    await expect(page.getByText('Spotify Excluir E2E')).toBeVisible()
+    // Filtra Assinaturas e exclui pela linha (ConfirmDialog escopado por role)
+    await page.getByRole('button', { name: 'Assinaturas', exact: true }).click()
+    await expect(page.getByRole('cell', { name: 'Spotify Excluir E2E' })).toBeVisible()
+    await page
+      .getByRole('row')
+      .filter({ hasText: 'Spotify Excluir E2E' })
+      .getByRole('button', { name: 'Excluir' })
+      .click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Excluir' }).click()
 
-    // Confirma exclusão via ConfirmDialog in-app: botão da linha abre, botão do diálogo confirma
-    await page.getByRole('button', { name: 'Excluir' }).first().click()
-    await page.getByRole('button', { name: 'Excluir' }).last().click()
-
-    // Após exclusão, a assinatura não deve mais aparecer (exact evita o toast "... excluída.")
-    await expect(page.getByText('Spotify Excluir E2E', { exact: true })).toHaveCount(0)
+    // Após exclusão, a assinatura não deve mais aparecer na lista
+    await expect(page.getByRole('cell', { name: 'Spotify Excluir E2E' })).toHaveCount(0)
   })
 
   test('pagar fatura marca parcela como Paga e bloqueia exclusão; reabrir libera (RN-06)', async ({
@@ -71,14 +71,14 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await expect(page.getByText('Mercado Paga E2E')).toBeVisible()
 
     // Despesa única no cartão (dia 03 <= F=05 → fatura 2026-06)
-    await page.getByRole('link', { name: 'Despesas' }).click()
+    await page.getByRole('link', { name: 'Saídas' }).click()
     await page.getByLabel('Descrição').fill('Compra Paga E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Mercado Paga E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Paga E2E' })
     await page.getByLabel('Valor (R$)').fill('80,00')
     await page.getByLabel('Data da compra').fill('2026-06-03')
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
-    await expect(page.getByText('Compra Paga E2E')).toBeVisible()
+    await expect(page.getByRole('cell', { name: 'Compra Paga E2E' })).toBeVisible()
 
     // Abre o detalhe da fatura
     await page.getByRole('link', { name: 'Faturas' }).click()

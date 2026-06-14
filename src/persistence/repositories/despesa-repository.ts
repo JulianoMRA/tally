@@ -473,6 +473,42 @@ export class DespesaRepository implements Repository {
     return rows.map(mapDespesa)
   }
 
+  /**
+   * Bloco Saídas — lista despesas-mestre (1 linha por despesa) com filtros
+   * opcionais. `tipo` mapeia as categorias da UI; `mesReferencia` só faz sentido
+   * para gastos fora do cartão (data única) e é ignorado nos demais tipos.
+   */
+  listarDespesas(filtro?: {
+    tipo?: 'foraCartao' | 'parcelada' | 'assinatura'
+    apenasAtivas?: boolean
+    mesReferencia?: string
+  }): Despesa[] {
+    const conds: string[] = []
+    const params: string[] = []
+
+    if (filtro?.tipo === 'foraCartao') {
+      conds.push("tipo = 'Unica' AND forma_pagamento != 'Credito'")
+    } else if (filtro?.tipo === 'parcelada') {
+      conds.push("tipo = 'Parcelada'")
+    } else if (filtro?.tipo === 'assinatura') {
+      conds.push("tipo = 'Assinatura'")
+    }
+    if (filtro?.apenasAtivas) {
+      conds.push('ativa = 1')
+    }
+    if (filtro?.mesReferencia && filtro?.tipo === 'foraCartao') {
+      conds.push('substr(data_compra, 1, 7) = ?')
+      params.push(filtro.mesReferencia)
+    }
+
+    let sql = 'SELECT * FROM despesa'
+    if (conds.length > 0) sql += ` WHERE ${conds.join(' AND ')}`
+    sql += ' ORDER BY ativa DESC, data_compra DESC, id DESC'
+
+    const rows = this.db.prepare(sql).all(...params) as DespesaRow[]
+    return rows.map(mapDespesa)
+  }
+
   listarGastosForaCartao(filtro?: { mesReferencia?: string }): Despesa[] {
     let sql =
       "SELECT * FROM despesa WHERE tipo = 'Unica' AND forma_pagamento != 'Credito' AND ativa = 1"

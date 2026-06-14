@@ -2,7 +2,7 @@ import { test, expect } from './fixtures/electron-app'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Despesa única + Fatura', () => {
-  test('criar cartão, categoria, despesa e visualizar fatura', async ({ app }) => {
+  test('criar cartão, categoria, despesa na tela Saídas e visualizar fatura', async ({ app }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
@@ -27,8 +27,8 @@ test.describe('Despesa única + Fatura', () => {
 
     await expect(page.getByText('Alimentação E2E')).toBeVisible()
 
-    // --- Criar despesa única (form inline na pagina Despesas) ---
-    await page.getByRole('link', { name: 'Despesas' }).click()
+    // --- Criar despesa única (form inline na tela Saídas) ---
+    await page.getByRole('link', { name: 'Saídas' }).click()
     await expect(page.getByLabel('Descrição')).toBeVisible()
 
     await page.getByLabel('Descrição').fill('Supermercado E2E')
@@ -39,9 +39,10 @@ test.describe('Despesa única + Fatura', () => {
     await page.getByLabel('Data da compra').fill('2026-06-03')
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
 
-    // Banner de sucesso deve mencionar a despesa e o mes de referencia por extenso
-    await expect(page.getByText('Supermercado E2E')).toBeVisible()
+    // Banner de sucesso cita o mês de referência por extenso
     await expect(page.getByText('junho de 2026', { exact: true })).toBeVisible()
+    // E a despesa aparece na lista de saídas
+    await expect(page.getByRole('cell', { name: 'Supermercado E2E' })).toBeVisible()
 
     // --- Visualizar fatura ---
     await page.getByRole('link', { name: 'Faturas' }).click()
