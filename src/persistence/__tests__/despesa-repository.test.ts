@@ -1481,3 +1481,97 @@ describe('DespesaRepository — fora de cartão (RF-DES-01)', () => {
     expect(parcelas[0].faturaId).toBeNull()
   })
 })
+
+describe('DespesaRepository.listarDespesas (Bloco Saídas)', () => {
+  let db: Database
+  let repo: DespesaRepository
+  let cartaoId: number
+  let catId: number
+
+  beforeEach(() => {
+    db = openInMemoryDatabase()
+    runMigrations(db)
+    repo = new DespesaRepository(db)
+    cartaoId = inserirCartao(db, 'Inter', 5, 12)
+    catId = inserirCategoria(db)
+
+    repo.criarUnicaCredito({
+      descricao: 'Unica credito',
+      categoriaId: catId,
+      cartaoId,
+      valorCentavos: 5000,
+      dataCompra: '2026-06-03'
+    })
+    repo.criarUnicaForaCartao({
+      descricao: 'Pix junho',
+      categoriaId: catId,
+      formaPagamento: 'Pix',
+      valorCentavos: 3000,
+      dataCompra: '2026-06-10'
+    })
+    repo.criarUnicaForaCartao({
+      descricao: 'Debito julho',
+      categoriaId: catId,
+      formaPagamento: 'Debito',
+      valorCentavos: 2000,
+      dataCompra: '2026-07-05'
+    })
+    repo.criarParceladaCredito({
+      descricao: 'TV 3x',
+      categoriaId: catId,
+      cartaoId,
+      totalParcelas: 3,
+      valorTotalCentavos: 9000,
+      dataCompra: '2026-06-03'
+    })
+    repo.criarAssinaturaCredito({
+      descricao: 'Spotify',
+      categoriaId: catId,
+      cartaoId,
+      valorMensalCentavos: 1990,
+      dataInicio: '2026-06-03'
+    })
+    const cancelada = repo.criarAssinaturaCredito({
+      descricao: 'Netflix',
+      categoriaId: catId,
+      cartaoId,
+      valorMensalCentavos: 5500,
+      dataInicio: '2026-06-03'
+    })
+    repo.cancelarAssinatura(cancelada.despesa.id)
+  })
+
+  it('sem filtro retorna todas as despesas-mestre, ativas e inativas', () => {
+    const todas = repo.listarDespesas()
+    expect(todas.map((d) => d.descricao).sort()).toEqual(
+      ['Debito julho', 'Netflix', 'Pix junho', 'Spotify', 'TV 3x', 'Unica credito'].sort()
+    )
+  })
+
+  it('apenasAtivas exclui a assinatura cancelada', () => {
+    const ativas = repo.listarDespesas({ apenasAtivas: true })
+    expect(ativas.map((d) => d.descricao)).not.toContain('Netflix')
+    expect(ativas).toHaveLength(5)
+  })
+
+  it('tipo foraCartao retorna só Unica não-crédito', () => {
+    const fora = repo.listarDespesas({ tipo: 'foraCartao' })
+    expect(fora.map((d) => d.descricao).sort()).toEqual(['Debito julho', 'Pix junho'])
+  })
+
+  it('tipo parcelada retorna 1 linha mestre (não as parcelas)', () => {
+    const parceladas = repo.listarDespesas({ tipo: 'parcelada' })
+    expect(parceladas).toHaveLength(1)
+    expect(parceladas[0].descricao).toBe('TV 3x')
+  })
+
+  it('tipo assinatura inclui ativas e canceladas, com as ativas primeiro', () => {
+    const assinaturas = repo.listarDespesas({ tipo: 'assinatura' })
+    expect(assinaturas.map((d) => d.descricao)).toEqual(['Spotify', 'Netflix'])
+  })
+
+  it('foraCartao + mesReferencia filtra pelo mês da compra', () => {
+    const junho = repo.listarDespesas({ tipo: 'foraCartao', mesReferencia: '2026-06' })
+    expect(junho.map((d) => d.descricao)).toEqual(['Pix junho'])
+  })
+})
