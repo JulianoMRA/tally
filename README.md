@@ -4,7 +4,7 @@
 
 ![status](https://img.shields.io/badge/status-in%20development-yellow)
 ![license](https://img.shields.io/badge/license-MIT-blue)
-![tests](https://img.shields.io/badge/tests-507%20passing-brightgreen)
+[![codecov](https://codecov.io/gh/JulianoMRA/tally/graph/badge.svg)](https://codecov.io/gh/JulianoMRA/tally)
 [![CI](https://github.com/JulianoMRA/tally/actions/workflows/ci.yml/badge.svg)](https://github.com/JulianoMRA/tally/actions/workflows/ci.yml)
 
 Tally is a personal project built to replace a Google Sheets workflow that demanded manual work every month: copying the previous month's tab, incrementing parcela numbers (`7/12` → `8/12`), and recalculating credit card statement totals. Tally does all of it automatically.
@@ -53,7 +53,9 @@ Quality strategy is treated as a first-class concern, not an afterthought.
 - **Coverage minimums:** 80% in the domain layer, 60% global.
 - **Integration tests** run against in-memory SQLite to validate repositories without mocking the database.
 - **E2E tests** (13 Playwright specs against the real Electron app, each in an isolated temp database) cover the critical user flows: registering an in-progress installment plan, advancing parcelas, paying a statement — which locks its expenses against edit/deletion (RN-06) —, deleting expenses, navigating to a projected future month, per-category budgets, and reports.
-- **CI pipeline** runs lint, typecheck, tests with coverage gating, and build on an ubuntu + windows matrix, plus the full Playwright E2E suite on Windows (the app's primary target). Branch protection requires a green pipeline before merge.
+- **CI pipeline** runs lint, typecheck, tests with coverage gating, and build on an ubuntu + windows matrix, plus the full Playwright E2E suite on Windows (the app's primary target). Branch protection requires a green pipeline before merge. `npm audit` on production dependencies is a blocking gate; CodeQL and Dependabot watch the supply chain.
+- **Accessibility scans** (axe-core via Playwright) run against every main screen in CI — serious/critical WCAG violations fail the build.
+- **Mutation testing** (Stryker) runs weekly against the domain layer, measuring whether the tests actually detect behavioral changes — not just line coverage. Current score: **93%** (650 mutants, 4 of 14 services at 100%).
 - **Conventional Commits** enforced via commitlint, enabling automated changelog generation.
 
 Bug reports during development follow a structured template (preconditions, steps, expected vs actual, severity, evidence) and live as GitHub Issues.
