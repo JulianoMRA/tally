@@ -5,6 +5,7 @@ import { DespesaRepository } from '../../src/persistence/repositories/despesa-re
 import { FaturaRepository } from '../../src/persistence/repositories/fatura-repository'
 import { ParcelaRepository } from '../../src/persistence/repositories/parcela-repository'
 import { fecharFatura, pagarFatura, reabrirFatura } from '../../src/domain/services/ciclo-fatura'
+import { hojeIsoLocal } from '../../src/shared/datas-locais'
 import {
   cartaoIdSchema,
   faturaIdSchema,
@@ -76,8 +77,11 @@ export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
     const faturaId = faturaIdSchema.parse(payload)
     const fatura = faturaRepo.findById(faturaId)
     if (!fatura) throw new Error(`Fatura #${faturaId} não encontrada`)
-    const resultado = reabrirFatura(fatura)
+    const resultado = reabrirFatura(fatura, hojeIsoLocal())
     if (!resultado.ok) throw new Error(resultado.erro)
-    return faturaRepo.reabrir(faturaId)
+    if (resultado.novoStatus.kind === 'Paga') {
+      throw new Error('reabrir: transição inesperada para Paga')
+    }
+    return faturaRepo.reabrir(faturaId, resultado.novoStatus.kind)
   })
 }

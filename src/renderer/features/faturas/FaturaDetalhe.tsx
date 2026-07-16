@@ -425,7 +425,7 @@ export function FaturaDetalhe({
       {dialogo?.tipo === 'reabrir' && (
         <ConfirmDialog
           title="Reabrir fatura?"
-          body="O status voltará para Aberta. A data de pagamento será apagada."
+          body="A data de pagamento será apagada. A fatura volta a Aberta — ou a Fechada, se a data de fechamento já tiver passado."
           confirmText="Reabrir"
           onConfirm={() => {
             ciclo.reabrir(fatura.id)

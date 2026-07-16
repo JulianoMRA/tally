@@ -171,13 +171,27 @@ describe('FaturaRepository — sincronização parcela <-> fatura (RN-06)', () =
     }
   })
 
-  it('reabrir reverte as parcelas da fatura para Pendente e limpa data_pagamento', () => {
+  it('reabrir como Aberta reverte as parcelas da fatura para Pendente e limpa data_pagamento', () => {
     const { faturaId } = criarFaturaComParcelas()
     repo.fechar(faturaId)
     repo.pagar(faturaId, '2026-06-12')
 
-    repo.reabrir(faturaId)
+    const fatura = repo.reabrir(faturaId, 'Aberta')
 
+    expect(fatura.status).toEqual({ kind: 'Aberta' })
+    const parcelas = parcelaRepo.listarPorFatura(faturaId)
+    expect(parcelas[0].status).toBe('Pendente')
+    expect(parcelas[0].dataPagamento).toBeNull()
+  })
+
+  it('reabrir como Fechada (fatura vencida) deixa Fechada com parcelas Pendente', () => {
+    const { faturaId } = criarFaturaComParcelas()
+    repo.fechar(faturaId)
+    repo.pagar(faturaId, '2026-06-12')
+
+    const fatura = repo.reabrir(faturaId, 'Fechada')
+
+    expect(fatura.status).toEqual({ kind: 'Fechada' })
     const parcelas = parcelaRepo.listarPorFatura(faturaId)
     expect(parcelas[0].status).toBe('Pendente')
     expect(parcelas[0].dataPagamento).toBeNull()

@@ -102,21 +102,48 @@ describe('pagarFatura (RN-06)', () => {
 })
 
 describe('reabrirFatura (RF-FAT-05)', () => {
-  it('Paga → Aberta com sucesso', () => {
-    const fatura = faturaBase({ status: { kind: 'Paga', pagaEm: '2026-04-10' } })
-    const resultado = reabrirFatura(fatura)
+  it('Paga com fechamento ainda no futuro → Aberta', () => {
+    const fatura = faturaBase({
+      dataFechamento: '2026-04-05',
+      status: { kind: 'Paga', pagaEm: '2026-04-03' }
+    })
+    const resultado = reabrirFatura(fatura, '2026-04-04')
     expect(resultado).toEqual({ ok: true, novoStatus: { kind: 'Aberta' } })
+  })
+
+  it('Paga com fechamento já vencido → Fechada (RN-06)', () => {
+    const fatura = faturaBase({
+      dataFechamento: '2026-04-05',
+      status: { kind: 'Paga', pagaEm: '2026-04-12' }
+    })
+    const resultado = reabrirFatura(fatura, '2026-04-20')
+    expect(resultado).toEqual({ ok: true, novoStatus: { kind: 'Fechada' } })
+  })
+
+  it('Paga reaberta exatamente no dia do fechamento → Fechada', () => {
+    const fatura = faturaBase({
+      dataFechamento: '2026-04-05',
+      status: { kind: 'Paga', pagaEm: '2026-04-05' }
+    })
+    const resultado = reabrirFatura(fatura, '2026-04-05')
+    expect(resultado).toEqual({ ok: true, novoStatus: { kind: 'Fechada' } })
   })
 
   it('Fechada → erro: só reabre fatura paga', () => {
     const fatura = faturaBase({ status: { kind: 'Fechada' } })
-    const resultado = reabrirFatura(fatura)
+    const resultado = reabrirFatura(fatura, '2026-04-20')
     expect(resultado.ok).toBe(false)
   })
 
   it('Aberta → erro: não está paga', () => {
     const fatura = faturaBase({ status: { kind: 'Aberta' } })
-    const resultado = reabrirFatura(fatura)
+    const resultado = reabrirFatura(fatura, '2026-04-20')
+    expect(resultado.ok).toBe(false)
+  })
+
+  it('hoje malformado → erro', () => {
+    const fatura = faturaBase({ status: { kind: 'Paga', pagaEm: '2026-04-10' } })
+    const resultado = reabrirFatura(fatura, '20/04/2026')
     expect(resultado.ok).toBe(false)
   })
 })

@@ -812,7 +812,7 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
       const faturaRepo = new FaturaRepository(db)
       faturaRepo.fechar(r.fatura.id)
       faturaRepo.pagar(r.fatura.id, '2026-06-12')
-      faturaRepo.reabrir(r.fatura.id)
+      faturaRepo.reabrir(r.fatura.id, 'Aberta')
 
       const resultado = repo.excluir(r.despesa.id)
       expect(resultado.parcelasExcluidas).toBe(1)
