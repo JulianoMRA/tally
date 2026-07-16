@@ -33,6 +33,24 @@ let db: Database | null = null
 let mainWindow: BrowserWindow | null = null
 let dbPathAtual: string | null = null
 let isShuttingDown = false
+let fechamentoTimer: NodeJS.Timeout | null = null
+
+// RN-06: além do boot e da visão mensal, faturas vencidas precisam fechar em
+// sessões longas (app aberto virando o dia). Timer horário cobre esse caso.
+const FECHAMENTO_INTERVALO_MS = 60 * 60 * 1000
+
+function iniciarTimerFechamento(database: Database): void {
+  fechamentoTimer = setInterval(() => {
+    try {
+      const fechadas = new FaturaRepository(database).fecharVencidas(hojeIsoLocal())
+      if (is.dev && fechadas > 0) {
+        console.log(`[faturas] timer: ${fechadas} fatura(s) Aberta vencidas → Fechada`)
+      }
+    } catch (err) {
+      console.error('[faturas] timer de fechamento falhou:', err)
+    }
+  }, FECHAMENTO_INTERVALO_MS)
+}
 
 // TALLY_USER_DATA permite redirecionar o diretório de dados para uma pasta
 // isolada — usado pelos testes E2E para nunca tocar na base real do usuário.
@@ -362,6 +380,7 @@ if (!obteveLock) {
       registerOrcamentoHandlers(db, ipcMain)
       construirMenuApp()
       createWindow()
+      iniciarTimerFechamento(db)
 
       app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
@@ -375,6 +394,10 @@ if (!obteveLock) {
 
   app.on('before-quit', () => {
     isShuttingDown = true
+    if (fechamentoTimer) {
+      clearInterval(fechamentoTimer)
+      fechamentoTimer = null
+    }
     fecharBanco()
   })
 
