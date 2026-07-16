@@ -16,7 +16,10 @@ describe('backupDatabase', () => {
   })
 
   afterEach(() => {
-    rmSync(dir, { recursive: true, force: true })
+    // maxRetries/retryDelay: no Windows (CI), o teste de integracao abre o
+    // backup como banco e o handle do .lock pode demorar a ser liberado apos
+    // o close — o rmSync imediato falhava com ENOTEMPTY intermitente.
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
 
   it('retorna null e nao cria nada quando o banco ainda nao existe', () => {
