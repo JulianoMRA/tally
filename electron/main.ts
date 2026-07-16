@@ -398,7 +398,16 @@ if (!obteveLock) {
       clearInterval(fechamentoTimer)
       fechamentoTimer = null
     }
+    // Backup DEPOIS de fechar a conexão: o arquivo copiado fica sempre em
+    // estado consistente (sem journal pendente de escrita em andamento).
     fecharBanco()
+    if (dbPathAtual) {
+      try {
+        backupDatabase(dbPathAtual)
+      } catch (err) {
+        console.error('[backup] falha no backup ao sair:', err)
+      }
+    }
   })
 
   app.on('window-all-closed', () => {
