@@ -142,14 +142,14 @@ Detalhes técnicos de cada slice em [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## Installation
 
-Pre-built Windows binaries are produced via `npm run dist` and land in `release/`:
+Grab the latest binaries from [GitHub Releases](https://github.com/JulianoMRA/tally/releases) (published automatically when a `v*` tag is pushed — see `.github/workflows/release.yml`):
 
-- **`Tally Setup <version>.exe`** — NSIS installer. Creates desktop + Start Menu shortcuts, lets you pick the install dir, supports clean uninstall.
-- **`Tally-<version>-portable.exe`** — single-file executable. Just double-click — no install. Good for USB drives or restricted machines.
+- **`Tally Setup <version>.exe`** — NSIS installer. Creates desktop + Start Menu shortcuts, lets you pick the install dir, supports clean uninstall. **Auto-updates**: the app checks GitHub Releases on startup (and via the `Arquivo > Verificar atualizações` menu) and applies new versions on quit.
+- **`Tally-<version>-portable.exe`** — single-file executable. Just double-click — no install. Good for USB drives or restricted machines. Does **not** auto-update — download new versions manually.
 
-On first launch Windows SmartScreen may warn that the publisher is unverified (the binary is unsigned — this is a personal project, not a commercial app). Click **More info → Run anyway** to proceed.
+On first launch Windows SmartScreen may warn that the publisher is unverified (the binary is unsigned — this is a personal project, not a commercial app). Click **More info → Run anyway** to proceed. Auto-update itself works on unsigned builds.
 
-Your data lives in `%APPDATA%\tally\tally.db` regardless of which build you use (NSIS, portable, or `npm run dev`). Back it up by copying that file.
+Your data lives in `%APPDATA%\tally\tally.db` regardless of which build you use (NSIS, portable, or `npm run dev`) and survives updates. Backups are written to `%APPDATA%\tally\backups\` on every boot and quit; you can also export everything as JSON via `Arquivo > Exportar dados`.
 
 ---
 

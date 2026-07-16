@@ -11,6 +11,9 @@ import {
 import { join } from 'path'
 import { mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from 'fs'
 import { is } from '@electron-toolkit/utils'
+// electron-updater e CJS; o default import + destructuring e o padrao seguro
+// para o bundle CJS do electron-vite (named import quebra o interop).
+import electronUpdater from 'electron-updater'
 import type { Database } from '../src/persistence/database'
 import { openDatabase } from '../src/persistence/database'
 import { backupDatabase } from '../src/persistence/backup'
@@ -208,6 +211,67 @@ function janelaAtual(): BrowserWindow | undefined {
   return mainWindow ?? BrowserWindow.getAllWindows()[0]
 }
 
+const { autoUpdater } = electronUpdater
+
+// O launcher portable do electron-builder seta esta env; o binario portable
+// nao tem instalador substituivel, entao auto-update fica desabilitado nele.
+function ehPortable(): boolean {
+  return Boolean(process.env.PORTABLE_EXECUTABLE_DIR)
+}
+
+function iniciarAutoUpdate(): void {
+  if (!app.isPackaged || ehPortable()) return
+  autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+    // Sem rede ou release indisponivel nao e erro fatal — apenas loga.
+    console.error('[updater] checagem automatica falhou:', err)
+  })
+}
+
+async function verificarAtualizacoesManual(): Promise<void> {
+  const win = janelaAtual()
+  if (!win) return
+  if (!app.isPackaged) {
+    await dialog.showMessageBox(win, {
+      type: 'info',
+      title: 'Atualizações',
+      message: 'Checagem de atualização indisponível em desenvolvimento.'
+    })
+    return
+  }
+  if (ehPortable()) {
+    await dialog.showMessageBox(win, {
+      type: 'info',
+      title: 'Atualizações',
+      message: 'A versão portable não atualiza automaticamente.',
+      detail: 'Baixe a versão mais recente em github.com/JulianoMRA/tally/releases.'
+    })
+    return
+  }
+  try {
+    const resultado = await autoUpdater.checkForUpdates()
+    const novaVersao = resultado?.updateInfo.version
+    if (novaVersao && novaVersao !== app.getVersion()) {
+      await dialog.showMessageBox(win, {
+        type: 'info',
+        title: 'Atualização disponível',
+        message: `Versão ${novaVersao} disponível (atual: ${app.getVersion()}).`,
+        detail: 'O download acontece em segundo plano e a atualização é aplicada ao fechar o app.'
+      })
+    } else {
+      await dialog.showMessageBox(win, {
+        type: 'info',
+        title: 'Atualizações',
+        message: `Você já está na versão mais recente (${app.getVersion()}).`
+      })
+    }
+  } catch (err) {
+    dialog.showErrorBox(
+      'Falha ao checar atualizações',
+      err instanceof Error ? err.message : String(err)
+    )
+  }
+}
+
 async function exportarDados(): Promise<void> {
   if (!db) return
   const win = janelaAtual()
@@ -278,6 +342,8 @@ function construirMenuApp(): void {
       submenu: [
         { label: 'Exportar dados…', click: () => void exportarDados() },
         { label: 'Importar dados…', click: () => void importarDados() },
+        { type: 'separator' },
+        { label: 'Verificar atualizações…', click: () => void verificarAtualizacoesManual() },
         { type: 'separator' },
         { role: 'quit', label: 'Sair' }
       ]
@@ -381,6 +447,7 @@ if (!obteveLock) {
       construirMenuApp()
       createWindow()
       iniciarTimerFechamento(db)
+      iniciarAutoUpdate()
 
       app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
