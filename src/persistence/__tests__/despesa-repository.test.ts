@@ -52,7 +52,7 @@ describe('DespesaRepository.criarUnicaCredito', () => {
     expect(resultado.despesa.ativa).toBe(true)
 
     expect(resultado.fatura.cartaoId).toBe(cartaoId)
-    expect(resultado.fatura.mesReferencia).toBe('2026-06') // dia 03 <= F=05 → mesmo mês
+    expect(resultado.fatura.mesReferencia).toBe('2026-06') // dia 03 < F=05 → mesmo mês
     expect(resultado.fatura.status).toEqual({ kind: 'Aberta' })
 
     expect(resultado.parcela.despesaId).toBe(resultado.despesa.id)
@@ -367,7 +367,7 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
       expect(new Set(faturas).size).toBe(12)
     })
 
-    it('primeira ocorrência usa RN-01 (dia <= fechamento → mês corrente)', () => {
+    it('primeira ocorrência usa RN-01 (dia < fechamento → mês corrente)', () => {
       const r = repo.criarAssinaturaCredito({
         descricao: 'Spotify',
         categoriaId: catId,

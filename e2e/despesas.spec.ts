@@ -35,7 +35,7 @@ test.describe('Despesa única + Fatura', () => {
     await page.getByLabel('Categoria').selectOption({ label: 'Alimentação E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter E2E' })
     await page.getByLabel('Valor (R$)').fill('50,00')
-    // Seta data_compra para dia 03 (≤ fechamento 05 → fatura do mesmo mês)
+    // Seta data_compra para dia 03 (< fechamento 05 → fatura do mesmo mês)
     await page.getByLabel('Data da compra').fill('2026-06-03')
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
 
