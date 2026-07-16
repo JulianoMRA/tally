@@ -300,9 +300,20 @@ Pipeline em PR e push para main, em matriz `ubuntu-latest + windows-latest`:
 3. Typecheck (`tsc --noEmit`)
 4. Test (`vitest run --coverage` — thresholds RNF-06 são gate)
 5. Build (Electron build)
-6. E2E (`playwright test`, apenas Windows — alvo primário per RNF-02)
-7. Upload de artifacts: `playwright-report` (Windows) e `coverage-report` (Ubuntu)
-8. `npm audit --audit-level=high` não-bloqueante (warning-only)
+6. E2E (`playwright test`, apenas Windows — alvo primário per RNF-02), incluindo
+   varredura de acessibilidade (axe-core) nas telas principais — violações
+   serious/critical quebram o pipeline
+7. Upload de artifacts: `playwright-report` (Windows) e `coverage-report`
+   (Ubuntu, também enviado ao Codecov)
+8. `npm audit --omit=dev --audit-level=high` **bloqueante**
+
+Workflows adicionais: CodeQL (push/PR/semanal), Dependabot (npm + actions,
+semanal) e mutation testing com Stryker no domain layer (semanal + manual —
+lento demais para gate de PR).
+
+Determinismo dos E2E: a fixture força a janela para 1280x800 após o launch —
+runners de CI têm telas menores e o clamp do SO colapsava grids (colunas 1fr
+com largura zero), gerando falhas que não reproduziam localmente.
 
 Branch `main` protegida: PR obrigatório, CI verde obrigatório, conventional commits.
 

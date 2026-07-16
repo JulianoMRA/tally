@@ -30,9 +30,21 @@ export const test = base.extend<ElectronFixtures>({
     }
   },
   app: async ({ userDataDir }, use) => {
+    // timeout: runners de CI com 2 workers tem cold start lento do Electron —
+    // o default de 30s produzia "Process failed to launch" intermitente.
     const app = await electron.launch({
       args: [mainEntry],
-      env: { ...process.env, TALLY_USER_DATA: userDataDir }
+      env: { ...process.env, TALLY_USER_DATA: userDataDir },
+      timeout: 60_000
+    })
+    // Viewport deterministico: em telas menores que 1280x800 (runner de CI e
+    // 1024x768) o SO clampa a janela na criacao, colunas 1fr de grids
+    // colapsavam para largura zero e toBeVisible falhava so no CI. No Windows
+    // a janela pode ser maior que a tela, entao o setSize pos-criacao vale.
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+    await app.evaluate(({ BrowserWindow }) => {
+      BrowserWindow.getAllWindows()[0]?.setSize(1280, 800)
     })
     await use(app)
     await app.close()

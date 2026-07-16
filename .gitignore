@@ -62,3 +62,7 @@ docs/handoffs/
 
 # Notas internas de investigação de bugs (não versionar)
 BUGS-INVESTIGADOS.md
+
+# Stryker (mutation testing)
+.stryker-tmp/
+reports/

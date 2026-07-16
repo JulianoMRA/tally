@@ -6,7 +6,16 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
-    ignores: ['out/**', 'dist/**', 'node_modules/**', '*.config.*', 'coverage/**']
+    ignores: [
+      'out/**',
+      'dist/**',
+      'node_modules/**',
+      '*.config.*',
+      'coverage/**',
+      '.stryker-tmp/**',
+      'reports/**',
+      'release/**'
+    ]
   },
   {
     files: ['electron/**/*.ts', 'src/**/*.ts', 'src/**/*.tsx'],

@@ -50,9 +50,15 @@ jobs:
           path: coverage/
           retention-days: 7
 
-      - name: npm audit (warning-only)
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest'
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage/coverage-final.json
+          fail_ci_if_error: false
+
+      - name: npm audit (bloqueante para high em deps de producao)
         run: npm audit --omit=dev --audit-level=high
-        continue-on-error: true
 
   # E2E roda no Windows — alvo primario do app (PRD 8.4). Sem xvfb: o runner
   # Windows tem sessao grafica propria para o Electron.
