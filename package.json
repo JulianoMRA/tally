@@ -65,7 +65,13 @@
       "artifactName": "Tally-${version}-portable.exe"
     },
     "asar": true,
-    "compression": "normal"
+    "compression": "normal",
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeCliInspectArguments": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "onlyLoadAppFromAsar": true
+    }
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
