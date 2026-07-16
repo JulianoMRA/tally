@@ -77,7 +77,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@commitlint/cli": "^19.8.1",
-    "@commitlint/config-conventional": "^19.8.1",
+    "@commitlint/config-conventional": "^21.2.0",
     "@electron-toolkit/tsconfig": "^1.0.1",
     "@playwright/test": "^1.60.0",
     "@stryker-mutator/core": "^9.6.1",
