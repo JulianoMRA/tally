@@ -50,7 +50,7 @@ describe('DadosRepository', () => {
     const payload = new DadosRepository(db).exportar()
 
     expect(payload.formatVersion).toBe(1)
-    expect(payload.app.schemaVersion).toMatch(/^0006/)
+    expect(payload.app.schemaVersion).toMatch(/^0007/)
     expect(payload.tables.cartao).toHaveLength(1)
     expect(payload.tables.orcamento).toHaveLength(1)
     expect(payload.tables.parcela).toHaveLength(1)
@@ -97,11 +97,26 @@ describe('DadosRepository', () => {
     destino.close()
   })
 
-  it('rejeita import com versao de schema incompativel sem alterar os dados', () => {
+  it('aceita export de versao de schema anterior (backup sobrevive a migrations novas)', () => {
     const origem = novoBanco()
     seedBasico(origem)
     const payload = new DadosRepository(origem).exportar()
-    payload.app.schemaVersion = '0001_qualquer_outra'
+    payload.app.schemaVersion = '0006_backfill_parcelas_pagas'
+
+    const destino = novoBanco()
+    const { totalLinhas } = new DadosRepository(destino).importar(payload)
+
+    expect(totalLinhas).toBe(8)
+    expect(contar(destino, 'cartao')).toBe(1)
+    origem.close()
+    destino.close()
+  })
+
+  it('rejeita export de versao de schema mais nova que a do app, sem alterar os dados', () => {
+    const origem = novoBanco()
+    seedBasico(origem)
+    const payload = new DadosRepository(origem).exportar()
+    payload.app.schemaVersion = '9999_schema_do_futuro'
 
     const destino = novoBanco()
     destino.exec(
@@ -111,6 +126,18 @@ describe('DadosRepository', () => {
     expect(() => new DadosRepository(destino).importar(payload)).toThrow(/incompativel/)
     expect(contar(destino, 'cartao')).toBe(1)
     expect(destino.prepare('SELECT nome FROM cartao').get()).toEqual({ nome: 'Antigo' })
+    origem.close()
+    destino.close()
+  })
+
+  it('rejeita export com versao de schema malformada', () => {
+    const origem = novoBanco()
+    seedBasico(origem)
+    const payload = new DadosRepository(origem).exportar()
+    payload.app.schemaVersion = 'sem-prefixo-numerico'
+
+    const destino = novoBanco()
+    expect(() => new DadosRepository(destino).importar(payload)).toThrow(/incompativel/)
     origem.close()
     destino.close()
   })

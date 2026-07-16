@@ -26,6 +26,21 @@ const ORDEM_INSERT = [
   'recebimento'
 ] as const
 
+/**
+ * Extrai o prefixo numerico NNNN de uma versao de migration
+ * (ex.: '0007_hardening_schema' → 7). Versao sem prefixo e tratada como
+ * incompativel — nao ha como ordena-la em relacao ao schema do app.
+ */
+function numeroDaVersao(versao: string): number {
+  const match = /^(\d{4})/.exec(versao)
+  if (!match) {
+    throw new Error(
+      `Versao de schema incompativel: '${versao}' nao tem o prefixo numerico NNNN esperado.`
+    )
+  }
+  return Number(match[1])
+}
+
 export class DadosRepository implements Repository {
   constructor(public readonly db: Database) {}
 
@@ -69,8 +84,11 @@ export class DadosRepository implements Repository {
   }
 
   /**
-   * Substitui TODOS os dados pelos do payload, de forma atomica. Rejeita se a
-   * versao de schema do arquivo nao bate com a do app (evita formatos divergentes).
+   * Substitui TODOS os dados pelos do payload, de forma atomica. Exports de
+   * versoes ANTERIORES de schema sao aceitos (colunas ausentes viram NULL e
+   * as constraints do schema atual validam cada linha na transacao) — um
+   * backup nao pode virar lixo so porque o app ganhou uma migration nova.
+   * Exports de versao mais nova que o app sao rejeitados.
    * Deve ser chamado apos um backup do banco (responsabilidade do caller).
    */
   importar(payload: ExportPayload): { totalLinhas: number } {
@@ -78,10 +96,10 @@ export class DadosRepository implements Repository {
       throw new Error(`Formato de arquivo nao suportado: ${String(payload.formatVersion)}`)
     }
     const atual = this.schemaVersion()
-    if (payload.app.schemaVersion !== atual) {
+    if (numeroDaVersao(payload.app.schemaVersion) > numeroDaVersao(atual)) {
       throw new Error(
         `Versao de schema incompativel (arquivo=${payload.app.schemaVersion}, app=${atual}). ` +
-          `Importe um arquivo gerado por esta versao do Tally.`
+          `O arquivo foi gerado por uma versao mais nova do Tally — atualize o app antes de importar.`
       )
     }
 
