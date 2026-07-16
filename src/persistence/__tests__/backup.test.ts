@@ -16,10 +16,16 @@ describe('backupDatabase', () => {
   })
 
   afterEach(() => {
-    // maxRetries/retryDelay: no Windows (CI), o teste de integracao abre o
-    // backup como banco e o handle do .lock pode demorar a ser liberado apos
-    // o close — o rmSync imediato falhava com ENOTEMPTY intermitente.
-    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+    // Cleanup best-effort (mesmo padrao da fixture E2E): no Windows do CI,
+    // antivirus/indexador seguram o handle do diretorio .lock do sqlite-wasm
+    // por segundos apos o close — nem maxRetries resolveu (ENOTEMPTY
+    // persistiu no runner). Falha de limpeza de pasta temp em VM efemera nao
+    // e defeito do produto e nao deve derrubar a suite.
+    try {
+      rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+    } catch {
+      // deixa para o SO limpar %TEMP%
+    }
   })
 
   it('retorna null e nao cria nada quando o banco ainda nao existe', () => {
