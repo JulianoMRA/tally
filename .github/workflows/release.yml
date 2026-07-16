@@ -1,0 +1,47 @@
+name: Release
+
+# Dispara em tag v*: gera NSIS + portable + latest.yml e publica no GitHub
+# Release da tag. O NSIS instalado atualiza sozinho via electron-updater;
+# o portable exige download manual (documentado no README).
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build e publica instaladores Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Valida tag == versao do package.json
+        shell: pwsh
+        run: |
+          $versao = node -p "require('./package.json').version"
+          $tag = "${{ github.ref_name }}"
+          if ($tag -ne "v$versao") {
+            Write-Error "Tag $tag nao corresponde a versao do package.json (v$versao). Use 'npm version' para criar a tag."
+            exit 1
+          }
+
+      - name: Build
+        run: npm run build
+
+      - name: Empacota e publica no GitHub Release
+        run: npx electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
