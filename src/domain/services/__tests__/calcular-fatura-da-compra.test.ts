@@ -24,31 +24,39 @@ describe('calcularReferenciaFaturaDaCompra (RN-01)', () => {
   })
 
   describe('edge cases', () => {
-    it('compra exatamente no dia do fechamento entra no mesmo mês (regra <=)', () => {
-      expect(calcularReferenciaFaturaDaCompra('2026-06-05', 5)).toEqual({ ano: 2026, mes: 6 })
+    it('compra exatamente no dia do fechamento entra no mês seguinte (regra <)', () => {
+      expect(calcularReferenciaFaturaDaCompra('2026-06-05', 5)).toEqual({ ano: 2026, mes: 7 })
     })
 
-    it('compra dia 1 com fechamento dia 1 entra no mesmo mês', () => {
-      expect(calcularReferenciaFaturaDaCompra('2026-06-01', 1)).toEqual({ ano: 2026, mes: 6 })
+    it('compra na véspera do fechamento entra no mesmo mês', () => {
+      expect(calcularReferenciaFaturaDaCompra('2026-06-04', 5)).toEqual({ ano: 2026, mes: 6 })
+    })
+
+    it('compra dia 1 com fechamento dia 1 entra no mês seguinte', () => {
+      expect(calcularReferenciaFaturaDaCompra('2026-06-01', 1)).toEqual({ ano: 2026, mes: 7 })
     })
 
     it('compra dia 2 com fechamento dia 1 entra no mês seguinte', () => {
       expect(calcularReferenciaFaturaDaCompra('2026-06-02', 1)).toEqual({ ano: 2026, mes: 7 })
     })
 
-    it('compra dia 31 com fechamento dia 31 entra no mesmo mês', () => {
-      expect(calcularReferenciaFaturaDaCompra('2026-07-31', 31)).toEqual({ ano: 2026, mes: 7 })
+    it('compra dia 31 com fechamento dia 31 entra no mês seguinte', () => {
+      expect(calcularReferenciaFaturaDaCompra('2026-07-31', 31)).toEqual({ ano: 2026, mes: 8 })
     })
 
     it('compra em dezembro depois do fechamento rola para janeiro do ano seguinte', () => {
       expect(calcularReferenciaFaturaDaCompra('2026-12-20', 15)).toEqual({ ano: 2027, mes: 1 })
     })
 
-    it('compra em dezembro antes ou no fechamento permanece em dezembro', () => {
-      expect(calcularReferenciaFaturaDaCompra('2026-12-15', 15)).toEqual({ ano: 2026, mes: 12 })
+    it('compra em dezembro no dia do fechamento rola para janeiro do ano seguinte', () => {
+      expect(calcularReferenciaFaturaDaCompra('2026-12-15', 15)).toEqual({ ano: 2027, mes: 1 })
     })
 
-    it('cartão F=31 com compra dia 28/02 entra em fevereiro (28 <= 31)', () => {
+    it('compra em dezembro antes do fechamento permanece em dezembro', () => {
+      expect(calcularReferenciaFaturaDaCompra('2026-12-14', 15)).toEqual({ ano: 2026, mes: 12 })
+    })
+
+    it('cartão F=31 com compra dia 28/02 entra em fevereiro (28 < 31)', () => {
       expect(calcularReferenciaFaturaDaCompra('2027-02-28', 31)).toEqual({ ano: 2027, mes: 2 })
     })
   })

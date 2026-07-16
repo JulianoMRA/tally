@@ -33,8 +33,12 @@ function validarDiaFechamento(dia: number): void {
 
 /**
  * RN-01 — descobre em qual fatura uma compra cai.
- *   * dia(dataCompra) <= diaFechamento → fatura do mesmo mês
- *   * dia(dataCompra)  > diaFechamento → fatura do mês seguinte
+ *   * dia(dataCompra) <  diaFechamento → fatura do mesmo mês
+ *   * dia(dataCompra) >= diaFechamento → fatura do mês seguinte
+ *
+ * A fatura fecha no início do dia F (RN-06 marca Fechada quando
+ * data_fechamento <= hoje), então a compra feita no próprio dia F
+ * já pertence ao ciclo seguinte.
  */
 export function calcularReferenciaFaturaDaCompra(
   dataCompra: string,
@@ -43,7 +47,7 @@ export function calcularReferenciaFaturaDaCompra(
   validarDiaFechamento(diaFechamento)
   const { ano, mes, dia } = parseDataIso(dataCompra)
 
-  if (dia <= diaFechamento) {
+  if (dia < diaFechamento) {
     return { ano, mes }
   }
   if (mes === 12) {

@@ -90,16 +90,20 @@ export class FaturaRepository implements Repository {
     })()
   }
 
-  /** Reverte o pagamento: fatura volta a Aberta e as parcelas a Pendente. */
-  reabrir(id: number): Fatura {
+  /**
+   * Reverte o pagamento: as parcelas voltam a Pendente e a fatura assume o
+   * status decidido pelo domain (reabrirFatura em ciclo-fatura.ts): Aberta
+   * quando o fechamento ainda não passou, Fechada quando já venceu (RN-06).
+   */
+  reabrir(id: number, novoStatus: 'Aberta' | 'Fechada'): Fatura {
     return this.db.transaction(() => {
       this.db
         .prepare(
           `UPDATE fatura
-           SET status = 'Aberta', data_pagamento = NULL, updated_at = datetime('now')
+           SET status = ?, data_pagamento = NULL, updated_at = datetime('now')
            WHERE id = ?`
         )
-        .run(id)
+        .run(novoStatus, id)
       this.db
         .prepare(
           `UPDATE parcela

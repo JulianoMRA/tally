@@ -52,7 +52,7 @@ describe('DespesaRepository.criarUnicaCredito', () => {
     expect(resultado.despesa.ativa).toBe(true)
 
     expect(resultado.fatura.cartaoId).toBe(cartaoId)
-    expect(resultado.fatura.mesReferencia).toBe('2026-06') // dia 03 <= F=05 → mesmo mês
+    expect(resultado.fatura.mesReferencia).toBe('2026-06') // dia 03 < F=05 → mesmo mês
     expect(resultado.fatura.status).toEqual({ kind: 'Aberta' })
 
     expect(resultado.parcela.despesaId).toBe(resultado.despesa.id)
@@ -367,7 +367,7 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
       expect(new Set(faturas).size).toBe(12)
     })
 
-    it('primeira ocorrência usa RN-01 (dia <= fechamento → mês corrente)', () => {
+    it('primeira ocorrência usa RN-01 (dia < fechamento → mês corrente)', () => {
       const r = repo.criarAssinaturaCredito({
         descricao: 'Spotify',
         categoriaId: catId,
@@ -812,7 +812,7 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
       const faturaRepo = new FaturaRepository(db)
       faturaRepo.fechar(r.fatura.id)
       faturaRepo.pagar(r.fatura.id, '2026-06-12')
-      faturaRepo.reabrir(r.fatura.id)
+      faturaRepo.reabrir(r.fatura.id, 'Aberta')
 
       const resultado = repo.excluir(r.despesa.id)
       expect(resultado.parcelasExcluidas).toBe(1)
@@ -1573,5 +1573,186 @@ describe('DespesaRepository.listarDespesas (Bloco Saídas)', () => {
   it('foraCartao + mesReferencia filtra pelo mês da compra', () => {
     const junho = repo.listarDespesas({ tipo: 'foraCartao', mesReferencia: '2026-06' })
     expect(junho.map((d) => d.descricao)).toEqual(['Pix junho'])
+  })
+})
+
+describe('DespesaRepository — bloqueio de fatura Paga (RF-FAT-04)', () => {
+  let db: Database
+  let repo: DespesaRepository
+  let faturaRepo: FaturaRepository
+  let parcelaRepo: ParcelaRepository
+  let cartaoId: number
+  let categoriaId: number
+
+  beforeEach(() => {
+    db = openInMemoryDatabase()
+    runMigrations(db)
+    repo = new DespesaRepository(db)
+    faturaRepo = new FaturaRepository(db)
+    parcelaRepo = new ParcelaRepository(db)
+    cartaoId = inserirCartao(db, 'Inter', 5, 12)
+    categoriaId = inserirCategoria(db)
+  })
+
+  function contarLinhas(tabela: 'despesa' | 'parcela'): number {
+    return (db.prepare(`SELECT count(*) AS n FROM ${tabela}`).get() as { n: number }).n
+  }
+
+  /** Cria uma despesa única para materializar a fatura do mês e a deixa Paga. */
+  function pagarFaturaDoMes(dataCompra: string): number {
+    const r = repo.criarUnicaCredito({
+      descricao: 'Seed da fatura',
+      categoriaId,
+      cartaoId,
+      valorCentavos: 1000,
+      dataCompra
+    })
+    faturaRepo.fechar(r.fatura.id)
+    faturaRepo.pagar(r.fatura.id, dataCompra)
+    return r.fatura.id
+  }
+
+  it('criarUnicaCredito em fatura Paga lança erro e reverte tudo', () => {
+    pagarFaturaDoMes('2026-06-03')
+    const despesasAntes = contarLinhas('despesa')
+    const parcelasAntes = contarLinhas('parcela')
+
+    expect(() =>
+      repo.criarUnicaCredito({
+        descricao: 'Retroativa em fatura paga',
+        categoriaId,
+        cartaoId,
+        valorCentavos: 2000,
+        dataCompra: '2026-06-02'
+      })
+    ).toThrow(/paga/i)
+
+    expect(contarLinhas('despesa')).toBe(despesasAntes)
+    expect(contarLinhas('parcela')).toBe(parcelasAntes)
+  })
+
+  it('criarUnicaCredito em fatura Fechada é permitido (cadastro retroativo)', () => {
+    const seed = repo.criarUnicaCredito({
+      descricao: 'Seed',
+      categoriaId,
+      cartaoId,
+      valorCentavos: 1000,
+      dataCompra: '2026-06-03'
+    })
+    faturaRepo.fechar(seed.fatura.id)
+
+    const r = repo.criarUnicaCredito({
+      descricao: 'Retroativa em fatura fechada',
+      categoriaId,
+      cartaoId,
+      valorCentavos: 2000,
+      dataCompra: '2026-06-02'
+    })
+
+    expect(r.fatura.id).toBe(seed.fatura.id)
+    expect(r.parcela.faturaId).toBe(seed.fatura.id)
+  })
+
+  it('criarParceladaCredito com fatura Paga no meio da série reverte a série inteira', () => {
+    pagarFaturaDoMes('2026-07-03') // fatura jul/2026 Paga
+    const despesasAntes = contarLinhas('despesa')
+    const parcelasAntes = contarLinhas('parcela')
+
+    expect(() =>
+      repo.criarParceladaCredito({
+        descricao: 'Série jun-jul-ago',
+        categoriaId,
+        cartaoId,
+        totalParcelas: 3,
+        valorTotalCentavos: 3000,
+        dataCompra: '2026-06-03'
+      })
+    ).toThrow(/paga/i)
+
+    expect(contarLinhas('despesa')).toBe(despesasAntes)
+    expect(contarLinhas('parcela')).toBe(parcelasAntes)
+  })
+
+  it('criarParceladaEmAndamento com fatura Paga na série reverte tudo', () => {
+    pagarFaturaDoMes('2026-07-03')
+    const despesasAntes = contarLinhas('despesa')
+
+    expect(() =>
+      repo.criarParceladaEmAndamento({
+        descricao: 'Migração 2/3',
+        categoriaId,
+        cartaoId,
+        totalParcelas: 3,
+        parcelaAtual: 2,
+        valorRestanteCentavos: 2000,
+        dataCompra: '2026-06-03'
+      })
+    ).toThrow(/paga/i)
+
+    expect(contarLinhas('despesa')).toBe(despesasAntes)
+  })
+
+  it('criarAssinaturaCredito com fatura Paga no horizonte reverte tudo', () => {
+    pagarFaturaDoMes('2026-08-03') // dentro do horizonte de 12 meses
+    const despesasAntes = contarLinhas('despesa')
+
+    expect(() =>
+      repo.criarAssinaturaCredito({
+        descricao: 'Streaming',
+        categoriaId,
+        cartaoId,
+        valorMensalCentavos: 3990,
+        dataInicio: '2026-06-03'
+      })
+    ).toThrow(/paga/i)
+
+    expect(contarLinhas('despesa')).toBe(despesasAntes)
+  })
+
+  it('atualizar movendo a data de Única para mês de fatura Paga lança e preserva a parcela', () => {
+    pagarFaturaDoMes('2026-07-03') // fatura jul/2026 Paga
+    const r = repo.criarUnicaCredito({
+      descricao: 'Compra de junho',
+      categoriaId,
+      cartaoId,
+      valorCentavos: 5000,
+      dataCompra: '2026-06-03'
+    })
+
+    expect(() =>
+      repo.atualizar(r.despesa.id, {
+        descricao: 'Compra de junho',
+        categoriaId,
+        valorCentavos: 5000,
+        dataCompra: '2026-07-02'
+      })
+    ).toThrow(/paga/i)
+
+    const parcelas = parcelaRepo.listarPorDespesa(r.despesa.id)
+    expect(parcelas[0].faturaId).toBe(r.fatura.id)
+    expect(parcelas[0].dataReferencia).toBe('2026-06-03')
+  })
+
+  it('estenderHorizonteAssinaturas mantém o comportamento atual em fatura Paga (system-generated)', () => {
+    const assinatura = repo.criarAssinaturaCredito({
+      descricao: 'Streaming',
+      categoriaId,
+      cartaoId,
+      valorMensalCentavos: 3990,
+      dataInicio: '2026-01-03' // dia 03 < F=05 → ocorrências jan..dez/2026
+    })
+    expect(assinatura.parcelas).toHaveLength(12)
+
+    // Fatura de jan/2027 criada e paga antes da extensão do horizonte
+    const cartao = { id: cartaoId, diaFechamento: 5, diaVencimento: 12 }
+    const faturaFutura = faturaRepo.upsertParaMesReferencia(cartao, '2027-01')
+    faturaRepo.fechar(faturaFutura.id)
+    faturaRepo.pagar(faturaFutura.id, '2027-01-12')
+
+    const resultado = repo.estenderHorizonteAssinaturas('2027-01')
+
+    expect(resultado.parcelasCriadas).toBe(1)
+    const parcelasNaFatura = parcelaRepo.listarPorFatura(faturaFutura.id)
+    expect(parcelasNaFatura.some((p) => p.despesaId === assinatura.despesa.id)).toBe(true)
   })
 })

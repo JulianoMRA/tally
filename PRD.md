@@ -97,8 +97,8 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - **RF-FAT-01** — Faturas são geradas automaticamente para cada cartão a cada mês de referência conforme parcelas vão sendo vinculadas.
 - **RF-FAT-02** — Cada fatura tem status `Aberta` (recebendo novas despesas), `Fechada` (passou da data de fechamento, sem novas despesas) e `Paga` (registrada como paga pelo usuário).
 - **RF-FAT-03** — Visualizar fatura com lista de parcelas, total bruto, total de ajudas vinculadas, total líquido a pagar.
-- **RF-FAT-04** — Marcar fatura como paga. Ação requer confirmação. Após paga, fatura não permite mais edição de parcelas.
-- **RF-FAT-05** — Reabrir fatura paga (caso de erro): requer confirmação.
+- **RF-FAT-04** — Marcar fatura como paga. Ação requer confirmação. Após paga, fatura não permite mais edição de parcelas nem recebe novas parcelas (inclusive cadastro retroativo — bloqueado com erro claro).
+- **RF-FAT-05** — Reabrir fatura paga (caso de erro): requer confirmação. A fatura reabre como `Aberta` se a data de fechamento ainda não passou, ou como `Fechada` caso contrário (RN-06).
 
 ### 4.5 ~~Contribuidores e Ajudas (RF-AJU)~~
 
@@ -193,12 +193,18 @@ CHECK constraint: `forma_pagamento = 'Credito'` ⇔ `cartao_id IS NOT NULL`.
 
 Dada uma compra com `data_compra` em um cartão com `dia_fechamento = F`:
 
-- Se `dia(data_compra) <= F`: compra entra na fatura cujo `data_fechamento` é F do **mesmo mês**.
-- Se `dia(data_compra) > F`: compra entra na fatura cujo `data_fechamento` é F do **mês seguinte**.
+- Se `dia(data_compra) < F`: compra entra na fatura cujo `data_fechamento` é F do **mesmo mês**.
+- Se `dia(data_compra) >= F`: compra entra na fatura cujo `data_fechamento` é F do **mês seguinte**.
+
+> A fatura fecha no **início** do dia F (RN-06 marca `Fechada` quando
+> `data_fechamento <= hoje`), então a compra feita no próprio dia F já
+> pertence ao ciclo seguinte. Regra ajustada em 15/07/2026 — antes era
+> `dia <= F → mesmo mês`, o que contradizia RN-06 no dia do fechamento.
 
 Exemplo Inter (F=05, V=12):
 
 - Compra 03/06 → fatura fecha 05/06, vence 12/06
+- Compra 05/06 (dia do fechamento) → fatura fecha 05/07, vence 12/07
 - Compra 07/06 → fatura fecha 05/07, vence 12/07
 
 Exemplo Nubank (F=15, V=22):
@@ -236,9 +242,9 @@ Despesa do tipo Assinatura gera ocorrências mês a mês conforme o tempo avanç
 
 - `Aberta`: data atual < `data_fechamento`. Aceita novas parcelas.
 - `Fechada`: `data_fechamento <= data atual < data_vencimento` ou usuário fechou manualmente. Não aceita novas parcelas (nem como destino de adiantamento). Parcelas dentro dela não recebem redistribuição de valor nem mudança de data, e a despesa correspondente não pode ser excluída.
-- `Paga`: usuário registrou pagamento. Imutável exceto via reabertura.
+- `Paga`: usuário registrou pagamento. Imutável exceto via reabertura. Não aceita novas parcelas — cadastro retroativo em mês de fatura paga exige reabrir a fatura antes (em fatura `Fechada` o cadastro retroativo é permitido, para suportar migração de dados).
 
-Pagar a fatura marca todas as parcelas dela como `Paga` (com a mesma data de pagamento); reabrir reverte as parcelas para `Pendente`. É essa sincronização que arma os bloqueios de RF-DES-09/10.
+Pagar a fatura marca todas as parcelas dela como `Paga` (com a mesma data de pagamento); reabrir reverte as parcelas para `Pendente` e devolve a fatura para `Aberta` — ou para `Fechada`, quando `data_fechamento` já passou (a reabertura não pode ressuscitar uma fatura vencida como se ainda aceitasse compras). É essa sincronização que arma os bloqueios de RF-DES-09/10.
 
 ### RN-07 — Cálculo do total da fatura
 

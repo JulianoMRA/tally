@@ -121,7 +121,7 @@ describe('gerarParcelas (RN-02)', () => {
       expect(parcelas[1].dataReferencia).toBe('2026-07-01')
     })
 
-    it('compra exatamente no dia de fechamento entra no mesmo mês', () => {
+    it('compra exatamente no dia de fechamento entra no mês seguinte (regra <)', () => {
       const parcelas = gerarParcelas({
         cartao: cartao(15),
         dataCompra: '2026-05-15',
@@ -129,8 +129,8 @@ describe('gerarParcelas (RN-02)', () => {
         valorTotalCentavos: 2000
       })
 
-      expect(parcelas[0].dataReferencia).toBe('2026-05-01')
-      expect(parcelas[1].dataReferencia).toBe('2026-06-01')
+      expect(parcelas[0].dataReferencia).toBe('2026-06-01')
+      expect(parcelas[1].dataReferencia).toBe('2026-07-01')
     })
 
     it('virada de ano: novembro + 3 parcelas → nov, dez, jan', () => {

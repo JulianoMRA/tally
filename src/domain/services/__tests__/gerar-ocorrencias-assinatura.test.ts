@@ -87,7 +87,7 @@ describe('gerarOcorrenciasAssinatura (RN-04)', () => {
       ])
     })
 
-    it('data exatamente no dia de fechamento entra no mês corrente', () => {
+    it('data exatamente no dia de fechamento entra no mês seguinte (regra <)', () => {
       const ocorrencias = gerarOcorrenciasAssinatura({
         cartao: cartao(15),
         dataInicio: '2026-05-15',
@@ -95,8 +95,8 @@ describe('gerarOcorrenciasAssinatura (RN-04)', () => {
         quantidade: 2
       })
 
-      expect(ocorrencias[0].dataReferencia).toBe('2026-05-01')
-      expect(ocorrencias[1].dataReferencia).toBe('2026-06-01')
+      expect(ocorrencias[0].dataReferencia).toBe('2026-06-01')
+      expect(ocorrencias[1].dataReferencia).toBe('2026-07-01')
     })
   })
 
