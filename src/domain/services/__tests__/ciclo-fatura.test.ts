@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { fecharFatura, pagarFatura, reabrirFatura, precisaAutoFechar } from '../ciclo-fatura'
+import {
+  fecharFatura,
+  pagarFatura,
+  reabrirFatura,
+  precisaAutoFechar,
+  validarFaturaAceitaNovaParcela
+} from '../ciclo-fatura'
 import type { Fatura } from '../../entities/fatura'
 
 function faturaBase(overrides: Partial<Fatura> = {}): Fatura {
@@ -112,5 +118,30 @@ describe('reabrirFatura (RF-FAT-05)', () => {
     const fatura = faturaBase({ status: { kind: 'Aberta' } })
     const resultado = reabrirFatura(fatura)
     expect(resultado.ok).toBe(false)
+  })
+})
+
+describe('validarFaturaAceitaNovaParcela (RF-FAT-04)', () => {
+  it('Aberta aceita nova parcela', () => {
+    const fatura = faturaBase({ status: { kind: 'Aberta' } })
+    expect(validarFaturaAceitaNovaParcela(fatura)).toEqual({ ok: true })
+  })
+
+  it('Fechada aceita nova parcela (cadastro retroativo/migração)', () => {
+    const fatura = faturaBase({ status: { kind: 'Fechada' } })
+    expect(validarFaturaAceitaNovaParcela(fatura)).toEqual({ ok: true })
+  })
+
+  it('Paga rejeita nova parcela citando o mês de referência', () => {
+    const fatura = faturaBase({
+      mesReferencia: '2026-04',
+      status: { kind: 'Paga', pagaEm: '2026-04-12' }
+    })
+    const resultado = validarFaturaAceitaNovaParcela(fatura)
+    expect(resultado.ok).toBe(false)
+    if (!resultado.ok) {
+      expect(resultado.erro).toContain('2026-04')
+      expect(resultado.erro).toContain('paga')
+    }
   })
 })

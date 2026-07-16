@@ -11,6 +11,7 @@ import { mapDespesa, mapParcela, type DespesaRow, type ParcelaRow } from './row-
 import { calcularExtensaoNecessaria } from '../../domain/services/calcular-extensao-horizonte'
 import { gerarParcelas } from '../../domain/services/gerar-parcelas'
 import { gerarOcorrenciasAssinatura } from '../../domain/services/gerar-ocorrencias-assinatura'
+import { validarFaturaAceitaNovaParcela } from '../../domain/services/ciclo-fatura'
 import {
   parcelasElegiveisParaRecalculo,
   podeDeletarDespesa,
@@ -130,6 +131,7 @@ export class DespesaRepository implements Repository {
       const despesa = mapDespesa(despesaRow)
 
       const fatura = faturaRepo.upsertParaCompra(cartao, input.dataCompra)
+      this.exigirFaturaAceitaNovaParcela(fatura)
 
       const parcela = parcelaRepo.criar({
         despesaId: despesa.id,
@@ -184,6 +186,7 @@ export class DespesaRepository implements Repository {
       const parcelas: Parcela[] = []
       for (const p of planejadas) {
         const fatura = faturaRepo.upsertParaMesReferencia(cartao, p.dataReferencia.slice(0, 7))
+        this.exigirFaturaAceitaNovaParcela(fatura)
         const parcela = parcelaRepo.criar({
           despesaId: despesa.id,
           faturaId: fatura.id,
@@ -240,6 +243,7 @@ export class DespesaRepository implements Repository {
       const parcelas: Parcela[] = []
       for (const p of planejadas) {
         const fatura = faturaRepo.upsertParaMesReferencia(cartao, p.dataReferencia.slice(0, 7))
+        this.exigirFaturaAceitaNovaParcela(fatura)
         const parcela = parcelaRepo.criar({
           despesaId: despesa.id,
           faturaId: fatura.id,
@@ -294,6 +298,7 @@ export class DespesaRepository implements Repository {
       const parcelas: Parcela[] = []
       for (const o of planejadas) {
         const fatura = faturaRepo.upsertParaMesReferencia(cartao, o.dataReferencia.slice(0, 7))
+        this.exigirFaturaAceitaNovaParcela(fatura)
         const parcela = parcelaRepo.criar({
           despesaId: despesa.id,
           faturaId: fatura.id,
@@ -674,6 +679,7 @@ export class DespesaRepository implements Repository {
           if (!cartao) throw new Error(`Cartão #${despesaRow.cartao_id} não encontrado`)
           const faturaRepo = new FaturaRepository(this.db)
           const novaFatura = faturaRepo.upsertParaCompra(cartao, input.dataCompra!)
+          this.exigirFaturaAceitaNovaParcela(novaFatura)
           // Move a unica parcela — data_referencia sempre YYYY-MM-DD (Slice 15)
           this.db
             .prepare(
@@ -783,6 +789,16 @@ export class DespesaRepository implements Repository {
 
       return { parcelasCriadas, faturasCriadas }
     })()
+  }
+
+  /**
+   * RF-FAT-04 — fatura Paga não aceita novas parcelas. Chamado nos fluxos
+   * iniciados pelo usuário (criação e atualização de despesa);
+   * estenderHorizonteAssinaturas fica de fora por ser geração automática.
+   */
+  private exigirFaturaAceitaNovaParcela(fatura: Fatura): void {
+    const resultado = validarFaturaAceitaNovaParcela(fatura)
+    if (!resultado.ok) throw new Error(resultado.erro)
   }
 
   /**

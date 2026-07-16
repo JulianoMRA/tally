@@ -4,7 +4,24 @@ export type ResultadoTransicao =
   | { ok: true; novoStatus: StatusFatura }
   | { ok: false; erro: string }
 
+export type ResultadoValidacao = { ok: true } | { ok: false; erro: string }
+
 const DATA_REGEX = /^\d{4}-\d{2}-\d{2}$/
+
+/**
+ * RF-FAT-04 — fatura Paga é imutável: não aceita novas parcelas (reabra
+ * antes, se for intencional). Fechada aceita, para permitir cadastro
+ * retroativo na migração de dados da planilha.
+ */
+export function validarFaturaAceitaNovaParcela(fatura: Fatura): ResultadoValidacao {
+  if (fatura.status.kind === 'Paga') {
+    return {
+      ok: false,
+      erro: `Fatura ${fatura.mesReferencia} já está paga e não aceita novas parcelas. Reabra a fatura antes, se o lançamento for intencional.`
+    }
+  }
+  return { ok: true }
+}
 
 export function precisaAutoFechar(fatura: Fatura, hoje: string): boolean {
   if (fatura.status.kind !== 'Aberta') return false
