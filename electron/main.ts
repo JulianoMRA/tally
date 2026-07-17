@@ -34,6 +34,7 @@ import { registerRelatorioHandlers } from './ipc/relatorio-handlers'
 import { registerOrcamentoHandlers } from './ipc/orcamento-handlers'
 import { registerConfigHandlers } from './ipc/config-handlers'
 import { registerDadosHandlers } from './ipc/dados-handlers'
+import { verificarAvisos } from './avisos'
 
 let db: Database | null = null
 let mainWindow: BrowserWindow | null = null
@@ -52,6 +53,7 @@ function iniciarTimerFechamento(database: Database): void {
       if (is.dev && fechadas > 0) {
         console.log(`[faturas] timer: ${fechadas} fatura(s) Aberta vencidas → Fechada`)
       }
+      verificarAvisos(database, resolveSettingsPath())
     } catch (err) {
       console.error('[faturas] timer de fechamento falhou:', err)
     }
@@ -466,6 +468,7 @@ if (!obteveLock) {
       createWindow()
       iniciarTimerFechamento(db)
       iniciarAutoUpdate()
+      verificarAvisos(db, resolveSettingsPath())
 
       app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
