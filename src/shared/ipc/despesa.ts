@@ -237,6 +237,17 @@ export const atualizarDespesaInputSchema = z.object({
 
 export type AtualizarDespesaInput = z.infer<typeof atualizarDespesaInputSchema>
 
+export const definirNotaETagsInputSchema = z.object({
+  despesaId: z.number().int().positive(),
+  nota: z.string().max(2000, 'Nota deve ter no máximo 2000 caracteres').nullable(),
+  tags: z.array(z.string().trim().max(40, 'Tag deve ter no máximo 40 caracteres')).max(20)
+})
+
+export type DefinirNotaETagsInput = z.infer<typeof definirNotaETagsInputSchema>
+
+/** Despesa com os nomes das tags vinculadas — usado na lista de Saídas. */
+export type DespesaComTags = Despesa & { tags: string[] }
+
 export type DespesaApi = {
   criarUnicaCredito: (input: DespesaUnicaCreditoInput) => Promise<ResultadoCriarDespesa>
   criarParceladaCredito: (input: DespesaParceladaCreditoInput) => Promise<ResultadoCriarParcelada>
@@ -256,8 +267,11 @@ export type DespesaApi = {
   ) => Promise<ResultadoCriarUnicaForaCartao>
   listarGastosForaCartao: (input?: ListarGastosForaCartaoInput) => Promise<Despesa[]>
   listarDespesas: (input?: ListarDespesasInput) => Promise<Despesa[]>
+  listarComTags: (input?: ListarDespesasInput) => Promise<DespesaComTags[]>
+  listarTags: () => Promise<string[]>
   excluir: (input: ExcluirDespesaInput) => Promise<ResultadoExcluirDespesa>
   atualizar: (input: AtualizarDespesaInput) => Promise<Despesa>
+  definirNotaETags: (input: DefinirNotaETagsInput) => Promise<Despesa>
 }
 
 export { DESPESA_IPC_CHANNELS } from './channels'
