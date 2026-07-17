@@ -28,6 +28,8 @@ import { useOrdenacao } from '../../lib/use-ordenacao'
 import { DespesaForm } from '../despesas/DespesaForm'
 import { EditarDespesaModal } from '../faturas/EditarDespesaModal'
 import { EditarAssinaturaModal } from '../assinaturas/EditarAssinaturaModal'
+import { filtrarPorDescricao } from './filtrar-saidas'
+import { montarPreenchimentoDespesa, type PreenchimentoDespesa } from './montar-preenchimento'
 import { useSaidas } from './hooks/use-saidas'
 import styles from './saidas.module.css'
 
@@ -83,6 +85,9 @@ export default function SaidasPage() {
   const [ultimaRegistrada, setUltimaRegistrada] = useState<UltimaRegistrada | null>(null)
   const [filtro, setFiltro] = useState<Filtro>('todas')
   const [mes, setMes] = useState('')
+  const [busca, setBusca] = useState('')
+  const [preenchimento, setPreenchimento] = useState<PreenchimentoDespesa | null>(null)
+  const [dupSeq, setDupSeq] = useState(0)
   const [editandoDespesa, setEditandoDespesa] = useState<Despesa | null>(null)
   const [editandoAssinatura, setEditandoAssinatura] = useState<Despesa | null>(null)
   const [confirmacao, setConfirmacao] = useState<Confirmacao | null>(null)
@@ -110,12 +115,19 @@ export default function SaidasPage() {
   }
 
   const filtradas = useMemo(() => {
-    return despesas.filter((d) => {
+    const porTipo = despesas.filter((d) => {
       if (!pertenceAoFiltro(d, filtro)) return false
       if (filtro === 'foraCartao' && mes && d.dataCompra.slice(0, 7) !== mes) return false
       return true
     })
-  }, [despesas, filtro, mes])
+    return filtrarPorDescricao(porTipo, busca)
+  }, [despesas, filtro, mes, busca])
+
+  function duplicar(despesa: Despesa) {
+    setPreenchimento(montarPreenchimentoDespesa(despesa))
+    setDupSeq((n) => n + 1)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const { itensOrdenados, handleSort, sortIndicator } = useOrdenacao(
     filtradas,
@@ -288,8 +300,10 @@ export default function SaidasPage() {
             )}
 
             <DespesaForm
+              key={dupSeq}
               cartoes={cartoesAtivos}
               categorias={categorias}
+              preenchimento={preenchimento ?? undefined}
               onSalvarUnica={handleSalvarUnica}
               onSalvarUnicaForaCartao={handleSalvarUnicaForaCartao}
               onSalvarParcelada={handleSalvarParcelada}
@@ -315,6 +329,15 @@ export default function SaidasPage() {
                   <Input type="month" value={mes} onChange={(e) => setMes(e.target.value)} />
                 </Field>
               )}
+              <div className={styles.buscaWrap}>
+                <Input
+                  type="search"
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  placeholder="Buscar por descrição…"
+                  aria-label="Buscar saídas"
+                />
+              </div>
             </div>
 
             {erro && <p className={styles.erro}>{erro}</p>}
@@ -371,6 +394,9 @@ export default function SaidasPage() {
                           </td>
                           <td>
                             <div className={styles.rowActions}>
+                              <Button variant="ghost" size="sm" onClick={() => duplicar(d)}>
+                                Duplicar
+                              </Button>
                               {ehAssinatura && d.ativa && (
                                 <>
                                   <Button
