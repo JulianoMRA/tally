@@ -118,6 +118,7 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 ### 4.7 Configurações (RF-CFG)
 
 - **RF-CFG-01** — Tela de Ajustes com: pasta de destino dos backups (padrão: `<userData>/backups`), backup ao sair (on/off), retenção de backups (1–100, padrão 10), avisos de fatura on/off e dias de antecedência (0–15, padrão 3). Persistido em `settings.json` no `userData` — fora do SQLite (não consome migration nem entra no export/import de dados). Arquivo ausente/corrompido cai nos defaults sem impedir o boot; campos ausentes (versão antiga) assumem default individualmente.
+- **RF-CFG-02** — Avisos de fatura: notificações do SO para faturas Abertas prestes a fechar e Fechadas prestes a vencer, dentro da janela de `diasAntecedenciaAviso`, checadas no boot e no timer horário; no máximo um aviso por fatura/tipo/dia (dedup em memória — reiniciar o app relembra). Pagas nunca avisam; datas passadas não geram aviso retroativo. Na visão mensal, faturas Abertas com fechamento a até 7 dias exibem o rótulo "fecha em N dias".
 
 ### 4.8 Importação de dados (RF-IMP)
 
