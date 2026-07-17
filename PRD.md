@@ -52,7 +52,7 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 ### 3.2 V2 (pós-MVP)
 
 - ~~Orçamento e metas por categoria com alerta de estouro~~ (entregue: Bloco D global + limites por mês na fase 8, jul/2026 — ver RF-ORC)
-- Exportação (CSV, PDF mensal)
+- ~~Exportação (CSV, PDF mensal)~~ (entregue na fase 9, jul/2026 — ver RF-EXP)
 - ~~Backup e sincronização~~ (entregue: backups automáticos com pasta configurável na fase 5 — apontar para pasta sincronizada dá nuvem)
 - Tags e notas livres em despesas
 
@@ -139,6 +139,11 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 
 - **RF-ORC-01** — Limite de gasto por categoria com dois escopos: **global** (`mes_referencia` NULL, vale para todo mês) e **mensal** (vale só naquele mês e sobrepõe o global na visão do mês). Upsert por (categoria, escopo); remover respeita o escopo — apagar o limite mensal restaura o global.
 - **RF-ORC-02** — Painel de progresso no mês: realizado vs limite efetivo, percentual e status (ok < 80%, alerta >= 80%, estourado >= 100%), com indicação de origem do limite (global ou "este mês").
+
+### 4.11 Exportação (RF-EXP)
+
+- **RF-EXP-01** — Exportar o mês em CSV (botão na visão mensal): tabela achatada com uma linha por parcela de fatura (com numeração X/Y), gasto fora de cartão e recebimento; valores no formato `1234,56` (compatível com o parser dos templates de importação) e BOM UTF-8 (Excel pt-BR). Destino via diálogo de salvar.
+- **RF-EXP-02** — Exportar o mês em PDF: rota de impressão `#/print/:mes` (sem shell do app) renderizada em janela oculta pelo main e convertida com `printToPDF` (A4). O main aguarda o marcador `data-print-pronto` da página — sem sleep arbitrário.
 
 ---
 

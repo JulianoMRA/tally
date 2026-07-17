@@ -92,8 +92,17 @@ export type ResultadoImportacao = {
   porTipo: Partial<Record<TipoImportacao, number>>
 }
 
+export const exportarMesInputSchema = z.object({
+  mesReferencia: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Mês deve estar no formato YYYY-MM')
+})
+
+export type ExportarMesInput = z.infer<typeof exportarMesInputSchema>
+
 export type DadosApi = {
   importarCsv: (input: ImportarCsvInput) => Promise<ResultadoImportacao>
+  /** Devolve o caminho salvo, ou null se o usuário cancelou o diálogo. */
+  exportarMesCsv: (input: ExportarMesInput) => Promise<string | null>
+  exportarMesPdf: (input: ExportarMesInput) => Promise<string | null>
 }
 
 export { DADOS_IPC_CHANNELS }

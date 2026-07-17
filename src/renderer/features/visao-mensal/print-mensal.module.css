@@ -1,0 +1,88 @@
+.pagina {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px;
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.cabecalho h1 {
+  font-size: 20px;
+  margin: 0 0 4px;
+}
+
+.cabecalho p {
+  margin: 0 0 16px;
+  color: var(--ink-3);
+}
+
+.totais {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.totais div {
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.totais span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+
+.totais strong {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pagina h2 {
+  font-size: 13px;
+  margin: 18px 0 6px;
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 4px;
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabela th,
+.tabela td {
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.tabela th {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.vazio {
+  color: var(--ink-3);
+  font-size: 11px;
+}
+
+.erro,
+.carregando {
+  padding: 24px;
+  font-size: 13px;
+}

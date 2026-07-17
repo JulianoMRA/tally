@@ -57,7 +57,7 @@ import type {
   ListarProgressoInput
 } from '@shared/ipc/orcamento'
 import type { Config } from '@shared/ipc/config'
-import type { ImportarCsvInput } from '@shared/ipc/importacao'
+import type { ImportarCsvInput, ExportarMesInput } from '@shared/ipc/importacao'
 
 contextBridge.exposeInMainWorld('api', {
   cartao: {
@@ -168,6 +168,10 @@ contextBridge.exposeInMainWorld('api', {
   },
   dados: {
     importarCsv: (input: ImportarCsvInput) =>
-      ipcRenderer.invoke(DADOS_IPC_CHANNELS.importarCsv, input)
+      ipcRenderer.invoke(DADOS_IPC_CHANNELS.importarCsv, input),
+    exportarMesCsv: (input: ExportarMesInput) =>
+      ipcRenderer.invoke(DADOS_IPC_CHANNELS.exportarMesCsv, input),
+    exportarMesPdf: (input: ExportarMesInput) =>
+      ipcRenderer.invoke(DADOS_IPC_CHANNELS.exportarMesPdf, input)
   }
 })
