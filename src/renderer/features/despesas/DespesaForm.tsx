@@ -23,6 +23,7 @@ import {
 } from '@shared/ipc/despesa'
 import type { Cartao } from '@domain/entities/cartao'
 import type { Categoria } from '@domain/entities/categoria'
+import type { PreenchimentoDespesa } from '../saidas/montar-preenchimento'
 import { Button, Field, Input, Select } from '../../components/ui'
 import { parseCentavos, valorTotalCentavosParcelada, type ModoValorParcela } from './parcela-valor'
 import styles from './despesas.module.css'
@@ -76,6 +77,7 @@ const unicaForaCartaoSchema = despesaUnicaForaCartaoInputSchema
 type Props = {
   cartoes: Cartao[]
   categorias: Categoria[]
+  preenchimento?: PreenchimentoDespesa
   onSalvarUnica: (input: DespesaUnicaCreditoInput) => Promise<void>
   onSalvarUnicaForaCartao: (input: DespesaUnicaForaCartaoInput) => Promise<void>
   onSalvarParcelada: (input: DespesaParceladaCreditoInput) => Promise<void>
@@ -147,18 +149,20 @@ function CamposComuns<T extends FieldValues>({
 function FormUnicaCredito({
   cartoes,
   categorias,
-  onSalvar
+  onSalvar,
+  defaultValues
 }: {
   cartoes: Cartao[]
   categorias: Categoria[]
   onSalvar: Props['onSalvarUnica']
+  defaultValues?: Partial<UniqueValues>
 }) {
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting }
-  } = useForm<UniqueValues>({ resolver: zodResolver(uniqueSchema) })
+  } = useForm<UniqueValues>({ resolver: zodResolver(uniqueSchema), defaultValues })
 
   async function onSubmit(values: UniqueValues) {
     await onSalvar({
@@ -202,11 +206,13 @@ function FormUnicaCredito({
 function FormUnicaForaCartao({
   categorias,
   formaPagamento,
-  onSalvar
+  onSalvar,
+  defaultValues
 }: {
   categorias: Categoria[]
   formaPagamento: 'Pix' | 'Debito' | 'Dinheiro'
   onSalvar: Props['onSalvarUnicaForaCartao']
+  defaultValues?: Partial<UnicaForaCartaoValues>
 }) {
   const {
     register,
@@ -220,7 +226,8 @@ function FormUnicaForaCartao({
       formaPagamento,
       descricao: '',
       valorReais: '',
-      dataCompra: ''
+      dataCompra: '',
+      ...defaultValues
     }
   })
 
@@ -273,14 +280,20 @@ function FormUnica({
   cartoes,
   categorias,
   onSalvarCredito,
-  onSalvarForaCartao
+  onSalvarForaCartao,
+  formaInicial = 'Credito',
+  defaultsCredito,
+  defaultsForaCartao
 }: {
   cartoes: Cartao[]
   categorias: Categoria[]
   onSalvarCredito: Props['onSalvarUnica']
   onSalvarForaCartao: Props['onSalvarUnicaForaCartao']
+  formaInicial?: FormaPagamento
+  defaultsCredito?: Partial<UniqueValues>
+  defaultsForaCartao?: Partial<UnicaForaCartaoValues>
 }) {
-  const [forma, setForma] = useState<FormaPagamento>('Credito')
+  const [forma, setForma] = useState<FormaPagamento>(formaInicial)
 
   const formaLabels: { value: FormaPagamento; label: string }[] = [
     { value: 'Credito', label: 'Crédito' },
@@ -305,12 +318,18 @@ function FormUnica({
       </div>
 
       {forma === 'Credito' ? (
-        <FormUnicaCredito cartoes={cartoes} categorias={categorias} onSalvar={onSalvarCredito} />
+        <FormUnicaCredito
+          cartoes={cartoes}
+          categorias={categorias}
+          onSalvar={onSalvarCredito}
+          defaultValues={defaultsCredito}
+        />
       ) : (
         <FormUnicaForaCartao
           categorias={categorias}
           formaPagamento={forma}
           onSalvar={onSalvarForaCartao}
+          defaultValues={defaultsForaCartao}
         />
       )}
     </div>
@@ -320,11 +339,13 @@ function FormUnica({
 function FormParcelada({
   cartoes,
   categorias,
-  onSalvar
+  onSalvar,
+  defaultValues
 }: {
   cartoes: Cartao[]
   categorias: Categoria[]
   onSalvar: Props['onSalvarParcelada']
+  defaultValues?: Partial<ParceladaValues>
 }) {
   const {
     register,
@@ -332,7 +353,7 @@ function FormParcelada({
     watch,
     reset,
     formState: { errors, isSubmitting }
-  } = useForm<ParceladaValues>({ resolver: zodResolver(parceladaSchema) })
+  } = useForm<ParceladaValues>({ resolver: zodResolver(parceladaSchema), defaultValues })
 
   const [modoValor, setModoValor] = useState<ModoValorParcela>('total')
   const valorReais = watch('valorReais') ?? ''
@@ -514,18 +535,20 @@ function FormEmAndamento({
 function FormAssinatura({
   cartoes,
   categorias,
-  onSalvar
+  onSalvar,
+  defaultValues
 }: {
   cartoes: Cartao[]
   categorias: Categoria[]
   onSalvar: Props['onSalvarAssinatura']
+  defaultValues?: Partial<AssinaturaValues>
 }) {
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting }
-  } = useForm<AssinaturaValues>({ resolver: zodResolver(assinaturaSchema) })
+  } = useForm<AssinaturaValues>({ resolver: zodResolver(assinaturaSchema), defaultValues })
 
   async function onSubmit(values: AssinaturaValues) {
     await onSalvar({
@@ -570,16 +593,21 @@ function FormAssinatura({
   )
 }
 
+function cartaoIdDefault(cartaoId: number | null): number | undefined {
+  return cartaoId ?? undefined
+}
+
 export function DespesaForm({
   cartoes,
   categorias,
+  preenchimento,
   onSalvarUnica,
   onSalvarUnicaForaCartao,
   onSalvarParcelada,
   onSalvarEmAndamento,
   onSalvarAssinatura
 }: Props) {
-  const [tipo, setTipo] = useState<TipoDespesa>('unica')
+  const [tipo, setTipo] = useState<TipoDespesa>(preenchimento?.tipo ?? 'unica')
 
   const tipoLabels: { value: TipoDespesa; label: string }[] = [
     { value: 'unica', label: 'Única' },
@@ -587,6 +615,10 @@ export function DespesaForm({
     { value: 'em-andamento', label: 'Em andamento' },
     { value: 'assinatura', label: 'Assinatura' }
   ]
+
+  const preUnica = preenchimento?.tipo === 'unica' ? preenchimento : undefined
+  const preParcelada = preenchimento?.tipo === 'parcelada' ? preenchimento : undefined
+  const preAssinatura = preenchimento?.tipo === 'assinatura' ? preenchimento : undefined
 
   return (
     <div className={styles.form}>
@@ -611,16 +643,65 @@ export function DespesaForm({
           categorias={categorias}
           onSalvarCredito={onSalvarUnica}
           onSalvarForaCartao={onSalvarUnicaForaCartao}
+          formaInicial={preUnica?.forma ?? 'Credito'}
+          defaultsCredito={
+            preUnica && preUnica.forma === 'Credito'
+              ? {
+                  descricao: preUnica.descricao,
+                  categoriaId: preUnica.categoriaId,
+                  cartaoId: cartaoIdDefault(preUnica.cartaoId),
+                  valorReais: preUnica.valorReais
+                }
+              : undefined
+          }
+          defaultsForaCartao={
+            preUnica && preUnica.forma !== 'Credito'
+              ? {
+                  descricao: preUnica.descricao,
+                  categoriaId: preUnica.categoriaId,
+                  valorReais: preUnica.valorReais
+                }
+              : undefined
+          }
         />
       )}
       {tipo === 'parcelada' && (
-        <FormParcelada cartoes={cartoes} categorias={categorias} onSalvar={onSalvarParcelada} />
+        <FormParcelada
+          cartoes={cartoes}
+          categorias={categorias}
+          onSalvar={onSalvarParcelada}
+          defaultValues={
+            preParcelada
+              ? {
+                  descricao: preParcelada.descricao,
+                  categoriaId: preParcelada.categoriaId,
+                  cartaoId: cartaoIdDefault(preParcelada.cartaoId),
+                  valorReais: preParcelada.valorReais,
+                  totalParcelas: preParcelada.totalParcelas ?? undefined
+                }
+              : undefined
+          }
+        />
       )}
       {tipo === 'em-andamento' && (
         <FormEmAndamento cartoes={cartoes} categorias={categorias} onSalvar={onSalvarEmAndamento} />
       )}
       {tipo === 'assinatura' && (
-        <FormAssinatura cartoes={cartoes} categorias={categorias} onSalvar={onSalvarAssinatura} />
+        <FormAssinatura
+          cartoes={cartoes}
+          categorias={categorias}
+          onSalvar={onSalvarAssinatura}
+          defaultValues={
+            preAssinatura
+              ? {
+                  descricao: preAssinatura.descricao,
+                  categoriaId: preAssinatura.categoriaId,
+                  cartaoId: cartaoIdDefault(preAssinatura.cartaoId),
+                  valorReais: preAssinatura.valorReais
+                }
+              : undefined
+          }
+        />
       )}
     </div>
   )
