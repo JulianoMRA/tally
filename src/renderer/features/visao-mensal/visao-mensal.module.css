@@ -291,6 +291,14 @@
   font-family: var(--font-mono);
 }
 
+/* Aviso "fecha em N dias" — segunda linha da célula de vencimento, para não
+   alterar a contagem de colunas do grid do item. */
+.avisoFechamento {
+  display: block;
+  color: var(--pending);
+  font-weight: 700;
+}
+
 .faturaCompactaTotal {
   font-size: 14px;
   font-weight: 700;

@@ -9,6 +9,12 @@ import { clampDiaNoMes } from '../../domain/services/mes-referencia'
 import type { Repository } from './types'
 import { mapFatura, type FaturaRow } from './row-mappers'
 
+export type AvisoFatura = {
+  tipo: 'fechamento' | 'vencimento'
+  cartaoNome: string
+  fatura: Fatura
+}
+
 export class FaturaRepository implements Repository {
   constructor(public readonly db: Database) {}
 
@@ -115,6 +121,32 @@ export class FaturaRepository implements Repository {
       if (!fatura) throw new Error(`reabrir: fatura #${id} não encontrada`)
       return fatura
     })()
+  }
+
+  /**
+   * Fase 7 — faturas que merecem aviso dentro da janela [hoje, ateData]:
+   * Abertas prestes a fechar e Fechadas prestes a vencer. Pagas nunca avisam;
+   * datas passadas não geram aviso retroativo.
+   */
+  listarAvisos(hoje: string, ateData: string): AvisoFatura[] {
+    type Row = FaturaRow & { cartao_nome: string; tipo: 'fechamento' | 'vencimento' }
+    const rows = this.db
+      .prepare(
+        `SELECT f.*, c.nome AS cartao_nome, 'fechamento' AS tipo
+         FROM fatura f INNER JOIN cartao c ON c.id = f.cartao_id
+         WHERE f.status = 'Aberta' AND f.data_fechamento BETWEEN ? AND ?
+         UNION ALL
+         SELECT f.*, c.nome AS cartao_nome, 'vencimento' AS tipo
+         FROM fatura f INNER JOIN cartao c ON c.id = f.cartao_id
+         WHERE f.status = 'Fechada' AND f.data_vencimento BETWEEN ? AND ?`
+      )
+      .all(hoje, ateData, hoje, ateData) as Row[]
+
+    return rows.map((row) => ({
+      tipo: row.tipo,
+      cartaoNome: row.cartao_nome,
+      fatura: mapFatura(row)
+    }))
   }
 
   /** Mapa id da fatura -> status, em uma única query. */

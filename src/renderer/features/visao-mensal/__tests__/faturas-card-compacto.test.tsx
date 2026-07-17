@@ -4,6 +4,8 @@ import { render, screen, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import type { FaturaResumida } from '@shared/ipc/visao-mensal'
+import { hojeIsoLocal } from '@shared/datas-locais'
+import { somarDias } from '@domain/services/mes-referencia'
 import { FaturasCardCompacto } from '../FaturasCardCompacto'
 
 function LocationProbe() {
@@ -67,5 +69,38 @@ describe('FaturasCardCompacto', () => {
     await user.click(screen.getByRole('button', { name: 'Nubank' }))
 
     expect(screen.getByTestId('location').textContent).toBe('/faturas?cartaoId=3&faturaId=9')
+  })
+
+  it('exibe "fecha em N dias" para fatura Aberta com fechamento próximo', () => {
+    const base = faturaResumida({ id: 9, cartaoId: 3 })
+    renderCard([
+      {
+        ...base,
+        fatura: { ...base.fatura, dataFechamento: somarDias(hojeIsoLocal(), 3) }
+      }
+    ])
+
+    expect(screen.getByText('fecha em 3 dias')).toBeTruthy()
+  })
+
+  it('não exibe aviso para fatura Fechada nem para fechamento distante', () => {
+    const proxima = faturaResumida({ id: 9, cartaoId: 3 })
+    const distante = faturaResumida({ id: 10, cartaoId: 4, cartaoNome: 'Nubank' })
+    renderCard([
+      {
+        ...proxima,
+        fatura: {
+          ...proxima.fatura,
+          dataFechamento: somarDias(hojeIsoLocal(), 3),
+          status: { kind: 'Fechada' }
+        }
+      },
+      {
+        ...distante,
+        fatura: { ...distante.fatura, dataFechamento: somarDias(hojeIsoLocal(), 15) }
+      }
+    ])
+
+    expect(screen.queryByText(/fecha em|fecha hoje|fecha amanhã/)).toBeNull()
   })
 })
