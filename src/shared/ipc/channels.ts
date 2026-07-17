@@ -36,8 +36,11 @@ export const DESPESA_IPC_CHANNELS = {
   criarUnicaForaCartao: 'despesa:criar-unica-fora-cartao',
   listarGastosForaCartao: 'despesa:listar-gastos-fora-cartao',
   listarDespesas: 'despesa:listar-despesas',
+  listarComTags: 'despesa:listar-com-tags',
+  listarTags: 'despesa:listar-tags',
   excluir: 'despesa:excluir',
-  atualizar: 'despesa:atualizar'
+  atualizar: 'despesa:atualizar',
+  definirNotaETags: 'despesa:definir-nota-e-tags'
 } as const
 
 export const FATURA_IPC_CHANNELS = {

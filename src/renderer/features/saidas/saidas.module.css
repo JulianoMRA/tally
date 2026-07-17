@@ -143,3 +143,125 @@
 .itemCancelada td {
   opacity: 0.65;
 }
+
+/* Fase 11 — modal de nota e tags */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  padding: 24px;
+  width: 420px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow-2);
+}
+
+.modalTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.modalDesc {
+  font-size: 13px;
+  color: var(--ink-3);
+  margin: 0 0 6px;
+}
+
+.modalLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.modalActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.notaTextarea {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-2);
+  padding: 8px 10px;
+}
+
+.tagChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--bg-sunk);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tagChipX {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--ink-3);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.tagEntrada {
+  display: flex;
+  gap: 8px;
+}
+
+.tagInput {
+  flex: 1;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-2);
+  padding: 6px 10px;
+}
+
+/* Tags exibidas na linha da lista */
+.tagCell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tagCellChip {
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  background: var(--bg-sunk);
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 600;
+}

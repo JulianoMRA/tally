@@ -4,6 +4,7 @@ import { openInMemoryDatabase } from '../database'
 import { runMigrations } from '../migrations/runner'
 import { DespesaRepository } from '../repositories/despesa-repository'
 import { FaturaRepository } from '../repositories/fatura-repository'
+import { TagRepository } from '../repositories/tag-repository'
 import { ParcelaRepository } from '../repositories/parcela-repository'
 
 function inserirCartao(db: Database, nome: string, dF: number, dV: number): number {
@@ -1754,5 +1755,67 @@ describe('DespesaRepository — bloqueio de fatura Paga (RF-FAT-04)', () => {
     expect(resultado.parcelasCriadas).toBe(1)
     const parcelasNaFatura = parcelaRepo.listarPorFatura(faturaFutura.id)
     expect(parcelasNaFatura.some((p) => p.despesaId === assinatura.despesa.id)).toBe(true)
+  })
+})
+
+describe('DespesaRepository.definirNotaETags (RF-DES-13)', () => {
+  let db: Database
+  let repo: DespesaRepository
+  let cartaoId: number
+  let categoriaId: number
+
+  beforeEach(() => {
+    db = openInMemoryDatabase()
+    runMigrations(db)
+    repo = new DespesaRepository(db)
+    cartaoId = inserirCartao(db, 'Inter', 5, 12)
+    categoriaId = inserirCategoria(db)
+  })
+
+  function criarDespesa(): number {
+    return repo.criarUnicaCredito({
+      descricao: 'Compra',
+      categoriaId,
+      cartaoId,
+      valorCentavos: 5000,
+      dataCompra: '2026-06-03'
+    }).despesa.id
+  }
+
+  it('grava nota e tags, e a despesa passa a expor a nota', () => {
+    const id = criarDespesa()
+    const atualizada = repo.definirNotaETags(id, {
+      nota: '  Reembolsável  ',
+      tags: ['Viagem', 'trabalho']
+    })
+    expect(atualizada.nota).toBe('Reembolsável')
+
+    const tags = new TagRepository(db)
+      .tagsDaDespesa(id)
+      .map((t) => t.nome)
+      .sort()
+    expect(tags).toEqual(['Viagem', 'trabalho'])
+  })
+
+  it('nota vazia ou só espaços vira NULL', () => {
+    const id = criarDespesa()
+    repo.definirNotaETags(id, { nota: 'algo', tags: [] })
+    const limpa = repo.definirNotaETags(id, { nota: '   ', tags: [] })
+    expect(limpa.nota).toBeNull()
+  })
+
+  it('substituir as tags remove as antigas', () => {
+    const id = criarDespesa()
+    repo.definirNotaETags(id, { nota: null, tags: ['A', 'B'] })
+    repo.definirNotaETags(id, { nota: null, tags: ['B', 'C'] })
+    const tags = new TagRepository(db)
+      .tagsDaDespesa(id)
+      .map((t) => t.nome)
+      .sort()
+    expect(tags).toEqual(['B', 'C'])
+  })
+
+  it('despesa inexistente lança', () => {
+    expect(() => repo.definirNotaETags(9999, { nota: null, tags: [] })).toThrow(/não encontrada/i)
   })
 })

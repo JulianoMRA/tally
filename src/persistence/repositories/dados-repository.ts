@@ -6,9 +6,11 @@ import { exportPayloadSchema, type ExportPayload } from '../../shared/ipc/dados'
 // entao a interpolacao em SQL aqui e segura. Os valores sao sempre parametrizados.
 // Ordem segura para FKs: filhos antes dos pais ao apagar; pais antes dos filhos ao inserir.
 const ORDEM_DELETE = [
+  'despesa_tag',
   'parcela',
   'recebimento',
   'fatura',
+  'tag',
   'despesa',
   'renda',
   'orcamento',
@@ -23,7 +25,9 @@ const ORDEM_INSERT = [
   'despesa',
   'fatura',
   'parcela',
-  'recebimento'
+  'recebimento',
+  'tag',
+  'despesa_tag'
 ] as const
 
 /**
@@ -74,7 +78,9 @@ export class DadosRepository implements Repository {
         fatura: this.lerTabela('fatura'),
         parcela: this.lerTabela('parcela'),
         renda: this.lerTabela('renda'),
-        recebimento: this.lerTabela('recebimento')
+        recebimento: this.lerTabela('recebimento'),
+        tag: this.lerTabela('tag'),
+        despesa_tag: this.lerTabela('despesa_tag')
       }
     })
   }

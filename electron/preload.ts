@@ -31,7 +31,8 @@ import type {
   ListarGastosForaCartaoInput,
   ListarDespesasInput,
   ExcluirDespesaInput,
-  AtualizarDespesaInput
+  AtualizarDespesaInput,
+  DefinirNotaETagsInput
 } from '@shared/ipc/despesa'
 import type {
   CriarRendaAvulsaInput,
@@ -104,10 +105,15 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.listarGastosForaCartao, input ?? {}),
     listarDespesas: (input?: ListarDespesasInput) =>
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.listarDespesas, input ?? {}),
+    listarComTags: (input?: ListarDespesasInput) =>
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.listarComTags, input ?? {}),
+    listarTags: () => ipcRenderer.invoke(DESPESA_IPC_CHANNELS.listarTags),
     excluir: (input: ExcluirDespesaInput) =>
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.excluir, input),
     atualizar: (input: AtualizarDespesaInput) =>
-      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.atualizar, input)
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.atualizar, input),
+    definirNotaETags: (input: DefinirNotaETagsInput) =>
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.definirNotaETags, input)
   },
   fatura: {
     listarPorCartao: (cartaoId: number) =>

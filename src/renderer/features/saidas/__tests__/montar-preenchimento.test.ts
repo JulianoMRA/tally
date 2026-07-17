@@ -13,6 +13,7 @@ function despesa(over: Partial<Despesa>): Despesa {
     valorCentavos: 18000,
     totalParcelas: 1,
     dataCompra: '2026-06-02',
+    nota: null,
     ativa: true,
     createdAt: '2026-06-02',
     updatedAt: '2026-06-02',

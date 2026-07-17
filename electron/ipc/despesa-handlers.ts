@@ -1,7 +1,9 @@
 import type { IpcMain } from 'electron'
 import type { Database } from '../../src/persistence/database'
+import type { DespesaComTags } from '../../src/shared/ipc/despesa'
 import { DespesaRepository } from '../../src/persistence/repositories/despesa-repository'
 import { ParcelaRepository } from '../../src/persistence/repositories/parcela-repository'
+import { TagRepository } from '../../src/persistence/repositories/tag-repository'
 import {
   despesaUnicaCreditoInputSchema,
   despesaParceladaCreditoInputSchema,
@@ -17,6 +19,7 @@ import {
   listarDespesasInputSchema,
   excluirDespesaInputSchema,
   atualizarDespesaInputSchema,
+  definirNotaETagsInputSchema,
   DESPESA_IPC_CHANNELS
 } from '../../src/shared/ipc/despesa'
 
@@ -85,6 +88,25 @@ export function registerDespesaHandlers(db: Database, ipcMain: IpcMain): void {
   ipcMain.handle(DESPESA_IPC_CHANNELS.listarDespesas, (_event, payload: unknown) => {
     const filtro = listarDespesasInputSchema.parse(payload ?? {})
     return repo.listarDespesas(filtro)
+  })
+
+  ipcMain.handle(
+    DESPESA_IPC_CHANNELS.listarComTags,
+    (_event, payload: unknown): DespesaComTags[] => {
+      const filtro = listarDespesasInputSchema.parse(payload ?? {})
+      const despesas = repo.listarDespesas(filtro)
+      const tagsMap = new TagRepository(db).tagsPorDespesaIds(despesas.map((d) => d.id))
+      return despesas.map((d) => ({ ...d, tags: tagsMap.get(d.id) ?? [] }))
+    }
+  )
+
+  ipcMain.handle(DESPESA_IPC_CHANNELS.listarTags, () =>
+    new TagRepository(db).listar().map((t) => t.nome)
+  )
+
+  ipcMain.handle(DESPESA_IPC_CHANNELS.definirNotaETags, (_event, payload: unknown) => {
+    const { despesaId, nota, tags } = definirNotaETagsInputSchema.parse(payload)
+    return repo.definirNotaETags(despesaId, { nota, tags })
   })
 
   ipcMain.handle(DESPESA_IPC_CHANNELS.excluir, (_event, payload: unknown) => {
