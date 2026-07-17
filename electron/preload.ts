@@ -51,7 +51,11 @@ import type {
   EvolucaoSaldoInput,
   EvolucaoCategoriaInput
 } from '@shared/ipc/relatorio'
-import type { DefinirLimiteInput, ListarProgressoInput } from '@shared/ipc/orcamento'
+import type {
+  DefinirLimiteInput,
+  RemoverLimiteInput,
+  ListarProgressoInput
+} from '@shared/ipc/orcamento'
 import type { Config } from '@shared/ipc/config'
 import type { ImportarCsvInput } from '@shared/ipc/importacao'
 
@@ -152,8 +156,8 @@ contextBridge.exposeInMainWorld('api', {
   orcamento: {
     definirLimite: (input: DefinirLimiteInput) =>
       ipcRenderer.invoke(ORCAMENTO_IPC_CHANNELS.definirLimite, input),
-    removerLimite: (categoriaId: number) =>
-      ipcRenderer.invoke(ORCAMENTO_IPC_CHANNELS.removerLimite, categoriaId),
+    removerLimite: (input: RemoverLimiteInput) =>
+      ipcRenderer.invoke(ORCAMENTO_IPC_CHANNELS.removerLimite, input),
     listarProgresso: (input: ListarProgressoInput) =>
       ipcRenderer.invoke(ORCAMENTO_IPC_CHANNELS.listarProgresso, input)
   },
