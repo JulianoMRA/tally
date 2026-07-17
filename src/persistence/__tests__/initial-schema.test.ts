@@ -7,12 +7,14 @@ const EXPECTED_TABLES = [
   'cartao',
   'categoria',
   'despesa',
+  'despesa_tag',
   'fatura',
   'orcamento',
   'parcela',
   'recebimento',
   'renda',
-  'schema_migrations'
+  'schema_migrations',
+  'tag'
 ]
 
 function listTables(db: Database): string[] {
@@ -33,7 +35,7 @@ describe('migration 0001_initial_schema', () => {
     runMigrations(db)
   })
 
-  it('cria as 8 tabelas de dados + schema_migrations apos as migrations', () => {
+  it('cria as tabelas de dados + schema_migrations apos as migrations', () => {
     expect(listTables(db)).toEqual(EXPECTED_TABLES)
   })
 
@@ -174,7 +176,8 @@ describe('migration 0001_initial_schema', () => {
       '0004_normaliza_data_referencia',
       '0005_orcamento',
       '0006_backfill_parcelas_pagas',
-      '0007_hardening_schema'
+      '0007_hardening_schema',
+      '0008_tags_notas'
     ])
   })
 })
