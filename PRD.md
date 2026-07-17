@@ -119,7 +119,13 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 
 - **RF-CFG-01** — Tela de Ajustes com: pasta de destino dos backups (padrão: `<userData>/backups`), backup ao sair (on/off), retenção de backups (1–100, padrão 10), avisos de fatura on/off e dias de antecedência (0–15, padrão 3). Persistido em `settings.json` no `userData` — fora do SQLite (não consome migration nem entra no export/import de dados). Arquivo ausente/corrompido cai nos defaults sem impedir o boot; campos ausentes (versão antiga) assumem default individualmente.
 
-### 4.8 Visão Mensal e Multi-Mês (RF-VIS)
+### 4.8 Importação de dados (RF-IMP)
+
+- **RF-IMP-01** — Importar dados em lote via CSV com templates fixos (um por tipo): gastos fora de cartão, compras únicas de crédito, parceladas (novas ou em andamento, informando valor da parcela), assinaturas, rendas recorrentes e recebimentos avulsos. Modelo baixável por template. Delimitador `;` (fallback `,`), datas `YYYY-MM-DD`, valores `1.234,56`. Categorias e cartões são referenciados por nome (case-insensitive, apenas ativos) e precisam existir antes.
+- **RF-IMP-02** — Preview antes de importar: contagem de linhas válidas e tabela de erros com o número da linha do arquivo e o motivo. A importação só é liberada com 100% das linhas válidas.
+- **RF-IMP-03** — Importação atômica: o lote inteiro entra em uma transação; qualquer falha (nome inexistente, fatura Paga per RF-FAT-04, constraint) reverte tudo com o número da linha na mensagem. Reusa os fluxos de criação existentes — RN-01/RN-02/RN-04 valem automaticamente.
+
+### 4.9 Visão Mensal e Multi-Mês (RF-VIS)
 
 - **RF-VIS-01** — Mês de referência segue o calendário (Junho/2026 agrupa fatura Inter venc 12/06, fatura Nubank venc 22/06, gastos fora de cartão de 01–30/06 e recebimentos de 01–30/06).
 - **RF-VIS-02** — Tela mensal mostra: faturas do mês, gastos fora de cartão, recebimentos, ajudas a receber, balanço final (entradas − gastos líquidos).

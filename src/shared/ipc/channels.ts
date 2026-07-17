@@ -86,3 +86,7 @@ export const CONFIG_IPC_CHANNELS = {
   set: 'config:set',
   escolherPastaBackup: 'config:escolher-pasta-backup'
 } as const
+
+export const DADOS_IPC_CHANNELS = {
+  importarCsv: 'dados:importar-csv'
+} as const

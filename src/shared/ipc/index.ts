@@ -80,6 +80,17 @@ export {
   type ConfigApi
 } from './config'
 
+export {
+  DADOS_IPC_CHANNELS,
+  linhaImportacaoSchema,
+  importarCsvInputSchema,
+  type LinhaImportacao,
+  type TipoImportacao,
+  type ImportarCsvInput,
+  type ResultadoImportacao,
+  type DadosApi
+} from './importacao'
+
 import type { CartaoApi } from './cartao'
 import type { CategoriaApi } from './categoria'
 import type { DespesaApi } from './despesa'
@@ -90,6 +101,7 @@ import type { VisaoMensalApi } from './visao-mensal'
 import type { RelatorioApi } from './relatorio'
 import type { OrcamentoApi } from './orcamento'
 import type { ConfigApi } from './config'
+import type { DadosApi } from './importacao'
 
 export type Api = {
   cartao: CartaoApi
@@ -102,4 +114,5 @@ export type Api = {
   relatorio: RelatorioApi
   orcamento: OrcamentoApi
   config: ConfigApi
+  dados: DadosApi
 }

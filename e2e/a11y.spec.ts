@@ -11,6 +11,7 @@ const PAGINAS = [
   { link: 'Rendas', heading: 'Rendas' },
   { link: 'Cartões', heading: 'Cartões' },
   { link: 'Categorias', heading: 'Categorias' },
+  { link: 'Importar dados', heading: 'Importar dados' },
   { link: 'Ajustes', heading: 'Ajustes' }
 ] as const
 
