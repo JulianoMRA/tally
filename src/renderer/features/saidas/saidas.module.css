@@ -48,6 +48,12 @@
   flex-wrap: wrap;
 }
 
+/* Busca por descrição encostada à direita da toolbar. */
+.buscaWrap {
+  margin-left: auto;
+  min-width: 200px;
+}
+
 .erro {
   font-size: 12px;
   color: var(--expense);
