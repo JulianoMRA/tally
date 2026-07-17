@@ -228,3 +228,42 @@
   color: var(--expense);
   margin: 8px 0;
 }
+
+/* Fase 8 — escopo do limite de orçamento (global vs mês selecionado) */
+.orcEscopo {
+  display: inline-flex;
+  gap: 4px;
+  background: var(--bg-sunk);
+  border-radius: var(--r-pill);
+  padding: 3px;
+  margin-bottom: 12px;
+}
+
+.orcEscopoBtn,
+.orcEscopoBtnAtivo {
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: var(--ink-3);
+}
+
+.orcEscopoBtnAtivo {
+  background: var(--ink);
+  color: var(--bg-elev);
+}
+
+.orcOrigem {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: var(--bg-sunk);
+  color: var(--ink-2);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}

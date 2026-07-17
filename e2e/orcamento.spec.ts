@@ -57,7 +57,30 @@ test.describe('Orçamento por categoria (Bloco D)', () => {
     await expect(linha.getByText(/80%/)).toBeVisible()
     await expect(linha.getByText(/Atenção/)).toBeVisible()
 
-    // --- Remover o limite: a linha some do painel ---
+    // --- Fase 8: limite só deste mês sobrepõe o global ---
+    await orcPanel.getByRole('button', { name: 'Só este mês' }).click()
+    await orcPanel.getByLabel('Categoria').selectOption({ label: 'Mercado Orc E2E' })
+    await orcPanel.getByLabel('Limite (R$)').fill('200,00')
+    await orcPanel.getByRole('button', { name: 'Definir limite' }).click()
+
+    await expect(linha.getByText(/R\$\s*80,00\s*de\s*R\$\s*200,00/)).toBeVisible()
+    await expect(linha.getByText('este mês')).toBeVisible()
+
+    // Em outro mês, volta a valer o global de R$ 100,00
+    await page.getByLabel('Mês', { exact: true }).fill('2026-07')
+    await expect(
+      orcPanel
+        .getByRole('listitem')
+        .filter({ hasText: 'Mercado Orc E2E' })
+        .getByText(/R\$\s*100,00/)
+    ).toBeVisible()
+
+    // De volta a junho: remover o limite mensal restaura o global
+    await page.getByLabel('Mês', { exact: true }).fill('2026-06')
+    await linha.getByRole('button', { name: 'Remover' }).click()
+    await expect(linha.getByText(/R\$\s*80,00\s*de\s*R\$\s*100,00/)).toBeVisible()
+
+    // --- Remover o limite global: a linha some do painel ---
     await linha.getByRole('button', { name: 'Remover' }).click()
     await expect(
       orcPanel.getByText('Nenhum limite definido. Defina um limite por categoria acima.')

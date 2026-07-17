@@ -51,9 +51,9 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 
 ### 3.2 V2 (pós-MVP)
 
-- Orçamento e metas por categoria com alerta de estouro
+- ~~Orçamento e metas por categoria com alerta de estouro~~ (entregue: Bloco D global + limites por mês na fase 8, jul/2026 — ver RF-ORC)
 - Exportação (CSV, PDF mensal)
-- Backup e sincronização (a definir: arquivo local exportável, nuvem)
+- ~~Backup e sincronização~~ (entregue: backups automáticos com pasta configurável na fase 5 — apontar para pasta sincronizada dá nuvem)
 - Tags e notas livres em despesas
 
 ### 3.3 Fora de escopo
@@ -134,6 +134,11 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - **RF-VIS-04** — Projeção: visualizar mês futuro com parcelas e assinaturas ativas já calculadas e recebimentos recorrentes esperados.
 - **RF-VIS-05** — Comparativo: visualizar últimos 6 ou 12 meses com gráfico de evolução de entradas, gastos e saldo.
 - **RF-VIS-06** — Relatórios por categoria: pizza de gastos no mês, ranking de categorias, evolução temporal de uma categoria específica.
+
+### 4.10 Orçamento (RF-ORC)
+
+- **RF-ORC-01** — Limite de gasto por categoria com dois escopos: **global** (`mes_referencia` NULL, vale para todo mês) e **mensal** (vale só naquele mês e sobrepõe o global na visão do mês). Upsert por (categoria, escopo); remover respeita o escopo — apagar o limite mensal restaura o global.
+- **RF-ORC-02** — Painel de progresso no mês: realizado vs limite efetivo, percentual e status (ok < 80%, alerta >= 80%, estourado >= 100%), com indicação de origem do limite (global ou "este mês").
 
 ---
 

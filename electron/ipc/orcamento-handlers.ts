@@ -4,10 +4,11 @@ import { OrcamentoRepository } from '../../src/persistence/repositories/orcament
 import { RelatorioRepository } from '../../src/persistence/repositories/relatorio-repository'
 import { montarVisaoOrcamento } from '../../src/domain/services/calcular-orcamento'
 import {
-  categoriaIdSchema,
   definirLimiteInputSchema,
+  removerLimiteInputSchema,
   listarProgressoInputSchema,
-  ORCAMENTO_IPC_CHANNELS
+  ORCAMENTO_IPC_CHANNELS,
+  type LinhaOrcamentoComOrigem
 } from '../../src/shared/ipc/orcamento'
 
 export function registerOrcamentoHandlers(db: Database, ipcMain: IpcMain): void {
@@ -15,18 +16,27 @@ export function registerOrcamentoHandlers(db: Database, ipcMain: IpcMain): void 
   const relatorioRepo = new RelatorioRepository(db)
 
   ipcMain.handle(ORCAMENTO_IPC_CHANNELS.definirLimite, (_event, payload: unknown) => {
-    const { categoriaId, valorLimiteCentavos } = definirLimiteInputSchema.parse(payload)
-    return repo.definirLimite(categoriaId, valorLimiteCentavos)
+    const { categoriaId, valorLimiteCentavos, mesReferencia } =
+      definirLimiteInputSchema.parse(payload)
+    return repo.definirLimite(categoriaId, valorLimiteCentavos, mesReferencia)
   })
 
   ipcMain.handle(ORCAMENTO_IPC_CHANNELS.removerLimite, (_event, payload: unknown) => {
-    repo.removerLimite(categoriaIdSchema.parse(payload))
+    const { categoriaId, mesReferencia } = removerLimiteInputSchema.parse(payload)
+    repo.removerLimite(categoriaId, mesReferencia)
   })
 
-  ipcMain.handle(ORCAMENTO_IPC_CHANNELS.listarProgresso, (_event, payload: unknown) => {
-    const { mesReferencia } = listarProgressoInputSchema.parse(payload)
-    const limites = repo.listarLimitesGlobais()
-    const realizado = relatorioRepo.totaisPorCategoriaEmMes(mesReferencia)
-    return montarVisaoOrcamento(limites, realizado)
-  })
+  ipcMain.handle(
+    ORCAMENTO_IPC_CHANNELS.listarProgresso,
+    (_event, payload: unknown): LinhaOrcamentoComOrigem[] => {
+      const { mesReferencia } = listarProgressoInputSchema.parse(payload)
+      const limites = repo.listarLimitesEfetivos(mesReferencia)
+      const origemPorCategoria = new Map(limites.map((l) => [l.categoriaId, l.origem]))
+      const realizado = relatorioRepo.totaisPorCategoriaEmMes(mesReferencia)
+      return montarVisaoOrcamento(limites, realizado).map((linha) => ({
+        ...linha,
+        origem: origemPorCategoria.get(linha.categoriaId) ?? 'global'
+      }))
+    }
+  )
 }

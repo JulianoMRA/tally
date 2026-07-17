@@ -36,11 +36,18 @@ export function OrcamentoPanel({ mes, categorias }: Props) {
   const { progresso, loading, erro, definirLimite, removerLimite } = useOrcamento(mes)
   const [categoriaId, setCategoriaId] = useState('')
   const [limiteReais, setLimiteReais] = useState('')
+  const [escopo, setEscopo] = useState<'global' | 'mensal'>('global')
 
+  // No escopo mensal, uma categoria com limite global ainda pode ganhar um
+  // limite do mês (que o sobrepõe); só ocultamos as que já têm limite no
+  // MESMO escopo selecionado.
   const categoriasSemLimite = useMemo(() => {
-    const comLimite = new Set(progresso.map((p) => p.categoriaId))
-    return categorias.filter((c) => !comLimite.has(c.id))
-  }, [categorias, progresso])
+    const origemAlvo = escopo === 'mensal' ? 'mensal' : 'global'
+    const comLimiteNoEscopo = new Set(
+      progresso.filter((p) => p.origem === origemAlvo).map((p) => p.categoriaId)
+    )
+    return categorias.filter((c) => !comLimiteNoEscopo.has(c.id))
+  }, [categorias, progresso, escopo])
 
   const podeDefinir = categoriaId !== '' && VALOR_REGEX.test(limiteReais)
 
@@ -48,7 +55,8 @@ export function OrcamentoPanel({ mes, categorias }: Props) {
     if (!podeDefinir) return
     await definirLimite({
       categoriaId: Number(categoriaId),
-      valorLimiteCentavos: parseCentavos(limiteReais)
+      valorLimiteCentavos: parseCentavos(limiteReais),
+      mesReferencia: escopo === 'mensal' ? mes : null
     })
     setCategoriaId('')
     setLimiteReais('')
@@ -56,6 +64,23 @@ export function OrcamentoPanel({ mes, categorias }: Props) {
 
   return (
     <>
+      <div className={styles.orcEscopo} role="group" aria-label="Escopo do limite">
+        <button
+          type="button"
+          className={escopo === 'global' ? styles.orcEscopoBtnAtivo : styles.orcEscopoBtn}
+          onClick={() => setEscopo('global')}
+        >
+          Todos os meses
+        </button>
+        <button
+          type="button"
+          className={escopo === 'mensal' ? styles.orcEscopoBtnAtivo : styles.orcEscopoBtn}
+          onClick={() => setEscopo('mensal')}
+        >
+          Só este mês
+        </button>
+      </div>
+
       <div className={styles.orcForm}>
         <Field label="Categoria">
           <Select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
@@ -95,6 +120,7 @@ export function OrcamentoPanel({ mes, categorias }: Props) {
                 <span className={styles.rankNome}>{p.categoriaNome}</span>
                 <span className={styles.orcValores}>
                   {formatBRL(p.realizadoCentavos)} de {formatBRL(p.limiteCentavos)}
+                  {p.origem === 'mensal' && <span className={styles.orcOrigem}>este mês</span>}
                 </span>
               </div>
               <div className={styles.orcBarTrack}>
@@ -106,7 +132,21 @@ export function OrcamentoPanel({ mes, categorias }: Props) {
               <span className={`${styles.orcPct} ${TEXT_CLASS[p.status]}`}>
                 {p.percentual}% · {STATUS_LABEL[p.status]}
               </span>
-              <Button variant="ghost" size="sm" onClick={() => removerLimite(p.categoriaId)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                title={
+                  p.origem === 'mensal'
+                    ? 'Remove o limite deste mês (o global volta a valer, se existir)'
+                    : 'Remove o limite de todos os meses'
+                }
+                onClick={() =>
+                  removerLimite({
+                    categoriaId: p.categoriaId,
+                    mesReferencia: p.origem === 'mensal' ? mes : null
+                  })
+                }
+              >
                 Remover
               </Button>
             </li>

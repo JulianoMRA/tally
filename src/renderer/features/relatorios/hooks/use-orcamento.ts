@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { LinhaOrcamento } from '@domain/services/calcular-orcamento'
-import type { DefinirLimiteInput } from '@shared/ipc/orcamento'
+import type {
+  DefinirLimiteInput,
+  RemoverLimiteInput,
+  LinhaOrcamentoComOrigem
+} from '@shared/ipc/orcamento'
 
 export function useOrcamento(mesReferencia: string) {
-  const [progresso, setProgresso] = useState<LinhaOrcamento[]>([])
+  const [progresso, setProgresso] = useState<LinhaOrcamentoComOrigem[]>([])
   const [loading, setLoading] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
 
@@ -33,8 +36,8 @@ export function useOrcamento(mesReferencia: string) {
   )
 
   const removerLimite = useCallback(
-    async (categoriaId: number) => {
-      await window.api.orcamento.removerLimite(categoriaId)
+    async (input: RemoverLimiteInput) => {
+      await window.api.orcamento.removerLimite(input)
       await recarregar()
     },
     [recarregar]
