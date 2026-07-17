@@ -72,6 +72,14 @@ export {
   type OrcamentoApi
 } from './orcamento'
 
+export {
+  CONFIG_IPC_CHANNELS,
+  configSchema,
+  CONFIG_DEFAULTS,
+  type Config,
+  type ConfigApi
+} from './config'
+
 import type { CartaoApi } from './cartao'
 import type { CategoriaApi } from './categoria'
 import type { DespesaApi } from './despesa'
@@ -81,6 +89,7 @@ import type { RecebimentoApi } from './recebimento'
 import type { VisaoMensalApi } from './visao-mensal'
 import type { RelatorioApi } from './relatorio'
 import type { OrcamentoApi } from './orcamento'
+import type { ConfigApi } from './config'
 
 export type Api = {
   cartao: CartaoApi
@@ -92,4 +101,5 @@ export type Api = {
   visaoMensal: VisaoMensalApi
   relatorio: RelatorioApi
   orcamento: OrcamentoApi
+  config: ConfigApi
 }

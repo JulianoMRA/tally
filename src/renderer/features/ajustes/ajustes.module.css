@@ -1,0 +1,48 @@
+.body {
+  padding: 0 32px 32px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 640px;
+}
+
+.campos {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.pastaRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pastaRow > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.checkboxRow input {
+  accent-color: var(--forest);
+  width: 16px;
+  height: 16px;
+}
+
+.acoes {
+  display: flex;
+  justify-content: flex-end;
+}

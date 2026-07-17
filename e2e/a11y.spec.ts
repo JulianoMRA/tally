@@ -10,7 +10,8 @@ const PAGINAS = [
   { link: 'Saídas', heading: 'Saídas' },
   { link: 'Rendas', heading: 'Rendas' },
   { link: 'Cartões', heading: 'Cartões' },
-  { link: 'Categorias', heading: 'Categorias' }
+  { link: 'Categorias', heading: 'Categorias' },
+  { link: 'Ajustes', heading: 'Ajustes' }
 ] as const
 
 test.describe('Acessibilidade (axe-core)', () => {

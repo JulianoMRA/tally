@@ -80,3 +80,9 @@ export const ORCAMENTO_IPC_CHANNELS = {
   removerLimite: 'orcamento:remover-limite',
   listarProgresso: 'orcamento:listar-progresso'
 } as const
+
+export const CONFIG_IPC_CHANNELS = {
+  get: 'config:get',
+  set: 'config:set',
+  escolherPastaBackup: 'config:escolher-pasta-backup'
+} as const

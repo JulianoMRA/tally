@@ -115,7 +115,11 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - **RF-REN-05** — Editar valor padrão da fonte recorrente afeta recebimentos futuros ainda não recebidos.
 - **RF-REN-06** — Editar fonte de renda: nome, valor padrão e (Recorrente) dia esperado. Mudar dia esperado recalcula `data_esperada` dos recebimentos Esperado, clampando ao último dia de meses curtos. Recebidos preservam.
 
-### 4.7 Visão Mensal e Multi-Mês (RF-VIS)
+### 4.7 Configurações (RF-CFG)
+
+- **RF-CFG-01** — Tela de Ajustes com: pasta de destino dos backups (padrão: `<userData>/backups`), backup ao sair (on/off), retenção de backups (1–100, padrão 10), avisos de fatura on/off e dias de antecedência (0–15, padrão 3). Persistido em `settings.json` no `userData` — fora do SQLite (não consome migration nem entra no export/import de dados). Arquivo ausente/corrompido cai nos defaults sem impedir o boot; campos ausentes (versão antiga) assumem default individualmente.
+
+### 4.8 Visão Mensal e Multi-Mês (RF-VIS)
 
 - **RF-VIS-01** — Mês de referência segue o calendário (Junho/2026 agrupa fatura Inter venc 12/06, fatura Nubank venc 22/06, gastos fora de cartão de 01–30/06 e recebimentos de 01–30/06).
 - **RF-VIS-02** — Tela mensal mostra: faturas do mês, gastos fora de cartão, recebimentos, ajudas a receber, balanço final (entradas − gastos líquidos).

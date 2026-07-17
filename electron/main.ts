@@ -16,7 +16,8 @@ import { is } from '@electron-toolkit/utils'
 import electronUpdater from 'electron-updater'
 import type { Database } from '../src/persistence/database'
 import { openDatabase } from '../src/persistence/database'
-import { backupDatabase } from '../src/persistence/backup'
+import { backupDatabase, type BackupOptions } from '../src/persistence/backup'
+import { lerConfig } from '../src/persistence/settings'
 import { runMigrations } from '../src/persistence/migrations/runner'
 import { DadosRepository } from '../src/persistence/repositories/dados-repository'
 import { exportPayloadSchema } from '../src/shared/ipc/dados'
@@ -31,6 +32,7 @@ import { registerRecebimentoHandlers } from './ipc/recebimento-handlers'
 import { registerVisaoMensalHandlers } from './ipc/visao-mensal-handlers'
 import { registerRelatorioHandlers } from './ipc/relatorio-handlers'
 import { registerOrcamentoHandlers } from './ipc/orcamento-handlers'
+import { registerConfigHandlers } from './ipc/config-handlers'
 
 let db: Database | null = null
 let mainWindow: BrowserWindow | null = null
@@ -72,6 +74,19 @@ function resolveDbPath(): string {
   return join(userDataDir, 'tally.db')
 }
 
+function resolveSettingsPath(): string {
+  return join(app.getPath('userData'), 'settings.json')
+}
+
+/** Opcoes de backup derivadas da configuracao do usuario (pasta + retencao). */
+function opcoesDeBackup(): BackupOptions {
+  const config = lerConfig(resolveSettingsPath())
+  return {
+    backupsDir: config.backupsDir ?? undefined,
+    maxBackups: config.retencaoBackups
+  }
+}
+
 // node-sqlite3-wasm usa o diretório `<db>.lock` como primitiva de lock.
 // Se um processo anterior morrer sem chamar db.close(), o diretório fica
 // órfão e o próximo boot falha com "database is locked". Como já garantimos
@@ -97,7 +112,7 @@ function inicializarBancoDeDados(): Database {
   limparLockOrfao(dbPath)
   // Copia de seguranca do arquivo ANTES de abrir/migrar: se uma migration
   // corromper o schema, o estado pre-migration fica preservado em backups/.
-  const backupPath = backupDatabase(dbPath)
+  const backupPath = backupDatabase(dbPath, opcoesDeBackup())
   if (is.dev && backupPath) {
     console.log(`[db] backup criado: ${backupPath}`)
   }
@@ -444,6 +459,7 @@ if (!obteveLock) {
       registerVisaoMensalHandlers(db, ipcMain)
       registerRelatorioHandlers(db, ipcMain)
       registerOrcamentoHandlers(db, ipcMain)
+      registerConfigHandlers(resolveSettingsPath(), ipcMain, janelaAtual)
       construirMenuApp()
       createWindow()
       iniciarTimerFechamento(db)
@@ -468,9 +484,9 @@ if (!obteveLock) {
     // Backup DEPOIS de fechar a conexão: o arquivo copiado fica sempre em
     // estado consistente (sem journal pendente de escrita em andamento).
     fecharBanco()
-    if (dbPathAtual) {
+    if (dbPathAtual && lerConfig(resolveSettingsPath()).backupAoSair) {
       try {
-        backupDatabase(dbPathAtual)
+        backupDatabase(dbPathAtual, opcoesDeBackup())
       } catch (err) {
         console.error('[backup] falha no backup ao sair:', err)
       }

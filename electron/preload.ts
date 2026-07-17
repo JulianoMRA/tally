@@ -11,7 +11,8 @@ import {
   RECEBIMENTO_IPC_CHANNELS,
   VISAO_MENSAL_IPC_CHANNELS,
   RELATORIO_IPC_CHANNELS,
-  ORCAMENTO_IPC_CHANNELS
+  ORCAMENTO_IPC_CHANNELS,
+  CONFIG_IPC_CHANNELS
 } from '@shared/ipc/channels'
 import type { CartaoInput, ListCartaoOptions } from '@shared/ipc/cartao'
 import type { CategoriaInput, ListCategoriaOptions } from '@shared/ipc/categoria'
@@ -50,6 +51,7 @@ import type {
   EvolucaoCategoriaInput
 } from '@shared/ipc/relatorio'
 import type { DefinirLimiteInput, ListarProgressoInput } from '@shared/ipc/orcamento'
+import type { Config } from '@shared/ipc/config'
 
 contextBridge.exposeInMainWorld('api', {
   cartao: {
@@ -152,5 +154,10 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke(ORCAMENTO_IPC_CHANNELS.removerLimite, categoriaId),
     listarProgresso: (input: ListarProgressoInput) =>
       ipcRenderer.invoke(ORCAMENTO_IPC_CHANNELS.listarProgresso, input)
+  },
+  config: {
+    get: () => ipcRenderer.invoke(CONFIG_IPC_CHANNELS.get),
+    set: (config: Config) => ipcRenderer.invoke(CONFIG_IPC_CHANNELS.set, config),
+    escolherPastaBackup: () => ipcRenderer.invoke(CONFIG_IPC_CHANNELS.escolherPastaBackup)
   }
 })
