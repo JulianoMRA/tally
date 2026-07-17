@@ -463,7 +463,7 @@ if (!obteveLock) {
       registerRelatorioHandlers(db, ipcMain)
       registerOrcamentoHandlers(db, ipcMain)
       registerConfigHandlers(resolveSettingsPath(), ipcMain, janelaAtual)
-      registerDadosHandlers(db, ipcMain)
+      registerDadosHandlers(db, ipcMain, janelaAtual)
       construirMenuApp()
       createWindow()
       iniciarTimerFechamento(db)

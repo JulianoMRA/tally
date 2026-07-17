@@ -88,5 +88,7 @@ export const CONFIG_IPC_CHANNELS = {
 } as const
 
 export const DADOS_IPC_CHANNELS = {
-  importarCsv: 'dados:importar-csv'
+  importarCsv: 'dados:importar-csv',
+  exportarMesCsv: 'dados:exportar-mes-csv',
+  exportarMesPdf: 'dados:exportar-mes-pdf'
 } as const
