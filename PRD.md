@@ -91,6 +91,8 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - **RF-DES-08** — Editar valor das parcelas restantes (caso de reajuste de assinatura).
 - **RF-DES-09** — Excluir despesa: requer confirmação explícita. Exclusão é bloqueada se houver parcela paga ou parcela em fatura Fechada/Paga (apenas arquivamento).
 - **RF-DES-10** — Editar despesa (Única/Parcelada): descrição e categoria sempre; data apenas para Única em fatura Aberta (move fatura via RN-01). Bloqueia se houver parcela paga. Novo valor é redistribuído apenas entre parcelas pendentes em fatura Aberta ou sem fatura (parcelas em fatura Fechada/Paga preservam o valor). Única com a parcela em fatura Fechada não aceita mudança de valor nem de data.
+- **RF-DES-11** — Duplicar despesa: pré-preenche o formulário de nova despesa com descrição (sufixo " (cópia)"), categoria, cartão, valor e forma da despesa de origem, na aba correspondente ao tipo. A data não é copiada (nova compra). Não cria nada até o usuário confirmar.
+- **RF-DES-12** — Busca por descrição na lista de Saídas: filtro client-side, tolerante a acentos e caixa (substring), combinável com os filtros de tipo/mês.
 
 ### 4.4 Faturas (RF-FAT)
 
