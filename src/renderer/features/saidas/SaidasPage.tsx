@@ -7,7 +7,8 @@ import type {
   DespesaParceladaCreditoInput,
   DespesaEmAndamentoInput,
   DespesaAssinaturaCreditoInput,
-  DespesaUnicaForaCartaoInput
+  DespesaUnicaForaCartaoInput,
+  DespesaComTags
 } from '@shared/ipc/despesa'
 import { PageHead } from '../../components/layout/PageHead'
 import {
@@ -18,6 +19,7 @@ import {
   Field,
   Input,
   Panel,
+  Select,
   useToast
 } from '../../components/ui'
 import { alfabetico, porData, porNumero, type Comparador } from '../../lib/comparadores'
@@ -30,6 +32,7 @@ import { EditarDespesaModal } from '../faturas/EditarDespesaModal'
 import { EditarAssinaturaModal } from '../assinaturas/EditarAssinaturaModal'
 import { filtrarPorDescricao } from './filtrar-saidas'
 import { montarPreenchimentoDespesa, type PreenchimentoDespesa } from './montar-preenchimento'
+import { NotaETagsModal } from './NotaETagsModal'
 import { useSaidas } from './hooks/use-saidas'
 import styles from './saidas.module.css'
 
@@ -45,7 +48,7 @@ type UltimaRegistrada = {
 
 type Confirmacao = { tipo: 'cancelar'; despesa: Despesa } | { tipo: 'excluir'; despesa: Despesa }
 
-const COMPARADORES: Record<string, Comparador<Despesa>> = {
+const COMPARADORES: Record<string, Comparador<DespesaComTags>> = {
   descricao: alfabetico((d) => d.descricao),
   data: porData((d) => d.dataCompra),
   valor: porNumero((d) => d.valorCentavos)
@@ -86,8 +89,10 @@ export default function SaidasPage() {
   const [filtro, setFiltro] = useState<Filtro>('todas')
   const [mes, setMes] = useState('')
   const [busca, setBusca] = useState('')
+  const [tagFiltro, setTagFiltro] = useState('')
   const [preenchimento, setPreenchimento] = useState<PreenchimentoDespesa | null>(null)
   const [dupSeq, setDupSeq] = useState(0)
+  const [notaTags, setNotaTags] = useState<DespesaComTags | null>(null)
   const [editandoDespesa, setEditandoDespesa] = useState<Despesa | null>(null)
   const [editandoAssinatura, setEditandoAssinatura] = useState<Despesa | null>(null)
   const [confirmacao, setConfirmacao] = useState<Confirmacao | null>(null)
@@ -114,19 +119,39 @@ export default function SaidasPage() {
     return categorias.find((c) => c.id === id)?.nome ?? `#${id}`
   }
 
+  const tagsDisponiveis = useMemo(() => {
+    const set = new Set<string>()
+    for (const d of despesas) for (const t of d.tags) set.add(t)
+    return [...set].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+  }, [despesas])
+
   const filtradas = useMemo(() => {
     const porTipo = despesas.filter((d) => {
       if (!pertenceAoFiltro(d, filtro)) return false
       if (filtro === 'foraCartao' && mes && d.dataCompra.slice(0, 7) !== mes) return false
+      if (tagFiltro && !d.tags.includes(tagFiltro)) return false
       return true
     })
     return filtrarPorDescricao(porTipo, busca)
-  }, [despesas, filtro, mes, busca])
+  }, [despesas, filtro, mes, busca, tagFiltro])
 
   function duplicar(despesa: Despesa) {
     setPreenchimento(montarPreenchimentoDespesa(despesa))
     setDupSeq((n) => n + 1)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  async function handleSalvarNotaETags(input: { nota: string | null; tags: string[] }) {
+    if (!notaTags) return
+    try {
+      await window.api.despesa.definirNotaETags({ despesaId: notaTags.id, ...input })
+      toast.show('Nota e tags salvas.', 'success')
+      setNotaTags(null)
+      await recarregar()
+    } catch (e) {
+      toast.show(mensagemErro(e, 'Erro ao salvar nota e tags.'), 'error')
+      throw e
+    }
   }
 
   const { itensOrdenados, handleSort, sortIndicator } = useOrdenacao(
@@ -329,6 +354,20 @@ export default function SaidasPage() {
                   <Input type="month" value={mes} onChange={(e) => setMes(e.target.value)} />
                 </Field>
               )}
+              {tagsDisponiveis.length > 0 && (
+                <Select
+                  value={tagFiltro}
+                  onChange={(e) => setTagFiltro(e.target.value)}
+                  aria-label="Filtrar por tag"
+                >
+                  <option value="">Todas as tags</option>
+                  {tagsDisponiveis.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </Select>
+              )}
               <div className={styles.buscaWrap}>
                 <Input
                   type="search"
@@ -382,6 +421,15 @@ export default function SaidasPage() {
                               <span>{d.descricao}</span>
                               {!d.ativa && <Badge variant="archived" label="Cancelada" />}
                             </div>
+                            {d.tags.length > 0 && (
+                              <div className={styles.tagCell}>
+                                {d.tags.map((t) => (
+                                  <span key={t} className={styles.tagCellChip}>
+                                    {t}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </td>
                           <td>
                             <span className={styles.tagTipo}>{rotuloTipo(d)}</span>
@@ -396,6 +444,9 @@ export default function SaidasPage() {
                             <div className={styles.rowActions}>
                               <Button variant="ghost" size="sm" onClick={() => duplicar(d)}>
                                 Duplicar
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => setNotaTags(d)}>
+                                Nota/Tags
                               </Button>
                               {ehAssinatura && d.ativa && (
                                 <>
@@ -443,6 +494,14 @@ export default function SaidasPage() {
           </div>
         </div>
       </div>
+
+      {notaTags && (
+        <NotaETagsModal
+          despesa={notaTags}
+          onConfirmar={handleSalvarNotaETags}
+          onCancelar={() => setNotaTags(null)}
+        />
+      )}
 
       {editandoDespesa && (
         <EditarDespesaModal
