@@ -56,9 +56,21 @@ const despesaRowSchema = z.looseObject({
   valor_centavos: centavosSchema,
   total_parcelas: z.number().int().positive().nullable(),
   data_compra: dataIsoSchema,
+  nota: z.string().nullable().optional(),
   ativa: flag01Schema,
   created_at: timestampSchema,
   updated_at: timestampSchema
+})
+
+const tagRowSchema = z.looseObject({
+  id: idSchema,
+  nome: z.string().min(1),
+  created_at: timestampSchema
+})
+
+const despesaTagRowSchema = z.looseObject({
+  despesa_id: idSchema,
+  tag_id: idSchema
 })
 
 const faturaRowSchema = z.looseObject({
@@ -124,7 +136,11 @@ export const exportPayloadSchema = z.object({
     fatura: z.array(faturaRowSchema),
     parcela: z.array(parcelaRowSchema),
     renda: z.array(rendaRowSchema),
-    recebimento: z.array(recebimentoRowSchema)
+    recebimento: z.array(recebimentoRowSchema),
+    // Tabelas da fase 11. `default([])` mantém importável um export antigo que
+    // não as tinha (formatVersion segue 1).
+    tag: z.array(tagRowSchema).default([]),
+    despesa_tag: z.array(despesaTagRowSchema).default([])
   })
 })
 

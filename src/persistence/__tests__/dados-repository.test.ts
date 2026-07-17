@@ -50,7 +50,7 @@ describe('DadosRepository', () => {
     const payload = new DadosRepository(db).exportar()
 
     expect(payload.formatVersion).toBe(1)
-    expect(payload.app.schemaVersion).toMatch(/^0007/)
+    expect(payload.app.schemaVersion).toMatch(/^0008/)
     expect(payload.tables.cartao).toHaveLength(1)
     expect(payload.tables.orcamento).toHaveLength(1)
     expect(payload.tables.parcela).toHaveLength(1)
@@ -75,6 +75,26 @@ describe('DadosRepository', () => {
       descricao: string
     }
     expect(despesa.descricao).toBe('Compra')
+    origem.close()
+    destino.close()
+  })
+
+  it('round-trip preserva nota, tags e seus vínculos', () => {
+    const origem = novoBanco()
+    seedBasico(origem)
+    origem.exec(`UPDATE despesa SET nota = 'Reembolsável' WHERE id = 1`)
+    origem.exec(`INSERT INTO tag (id, nome) VALUES (1, 'Viagem')`)
+    origem.exec(`INSERT INTO despesa_tag (despesa_id, tag_id) VALUES (1, 1)`)
+    const payload = new DadosRepository(origem).exportar()
+
+    const destino = novoBanco()
+    new DadosRepository(destino).importar(payload)
+
+    expect(destino.prepare('SELECT nota FROM despesa WHERE id = 1').get()).toEqual({
+      nota: 'Reembolsável'
+    })
+    expect(contar(destino, 'tag')).toBe(1)
+    expect(contar(destino, 'despesa_tag')).toBe(1)
     origem.close()
     destino.close()
   })
