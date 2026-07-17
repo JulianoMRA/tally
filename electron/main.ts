@@ -33,6 +33,7 @@ import { registerVisaoMensalHandlers } from './ipc/visao-mensal-handlers'
 import { registerRelatorioHandlers } from './ipc/relatorio-handlers'
 import { registerOrcamentoHandlers } from './ipc/orcamento-handlers'
 import { registerConfigHandlers } from './ipc/config-handlers'
+import { registerDadosHandlers } from './ipc/dados-handlers'
 
 let db: Database | null = null
 let mainWindow: BrowserWindow | null = null
@@ -460,6 +461,7 @@ if (!obteveLock) {
       registerRelatorioHandlers(db, ipcMain)
       registerOrcamentoHandlers(db, ipcMain)
       registerConfigHandlers(resolveSettingsPath(), ipcMain, janelaAtual)
+      registerDadosHandlers(db, ipcMain)
       construirMenuApp()
       createWindow()
       iniciarTimerFechamento(db)
