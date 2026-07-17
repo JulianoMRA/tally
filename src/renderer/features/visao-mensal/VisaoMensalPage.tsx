@@ -7,7 +7,8 @@ import {
 } from '@domain/services/mes-referencia'
 import type { RecebimentoComContexto } from '@shared/ipc/recebimento'
 import { PageHead } from '../../components/layout/PageHead'
-import { Badge, EmptyState, Input, Panel } from '../../components/ui'
+import { Badge, Button, EmptyState, Input, Panel, useToast } from '../../components/ui'
+import { mensagemErro } from '../../lib/mensagem-erro'
 import { alfabetico, porData, porNumero } from '../../lib/comparadores'
 import { formatBRL } from '../../lib/format-brl'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
@@ -44,6 +45,26 @@ const SEM_GASTOS: Despesa[] = []
 export default function VisaoMensalPage() {
   const [mes, setMes] = useState(mesAtualReferencia())
   const { detalhe, loading, erro } = useVisaoMensal(mes)
+  const toast = useToast()
+  const [exportando, setExportando] = useState(false)
+
+  async function exportar(formato: 'csv' | 'pdf') {
+    setExportando(true)
+    try {
+      const api = window.api.dados
+      const caminho =
+        formato === 'csv'
+          ? await api.exportarMesCsv({ mesReferencia: mes })
+          : await api.exportarMesPdf({ mesReferencia: mes })
+      if (caminho) {
+        toast.show(`Exportado para ${caminho}`, 'success')
+      }
+    } catch (e) {
+      toast.show(mensagemErro(e, 'Erro ao exportar o mês.'), 'error')
+    } finally {
+      setExportando(false)
+    }
+  }
 
   const recebimentos = useOrdenacao(
     detalhe?.recebimentos ?? SEM_RECEBIMENTOS,
@@ -102,6 +123,14 @@ export default function VisaoMensalPage() {
               )}
             </span>
           )}
+          <span className={styles.headerAcoes}>
+            <Button variant="ghost" size="sm" disabled={exportando} onClick={() => exportar('csv')}>
+              Exportar CSV
+            </Button>
+            <Button variant="ghost" size="sm" disabled={exportando} onClick={() => exportar('pdf')}>
+              Exportar PDF
+            </Button>
+          </span>
         </div>
 
         {erro && <p className={styles.erro}>{erro}</p>}

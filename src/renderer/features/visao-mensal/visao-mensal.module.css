@@ -291,6 +291,13 @@
   font-family: var(--font-mono);
 }
 
+/* Botões de exportação encostados à direita do header do mês. */
+.headerAcoes {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
 /* Aviso "fecha em N dias" — segunda linha da célula de vencimento, para não
    alterar a contagem de colunas do grid do item. */
 .avisoFechamento {

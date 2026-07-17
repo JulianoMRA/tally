@@ -1,4 +1,4 @@
-import { lazy } from 'react'
+import { lazy, Suspense } from 'react'
 import { createHashRouter, Navigate } from 'react-router-dom'
 import App from './App'
 import { RouteErrorBoundary } from './components/ui/ErrorBoundary'
@@ -13,8 +13,20 @@ const FaturasPage = lazy(() => import('./features/faturas/FaturasPage'))
 const RendasPage = lazy(() => import('./features/rendas/RendasPage'))
 const AjustesPage = lazy(() => import('./features/ajustes/AjustesPage'))
 const ImportarPage = lazy(() => import('./features/importacao/ImportarPage'))
+const PrintMensalPage = lazy(() => import('./features/visao-mensal/PrintMensalPage'))
 
 export const router = createHashRouter([
+  // Rota de impressão fora do shell do App (sem sidebar/topbar): usada pela
+  // janela oculta do main para gerar o PDF mensal via printToPDF. Suspense
+  // próprio porque o fallback do App não a envolve.
+  {
+    path: '/print/:mes',
+    element: (
+      <Suspense fallback={null}>
+        <PrintMensalPage />
+      </Suspense>
+    )
+  },
   {
     path: '/',
     element: <App />,
