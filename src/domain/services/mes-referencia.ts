@@ -63,3 +63,25 @@ export function diferencaEmMeses(a: string, b: string): number {
   const [anoB, mesB] = b.split('-').map(Number)
   return (anoB - anoA) * 12 + (mesB - mesA)
 }
+
+/**
+ * Diferença em dias entre duas datas ISO YYYY-MM-DD (b − a).
+ * Usa Date.UTC internamente — imune a fuso e horário de verão.
+ */
+export function diferencaEmDias(a: string, b: string): number {
+  const paraUtc = (iso: string): number => {
+    const [ano, mes, dia] = iso.split('-').map(Number)
+    return Date.UTC(ano, mes - 1, dia)
+  }
+  return Math.round((paraUtc(b) - paraUtc(a)) / 86_400_000)
+}
+
+/** Soma N dias a uma data ISO YYYY-MM-DD, devolvendo data ISO. */
+export function somarDias(dataIso: string, dias: number): string {
+  const [ano, mes, dia] = dataIso.split('-').map(Number)
+  const d = new Date(Date.UTC(ano, mes - 1, dia + dias))
+  const yyyy = d.getUTCFullYear().toString().padStart(4, '0')
+  const mm = (d.getUTCMonth() + 1).toString().padStart(2, '0')
+  const dd = d.getUTCDate().toString().padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}

@@ -2,10 +2,47 @@ import { describe, expect, it } from 'vitest'
 import {
   clampDiaNoMes,
   diasNoMes,
+  diferencaEmDias,
   diferencaEmMeses,
   mesReferenciaAnterior,
-  proxMesReferencia
+  proxMesReferencia,
+  somarDias
 } from '../mes-referencia'
+
+describe('diferencaEmDias', () => {
+  it('conta dias dentro do mesmo mes (b - a)', () => {
+    expect(diferencaEmDias('2026-07-10', '2026-07-15')).toBe(5)
+    expect(diferencaEmDias('2026-07-15', '2026-07-10')).toBe(-5)
+    expect(diferencaEmDias('2026-07-10', '2026-07-10')).toBe(0)
+  })
+
+  it('cruza virada de mes e de ano', () => {
+    expect(diferencaEmDias('2026-07-31', '2026-08-01')).toBe(1)
+    expect(diferencaEmDias('2026-12-30', '2027-01-02')).toBe(3)
+  })
+
+  it('conta fevereiro bissexto corretamente', () => {
+    expect(diferencaEmDias('2024-02-28', '2024-03-01')).toBe(2)
+    expect(diferencaEmDias('2026-02-28', '2026-03-01')).toBe(1)
+  })
+})
+
+describe('somarDias', () => {
+  it('soma dias dentro do mesmo mes', () => {
+    expect(somarDias('2026-07-10', 5)).toBe('2026-07-15')
+    expect(somarDias('2026-07-10', 0)).toBe('2026-07-10')
+  })
+
+  it('cruza virada de mes e de ano', () => {
+    expect(somarDias('2026-07-30', 3)).toBe('2026-08-02')
+    expect(somarDias('2026-12-30', 3)).toBe('2027-01-02')
+  })
+
+  it('respeita fevereiro bissexto', () => {
+    expect(somarDias('2024-02-28', 2)).toBe('2024-03-01')
+    expect(somarDias('2026-02-28', 2)).toBe('2026-03-02')
+  })
+})
 
 describe('proxMesReferencia', () => {
   it('avanca mes dentro do mesmo ano', () => {
