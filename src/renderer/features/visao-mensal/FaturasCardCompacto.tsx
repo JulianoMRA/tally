@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 import type { FaturaResumida } from '@shared/ipc/visao-mensal'
+import { hojeIsoLocal } from '@shared/datas-locais'
 import { Badge, EmptyState, Panel } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
 import { formatarDiaMes } from '../../lib/formatar-data'
 import { pluralizar } from '../../lib/pluralizar'
+import { rotuloFechamento } from '../faturas/aviso-fechamento'
 import { buildFaturasSearch } from '../faturas/faturas-search'
 import { statusVariant } from '../faturas/status-variant'
 import styles from './visao-mensal.module.css'
@@ -41,6 +43,11 @@ export function FaturasCardCompacto({ faturas }: Props) {
               </button>
               <span className={styles.faturaCompactaVence}>
                 vence {formatarDiaMes(f.fatura.dataVencimento)}
+                {rotuloFechamento(f.fatura, hojeIsoLocal()) && (
+                  <span className={styles.avisoFechamento}>
+                    {rotuloFechamento(f.fatura, hojeIsoLocal())}
+                  </span>
+                )}
               </span>
               <span className={`${styles.faturaCompactaTotal} tnum`}>
                 {formatBRL(f.totalCentavos)}
