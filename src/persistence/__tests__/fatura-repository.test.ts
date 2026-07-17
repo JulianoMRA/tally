@@ -206,3 +206,69 @@ describe('FaturaRepository — sincronização parcela <-> fatura (RN-06)', () =
     expect(parcelas[0].status).toBe('Pendente')
   })
 })
+
+describe('FaturaRepository.listarAvisos (fase 7 — notificações)', () => {
+  let db: Database
+  let repo: FaturaRepository
+
+  beforeEach(() => {
+    db = openInMemoryDatabase()
+    runMigrations(db)
+    repo = new FaturaRepository(db)
+  })
+
+  function inserirFatura(
+    cartaoId: number,
+    mes: string,
+    fechamento: string,
+    vencimento: string,
+    status: 'Aberta' | 'Fechada' | 'Paga'
+  ): number {
+    const info = db
+      .prepare(
+        `INSERT INTO fatura (cartao_id, mes_referencia, data_fechamento, data_vencimento, status, data_pagamento)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      )
+      .run(cartaoId, mes, fechamento, vencimento, status, status === 'Paga' ? vencimento : null)
+    return Number(info.lastInsertRowid)
+  }
+
+  it('lista Abertas com fechamento na janela e Fechadas com vencimento na janela', () => {
+    const inter = inserirCartao(db, 'Inter', 5, 12)
+    const nubank = inserirCartao(db, 'Nubank', 15, 22)
+    // Aberta fechando em 3 dias → aviso de fechamento
+    inserirFatura(inter.id, '2026-08', '2026-07-19', '2026-07-26', 'Aberta')
+    // Fechada vencendo em 2 dias → aviso de vencimento
+    inserirFatura(nubank.id, '2026-07', '2026-07-15', '2026-07-18', 'Fechada')
+
+    const avisos = repo.listarAvisos('2026-07-16', '2026-07-19')
+
+    expect(avisos).toHaveLength(2)
+    expect(avisos).toContainEqual(
+      expect.objectContaining({ tipo: 'fechamento', cartaoNome: 'Inter' })
+    )
+    expect(avisos).toContainEqual(
+      expect.objectContaining({ tipo: 'vencimento', cartaoNome: 'Nubank' })
+    )
+  })
+
+  it('ignora faturas fora da janela, Pagas e status incompatível com o tipo de aviso', () => {
+    const inter = inserirCartao(db, 'Inter', 5, 12)
+    // Aberta fechando longe demais
+    inserirFatura(inter.id, '2026-09', '2026-08-05', '2026-08-12', 'Aberta')
+    // Fechada com vencimento passado (nao avisa retroativo)
+    inserirFatura(inter.id, '2026-06', '2026-06-05', '2026-06-12', 'Fechada')
+    // Paga nunca gera aviso
+    inserirFatura(inter.id, '2026-07', '2026-07-05', '2026-07-17', 'Paga')
+
+    expect(repo.listarAvisos('2026-07-16', '2026-07-19')).toEqual([])
+  })
+
+  it('fatura Aberta com vencimento proximo nao gera aviso de vencimento (primeiro fecha)', () => {
+    const inter = inserirCartao(db, 'Inter', 5, 12)
+    inserirFatura(inter.id, '2026-07', '2026-07-05', '2026-07-17', 'Aberta')
+
+    const avisos = repo.listarAvisos('2026-07-16', '2026-07-19')
+    expect(avisos.filter((a) => a.tipo === 'vencimento')).toEqual([])
+  })
+})
