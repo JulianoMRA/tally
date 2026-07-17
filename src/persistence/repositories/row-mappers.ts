@@ -18,6 +18,7 @@ import type { Orcamento } from '../../domain/entities/orcamento'
 import type { Parcela, StatusParcela } from '../../domain/entities/parcela'
 import type { Recebimento, StatusRecebimento } from '../../domain/entities/recebimento'
 import type { Renda, TipoRenda } from '../../domain/entities/renda'
+import type { Tag } from '../../domain/entities/tag'
 
 // ────── Cartao ───────────────────────────────────────────────────
 
@@ -81,6 +82,7 @@ export type DespesaRow = {
   valor_centavos: number
   total_parcelas: number | null
   data_compra: string
+  nota: string | null
   ativa: 0 | 1
   created_at: string
   updated_at: string
@@ -97,6 +99,7 @@ export function mapDespesa(row: DespesaRow): Despesa {
     valorCentavos: row.valor_centavos,
     totalParcelas: row.total_parcelas,
     dataCompra: row.data_compra,
+    nota: row.nota ?? null,
     ativa: row.ativa === 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -248,5 +251,21 @@ export function mapOrcamento(row: OrcamentoRow): Orcamento {
     valorLimiteCentavos: row.valor_limite_centavos,
     createdAt: row.created_at,
     updatedAt: row.updated_at
+  }
+}
+
+// ────── Tag ──────────────────────────────────────────────────────
+
+export type TagRow = {
+  id: number
+  nome: string
+  created_at: string
+}
+
+export function mapTag(row: TagRow): Tag {
+  return {
+    id: row.id,
+    nome: row.nome,
+    createdAt: row.created_at
   }
 }

@@ -7,6 +7,7 @@ import { CartaoRepository } from './cartao-repository'
 import { CategoriaRepository } from './categoria-repository'
 import { FaturaRepository } from './fatura-repository'
 import { ParcelaRepository } from './parcela-repository'
+import { TagRepository } from './tag-repository'
 import { mapDespesa, mapParcela, type DespesaRow, type ParcelaRow } from './row-mappers'
 import { calcularExtensaoNecessaria } from '../../domain/services/calcular-extensao-horizonte'
 import { gerarParcelas } from '../../domain/services/gerar-parcelas'
@@ -701,6 +702,26 @@ export class DespesaRepository implements Repository {
         .prepare('SELECT * FROM despesa WHERE id = ?')
         .get(despesaId) as DespesaRow
       return mapDespesa(atualizadaRow)
+    })()
+  }
+
+  /**
+   * RF-DES-13 — define a nota livre e o conjunto de tags de uma despesa em uma
+   * transação. Nota vazia vira NULL. Não bloqueia por status de fatura: são
+   * metadados, não afetam valores nem parcelas.
+   */
+  definirNotaETags(despesaId: number, input: { nota: string | null; tags: string[] }): Despesa {
+    const existe = this.db.prepare('SELECT id FROM despesa WHERE id = ?').get(despesaId)
+    if (!existe) throw new Error(`Despesa #${despesaId} não encontrada`)
+    const nota = input.nota && input.nota.trim().length > 0 ? input.nota.trim() : null
+
+    return this.db.transaction(() => {
+      this.db
+        .prepare(`UPDATE despesa SET nota = ?, updated_at = datetime('now') WHERE id = ?`)
+        .run(nota, despesaId)
+      new TagRepository(this.db).sincronizarDespesa(despesaId, input.tags)
+      const row = this.db.prepare('SELECT * FROM despesa WHERE id = ?').get(despesaId) as DespesaRow
+      return mapDespesa(row)
     })()
   }
 

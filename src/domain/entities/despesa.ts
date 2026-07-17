@@ -11,6 +11,7 @@ export type Despesa = {
   valorCentavos: number
   totalParcelas: number | null
   dataCompra: string
+  nota: string | null
   ativa: boolean
   createdAt: string
   updatedAt: string
