@@ -25,14 +25,14 @@
 
 .toolbarLabel {
   font-size: 13px;
-  color: var(--ink-muted);
+  color: var(--ink-3);
   font-weight: 500;
 }
 
 .periodoSelector {
   display: flex;
   gap: 4px;
-  background: var(--bg-base);
+  background: var(--bg-sunk);
   border: 1px solid var(--rule);
   border-radius: var(--r-2);
   padding: 3px;
@@ -45,7 +45,7 @@
   padding: 5px 12px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--ink-muted);
+  color: var(--ink-3);
   cursor: pointer;
 }
 
@@ -119,7 +119,7 @@
 
 .rankPct {
   font-size: 11px;
-  color: var(--ink-muted);
+  color: var(--ink-3);
   text-align: right;
   font-variant-numeric: tabular-nums;
 }

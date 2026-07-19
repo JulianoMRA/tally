@@ -26,9 +26,9 @@ export function EvolucaoLineChart({ dados }: Props) {
     <ResponsiveContainer width="100%" height={280}>
       <LineChart data={dadosFormatados} margin={{ top: 8, right: 24, bottom: 0, left: 4 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--rule)" />
-        <XAxis dataKey="mes" stroke="var(--ink-muted)" fontSize={12} />
+        <XAxis dataKey="mes" stroke="var(--ink-3)" fontSize={12} />
         <YAxis
-          stroke="var(--ink-muted)"
+          stroke="var(--ink-3)"
           fontSize={12}
           tickFormatter={(v: number) => formatBRLCompacto(v * 100)}
         />
