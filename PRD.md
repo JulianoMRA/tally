@@ -331,8 +331,14 @@ Pipeline em PR e push para main, em matriz `ubuntu-latest + windows-latest`:
    (Ubuntu, também enviado ao Codecov)
 8. `npm audit --omit=dev --audit-level=high` **bloqueante**
 
-Workflows adicionais: Dependabot (npm + actions, semanal) e mutation testing
-com Stryker no domain layer (semanal + manual — lento demais para gate de PR).
+Workflow adicional: mutation testing com Stryker no domain layer (semanal +
+manual — lento demais para gate de PR).
+
+Dependabot foi removido em jul/2026: o volume de PRs de deps-dev e de actions
+superava o valor num projeto pessoal de um mantenedor. Atualizações passam a
+ser manuais e deliberadas. A cobertura de segurança que importa permanece no
+gate `npm audit --omit=dev --audit-level=high`, que reprova vulnerabilidade
+high em dependência de produção a cada PR.
 
 CodeQL foi removido em jul/2026: code scanning exige GitHub Advanced Security
 em repositório privado, então o workflow reprovava todo PR sem nunca conseguir
