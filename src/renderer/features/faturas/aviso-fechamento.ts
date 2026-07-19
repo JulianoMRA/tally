@@ -16,3 +16,20 @@ export function rotuloFechamento(fatura: Fatura, hoje: string): string | null {
   if (dias === 1) return 'fecha amanhã'
   return `fecha em ${dias} dias`
 }
+
+/**
+ * Fatura vencida: Fechada (não Paga) com data de vencimento já passada. Uma
+ * Aberta fica de fora — ainda não é pagável — e uma Paga nunca vence. O próprio
+ * dia do vencimento não conta como vencida (ainda dá tempo de pagar).
+ */
+export function estaVencida(fatura: Fatura, hoje: string): boolean {
+  if (fatura.status.kind !== 'Fechada') return false
+  return diferencaEmDias(hoje, fatura.dataVencimento) < 0
+}
+
+/** Rótulo "vencida há N dias" para faturas vencidas; null caso contrário. */
+export function rotuloVencida(fatura: Fatura, hoje: string): string | null {
+  if (!estaVencida(fatura, hoje)) return null
+  const dias = diferencaEmDias(fatura.dataVencimento, hoje)
+  return dias === 1 ? 'vencida há 1 dia' : `vencida há ${dias} dias`
+}

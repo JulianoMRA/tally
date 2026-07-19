@@ -22,6 +22,7 @@ import {
 import { formatBRL } from '../../lib/format-brl'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { mensagemErro } from '../../lib/mensagem-erro'
+import { rotuloVencida } from './aviso-fechamento'
 import { statusVariant } from './status-variant'
 import styles from './faturas.module.css'
 
@@ -77,6 +78,7 @@ export function FaturaDetalhe({
 }: Props) {
   const { fatura, parcelas, totalCentavos } = detalhe
   const kind = fatura.status.kind
+  const avisoVencida = rotuloVencida(fatura, hojeIsoLocal())
 
   const [modoPagar, setModoPagar] = useState(false)
   const [dataPagamento, setDataPagamento] = useState(hojeIsoLocal)
@@ -203,7 +205,10 @@ export function FaturaDetalhe({
           </div>
           <div className={styles.resumoLinha}>
             <span className={styles.resumoLabel}>Status</span>
-            <Badge variant={statusVariant(kind)} />
+            <span className={styles.statusValor}>
+              <Badge variant={statusVariant(kind)} />
+              {avisoVencida && <span className={styles.avisoVencida}>{avisoVencida}</span>}
+            </span>
           </div>
           <div className={`${styles.resumoLinha} ${styles.resumoTotalLinha}`}>
             <span className={styles.resumoLabel}>Total da fatura</span>

@@ -306,6 +306,12 @@
   font-weight: 700;
 }
 
+.avisoVencida {
+  display: block;
+  color: var(--expense);
+  font-weight: 700;
+}
+
 .faturaCompactaTotal {
   font-size: 14px;
   font-weight: 700;
