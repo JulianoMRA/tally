@@ -41,7 +41,56 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Os dois targets (nsis e portable) publicam em paralelo e, se o release
+      # da tag ainda nao existe, ambos tentam cria-lo — a API atende as duas
+      # chamadas e os artefatos ficam partidos entre dois drafts (aconteceu na
+      # v1.1.1: o .blockmap foi parar num draft separado do .exe). Criar o
+      # draft antes elimina a corrida: os dois targets encontram um so release
+      # e apenas anexam os arquivos.
+      - name: Cria o draft do release (evita corrida entre os targets)
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          # gh release list sai com 0 mesmo sem match, entao nao precisa de
+          # supressao de stderr (que abortaria o step sob ErrorActionPreference
+          # Stop, o default do shell pwsh no Actions).
+          $tags = @(gh release list --limit 100 --json tagName --jq '.[].tagName')
+          if ($tags -contains $tag) {
+            Write-Host "Release $tag ja existe; seguindo para o empacotamento."
+          } else {
+            gh release create $tag --draft --title $tag --notes "Gerado pelo workflow de release. Publique apos conferir os artefatos."
+          }
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Empacota e publica no GitHub Release
         run: npx electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # O release nasce como draft (default do electron-builder) e so fica
+      # visivel para o auto-update depois de publicado. Este passo confere que
+      # os 4 artefatos esperados chegaram no mesmo release, para o draft nao
+      # ser publicado incompleto.
+      - name: Confere os artefatos do release
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $versao = node -p "require('./package.json').version"
+          $esperados = @(
+            'latest.yml',
+            "Tally-$versao-portable.exe",
+            "Tally-Setup-$versao.exe",
+            "Tally-Setup-$versao.exe.blockmap"
+          )
+          # @() força array: com um único asset o gh devolveria uma string,
+          # e -notcontains passaria a comparar caractere a caractere.
+          $presentes = @(gh release view $tag --json assets --jq '.assets[].name')
+          $faltando = $esperados | Where-Object { $presentes -notcontains $_ }
+          if ($faltando) {
+            Write-Error "Artefatos faltando no release ${tag}: $($faltando -join ', '). Presentes: $($presentes -join ', ')"
+            exit 1
+          }
+          Write-Host "Todos os 4 artefatos presentes em $tag."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
