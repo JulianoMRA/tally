@@ -321,6 +321,14 @@
   vertical-align: middle;
 }
 
+/* O flex-wrap é CARGA ESTRUTURAL, não estética: é ele que dá à tabela uma via
+   de compressão quando a área principal fica estreita (o aside de 340px derruba
+   a largura útil de 698px em 1000px para 629px em 1280px). Sem ele a coluna de
+   ações vira um piso rígido e o `overflow: hidden` do Panel deceparia os botões
+   — foi exatamente isso que aconteceu na tabela de Saídas, cujo `.rowActions`
+   homônimo usa `nowrap` + `flex-shrink: 0` e precisou de um container rolável.
+   Não uniformize os dois módulos sem antes medir. Protegido por
+   e2e/faturas-acoes-visiveis.spec.ts. */
 .rowActions {
   display: flex;
   gap: 4px;
