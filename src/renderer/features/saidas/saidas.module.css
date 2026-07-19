@@ -2,20 +2,23 @@
   padding: 0 32px 32px;
 }
 
-/* Empilhado por padrão; em telas largas, cadastro à esquerda e lista à direita. */
+/* Empilhado por padrão; em telas largas, cadastro à esquerda e lista à direita.
+   O breakpoint é 1940 (não 1440) porque a coluna da lista recebe 3/5 do espaço:
+   em 1440 sobrariam ~770px para uma tabela que precisa de ~974px, ou seja, as
+   duas colunas deixavam a tabela MAIS estreita do que o layout empilhado. */
 .layout {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-@media (min-width: 1440px) {
+@media (min-width: 1940px) {
   .layout {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
     align-items: start;
     gap: 28px;
-    max-width: 1760px;
+    max-width: 2200px;
   }
 }
 
@@ -58,6 +61,16 @@
   font-size: 12px;
   color: var(--expense);
   margin: 4px 0;
+}
+
+/* O .panel usa overflow:hidden (para o border-radius recortar o conteúdo), o
+   que CORTAVA a coluna de ações quando a tabela excedia a largura do painel —
+   os botões ficavam inalcançáveis. Este wrapper converte o corte em rolagem.
+   Ao navegar por Tab, o browser rola o botão focado para dentro da viewport,
+   então as ações continuam acessíveis por teclado. */
+.tabelaWrap {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
 }
 
 .tabela {
@@ -133,11 +146,24 @@
   white-space: nowrap;
 }
 
+/* width:1% + nowrap faz o auto-layout da tabela encolher a coluna até o
+   conteúdo, sobrando o espaço restante para a Descrição. */
+.colAcoes {
+  width: 1%;
+  white-space: nowrap;
+}
+
 .rowActions {
   display: flex;
   align-items: center;
   gap: 6px;
   justify-content: flex-end;
+  white-space: nowrap;
+}
+
+/* Sem isto os botões encolhem como itens flex e os rótulos ficam elipsados. */
+.rowActions > * {
+  flex-shrink: 0;
 }
 
 .itemCancelada td {

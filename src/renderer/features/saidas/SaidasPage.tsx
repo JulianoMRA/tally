@@ -387,108 +387,112 @@ export default function SaidasPage() {
               ) : itensOrdenados.length === 0 ? (
                 <EmptyState title="Nenhuma saída para este filtro." />
               ) : (
-                <table className={styles.tabela}>
-                  <thead>
-                    <tr>
-                      <th className={styles.thSortavel} onClick={() => handleSort('descricao')}>
-                        Descrição{sortIndicator('descricao')}
-                      </th>
-                      <th>Tipo</th>
-                      <th>Categoria</th>
-                      <th className={styles.thSortavel} onClick={() => handleSort('data')}>
-                        Data{sortIndicator('data')}
-                      </th>
-                      <th
-                        className={`${styles.colValor} ${styles.thSortavel}`}
-                        onClick={() => handleSort('valor')}
-                      >
-                        Valor{sortIndicator('valor')}
-                      </th>
-                      <th aria-label="Ações" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {itensOrdenados.map((d) => {
-                      const ehAssinatura = d.tipo === 'Assinatura'
-                      return (
-                        <tr key={d.id} className={!d.ativa ? styles.itemCancelada : undefined}>
-                          <td>
-                            <div className={styles.descricaoCell}>
-                              <span
-                                className={styles.chip}
-                                style={{ background: corCartao(d.cartaoId) }}
-                              />
-                              <span>{d.descricao}</span>
-                              {!d.ativa && <Badge variant="archived" label="Cancelada" />}
-                            </div>
-                            {d.tags.length > 0 && (
-                              <div className={styles.tagCell}>
-                                {d.tags.map((t) => (
-                                  <span key={t} className={styles.tagCellChip}>
-                                    {t}
-                                  </span>
-                                ))}
+                <div className={styles.tabelaWrap}>
+                  <table className={styles.tabela}>
+                    <thead>
+                      <tr>
+                        <th className={styles.thSortavel} onClick={() => handleSort('descricao')}>
+                          Descrição{sortIndicator('descricao')}
+                        </th>
+                        <th>Tipo</th>
+                        <th>Categoria</th>
+                        <th className={styles.thSortavel} onClick={() => handleSort('data')}>
+                          Data{sortIndicator('data')}
+                        </th>
+                        <th
+                          className={`${styles.colValor} ${styles.thSortavel}`}
+                          onClick={() => handleSort('valor')}
+                        >
+                          Valor{sortIndicator('valor')}
+                        </th>
+                        <th className={styles.colAcoes} aria-label="Ações" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {itensOrdenados.map((d) => {
+                        const ehAssinatura = d.tipo === 'Assinatura'
+                        return (
+                          <tr key={d.id} className={!d.ativa ? styles.itemCancelada : undefined}>
+                            <td>
+                              <div className={styles.descricaoCell}>
+                                <span
+                                  className={styles.chip}
+                                  style={{ background: corCartao(d.cartaoId) }}
+                                />
+                                <span>{d.descricao}</span>
+                                {!d.ativa && <Badge variant="archived" label="Cancelada" />}
                               </div>
-                            )}
-                          </td>
-                          <td>
-                            <span className={styles.tagTipo}>{rotuloTipo(d)}</span>
-                          </td>
-                          <td>{nomeCategoria(d.categoriaId)}</td>
-                          <td className="mono">{formatarDataIso(d.dataCompra)}</td>
-                          <td className={`${styles.colValor} tnum`}>
-                            {formatBRL(d.valorCentavos)}
-                            {ehAssinatura ? '/mês' : ''}
-                          </td>
-                          <td>
-                            <div className={styles.rowActions}>
-                              <Button variant="ghost" size="sm" onClick={() => duplicar(d)}>
-                                Duplicar
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => setNotaTags(d)}>
-                                Nota/Tags
-                              </Button>
-                              {ehAssinatura && d.ativa && (
-                                <>
+                              {d.tags.length > 0 && (
+                                <div className={styles.tagCell}>
+                                  {d.tags.map((t) => (
+                                    <span key={t} className={styles.tagCellChip}>
+                                      {t}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                            <td>
+                              <span className={styles.tagTipo}>{rotuloTipo(d)}</span>
+                            </td>
+                            <td>{nomeCategoria(d.categoriaId)}</td>
+                            <td className="mono">{formatarDataIso(d.dataCompra)}</td>
+                            <td className={`${styles.colValor} tnum`}>
+                              {formatBRL(d.valorCentavos)}
+                              {ehAssinatura ? '/mês' : ''}
+                            </td>
+                            <td className={styles.colAcoes}>
+                              <div className={styles.rowActions}>
+                                <Button variant="ghost" size="sm" onClick={() => duplicar(d)}>
+                                  Duplicar
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => setNotaTags(d)}>
+                                  Nota/Tags
+                                </Button>
+                                {ehAssinatura && d.ativa && (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setEditandoAssinatura(d)}
+                                    >
+                                      Editar
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        setConfirmacao({ tipo: 'cancelar', despesa: d })
+                                      }
+                                    >
+                                      Cancelar
+                                    </Button>
+                                  </>
+                                )}
+                                {!ehAssinatura && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => setEditandoAssinatura(d)}
+                                    onClick={() => setEditandoDespesa(d)}
                                   >
                                     Editar
                                   </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setConfirmacao({ tipo: 'cancelar', despesa: d })}
-                                  >
-                                    Cancelar
-                                  </Button>
-                                </>
-                              )}
-                              {!ehAssinatura && (
+                                )}
                                 <Button
-                                  variant="ghost"
+                                  variant="danger"
                                   size="sm"
-                                  onClick={() => setEditandoDespesa(d)}
+                                  onClick={() => setConfirmacao({ tipo: 'excluir', despesa: d })}
                                 >
-                                  Editar
+                                  Excluir
                                 </Button>
-                              )}
-                              <Button
-                                variant="danger"
-                                size="sm"
-                                onClick={() => setConfirmacao({ tipo: 'excluir', despesa: d })}
-                              >
-                                Excluir
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </Panel>
           </div>

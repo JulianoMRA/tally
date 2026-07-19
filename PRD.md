@@ -331,9 +331,13 @@ Pipeline em PR e push para main, em matriz `ubuntu-latest + windows-latest`:
    (Ubuntu, também enviado ao Codecov)
 8. `npm audit --omit=dev --audit-level=high` **bloqueante**
 
-Workflows adicionais: CodeQL (push/PR/semanal), Dependabot (npm + actions,
-semanal) e mutation testing com Stryker no domain layer (semanal + manual —
-lento demais para gate de PR).
+Workflows adicionais: Dependabot (npm + actions, semanal) e mutation testing
+com Stryker no domain layer (semanal + manual — lento demais para gate de PR).
+
+CodeQL foi removido em jul/2026: code scanning exige GitHub Advanced Security
+em repositório privado, então o workflow reprovava todo PR sem nunca conseguir
+publicar o resultado. Reintroduzir se o repositório for tornado público, onde
+o recurso é gratuito.
 
 Determinismo dos E2E: a fixture força a janela para 1280x800 após o launch —
 runners de CI têm telas menores e o clamp do SO colapsava grids (colunas 1fr
