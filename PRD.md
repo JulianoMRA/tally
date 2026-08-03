@@ -158,7 +158,7 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - **RNF-04** — Operações de leitura na visão mensal < 200ms para até 10 anos de histórico.
 - **RNF-05** — Idioma: pt-BR. Moeda: BRL. Formato de data: dd/MM/yyyy.
 - **RNF-06** — Cobertura mínima de testes: 80% no domain layer, 60% global.
-- **RNF-07** — CI verde obrigatório para merge: lint + typecheck + testes unitários + build.
+- **RNF-07** — Pipeline local verde obrigatório antes de abrir PR: lint + typecheck + testes unitários + build.
 
 ---
 
@@ -315,45 +315,58 @@ Fluxos críticos cobertos:
 - Navegação entre meses com projeção (RF-VIS-04)
 - Relatórios e gráficos (RF-VIS-05, RF-VIS-06)
 
-### 8.4 CI/CD (GitHub Actions)
+### 8.4 Pipeline local
 
-Pipeline em PR e push para main, em matriz `ubuntu-latest + windows-latest`:
+O projeto **não usa CI hospedada**. Os workflows do GitHub Actions foram
+removidos em ago/2026 (histórico da decisão abaixo). O pipeline roda na máquina
+do mantenedor, na ordem abaixo, antes de abrir PR:
 
-1. Install dependencies (com cache)
-2. Lint (ESLint)
-3. Typecheck (`tsc --noEmit`)
-4. Test (`vitest run --coverage` — thresholds RNF-06 são gate)
-5. Build (Electron build)
-6. E2E (`playwright test`, apenas Windows — alvo primário per RNF-02), incluindo
-   varredura de acessibilidade (axe-core) nas telas principais — violações
-   serious/critical quebram o pipeline
-7. Upload de artifacts: `playwright-report` (Windows) e `coverage-report`
-   (Ubuntu, também enviado ao Codecov)
-8. `npm audit --omit=dev --audit-level=high` **bloqueante**
+1. Lint (ESLint)
+2. Typecheck (`tsc -b --noEmit`, inclui os specs E2E)
+3. Test (`vitest run --coverage` — thresholds RNF-06 são gate)
+4. Build (Electron build)
+5. E2E (`playwright test`), incluindo varredura de acessibilidade (axe-core) nas
+   telas principais — violações serious/critical quebram a suíte
+6. Mutation testing com Stryker no domain layer (lento; ao mexer em regra de
+   negócio)
+7. `npm audit --omit=dev --audit-level=high`
 
-Workflow adicional: mutation testing com Stryker no domain layer (semanal +
-manual — lento demais para gate de PR).
+Automação que resta são os hooks do Husky: `pre-commit` (ESLint + Prettier nos
+staged), `commit-msg` (commitlint) e `pre-push` (typecheck + suíte unitária).
 
-Dependabot foi removido em jul/2026: o volume de PRs de deps-dev e de actions
-superava o valor num projeto pessoal de um mantenedor. Atualizações passam a
-ser manuais e deliberadas. A cobertura de segurança que importa permanece no
-gate `npm audit --omit=dev --audit-level=high`, que reprova vulnerabilidade
-high em dependência de produção a cada PR.
-
-CodeQL foi removido em jul/2026: code scanning exige GitHub Advanced Security
-em repositório privado, então o workflow reprovava todo PR sem nunca conseguir
-publicar o resultado. Reintroduzir se o repositório for tornado público, onde
-o recurso é gratuito.
+**Histórico das remoções.** Dependabot saiu em jul/2026: o volume de PRs de
+deps-dev e de actions superava o valor num projeto pessoal de um mantenedor.
+CodeQL saiu em jul/2026: code scanning exige GitHub Advanced Security em
+repositório privado, então o workflow reprovava todo PR sem nunca publicar
+resultado. Os três workflows restantes (`ci`, `mutation`, `release`) saíram em
+ago/2026, a pedido do mantenedor — o repositório deixa de ter qualquer
+automação hospedada, incluindo a publicação de instaladores, que passa a ser
+manual (ver 8.6).
 
 Determinismo dos E2E: a fixture força a janela para 1280x800 após o launch —
-runners de CI têm telas menores e o clamp do SO colapsava grids (colunas 1fr
-com largura zero), gerando falhas que não reproduziam localmente.
+telas menores fazem o clamp do SO colapsar grids (colunas 1fr com largura zero),
+gerando falhas que não reproduzem em janela cheia. A trava foi criada para os
+runners de CI e continua valendo para execução local em monitores pequenos.
 
-Branch `main` protegida: PR obrigatório, CI verde obrigatório, conventional commits.
+Branch `main`: PR obrigatório para merge, conventional commits. A verificação
+que era gate de CI passa a ser responsabilidade local de quem abre o PR.
 
 ### 8.5 Documentação de bugs
 
 Bugs encontrados durante desenvolvimento ou uso real são registrados como GitHub Issues seguindo template estruturado (preconditions, steps, expected, actual, severity, evidence). Alinhamento com prática de bug reports do roadmap QA.
+
+### 8.6 Publicação de release
+
+Sem `release.yml`, publicar uma versão é manual:
+
+1. `npm version <patch|minor|major>` (nunca criar a tag na mão)
+2. `npm run dist` — gera NSIS + portable em `release/`
+3. Criar o release no GitHub para a tag e subir os instaladores **junto com o
+   `latest.yml`** gerado pelo electron-builder
+
+O `latest.yml` não é opcional: é o arquivo que o auto-update (electron-updater)
+lê para descobrir que existe versão nova. Sem ele no release, o app instalado
+não recebe atualização.
 
 ---
 
@@ -389,5 +402,5 @@ V2 (orçamento, exportação, backup, tags) entra após o slice 14.
 ## 10. Métricas de sucesso
 
 - **Funcional:** dono do projeto consegue migrar 100% dos dados da planilha atual e abandonar o uso da planilha em até 2 meses após release do MVP.
-- **Técnico:** cobertura de testes mantida nos limites definidos; CI verde em 95%+ dos PRs.
+- **Técnico:** cobertura de testes mantida nos limites definidos; pipeline local verde antes de todo PR.
 - **Portfólio:** projeto público no GitHub com README detalhado, histórico de commits convencionais, testes visíveis, screenshots/GIFs de uso.

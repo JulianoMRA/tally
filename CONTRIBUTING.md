@@ -43,7 +43,8 @@ incremental. Detalhes em [`PRD.md`](./PRD.md) §9 e em
 4. **TDD obrigatório no domain layer** — teste antes da implementação
 5. Implemente em commits atômicos seguindo conventional commits
 6. Rode o gate local: `npm run lint && npm run typecheck && npm run test:run && npm run build`
-7. Abra PR contra `main`; CI verde obrigatório para merge
+7. Rode `npm run e2e` quando a mudança for visível na UI
+8. Abra PR contra `main` com o gate local verde
 
 ---
 
@@ -105,24 +106,30 @@ npm run gen:icon       # Regenera build/icon.ico a partir do SVG do brand
 - **E2E** (`Playwright + _electron`) — `e2e/*.spec.ts`. Cada teste recebe
   uma pasta `userData` isolada via fixture (`TALLY_USER_DATA`).
 
-Coverage mínima (gate de CI): **80% no domain** (RN-01..RN-08), **60% global**.
+Coverage mínima (thresholds no `vitest.config.ts`): **80% no domain**
+(RN-01..RN-08), **60% global**. `npm run test:coverage` falha abaixo disso.
 
 ---
 
-## CI
+## Pipeline local
 
-GitHub Actions roda em matriz `ubuntu-latest + windows-latest` em todo PR
-e push para `main`:
+O projeto não usa CI hospedada — os workflows do GitHub Actions foram removidos
+em ago/2026. Todo o pipeline roda na máquina, na ordem abaixo, antes de abrir PR:
 
-1. `npm ci`
-2. `npm run lint`
-3. `npm run typecheck`
-4. `npm run test:coverage` (thresholds RNF-06)
-5. `npm run build`
-6. `npm run e2e` (apenas Windows)
-7. `npm audit --audit-level=high` (não-bloqueante)
+1. `npm run lint`
+2. `npm run typecheck` (inclui os specs E2E)
+3. `npm run test:coverage` (thresholds RNF-06)
+4. `npm run build`
+5. `npm run e2e` (requer o build acima)
+6. `npm run test:mutation` (Stryker no domain; lento, rode ao mexer em regra de negócio)
+7. `npm audit --omit=dev --audit-level=high` (dependências de produção)
 
-Branch protection em `main`: PR obrigatório, CI verde obrigatório.
+Os hooks do Husky cobrem a parte rápida automaticamente: `pre-commit` roda
+ESLint e Prettier nos arquivos staged, `commit-msg` valida o conventional
+commit, e `pre-push` roda typecheck + suíte unitária.
+
+PR contra `main` segue obrigatório para merge — o que mudou é que a verificação
+é sua responsabilidade local, não de um runner.
 
 ---
 
