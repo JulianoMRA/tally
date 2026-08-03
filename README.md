@@ -4,12 +4,10 @@
 
 ![status](https://img.shields.io/badge/status-in%20development-yellow)
 ![license](https://img.shields.io/badge/license-MIT-blue)
-[![codecov](https://codecov.io/gh/JulianoMRA/tally/graph/badge.svg)](https://codecov.io/gh/JulianoMRA/tally)
-[![CI](https://github.com/JulianoMRA/tally/actions/workflows/ci.yml/badge.svg)](https://github.com/JulianoMRA/tally/actions/workflows/ci.yml)
 
 Tally is a personal project built to replace a Google Sheets workflow that demanded manual work every month: copying the previous month's tab, incrementing parcela numbers (`7/12` → `8/12`), and recalculating credit card statement totals. Tally does all of it automatically.
 
-It's also a portfolio piece for my repositioning to **QA / Test Automation Engineer** — built with test-driven development from the ground up, comprehensive automated test coverage, and a full CI pipeline.
+It's also a portfolio piece for my repositioning to **QA / Test Automation Engineer** — built with test-driven development from the ground up and comprehensive automated test coverage across unit, integration, E2E, accessibility and mutation testing.
 
 ---
 
@@ -28,18 +26,18 @@ Tally solves these with first-class support for installment plans, recurring sub
 
 ## Tech stack
 
-| Layer          | Technology                       |
-| -------------- | -------------------------------- |
-| Runtime        | Node.js 20 LTS                   |
-| Desktop shell  | Electron 30+                     |
-| Bundler        | Vite 5+                          |
-| UI             | React 18 + TypeScript 5 (strict) |
-| Database       | SQLite via node-sqlite3-wasm     |
-| Unit testing   | Vitest                           |
-| E2E testing    | Playwright                       |
-| Lint / Format  | ESLint + Prettier                |
-| Commit hygiene | commitlint + Husky + lint-staged |
-| CI             | GitHub Actions                   |
+| Layer            | Technology                       |
+| ---------------- | -------------------------------- |
+| Runtime          | Node.js 20 LTS                   |
+| Desktop shell    | Electron 30+                     |
+| Bundler          | Vite 5+                          |
+| UI               | React 18 + TypeScript 5 (strict) |
+| Database         | SQLite via node-sqlite3-wasm     |
+| Unit testing     | Vitest                           |
+| E2E testing      | Playwright                       |
+| Lint / Format    | ESLint + Prettier                |
+| Commit hygiene   | commitlint + Husky + lint-staged |
+| Mutation testing | Stryker                          |
 
 Architecture follows clean separation across four layers: **domain** (pure business rules, zero external dependencies), **persistence** (SQLite repositories), **main process** (Electron lifecycle and IPC), and **renderer** (React UI). See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for setup and conventions.
 
@@ -52,10 +50,10 @@ Quality strategy is treated as a first-class concern, not an afterthought.
 - **TDD mandatory in the domain layer.** All business rules (RN-01 through RN-08 documented in [`PRD.md`](./PRD.md)) start with a failing test before any implementation.
 - **Coverage minimums:** 80% in the domain layer, 60% global.
 - **Integration tests** run against in-memory SQLite to validate repositories without mocking the database.
-- **E2E tests** (39 Playwright specs against the real Electron app, each in an isolated temp database) cover the critical user flows: registering an in-progress installment plan, advancing parcelas, paying a statement — which locks its expenses against edit/deletion (RN-06) —, deleting expenses, navigating to a projected future month, per-category budgets, and reports.
-- **CI pipeline** runs lint, typecheck, tests with coverage gating, and build on an ubuntu + windows matrix, plus the full Playwright E2E suite on Windows (the app's primary target). Branch protection requires a green pipeline before merge. `npm audit` on production dependencies is a blocking gate, so a high-severity vulnerability in a shipped dependency fails the build.
-- **Accessibility scans** (axe-core via Playwright) run against every main screen in CI — serious/critical WCAG violations fail the build.
-- **Mutation testing** (Stryker) runs weekly against the domain layer, measuring whether the tests actually detect behavioral changes — not just line coverage. Current score: **93%** (650 mutants, 4 of 14 services at 100%).
+- **E2E tests** (43 Playwright specs against the real Electron app, each in an isolated temp database) cover the critical user flows: registering an in-progress installment plan, advancing parcelas, paying a statement — which locks its expenses against edit/deletion (RN-06) —, deleting expenses, navigating to a projected future month, per-category budgets, and reports.
+- **Accessibility scans** (axe-core via Playwright) run against every main screen — serious/critical WCAG violations fail the suite.
+- **Mutation testing** (Stryker) runs against the domain layer, measuring whether the tests actually detect behavioral changes — not just line coverage. Current score: **93%** (650 mutants, 4 of 14 services at 100%).
+- **The whole pipeline runs locally** through npm scripts (`lint`, `typecheck`, `test:coverage`, `e2e`, `test:mutation`, `build`), run before opening a PR. Git hooks enforce the fast half automatically: pre-commit runs ESLint and Prettier on staged files, commit-msg validates Conventional Commits, and pre-push runs typecheck plus the full unit suite.
 - **Conventional Commits** enforced via commitlint, enabling automated changelog generation.
 
 Bug reports during development follow a structured template (preconditions, steps, expected vs actual, severity, evidence) and live as GitHub Issues.
@@ -142,7 +140,7 @@ Detalhes técnicos de cada slice em [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## Installation
 
-Grab the latest binaries from [GitHub Releases](https://github.com/JulianoMRA/tally/releases) (published automatically when a `v*` tag is pushed — see `.github/workflows/release.yml`):
+Grab the latest binaries from [GitHub Releases](https://github.com/JulianoMRA/tally/releases) (built locally with `npm run dist` and uploaded to the release):
 
 - **`Tally Setup <version>.exe`** — NSIS installer. Creates desktop + Start Menu shortcuts, lets you pick the install dir, supports clean uninstall. **Auto-updates**: the app checks GitHub Releases on startup (and via the `Arquivo > Verificar atualizações` menu) and applies new versions on quit.
 - **`Tally-<version>-portable.exe`** — single-file executable. Just double-click — no install. Good for USB drives or restricted machines. Does **not** auto-update — download new versions manually.

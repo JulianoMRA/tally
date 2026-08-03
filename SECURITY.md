@@ -42,7 +42,8 @@ de rede e sem código remoto:
   http(s) são abertas via `shell.openExternal` no navegador do SO
 - IPC tem schemas Zod em todos os canais (defense in depth)
 - SQL sempre via statements parametrizados — nenhuma string concatenada
-- `npm audit --audit-level=high` roda em CI (não-bloqueante por enquanto)
+- `npm audit --omit=dev --audit-level=high` roda localmente no pipeline pré-PR
+  (o gate de CI que o executava saiu com os workflows em ago/2026)
 - Single-instance lock via `app.requestSingleInstanceLock()`
 
 ## Fora de escopo
