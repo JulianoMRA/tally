@@ -46,6 +46,37 @@ de rede e sem código remoto:
   (o gate de CI que o executava saiu com os workflows em ago/2026)
 - Single-instance lock via `app.requestSingleInstanceLock()`
 
+## Advisories aceitos
+
+Advisories que o `npm audit` reporta e que foram avaliados e **aceitos**, com o
+motivo. Revisar a cada release: se a premissa mudar, o advisory volta a valer.
+
+### GHSA-qwww-vcr4-c8h2 — React Router RSC Mode CSRF Bypass (high)
+
+**Status:** aceito. Afeta `react-router` de 7.12.0 a 8.2.0; a correção está na
+8.3.0.
+
+**Por que não corrigimos.** O advisory é específico do **modo RSC** (React
+Server Components), que exige um runtime de servidor executando actions. Tally
+não tem servidor: é Electron local, o roteamento usa `createHashRouter`
+(`src/renderer/router.tsx`) e não há SSR, RSC, loaders remotos nem actions. A
+condição necessária para explorar não existe neste app.
+
+**Por que não subimos mesmo assim.** Não é bump de versão. O `react-router-dom`
+foi descontinuado na 7.18.2 e consolidado no pacote `react-router`, e o v8 exige
+`react >= 19.2.7` e `node >= 22.22.0`. Corrigir um advisory inaplicável custaria
+uma migração tripla — troca de pacote, React 18 → 19 com todo o ecossistema
+junto, e subir o piso de Node do projeto — com risco de regressão real em troca
+de risco de segurança nulo.
+
+**O que foi feito.** `react-router-dom` subiu para 7.18.2 (ago/2026), o que
+eliminou os outros quatro advisories da mesma dependência, incluindo o único
+com aplicabilidade real aqui: negação de serviço por route matching ineficiente
+(high, corrigido na 7.18.0).
+
+**Nota para quem rodar o audit.** `npm audit fix --force` sugere **downgrade**
+para 7.11.0. Não aceitar: reintroduz o DoS e os três moderates.
+
 ## Fora de escopo
 
 - Engenharia social, phishing usando o nome Tally
