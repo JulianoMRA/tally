@@ -7,6 +7,12 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    // O default do vitest é `!process.env.CI`. Sem CI desde ago/2026, isso
+    // liberava .only para sempre: um `it.only` esquecido deixava a suíte verde
+    // pulando o resto do arquivo (medido: 693 passed | 13 skipped, exit 0).
+    // Para depurar um teste isolado, rode com TALLY_ALLOW_ONLY=1 (mesma
+    // variável do playwright.config.ts).
+    allowOnly: !!process.env.TALLY_ALLOW_ONLY,
     coverage: {
       provider: 'v8',
       include: ['src/domain/**', 'src/persistence/**'],

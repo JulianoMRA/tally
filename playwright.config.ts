@@ -21,7 +21,11 @@ export default defineConfig({
   // zero retries — a rede de proteção saiu junto com o CI, e a flake que ela
   // absorvia virou falha visível em toda execução completa.
   retries: 1,
-  forbidOnly: false,
+  // Um .only esquecido faz a suite passar verde testando quase nada. Era
+  // `!!process.env.CI`, ou seja, sem gate nenhum desde que os workflows saíram.
+  // Agora barra por padrão; para depurar um teste isolado, rode com
+  // TALLY_ALLOW_ONLY=1 (mesma variável do vitest.config.ts).
+  forbidOnly: !process.env.TALLY_ALLOW_ONLY,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     screenshot: 'only-on-failure',
