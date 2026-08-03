@@ -2,7 +2,7 @@
 
 > A desktop app for monthly personal finance tracking. Replaces the spreadsheet I duplicated every month with something that does the math itself.
 
-![status](https://img.shields.io/badge/status-in%20development-yellow)
+![status](https://img.shields.io/badge/status-released%20%C2%B7%20in%20daily%20use-green)
 ![license](https://img.shields.io/badge/license-MIT-blue)
 
 Tally is a personal project built to replace a Google Sheets workflow that demanded manual work every month: copying the previous month's tab, incrementing parcela numbers (`7/12` → `8/12`), and recalculating credit card statement totals. Tally does all of it automatically.
@@ -62,7 +62,7 @@ Bug reports during development follow a structured template (preconditions, step
 
 ## Status
 
-This project is in active development. The implementation is being delivered in vertical slices — each one a thin end-to-end feature with UI, logic, persistence, and tests.
+Tally has been in daily real use since **v1.0.0** and is currently at **v1.1.1**. The MVP and the whole V2 scope in [`PRD.md`](./PRD.md) are delivered; development continues in releases. The implementation was built in vertical slices — each one a thin end-to-end feature with UI, logic, persistence, and tests.
 
 ### Roadmap
 
@@ -89,6 +89,13 @@ This project is in active development. The implementation is being delivered in 
 - [x] **Bloco D — Orçamento por categoria** — limite mensal por categoria com status visual (ok/alerta/estourado, alerta >= 80%) integrado aos Relatórios; domínio puro em TDD, migration 0005 (índices parciais para o limite global), repositório, IPC tipado e cobertura no export/import
 - [x] **Slice 19 — Reativação dos E2E** — os 6 specs Playwright pulados (`gastos`, `rendas`, `relatorios`, `assinaturas`, `excluir-despesa`, `visao-mensal`) realinhados à UI atual + novo spec de orçamento. 12 specs E2E verdes, zero skips
 - [x] **Hardening pós-auditoria (jun/2026)** — auditoria completa do app fechada em 6 PRs: pagar fatura sincroniza parcelas para Paga (RN-06 passa a valer de fato, com migration de backfill e proteção de fatura Fechada contra edição/exclusão); datas "hoje" no fuso local em vez de UTC; feedback de erro em todas as telas (helper `mensagem-erro` + toasts); exclusão de recebimento avulso limpa a renda órfã; import valida cada tabela com Zod; E2E em paralelo (lock por `userData` isolado) + typecheck dos specs; CI matriz ubuntu + windows com E2E no Windows
+
+From here the project stopped delivering in slices and started delivering in releases:
+
+- [x] **v1.0.0** (jun/2026) — version cut after the post-audit hardening above. Built locally with electron-builder; never published to GitHub Releases, since the release automation only arrived during v1.1.0
+- [x] **v1.1.0** (jul/2026) — the 11-phase post-audit improvement plan, which **closes the entire V2 scope** in [`PRD.md`](./PRD.md): per-category budgets with monthly overrides, CSV/PDF export, configurable automatic backups, and free-form tags/notes. Plus auto-update via GitHub Releases, a CSV importer for migrating off the spreadsheet, OS notifications for statement closing/due dates, and a Settings screen
+- [x] **v1.1.1** (jul/2026) — fix release: the Saídas row actions were unreachable, not merely hidden, when the table outgrew its panel
+- [x] **Post-1.1.1 (ago/2026)** — repository cleanup: color tokens for status surfaces, removal of the dark theme that never shipped a switcher, design reference material moved under `docs/`, and removal of the hosted CI (the pipeline now runs locally — see [`CONTRIBUTING.md`](./CONTRIBUTING.md))
 
 Detalhes técnicos de cada slice em [`CHANGELOG.md`](./CHANGELOG.md).
 
