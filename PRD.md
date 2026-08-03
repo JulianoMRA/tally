@@ -1,8 +1,13 @@
 # PRD — App Desktop de Controle Financeiro Pessoal
 
-> **Status:** Em desenvolvimento ativo.
+> **Status:** Em uso real desde a v1.0.0. Desenvolvimento continua por releases.
 > **Owner:** Juliano Melo Rodrigues Alencar
-> **Última atualização:** 24 de maio de 2026 (Slice 15 — hardening, QA e cleanup pós-MVP)
+> **Última atualização:** 3 de agosto de 2026 (remoção do CI hospedado — ver 8.4)
+>
+> **Estado atual:** v1.1.1 publicada. MVP e V2 integralmente entregues (ver 3.2
+> e o quadro de releases na seção 9). O repositório não tem mais automação
+> hospedada: os workflows do GitHub Actions foram removidos em ago/2026 e o
+> pipeline roda localmente (8.4), incluindo a publicação de release (8.6).
 >
 > **Mudanças no Slice 15:** isolação E2E (sem mais poluição do banco real),
 > hardening do Electron (CSP estrita, contextIsolation, sandbox), consolidação
@@ -382,7 +387,16 @@ Ordem proposta para implementação. Cada slice é uma fatia ponta-a-ponta (UI +
 | 14   | Hardening ✅                | electron-builder NSIS+portable, RNF-06 (80% domain / 60% global), primitivos Toast/ConfirmDialog/useEscapeKey                                                         |
 | 14.1 | Polimento pós-MVP ✅        | Bugs visuais, RF-DES-10 (editar despesa), RF-REN-06 (editar renda), adiantar parcela por linha, ordenação client-side, descrição em FaturaDetalhe, Rendas em 2 Panels |
 
-V2 (orçamento, exportação, backup, tags) entra após o slice 14.
+Após o slice 14 o projeto saiu do modelo de slices e passou a entregar por
+release. O que veio depois:
+
+| Release | Entrega principal                                                                                                                                                                                     |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v1.0.0  | Auditoria completa do app fechada em 6 PRs (jun/2026): RN-06 passa a valer de fato, proteção de fatura Fechada, datas no fuso local, feedback de erro em todas as telas                               |
+| v1.1.0  | As 11 fases do plano de melhorias (jul/2026). **Fecha todo o V2 do PRD** — orçamento, exportação, backup e tags/notas —, mais auto-update, importador CSV, notificações de fatura e página de Ajustes |
+| v1.1.1  | Release de correção (jul/2026): ações da tabela de Saídas inalcançáveis por `overflow: hidden`                                                                                                        |
+
+O V2 da seção 3.2 está integralmente entregue.
 
 ---
 
