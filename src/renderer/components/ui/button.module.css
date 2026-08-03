@@ -73,6 +73,6 @@
 }
 
 .danger:hover:not(:disabled) {
-  background: #fdf0ee;
+  background: var(--expense-bg);
   border-color: var(--expense);
 }

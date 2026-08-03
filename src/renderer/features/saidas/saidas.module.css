@@ -36,8 +36,8 @@
 }
 
 .successBanner {
-  background: #eef4ee;
-  border: 1px solid #c0d4c2;
+  background: var(--income-bg);
+  border: 1px solid var(--income-border);
   border-radius: var(--r-2);
   padding: 12px 16px;
   font-size: 13px;

@@ -20,26 +20,26 @@
 /* Variants */
 .open {
   color: var(--pending);
-  background: #fdf6e3;
-  border-color: #e8d9a8;
+  background: var(--pending-bg);
+  border-color: var(--pending-border);
 }
 .open .dot {
   background: var(--pending);
 }
 
 .closed {
-  color: #5a4a8a;
-  background: #f0edf8;
-  border-color: #cfc8e8;
+  color: var(--closed);
+  background: var(--closed-bg);
+  border-color: var(--closed-border);
 }
 .closed .dot {
-  background: #5a4a8a;
+  background: var(--closed);
 }
 
 .paid {
   color: var(--paid);
-  background: #eef4ee;
-  border-color: #c0d4c2;
+  background: var(--income-bg);
+  border-color: var(--income-border);
 }
 .paid .dot {
   background: var(--paid);
@@ -47,8 +47,8 @@
 
 .pending {
   color: var(--pending);
-  background: #fdf6e3;
-  border-color: #e8d9a8;
+  background: var(--pending-bg);
+  border-color: var(--pending-border);
 }
 .pending .dot {
   background: var(--pending);
@@ -56,8 +56,8 @@
 
 .income {
   color: var(--income);
-  background: #eef4ee;
-  border-color: #c0d4c2;
+  background: var(--income-bg);
+  border-color: var(--income-border);
 }
 .income .dot {
   background: var(--income);
@@ -65,8 +65,8 @@
 
 .expense {
   color: var(--expense);
-  background: #fdf0ee;
-  border-color: #e8c0bb;
+  background: var(--expense-bg);
+  border-color: var(--expense-border);
 }
 .expense .dot {
   background: var(--expense);
@@ -74,8 +74,8 @@
 
 .active {
   color: var(--income);
-  background: #eef4ee;
-  border-color: #c0d4c2;
+  background: var(--income-bg);
+  border-color: var(--income-border);
 }
 .active .dot {
   background: var(--income);
@@ -91,10 +91,10 @@
 }
 
 .projection {
-  color: #5a4a8a;
-  background: #f0edf8;
-  border-color: #cfc8e8;
+  color: var(--closed);
+  background: var(--closed-bg);
+  border-color: var(--closed-border);
 }
 .projection .dot {
-  background: #5a4a8a;
+  background: var(--closed);
 }

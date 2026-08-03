@@ -453,8 +453,8 @@
 }
 
 .ajudaChipRecebida {
-  background: #eef4ee;
-  border-color: #c0d4c2;
+  background: var(--income-bg);
+  border-color: var(--income-border);
   color: var(--income);
 }
 
