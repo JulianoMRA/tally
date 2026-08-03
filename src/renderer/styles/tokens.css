@@ -33,6 +33,19 @@
   --pending: #a87b2c;
   --paid: #5b7a5e;
 
+  /* Superfícies semânticas — fundo + borda dos badges e banners de status.
+     Pareadas com os semânticos acima. --closed é o roxo de Fechada/Projeção,
+     que não tinha token. */
+  --income-bg: #eef4ee;
+  --income-border: #c0d4c2;
+  --pending-bg: #fdf6e3;
+  --pending-border: #e8d9a8;
+  --expense-bg: #fdf0ee;
+  --expense-border: #e8c0bb;
+  --closed: #5a4a8a;
+  --closed-bg: #f0edf8;
+  --closed-border: #cfc8e8;
+
   /* Typography */
   --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
