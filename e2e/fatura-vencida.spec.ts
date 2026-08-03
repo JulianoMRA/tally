@@ -8,6 +8,11 @@ import type { Page } from '@playwright/test'
  * fixa no passado — o selo aparece de forma estável independentemente de quando
  * o teste roda. A asserção usa /vencida há/ (não o número de dias) justamente
  * para não depender da distância até hoje.
+ *
+ * Pelo mesmo motivo a navegação da Visão mensal é absoluta (preenche o input de
+ * mês) e não relativa. A versão original clicava duas vezes em "Mês anterior"
+ * com o comentário "jul -> jun -> maio": passou verde em julho/2026 e quebrou
+ * sozinha na virada para agosto, quando dois cliques passaram a cair em junho.
  */
 
 async function ir(page: Page, link: string) {
@@ -44,10 +49,11 @@ test.describe('Fatura vencida', () => {
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
     await expect(page.getByRole('cell', { name: 'Compra retroativa de maio' })).toBeVisible()
 
-    // Visão mensal em maio/2026 (jul -> jun -> maio): o card exibe o selo.
+    // Visão mensal em maio/2026: o card exibe o selo. O mês vai direto no
+    // input (exact: true — "Mês anterior" e "Próximo mês" também casariam),
+    // nunca por cliques relativos ao mês corrente.
     await ir(page, 'Visão mensal')
-    await page.getByRole('button', { name: 'Mês anterior' }).click()
-    await page.getByRole('button', { name: 'Mês anterior' }).click()
+    await page.getByLabel('Mês', { exact: true }).fill('2026-05')
     await expect(page.getByText('Maio de 2026')).toBeVisible()
     await expect(page.getByText(/vencida há \d+ dias?/)).toBeVisible()
 
