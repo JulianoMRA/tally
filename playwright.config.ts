@@ -2,16 +2,26 @@ import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
-  // CI runner é mais lento que dev local; 60s evita flakes.
+  // Cold start do Electron sob contenção passa dos 30s default.
   timeout: 60000,
   expect: { timeout: 10000 },
   // Cada teste sobe sua própria instância do Electron com userData isolado
   // (TALLY_USER_DATA é aplicado antes do requestSingleInstanceLock no main),
-  // então os specs podem rodar em paralelo. 2 no CI (runner de 2 vCPUs);
-  // 4 localmente — instâncias Electron são pesadas, não vale saturar.
-  workers: process.env.CI ? 2 : 4,
-  retries: process.env.CI ? 2 : 0,
-  forbidOnly: !!process.env.CI,
+  // então os specs podem rodar em paralelo. 4 workers — instâncias Electron
+  // são pesadas, não vale saturar mais que isso.
+  workers: 4,
+  // 1 retry por contenção de recurso, não para mascarar teste ruim: 4 Electron
+  // concorrentes disputando CPU e I/O fazem o seed dos specs mais pesados
+  // (saidas-acoes-visiveis semeia 6 formulários, três vezes em paralelo)
+  // estourar o expect.timeout de 10s de forma intermitente. Falha que se repete
+  // na segunda tentativa é falha de verdade e continua vermelha.
+  //
+  // Isto era `process.env.CI ? 2 : 0`. Com os workflows removidos em ago/2026 a
+  // variável CI nunca mais é setada, então a suíte passou a rodar sempre com
+  // zero retries — a rede de proteção saiu junto com o CI, e a flake que ela
+  // absorvia virou falha visível em toda execução completa.
+  retries: 1,
+  forbidOnly: false,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     screenshot: 'only-on-failure',
