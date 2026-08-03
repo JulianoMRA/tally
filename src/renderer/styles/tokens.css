@@ -1,6 +1,7 @@
 /* Tally — Design tokens
-   Cream theme (default / :root) · Forest theme ([data-theme="forest"])
-   Forest tokens are defined but the switcher ships in Slice 14.
+   Tema único: Cream. (Um tema escuro chegou a ser esboçado como
+   [data-theme="forest"], mas o switcher nunca foi implementado; os overrides
+   mortos foram removidos. Reintroduzir junto com o switcher quando priorizado.)
    ============================================================== */
 
 :root {
@@ -60,24 +61,4 @@
   /* Shadows — soft, daylight */
   --shadow-1: 0 1px 0 rgba(15, 26, 20, 0.04), 0 1px 2px rgba(15, 26, 20, 0.04);
   --shadow-2: 0 1px 0 rgba(15, 26, 20, 0.04), 0 8px 24px -8px rgba(15, 26, 20, 0.12);
-}
-
-/* Forest theme — activate with data-theme="forest" on <html>. Ships in Slice 14. */
-[data-theme='forest'] {
-  --bg: #0b100d;
-  --bg-elev: #131a15;
-  --bg-sunk: #070b08;
-  --ink: #e8e3d8;
-  --ink-2: #c7c2b5;
-  --ink-3: #8e9189;
-  --ink-4: #595d55;
-  --rule: #1f2722;
-  --rule-strong: #2c342e;
-
-  --forest: #e8e3d8;
-  --sage: #91a992;
-  --bronze: #c9a76b;
-
-  --shadow-1: 0 1px 0 rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-2: 0 12px 32px -8px rgba(0, 0, 0, 0.5);
 }
