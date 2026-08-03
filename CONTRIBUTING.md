@@ -109,6 +109,23 @@ npm run gen:icon       # Regenera build/icon.ico a partir do SVG do brand
 Coverage mínima (thresholds no `vitest.config.ts`): **80% no domain**
 (RN-01..RN-08), **60% global**. `npm run test:coverage` falha abaixo disso.
 
+### `.only` é barrado
+
+Vitest e Playwright quebram se encontrarem um teste focado (`it.only`,
+`test.only`). É proposital: um `.only` esquecido deixa a suíte **verde testando
+quase nada** — no vitest, um único `it.only` fez o run passar com
+`693 passed | 13 skipped` e exit 0.
+
+Para depurar um teste isolado, use a escotilha:
+
+```bash
+TALLY_ALLOW_ONLY=1 npm run test:run
+```
+
+A mesma variável vale para `npm run e2e` e para o Stryker. Prefira, quando der,
+filtrar sem `.only` — `npx playwright test e2e/smoke.spec.ts` ou
+`npx vitest run -t "nome do teste"` — porque aí não há o que esquecer no commit.
+
 ---
 
 ## Pipeline local

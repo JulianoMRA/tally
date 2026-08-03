@@ -6,6 +6,9 @@ import { defineConfig } from 'vitest/config'
 // perTest so precisa dos testes que cobrem os arquivos mutados.
 export default defineConfig({
   test: {
-    include: ['src/domain/**/__tests__/**/*.test.ts']
+    include: ['src/domain/**/__tests__/**/*.test.ts'],
+    // Mesmo gate do vitest.config.ts: um .only escaparia daqui como score de
+    // mutação calculado sobre um subconjunto, sem nada indicando isso.
+    allowOnly: !!process.env.TALLY_ALLOW_ONLY
   }
 })
