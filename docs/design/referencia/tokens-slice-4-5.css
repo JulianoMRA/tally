@@ -1,5 +1,16 @@
-/* Tally — Design tokens
-   Two-theme system: Cream (primary, daytime) and Forest (dark, focused)
+/* Tally — Design tokens · SNAPSHOT HISTÓRICO DO SLICE 4.5
+   ==============================================================
+   NÃO É A FONTE DE VERDADE. A paleta viva do app está em
+   src/renderer/styles/tokens.css e já divergiu deste arquivo:
+
+   - --ink-3 aqui é #6b6f66, que reprovava no WCAG AA (4.3:1 sobre --bg);
+     no app é #5f6359 (~5.1:1).
+   - o tema Forest abaixo nunca ganhou switcher e foi removido do app.
+   - as superfícies semânticas (--income-bg, --closed, etc.) não existem aqui.
+
+   Este arquivo é mantido só para o brand book e o mockup renderizarem como
+   foram desenhados em mai/2026. Não edite para "sincronizar": se a mudança
+   é de produto, ela vai em src/renderer/styles/tokens.css.
    ============================================================== */
 
 :root {
