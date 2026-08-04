@@ -3,6 +3,7 @@ import type { StatusRecebimento } from '@domain/entities/recebimento'
 import type { Renda } from '@domain/entities/renda'
 import type { CriarRendaAvulsaInput, CriarRendaRecorrenteInput } from '@shared/ipc/renda'
 import type { CriarRecebimentoAvulsoInput, RecebimentoComContexto } from '@shared/ipc/recebimento'
+import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
 import {
   Button,
@@ -34,7 +35,7 @@ export default function RendasPage() {
   const [novoAvulsoAberto, setNovoAvulsoAberto] = useState(false)
 
   return (
-    <div>
+    <PageContainer>
       <PageHead
         title="Rendas"
         subtitle="Recebimentos do mês e fontes de entrada — recorrentes (bolsa, salário) ou avulsas (freela, presente)."
@@ -72,7 +73,7 @@ export default function RendasPage() {
       ) : (
         <AbaFontes />
       )}
-    </div>
+    </PageContainer>
   )
 }
 
@@ -131,7 +132,7 @@ function AbaRecebimentos({
   const total = totalEsperado + totalRecebido
 
   return (
-    <div className={styles.body}>
+    <>
       <div className={styles.toolbar}>
         <Field label="Mês">
           <Input type="month" value={mes} onChange={(e) => setMes(e.target.value)} />
@@ -236,7 +237,7 @@ function AbaRecebimentos({
           onCancel={() => setAlvoExcluir(null)}
         />
       )}
-    </div>
+    </>
   )
 }
 
@@ -284,7 +285,7 @@ function AbaFontes() {
 
   return (
     <>
-      <div style={{ padding: '0 32px 12px' }}>
+      <div className={styles.fontesToggle}>
         <label className={styles.toggleLabel}>
           <input
             type="checkbox"

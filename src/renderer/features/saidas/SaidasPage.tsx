@@ -10,6 +10,7 @@ import type {
   DespesaUnicaForaCartaoInput,
   DespesaComTags
 } from '@shared/ipc/despesa'
+import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
 import {
   Badge,
@@ -294,208 +295,204 @@ export default function SaidasPage() {
   }
 
   return (
-    <div>
+    <PageContainer width="wide">
       <PageHead
         title="Saídas"
         subtitle="Cadastre e gerencie despesas, gastos e assinaturas em um só lugar."
       />
 
-      <div className={styles.body}>
-        <div className={styles.layout}>
-          <div className={styles.colCadastro}>
-            {ultimaRegistrada && (
-              <div className={styles.successBanner}>
-                <strong>{ultimaRegistrada.descricao}</strong>
-                {ultimaRegistrada.formaForaCartao ? (
-                  <>
-                    {' '}
-                    registrada via <strong>{ultimaRegistrada.formaForaCartao}</strong> em{' '}
-                    <strong>{formatarMesReferencia(ultimaRegistrada.mesReferencia)}</strong>.
-                  </>
-                ) : (
-                  <>
-                    {ultimaRegistrada.parcelas
-                      ? ` registrada com ${ultimaRegistrada.parcelas} parcelas a partir de `
-                      : ' registrada na fatura '}
-                    <strong>{formatarMesReferencia(ultimaRegistrada.mesReferencia)}</strong> ·
-                    cartão <strong>{ultimaRegistrada.cartaoNome}</strong>.
-                  </>
-                )}
-              </div>
-            )}
+      <div className={styles.layout}>
+        <div className={styles.colCadastro}>
+          {ultimaRegistrada && (
+            <div className={styles.successBanner}>
+              <strong>{ultimaRegistrada.descricao}</strong>
+              {ultimaRegistrada.formaForaCartao ? (
+                <>
+                  {' '}
+                  registrada via <strong>{ultimaRegistrada.formaForaCartao}</strong> em{' '}
+                  <strong>{formatarMesReferencia(ultimaRegistrada.mesReferencia)}</strong>.
+                </>
+              ) : (
+                <>
+                  {ultimaRegistrada.parcelas
+                    ? ` registrada com ${ultimaRegistrada.parcelas} parcelas a partir de `
+                    : ' registrada na fatura '}
+                  <strong>{formatarMesReferencia(ultimaRegistrada.mesReferencia)}</strong> · cartão{' '}
+                  <strong>{ultimaRegistrada.cartaoNome}</strong>.
+                </>
+              )}
+            </div>
+          )}
 
-            <DespesaForm
-              key={dupSeq}
-              cartoes={cartoesAtivos}
-              categorias={categorias}
-              preenchimento={preenchimento ?? undefined}
-              onSalvarUnica={handleSalvarUnica}
-              onSalvarUnicaForaCartao={handleSalvarUnicaForaCartao}
-              onSalvarParcelada={handleSalvarParcelada}
-              onSalvarEmAndamento={handleSalvarEmAndamento}
-              onSalvarAssinatura={handleSalvarAssinatura}
-            />
+          <DespesaForm
+            key={dupSeq}
+            cartoes={cartoesAtivos}
+            categorias={categorias}
+            preenchimento={preenchimento ?? undefined}
+            onSalvarUnica={handleSalvarUnica}
+            onSalvarUnicaForaCartao={handleSalvarUnicaForaCartao}
+            onSalvarParcelada={handleSalvarParcelada}
+            onSalvarEmAndamento={handleSalvarEmAndamento}
+            onSalvarAssinatura={handleSalvarAssinatura}
+          />
+        </div>
+
+        <div className={styles.colLista}>
+          <div className={styles.toolbar}>
+            {FILTROS.map((f) => (
+              <Button
+                key={f.chave}
+                variant={filtro === f.chave ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => setFiltro(f.chave)}
+              >
+                {f.rotulo}
+              </Button>
+            ))}
+            {filtro === 'foraCartao' && (
+              <Field label="Mês">
+                <Input type="month" value={mes} onChange={(e) => setMes(e.target.value)} />
+              </Field>
+            )}
+            {tagsDisponiveis.length > 0 && (
+              <Select
+                value={tagFiltro}
+                onChange={(e) => setTagFiltro(e.target.value)}
+                aria-label="Filtrar por tag"
+              >
+                <option value="">Todas as tags</option>
+                {tagsDisponiveis.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </Select>
+            )}
+            <div className={styles.buscaWrap}>
+              <Input
+                type="search"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar por descrição…"
+                aria-label="Buscar saídas"
+              />
+            </div>
           </div>
 
-          <div className={styles.colLista}>
-            <div className={styles.toolbar}>
-              {FILTROS.map((f) => (
-                <Button
-                  key={f.chave}
-                  variant={filtro === f.chave ? 'primary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setFiltro(f.chave)}
-                >
-                  {f.rotulo}
-                </Button>
-              ))}
-              {filtro === 'foraCartao' && (
-                <Field label="Mês">
-                  <Input type="month" value={mes} onChange={(e) => setMes(e.target.value)} />
-                </Field>
-              )}
-              {tagsDisponiveis.length > 0 && (
-                <Select
-                  value={tagFiltro}
-                  onChange={(e) => setTagFiltro(e.target.value)}
-                  aria-label="Filtrar por tag"
-                >
-                  <option value="">Todas as tags</option>
-                  {tagsDisponiveis.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </Select>
-              )}
-              <div className={styles.buscaWrap}>
-                <Input
-                  type="search"
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  placeholder="Buscar por descrição…"
-                  aria-label="Buscar saídas"
-                />
-              </div>
-            </div>
+          {erro && <p className={styles.erro}>{erro}</p>}
 
-            {erro && <p className={styles.erro}>{erro}</p>}
-
-            <Panel title="Lançamentos" meta={`${itensOrdenados.length}`} flush>
-              {loading ? (
-                <EmptyState title="Carregando…" />
-              ) : itensOrdenados.length === 0 ? (
-                <EmptyState title="Nenhuma saída para este filtro." />
-              ) : (
-                <div className={styles.tabelaWrap}>
-                  <table className={styles.tabela}>
-                    <thead>
-                      <tr>
-                        <th className={styles.thSortavel} onClick={() => handleSort('descricao')}>
-                          Descrição{sortIndicator('descricao')}
-                        </th>
-                        <th>Tipo</th>
-                        <th>Categoria</th>
-                        <th className={styles.thSortavel} onClick={() => handleSort('data')}>
-                          Data{sortIndicator('data')}
-                        </th>
-                        <th
-                          className={`${styles.colValor} ${styles.thSortavel}`}
-                          onClick={() => handleSort('valor')}
-                        >
-                          Valor{sortIndicator('valor')}
-                        </th>
-                        <th className={styles.colAcoes} aria-label="Ações" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {itensOrdenados.map((d) => {
-                        const ehAssinatura = d.tipo === 'Assinatura'
-                        return (
-                          <tr key={d.id} className={!d.ativa ? styles.itemCancelada : undefined}>
-                            <td>
-                              <div className={styles.descricaoCell}>
-                                <span
-                                  className={styles.chip}
-                                  style={{ background: corCartao(d.cartaoId) }}
-                                />
-                                <span>{d.descricao}</span>
-                                {!d.ativa && <Badge variant="archived" label="Cancelada" />}
+          <Panel title="Lançamentos" meta={`${itensOrdenados.length}`} flush>
+            {loading ? (
+              <EmptyState title="Carregando…" />
+            ) : itensOrdenados.length === 0 ? (
+              <EmptyState title="Nenhuma saída para este filtro." />
+            ) : (
+              <div className={styles.tabelaWrap}>
+                <table className={styles.tabela}>
+                  <thead>
+                    <tr>
+                      <th className={styles.thSortavel} onClick={() => handleSort('descricao')}>
+                        Descrição{sortIndicator('descricao')}
+                      </th>
+                      <th>Tipo</th>
+                      <th>Categoria</th>
+                      <th className={styles.thSortavel} onClick={() => handleSort('data')}>
+                        Data{sortIndicator('data')}
+                      </th>
+                      <th
+                        className={`${styles.colValor} ${styles.thSortavel}`}
+                        onClick={() => handleSort('valor')}
+                      >
+                        Valor{sortIndicator('valor')}
+                      </th>
+                      <th className={styles.colAcoes} aria-label="Ações" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {itensOrdenados.map((d) => {
+                      const ehAssinatura = d.tipo === 'Assinatura'
+                      return (
+                        <tr key={d.id} className={!d.ativa ? styles.itemCancelada : undefined}>
+                          <td>
+                            <div className={styles.descricaoCell}>
+                              <span
+                                className={styles.chip}
+                                style={{ background: corCartao(d.cartaoId) }}
+                              />
+                              <span>{d.descricao}</span>
+                              {!d.ativa && <Badge variant="archived" label="Cancelada" />}
+                            </div>
+                            {d.tags.length > 0 && (
+                              <div className={styles.tagCell}>
+                                {d.tags.map((t) => (
+                                  <span key={t} className={styles.tagCellChip}>
+                                    {t}
+                                  </span>
+                                ))}
                               </div>
-                              {d.tags.length > 0 && (
-                                <div className={styles.tagCell}>
-                                  {d.tags.map((t) => (
-                                    <span key={t} className={styles.tagCellChip}>
-                                      {t}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </td>
-                            <td>
-                              <span className={styles.tagTipo}>{rotuloTipo(d)}</span>
-                            </td>
-                            <td>{nomeCategoria(d.categoriaId)}</td>
-                            <td className="mono">{formatarDataIso(d.dataCompra)}</td>
-                            <td className={`${styles.colValor} tnum`}>
-                              {formatBRL(d.valorCentavos)}
-                              {ehAssinatura ? '/mês' : ''}
-                            </td>
-                            <td className={styles.colAcoes}>
-                              <div className={styles.rowActions}>
-                                <Button variant="ghost" size="sm" onClick={() => duplicar(d)}>
-                                  Duplicar
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={() => setNotaTags(d)}>
-                                  Nota/Tags
-                                </Button>
-                                {ehAssinatura && d.ativa && (
-                                  <>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setEditandoAssinatura(d)}
-                                    >
-                                      Editar
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        setConfirmacao({ tipo: 'cancelar', despesa: d })
-                                      }
-                                    >
-                                      Cancelar
-                                    </Button>
-                                  </>
-                                )}
-                                {!ehAssinatura && (
+                            )}
+                          </td>
+                          <td>
+                            <span className={styles.tagTipo}>{rotuloTipo(d)}</span>
+                          </td>
+                          <td>{nomeCategoria(d.categoriaId)}</td>
+                          <td className="mono">{formatarDataIso(d.dataCompra)}</td>
+                          <td className={`${styles.colValor} tnum`}>
+                            {formatBRL(d.valorCentavos)}
+                            {ehAssinatura ? '/mês' : ''}
+                          </td>
+                          <td className={styles.colAcoes}>
+                            <div className={styles.rowActions}>
+                              <Button variant="ghost" size="sm" onClick={() => duplicar(d)}>
+                                Duplicar
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => setNotaTags(d)}>
+                                Nota/Tags
+                              </Button>
+                              {ehAssinatura && d.ativa && (
+                                <>
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => setEditandoDespesa(d)}
+                                    onClick={() => setEditandoAssinatura(d)}
                                   >
                                     Editar
                                   </Button>
-                                )}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setConfirmacao({ tipo: 'cancelar', despesa: d })}
+                                  >
+                                    Cancelar
+                                  </Button>
+                                </>
+                              )}
+                              {!ehAssinatura && (
                                 <Button
-                                  variant="danger"
+                                  variant="ghost"
                                   size="sm"
-                                  onClick={() => setConfirmacao({ tipo: 'excluir', despesa: d })}
+                                  onClick={() => setEditandoDespesa(d)}
                                 >
-                                  Excluir
+                                  Editar
                                 </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </Panel>
-          </div>
+                              )}
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => setConfirmacao({ tipo: 'excluir', despesa: d })}
+                              >
+                                Excluir
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Panel>
         </div>
       </div>
 
@@ -545,6 +542,6 @@ export default function SaidasPage() {
           onCancel={() => setConfirmacao(null)}
         />
       )}
-    </div>
+    </PageContainer>
   )
 }

@@ -1,7 +1,3 @@
-.body {
-  padding: 0 32px 32px;
-}
-
 .form {
   background: var(--bg-elev);
   border: 1px solid var(--rule);

@@ -3,7 +3,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 28px 32px 20px;
+  /* Sem padding horizontal: quem alinha é o PageContainer que o envolve. */
+  padding: 28px 0 20px;
 }
 
 .text {

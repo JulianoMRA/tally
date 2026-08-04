@@ -4,6 +4,7 @@ import type { CartaoInput } from '@shared/ipc/cartao'
 import { useCartoes } from './hooks/use-cartoes'
 import { CartaoForm } from './CartaoForm'
 import { CartaoList } from './CartaoList'
+import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
 import { useToast } from '../../components/ui'
 import { mensagemErro } from '../../lib/mensagem-erro'
@@ -58,7 +59,7 @@ export default function CartoesPage() {
   }
 
   return (
-    <div>
+    <PageContainer>
       <PageHead
         title="Cartões"
         subtitle="Gerencie seus cartões de crédito."
@@ -98,6 +99,6 @@ export default function CartoesPage() {
           />
         </section>
       </div>
-    </div>
+    </PageContainer>
   )
 }

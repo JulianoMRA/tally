@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { parseCsv } from '@shared/csv/parse-csv'
 import type { LinhaImportacao, ResultadoImportacao } from '@shared/ipc/importacao'
+import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
 import { Button, EmptyState, Field, Panel, Select, useToast } from '../../components/ui'
 import { mensagemErro } from '../../lib/mensagem-erro'
@@ -79,7 +80,7 @@ export default function ImportarPage() {
   }
 
   return (
-    <>
+    <PageContainer width="narrow">
       <PageHead
         title="Importar dados"
         subtitle="Migre sua planilha em lote: baixe o modelo do tipo desejado, preencha e importe. Categorias e cartões são referenciados pelo nome e precisam existir antes."
@@ -200,6 +201,6 @@ export default function ImportarPage() {
           )}
         </Panel>
       </div>
-    </>
+    </PageContainer>
   )
 }

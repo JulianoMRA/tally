@@ -61,8 +61,13 @@ voltar hex hardcoded no CSS de alguma feature.
 ### Layout
 
 - `Sidebar` — nav lateral 232px com grupos, avatar no rodapé
-- `Topbar` — header sticky 56px com breadcrumb e slot de ações
-- `PageHead` — h1 + subtítulo + slot de ações, padding 28px 32px
+- `Topbar` — header sticky 56px com breadcrumb e slot de ações (**definido mas não usado hoje**)
+- `PageHead` — h1 + subtítulo + slot de ações; padding só vertical, quem alinha é o `PageContainer`
+- `PageContainer` — **único lugar que limita a largura de uma página**. Envolve o `PageHead` e o
+  conteúdo, centraliza e aplica o padding lateral. Larguras: `narrow` (760px, formulário único —
+  Ajustes e Importar), `default` (1200px, o caso comum) e `wide` (1760px, telas densas — Visão
+  mensal e Saídas), dos tokens `--page-max-*`. Expõe `data-width` para asserção em teste e E2E.
+  Nenhum CSS de feature deve declarar `max-width` de página.
 
 ### UI Primitives (`src/renderer/components/ui/`)
 

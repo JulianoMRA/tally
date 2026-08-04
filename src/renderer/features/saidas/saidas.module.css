@@ -1,7 +1,3 @@
-.body {
-  padding: 0 32px 32px;
-}
-
 /* Empilhado por padrão; em telas largas, cadastro à esquerda e lista à direita.
    O breakpoint é 1940 (não 1440) porque a coluna da lista recebe 3/5 do espaço:
    em 1440 sobrariam ~770px para uma tabela que precisa de ~974px, ou seja, as
@@ -18,7 +14,6 @@
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
     align-items: start;
     gap: 28px;
-    max-width: 2200px;
   }
 }
 

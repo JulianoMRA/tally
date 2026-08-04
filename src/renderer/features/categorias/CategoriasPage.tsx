@@ -4,6 +4,7 @@ import type { CategoriaInput } from '@shared/ipc/categoria'
 import { useCategorias } from './hooks/use-categorias'
 import { CategoriaForm } from './CategoriaForm'
 import { CategoriaList } from './CategoriaList'
+import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
 import { useToast } from '../../components/ui'
 import { mensagemErro } from '../../lib/mensagem-erro'
@@ -58,7 +59,7 @@ export default function CategoriasPage() {
   }
 
   return (
-    <div>
+    <PageContainer>
       <PageHead
         title="Categorias"
         subtitle="Organize seus gastos e receitas por categoria."
@@ -98,6 +99,6 @@ export default function CategoriasPage() {
           />
         </section>
       </div>
-    </div>
+    </PageContainer>
   )
 }

@@ -6,6 +6,7 @@ import {
   proxMesReferencia
 } from '@domain/services/mes-referencia'
 import type { RecebimentoComContexto } from '@shared/ipc/recebimento'
+import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
 import { Badge, Button, EmptyState, Input, Panel, useToast } from '../../components/ui'
 import { mensagemErro } from '../../lib/mensagem-erro'
@@ -85,223 +86,210 @@ export default function VisaoMensalPage() {
   const ehProjecao = mesesAdiante > 0
 
   return (
-    <div>
+    <PageContainer width="wide">
       <PageHead title="Visão mensal" subtitle="Faturas, gastos, recebimentos e saldo do mês." />
 
-      <div className={styles.body}>
-        <div className={styles.header}>
-          <button
-            type="button"
-            className={styles.navBtn}
-            onClick={irAnterior}
-            aria-label="Mês anterior"
-          >
-            ←
-          </button>
-          <Input
-            type="month"
-            value={mes}
-            onChange={(e) => setMes(e.target.value)}
-            className={styles.mesInput}
-            aria-label="Mês"
-          />
-          <button
-            type="button"
-            className={styles.navBtn}
-            onClick={irProximo}
-            aria-label="Próximo mês"
-          >
-            →
-          </button>
-          <span className={styles.mesLabel}>
-            {formatarMesReferencia(mes, { capitalizar: true })}
+      <div className={styles.header}>
+        <button
+          type="button"
+          className={styles.navBtn}
+          onClick={irAnterior}
+          aria-label="Mês anterior"
+        >
+          ←
+        </button>
+        <Input
+          type="month"
+          value={mes}
+          onChange={(e) => setMes(e.target.value)}
+          className={styles.mesInput}
+          aria-label="Mês"
+        />
+        <button
+          type="button"
+          className={styles.navBtn}
+          onClick={irProximo}
+          aria-label="Próximo mês"
+        >
+          →
+        </button>
+        <span className={styles.mesLabel}>{formatarMesReferencia(mes, { capitalizar: true })}</span>
+        {ehProjecao && (
+          <span className={styles.headerBadges}>
+            <Badge variant="projection" />
+            {mesesAdiante > 12 && (
+              <span className={styles.distanteBadge}>{`${mesesAdiante} meses adiante`}</span>
+            )}
           </span>
-          {ehProjecao && (
-            <span className={styles.headerBadges}>
-              <Badge variant="projection" />
-              {mesesAdiante > 12 && (
-                <span className={styles.distanteBadge}>{`${mesesAdiante} meses adiante`}</span>
-              )}
-            </span>
-          )}
-          <span className={styles.headerAcoes}>
-            <Button variant="ghost" size="sm" disabled={exportando} onClick={() => exportar('csv')}>
-              Exportar CSV
-            </Button>
-            <Button variant="ghost" size="sm" disabled={exportando} onClick={() => exportar('pdf')}>
-              Exportar PDF
-            </Button>
-          </span>
-        </div>
+        )}
+        <span className={styles.headerAcoes}>
+          <Button variant="ghost" size="sm" disabled={exportando} onClick={() => exportar('csv')}>
+            Exportar CSV
+          </Button>
+          <Button variant="ghost" size="sm" disabled={exportando} onClick={() => exportar('pdf')}>
+            Exportar PDF
+          </Button>
+        </span>
+      </div>
 
-        {erro && <p className={styles.erro}>{erro}</p>}
+      {erro && <p className={styles.erro}>{erro}</p>}
 
-        {loading ? (
-          <EmptyState title="Carregando…" />
-        ) : detalhe ? (
-          <div className={styles.layout}>
-            <div className={styles.colunaOperacional}>
-              <div className={styles.cards}>
-                <div className={styles.card}>
-                  <span className={styles.cardLabel}>Entradas</span>
-                  <span className={`${styles.cardValor} ${styles.cardValorIncome}`}>
-                    {formatBRL(detalhe.totais.totalEntradasProjetadasCentavos)}
-                  </span>
-                  <span className={styles.cardMeta}>
-                    {formatBRL(detalhe.totais.totalEntradasRecebidasCentavos)} recebidas
-                  </span>
-                </div>
-
-                <div className={styles.card}>
-                  <span className={styles.cardLabel}>Faturas</span>
-                  <span className={`${styles.cardValor} ${styles.cardValorExpense}`}>
-                    {formatBRL(detalhe.faturas.reduce((s, f) => s + f.totalCentavos, 0))}
-                  </span>
-                  <span className={styles.cardMeta}>
-                    {detalhe.faturas.length} {pluralizar('cartão', detalhe.faturas.length, 'ões')}
-                  </span>
-                </div>
-
-                <div className={styles.card}>
-                  <span className={styles.cardLabel}>Gastos fora de cartão</span>
-                  <span className={`${styles.cardValor} ${styles.cardValorExpense}`}>
-                    {formatBRL(detalhe.gastosForaCartao.reduce((s, g) => s + g.valorCentavos, 0))}
-                  </span>
-                  <span className={styles.cardMeta}>
-                    {detalhe.gastosForaCartao.length}{' '}
-                    {pluralizar('lançamento', detalhe.gastosForaCartao.length)}
-                  </span>
-                </div>
+      {loading ? (
+        <EmptyState title="Carregando…" />
+      ) : detalhe ? (
+        <div className={styles.layout}>
+          <div className={styles.colunaOperacional}>
+            <div className={styles.cards}>
+              <div className={styles.card}>
+                <span className={styles.cardLabel}>Entradas</span>
+                <span className={`${styles.cardValor} ${styles.cardValorIncome}`}>
+                  {formatBRL(detalhe.totais.totalEntradasProjetadasCentavos)}
+                </span>
+                <span className={styles.cardMeta}>
+                  {formatBRL(detalhe.totais.totalEntradasRecebidasCentavos)} recebidas
+                </span>
               </div>
 
-              <SaldoCard totais={detalhe.totais} />
+              <div className={styles.card}>
+                <span className={styles.cardLabel}>Faturas</span>
+                <span className={`${styles.cardValor} ${styles.cardValorExpense}`}>
+                  {formatBRL(detalhe.faturas.reduce((s, f) => s + f.totalCentavos, 0))}
+                </span>
+                <span className={styles.cardMeta}>
+                  {detalhe.faturas.length} {pluralizar('cartão', detalhe.faturas.length, 'ões')}
+                </span>
+              </div>
 
-              <FaturasCardCompacto faturas={detalhe.faturas} />
-
-              <Panel
-                title="Recebimentos"
-                meta={`${detalhe.recebimentos.length} ${pluralizar('entrada', detalhe.recebimentos.length)}`}
-                flush
-                className={styles.panel}
-              >
-                {detalhe.recebimentos.length === 0 ? (
-                  <EmptyState title="Nenhum recebimento neste mês." />
-                ) : (
-                  <table className={styles.tabela}>
-                    <thead>
-                      <tr>
-                        <th
-                          className={styles.thSortavel}
-                          onClick={() => recebimentos.handleSort('fonte')}
-                        >
-                          Fonte{recebimentos.sortIndicator('fonte')}
-                        </th>
-                        <th
-                          className={styles.thSortavel}
-                          onClick={() => recebimentos.handleSort('data')}
-                        >
-                          Esperada{recebimentos.sortIndicator('data')}
-                        </th>
-                        <th
-                          className={`${styles.colStatus} ${styles.thSortavel}`}
-                          onClick={() => recebimentos.handleSort('status')}
-                        >
-                          Status{recebimentos.sortIndicator('status')}
-                        </th>
-                        <th
-                          className={`${styles.colValor} ${styles.thSortavel}`}
-                          onClick={() => recebimentos.handleSort('valor')}
-                        >
-                          Valor{recebimentos.sortIndicator('valor')}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recebimentos.itensOrdenados.map((r) => (
-                        <tr key={r.id}>
-                          <td>{r.rendaNome ?? '—'}</td>
-                          <td className="mono">{formatarDataIso(r.dataEsperada)}</td>
-                          <td className={styles.colStatus}>
-                            {r.status === 'Recebido' ? (
-                              <span className={styles.recebimentoStatusBadgeRecebido}>
-                                Recebido {formatarDataIso(r.dataRecebida)}
-                              </span>
-                            ) : (
-                              <span className={styles.recebimentoStatusBadgePendente}>
-                                Esperado
-                              </span>
-                            )}
-                          </td>
-                          <td className={`${styles.colValor} tnum`}>
-                            {formatBRL(r.valorCentavos)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </Panel>
-
-              <Panel
-                title="Gastos fora de cartão"
-                meta={`${detalhe.gastosForaCartao.length} ${pluralizar('lançamento', detalhe.gastosForaCartao.length)}`}
-                flush
-                className={styles.panel}
-              >
-                {detalhe.gastosForaCartao.length === 0 ? (
-                  <EmptyState title="Nenhum gasto fora de cartão neste mês." />
-                ) : (
-                  <table className={styles.tabela}>
-                    <thead>
-                      <tr>
-                        <th
-                          className={styles.thSortavel}
-                          onClick={() => gastos.handleSort('descricao')}
-                        >
-                          Descrição{gastos.sortIndicator('descricao')}
-                        </th>
-                        <th
-                          className={styles.thSortavel}
-                          onClick={() => gastos.handleSort('forma')}
-                        >
-                          Forma{gastos.sortIndicator('forma')}
-                        </th>
-                        <th className={styles.thSortavel} onClick={() => gastos.handleSort('data')}>
-                          Data{gastos.sortIndicator('data')}
-                        </th>
-                        <th
-                          className={`${styles.colValor} ${styles.thSortavel}`}
-                          onClick={() => gastos.handleSort('valor')}
-                        >
-                          Valor{gastos.sortIndicator('valor')}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {gastos.itensOrdenados.map((g) => (
-                        <tr key={g.id}>
-                          <td>{g.descricao}</td>
-                          <td className="mono">{g.formaPagamento}</td>
-                          <td className="mono">{formatarDataIso(g.dataCompra)}</td>
-                          <td className={`${styles.colValor} tnum`}>
-                            {formatBRL(g.valorCentavos)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </Panel>
+              <div className={styles.card}>
+                <span className={styles.cardLabel}>Gastos fora de cartão</span>
+                <span className={`${styles.cardValor} ${styles.cardValorExpense}`}>
+                  {formatBRL(detalhe.gastosForaCartao.reduce((s, g) => s + g.valorCentavos, 0))}
+                </span>
+                <span className={styles.cardMeta}>
+                  {detalhe.gastosForaCartao.length}{' '}
+                  {pluralizar('lançamento', detalhe.gastosForaCartao.length)}
+                </span>
+              </div>
             </div>
 
-            <div className={styles.colunaGraficos}>
-              <Suspense fallback={<EmptyState title="Carregando gráficos…" />}>
-                <PaineisRelatorios mes={mes} />
-              </Suspense>
-            </div>
+            <SaldoCard totais={detalhe.totais} />
+
+            <FaturasCardCompacto faturas={detalhe.faturas} />
+
+            <Panel
+              title="Recebimentos"
+              meta={`${detalhe.recebimentos.length} ${pluralizar('entrada', detalhe.recebimentos.length)}`}
+              flush
+              className={styles.panel}
+            >
+              {detalhe.recebimentos.length === 0 ? (
+                <EmptyState title="Nenhum recebimento neste mês." />
+              ) : (
+                <table className={styles.tabela}>
+                  <thead>
+                    <tr>
+                      <th
+                        className={styles.thSortavel}
+                        onClick={() => recebimentos.handleSort('fonte')}
+                      >
+                        Fonte{recebimentos.sortIndicator('fonte')}
+                      </th>
+                      <th
+                        className={styles.thSortavel}
+                        onClick={() => recebimentos.handleSort('data')}
+                      >
+                        Esperada{recebimentos.sortIndicator('data')}
+                      </th>
+                      <th
+                        className={`${styles.colStatus} ${styles.thSortavel}`}
+                        onClick={() => recebimentos.handleSort('status')}
+                      >
+                        Status{recebimentos.sortIndicator('status')}
+                      </th>
+                      <th
+                        className={`${styles.colValor} ${styles.thSortavel}`}
+                        onClick={() => recebimentos.handleSort('valor')}
+                      >
+                        Valor{recebimentos.sortIndicator('valor')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recebimentos.itensOrdenados.map((r) => (
+                      <tr key={r.id}>
+                        <td>{r.rendaNome ?? '—'}</td>
+                        <td className="mono">{formatarDataIso(r.dataEsperada)}</td>
+                        <td className={styles.colStatus}>
+                          {r.status === 'Recebido' ? (
+                            <span className={styles.recebimentoStatusBadgeRecebido}>
+                              Recebido {formatarDataIso(r.dataRecebida)}
+                            </span>
+                          ) : (
+                            <span className={styles.recebimentoStatusBadgePendente}>Esperado</span>
+                          )}
+                        </td>
+                        <td className={`${styles.colValor} tnum`}>{formatBRL(r.valorCentavos)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </Panel>
+
+            <Panel
+              title="Gastos fora de cartão"
+              meta={`${detalhe.gastosForaCartao.length} ${pluralizar('lançamento', detalhe.gastosForaCartao.length)}`}
+              flush
+              className={styles.panel}
+            >
+              {detalhe.gastosForaCartao.length === 0 ? (
+                <EmptyState title="Nenhum gasto fora de cartão neste mês." />
+              ) : (
+                <table className={styles.tabela}>
+                  <thead>
+                    <tr>
+                      <th
+                        className={styles.thSortavel}
+                        onClick={() => gastos.handleSort('descricao')}
+                      >
+                        Descrição{gastos.sortIndicator('descricao')}
+                      </th>
+                      <th className={styles.thSortavel} onClick={() => gastos.handleSort('forma')}>
+                        Forma{gastos.sortIndicator('forma')}
+                      </th>
+                      <th className={styles.thSortavel} onClick={() => gastos.handleSort('data')}>
+                        Data{gastos.sortIndicator('data')}
+                      </th>
+                      <th
+                        className={`${styles.colValor} ${styles.thSortavel}`}
+                        onClick={() => gastos.handleSort('valor')}
+                      >
+                        Valor{gastos.sortIndicator('valor')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {gastos.itensOrdenados.map((g) => (
+                      <tr key={g.id}>
+                        <td>{g.descricao}</td>
+                        <td className="mono">{g.formaPagamento}</td>
+                        <td className="mono">{formatarDataIso(g.dataCompra)}</td>
+                        <td className={`${styles.colValor} tnum`}>{formatBRL(g.valorCentavos)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </Panel>
           </div>
-        ) : null}
-      </div>
-    </div>
+
+          <div className={styles.colunaGraficos}>
+            <Suspense fallback={<EmptyState title="Carregando gráficos…" />}>
+              <PaineisRelatorios mes={mes} />
+            </Suspense>
+          </div>
+        </div>
+      ) : null}
+    </PageContainer>
   )
 }
