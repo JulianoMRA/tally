@@ -40,7 +40,7 @@ test.describe('Faturas — visão geral sem cartão selecionado', () => {
 
     // Painel da visão geral leva o nome do cartão e mostra a fatura do mês
     await expect(page.getByRole('heading', { name: 'Inter Overview E2E' })).toBeVisible()
-    const item = page.getByText('junho de 2026', { exact: true })
+    const item = page.getByText('Junho de 2026', { exact: true })
     await expect(item).toBeVisible()
 
     // --- Abre o detalhe diretamente pela visão geral ---

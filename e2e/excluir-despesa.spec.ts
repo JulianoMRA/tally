@@ -40,7 +40,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     const hoje = new Date()
     const inicio = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
     await page.getByRole('link', { name: 'Saídas' }).click()
-    await page.getByRole('button', { name: 'Assinatura', exact: true }).click()
+    await page.getByRole('radio', { name: 'Assinatura', exact: true }).click()
     await page.getByLabel('Descrição').fill('Spotify Excluir E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Streaming Excluir E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Excluir E2E' })
@@ -49,7 +49,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await page.getByRole('button', { name: 'Registrar assinatura' }).click()
 
     // Filtra Assinaturas e exclui pela linha (ConfirmDialog escopado por role)
-    await page.getByRole('button', { name: 'Assinaturas', exact: true }).click()
+    await page.getByRole('radio', { name: 'Assinaturas', exact: true }).click()
     await expect(page.getByRole('cell', { name: 'Spotify Excluir E2E' })).toBeVisible()
     await acionarNoMenuDaLinha(
       page,
@@ -90,7 +90,9 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     const hoje = new Date()
     const alvo = new Date(hoje.getFullYear(), hoje.getMonth() + 2, 3)
     const dataCompra = `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, '0')}-03`
-    const labelMes = `${alvo.toLocaleString('pt-BR', { month: 'long' })} de ${alvo.getFullYear()}`
+    // A lista de faturas capitaliza o mês desde a fase 5 do plano de UI/UX.
+    const nomeMes = alvo.toLocaleString('pt-BR', { month: 'long' })
+    const labelMes = `${nomeMes[0].toUpperCase()}${nomeMes.slice(1)} de ${alvo.getFullYear()}`
 
     await page.getByRole('link', { name: 'Saídas' }).click()
     await page.getByLabel('Descrição').fill('Compra Paga E2E')
@@ -158,7 +160,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
 
     await page.getByRole('link', { name: 'Faturas' }).click()
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Vencida E2E' })
-    await page.getByText('junho de 2026', { exact: true }).click()
+    await page.getByText('Junho de 2026', { exact: true }).click()
     await expect(page.getByText('1/1')).toBeVisible()
 
     await page.getByRole('button', { name: 'Fechar fatura' }).click()

@@ -1,8 +1,9 @@
+import { COR_PADRAO } from '../../components/ui'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { Cartao } from '@domain/entities/cartao'
 import { cartaoInputSchema, type CartaoInput } from '@shared/ipc/cartao'
-import { Button, Field, Input } from '../../components/ui'
+import { Button, ColorPicker, Field, Input } from '../../components/ui'
 import styles from './cartoes.module.css'
 
 type Props = {
@@ -15,6 +16,8 @@ type Props = {
 export function CartaoForm({ mode, cartaoInicial, onSalvar, onCancelar }: Props) {
   const {
     register,
+    watch,
+    setValue,
     handleSubmit,
     formState: { errors, isSubmitting }
   } = useForm<CartaoInput>({
@@ -26,7 +29,7 @@ export function CartaoForm({ mode, cartaoInicial, onSalvar, onCancelar }: Props)
           diaVencimento: cartaoInicial.diaVencimento,
           cor: cartaoInicial.cor
         }
-      : { cor: '#000000' }
+      : { cor: COR_PADRAO }
   })
 
   return (
@@ -59,7 +62,11 @@ export function CartaoForm({ mode, cartaoInicial, onSalvar, onCancelar }: Props)
       </div>
 
       <Field label="Cor" error={errors.cor?.message}>
-        <input type="color" {...register('cor')} className={styles.colorInput} />
+        <ColorPicker
+          value={watch('cor')}
+          onChange={(hex) => setValue('cor', hex, { shouldDirty: true, shouldValidate: true })}
+          label="Cor"
+        />
       </Field>
 
       <div className={styles.formActions}>

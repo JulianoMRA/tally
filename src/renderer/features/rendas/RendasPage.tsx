@@ -13,7 +13,9 @@ import {
   Input,
   Panel,
   RowActions,
-  useToast
+  SegmentedControl,
+  useToast,
+  type OpcaoSegmentada
 } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
 import { formatarDataIso } from '../../lib/formatar-data'
@@ -30,6 +32,17 @@ import styles from './rendas.module.css'
 
 type Aba = 'recebimentos' | 'fontes'
 type StatusFiltro = 'Todos' | StatusRecebimento
+
+const ABAS: readonly OpcaoSegmentada<Aba>[] = [
+  { valor: 'recebimentos', rotulo: 'Recebimentos do mês' },
+  { valor: 'fontes', rotulo: 'Fontes de renda' }
+]
+
+const FILTROS_STATUS: readonly OpcaoSegmentada<StatusFiltro>[] = [
+  { valor: 'Todos', rotulo: 'Todos' },
+  { valor: 'Esperado', rotulo: 'Esperado' },
+  { valor: 'Recebido', rotulo: 'Recebido' }
+]
 
 export default function RendasPage() {
   const [aba, setAba] = useState<Aba>('recebimentos')
@@ -50,20 +63,14 @@ export default function RendasPage() {
       />
 
       <div className={styles.tabs}>
-        <button
-          type="button"
-          className={`${styles.tabBtn} ${aba === 'recebimentos' ? styles.tabBtnActive : ''}`}
-          onClick={() => setAba('recebimentos')}
-        >
-          Recebimentos do mês
-        </button>
-        <button
-          type="button"
-          className={`${styles.tabBtn} ${aba === 'fontes' ? styles.tabBtnActive : ''}`}
-          onClick={() => setAba('fontes')}
-        >
-          Fontes de renda
-        </button>
+        <SegmentedControl
+          opcoes={ABAS}
+          valor={aba}
+          onChange={setAba}
+          label="Seção de rendas"
+          semantica="abas"
+          size="md"
+        />
       </div>
 
       {aba === 'recebimentos' ? (
@@ -139,18 +146,12 @@ function AbaRecebimentos({
           <Input type="month" value={mes} onChange={(e) => setMes(e.target.value)} />
         </Field>
 
-        <div className={styles.statusGroup}>
-          {(['Todos', 'Esperado', 'Recebido'] as StatusFiltro[]).map((s) => (
-            <button
-              key={s}
-              type="button"
-              className={`${styles.statusBtn} ${statusFiltro === s ? styles.statusBtnActive : ''}`}
-              onClick={() => setStatusFiltro(s)}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          opcoes={FILTROS_STATUS}
+          valor={statusFiltro}
+          onChange={setStatusFiltro}
+          label="Filtrar recebimentos por status"
+        />
       </div>
 
       {erro && <p className={styles.erro}>{erro}</p>}

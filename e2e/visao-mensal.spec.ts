@@ -38,7 +38,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     await expect(page.getByRole('cell', { name: 'Compra Mensal E2E' })).toBeVisible()
 
     // Pix R$ 50 em 2026-06-10
-    await page.getByRole('button', { name: 'Pix', exact: true }).click()
+    await page.getByRole('radio', { name: 'Pix', exact: true }).click()
     await page.getByLabel('Descrição').fill('Pix Mensal E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Geral Mensal E2E' })
     await page.getByLabel('Valor (R$)').fill('50,00')
@@ -95,7 +95,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     const hoje = new Date()
     const isoHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
     await page.getByRole('link', { name: 'Saídas' }).click()
-    await page.getByRole('button', { name: 'Assinatura', exact: true }).click()
+    await page.getByRole('radio', { name: 'Assinatura', exact: true }).click()
     await page.getByLabel('Descrição').fill('Spotify Projecao E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Streaming Projecao E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Projecao E2E' })
@@ -106,8 +106,8 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
 
     // Renda recorrente R$ 800,00 dia 5 (aba "Fontes de renda")
     await page.getByRole('link', { name: 'Rendas' }).click()
-    await page.getByRole('button', { name: 'Fontes de renda' }).click()
-    await page.getByRole('button', { name: 'Recorrente' }).click()
+    await page.getByRole('tab', { name: 'Fontes de renda' }).click()
+    await page.getByRole('radio', { name: 'Recorrente' }).click()
     await page.getByLabel('Nome').fill('Bolsa Mensal E2E')
     await page.getByLabel('Valor padrão (R$)').fill('800,00')
     await page.getByLabel('Dia esperado').fill('5')

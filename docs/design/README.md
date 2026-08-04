@@ -60,9 +60,12 @@ voltar hex hardcoded no CSS de alguma feature.
 
 ### Layout
 
-- `Sidebar` — nav lateral 232px com grupos, avatar no rodapé
-- `Topbar` — header sticky 56px com breadcrumb e slot de ações (**definido mas não usado hoje**)
-- `PageHead` — h1 + subtítulo + slot de ações; padding só vertical, quem alinha é o `PageContainer`
+- `Sidebar` — nav lateral 208px com grupos, avatar no rodapé; a versão exibida vem do
+  `package.json` via `define` do Vite (`__APP_VERSION__`), não hardcoded
+- `Topbar` — barra fixa no topo da área rolável com o título da página e slot de ações.
+  Consumido pelo `PageHead`, que segue sendo a API das páginas
+- `PageHead` — compõe o `Topbar` (título + ações, fixos) e o subtítulo, que rola junto com o
+  conteúdo: grudar as três linhas custaria ~90px fixos numa janela de 800px
 - `PageContainer` — **único lugar que limita a largura de uma página**. Envolve o `PageHead` e o
   conteúdo, centraliza e aplica o padding lateral. Larguras: `narrow` (760px, formulário único —
   Ajustes e Importar), `default` (1200px, o caso comum) e `wide` (1760px, telas densas — Visão
@@ -87,6 +90,14 @@ tabela fica mais estreita ao lado do formulário do que ocupando a largura intei
 - `Field` — wrapper label + children + hint/erro
 - `EmptyState` — estado vazio centralizado com título, descrição e ação opcional
 - `ConfirmDialog` — confirmação modal de ação destrutiva (Slice 14)
+- `SegmentedControl` — escolha única em pílula, com `radiogroup`/`radio` (padrão) ou
+  `tablist`/`tab` quando troca o conteúdo da tela. Setas, Home/End e roving tabindex.
+  **Substituiu sete implementações** quase idênticas espalhadas pelas features
+- `ColorPicker` — swatches da paleta de sugestão + entrada livre. `COR_PADRAO` é o default
+  dos formulários, no lugar do `#000000` do input nativo. As cores vivem em TS, não em CSS,
+  porque são dado gravado no banco — e assim o guard `cores-tokenizadas` segue satisfeito
+- `FileDropzone` — área de upload com arrastar-e-soltar. O `<input type="file">` continua no
+  DOM, transparente sobre a zona: mantém semântica, teclado e o `setInputFiles` do Playwright
 - `RowActions` — ações de uma linha de tabela/lista: as primeiras `visiveis` viram botões e o
   resto entra num menu "⋯" (setas, Home/End, Esc, foco devolvido ao gatilho). **Ação marcada
   como `destrutiva` nunca vira botão solto na linha**, nem sendo a única. O menu é renderizado

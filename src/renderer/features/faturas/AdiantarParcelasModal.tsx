@@ -97,7 +97,7 @@ export function AdiantarParcelasModal({
               ) : (
                 faturasDestino.map((f) => (
                   <option key={f.id} value={f.id}>
-                    {formatarMesReferencia(f.mesReferencia)} (vence{' '}
+                    {formatarMesReferencia(f.mesReferencia, { capitalizar: true })} (vence{' '}
                     {formatarDataIso(f.dataVencimento)})
                   </option>
                 ))

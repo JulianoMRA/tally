@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Categoria } from '@domain/entities/categoria'
-import { EmptyState, Field, Panel, Select } from '../../components/ui'
+import {
+  EmptyState,
+  Field,
+  Panel,
+  SegmentedControl,
+  Select,
+  type OpcaoSegmentada
+} from '../../components/ui'
 import { CategoriaPieChart } from './components/CategoriaPieChart'
 import { CategoriaRanking } from './components/CategoriaRanking'
 import { EvolucaoCategoriaChart } from './components/EvolucaoCategoriaChart'
@@ -12,6 +19,11 @@ import { useTotaisCategoria } from './hooks/use-totais-categoria'
 import styles from './relatorios.module.css'
 
 type Periodo = 6 | 12
+
+const PERIODOS: readonly OpcaoSegmentada<Periodo>[] = [
+  { valor: 6, rotulo: '6 meses' },
+  { valor: 12, rotulo: '12 meses' }
+]
 
 type Props = {
   mes: string
@@ -48,20 +60,12 @@ export default function PaineisRelatorios({ mes }: Props) {
       >
         <div className={styles.toolbar}>
           <span className={styles.toolbarLabel}>Período:</span>
-          <div className={styles.periodoSelector}>
-            {([6, 12] as Periodo[]).map((p) => (
-              <button
-                key={p}
-                type="button"
-                className={`${styles.periodoBtn} ${
-                  periodoEvolucao === p ? styles.periodoBtnActive : ''
-                }`}
-                onClick={() => setPeriodoEvolucao(p)}
-              >
-                {p} meses
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            opcoes={PERIODOS}
+            valor={periodoEvolucao}
+            onChange={setPeriodoEvolucao}
+            label="Período da evolução do saldo"
+          />
         </div>
         {loadingEvolucao ? (
           <EmptyState title="Carregando…" />
@@ -121,20 +125,12 @@ export default function PaineisRelatorios({ mes }: Props) {
             </Select>
           </Field>
           <span className={styles.toolbarLabel}>Período:</span>
-          <div className={styles.periodoSelector}>
-            {([6, 12] as Periodo[]).map((p) => (
-              <button
-                key={p}
-                type="button"
-                className={`${styles.periodoBtn} ${
-                  periodoCategoria === p ? styles.periodoBtnActive : ''
-                }`}
-                onClick={() => setPeriodoCategoria(p)}
-              >
-                {p} meses
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            opcoes={PERIODOS}
+            valor={periodoCategoria}
+            onChange={setPeriodoCategoria}
+            label="Período da evolução por categoria"
+          />
         </div>
 
         {categoriaSelecionada === null ? (

@@ -48,7 +48,7 @@ test.describe('Importar dados (CSV)', () => {
     // Confere na fatura de junho do cartão
     await page.getByRole('link', { name: 'Faturas' }).click()
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Import E2E' })
-    await page.getByText('junho de 2026', { exact: true }).click()
+    await page.getByText('Junho de 2026', { exact: true }).click()
     await expect(page.getByText('Supermercado Import')).toBeVisible()
     await expect(page.getByText('Farmácia Import')).toBeVisible()
   })

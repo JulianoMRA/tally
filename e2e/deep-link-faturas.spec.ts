@@ -32,7 +32,7 @@ test.describe('Deep-link de faturas (query string)', () => {
     // --- Abre a fatura pelo fluxo normal e captura a URL com deep-link ---
     await page.getByRole('link', { name: 'Faturas' }).click()
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Deep E2E' })
-    await page.getByText('junho de 2026', { exact: true }).click()
+    await page.getByText('Junho de 2026', { exact: true }).click()
     await expect(page.getByText('1/1')).toBeVisible()
 
     const hashDetalhe = await page.evaluate(() => window.location.hash)

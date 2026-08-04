@@ -45,7 +45,9 @@ export function FaturasOverview({ grupos, onAbrir }: Props) {
               >
                 <span className={styles.cardChip} style={{ background: g.cartao.cor }} />
                 <div className={styles.faturaInfo}>
-                  <span className={styles.faturaMes}>{formatarMesReferencia(f.mesReferencia)}</span>
+                  <span className={styles.faturaMes}>
+                    {formatarMesReferencia(f.mesReferencia, { capitalizar: true })}
+                  </span>
                   <span className={styles.faturaSub}>
                     Fecha {formatarDataIso(f.dataFechamento)} · Vence{' '}
                     {formatarDataIso(f.dataVencimento)}

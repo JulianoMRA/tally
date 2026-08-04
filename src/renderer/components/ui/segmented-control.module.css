@@ -1,0 +1,46 @@
+.root {
+  display: inline-flex;
+  gap: 4px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  padding: 3px;
+  width: fit-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.opcao {
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--r-2) - 2px);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  color: var(--ink-3);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.opcao:hover:not(.ativa) {
+  color: var(--ink);
+}
+
+.ativa {
+  background: var(--forest);
+  color: var(--bg);
+}
+
+/* Tamanhos herdados das seis implementações que este primitivo substituiu:
+   sm cobre filtros e status, md cobre os seletores de tipo do formulário. */
+.sm {
+  padding: 4px 12px;
+  font-size: 12px;
+}
+
+.md {
+  padding: 5px 14px;
+  font-size: 13px;
+}

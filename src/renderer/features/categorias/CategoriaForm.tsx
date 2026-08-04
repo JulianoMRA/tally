@@ -1,8 +1,9 @@
+import { COR_PADRAO } from '../../components/ui'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { Categoria } from '@domain/entities/categoria'
 import { categoriaInputSchema, type CategoriaInput } from '@shared/ipc/categoria'
-import { Button, Field, Input } from '../../components/ui'
+import { Button, ColorPicker, Field, Input } from '../../components/ui'
 import styles from './categorias.module.css'
 
 type Props = {
@@ -15,6 +16,8 @@ type Props = {
 export function CategoriaForm({ mode, categoriaInicial, onSalvar, onCancelar }: Props) {
   const {
     register,
+    watch,
+    setValue,
     handleSubmit,
     formState: { errors, isSubmitting }
   } = useForm<CategoriaInput>({
@@ -25,7 +28,7 @@ export function CategoriaForm({ mode, categoriaInicial, onSalvar, onCancelar }: 
           tipo: categoriaInicial.tipo,
           cor: categoriaInicial.cor
         }
-      : { tipo: 'Despesa', cor: '#000000' }
+      : { tipo: 'Despesa', cor: COR_PADRAO }
   })
 
   return (
@@ -50,7 +53,11 @@ export function CategoriaForm({ mode, categoriaInicial, onSalvar, onCancelar }: 
       </Field>
 
       <Field label="Cor" error={errors.cor?.message}>
-        <input type="color" {...register('cor')} className={styles.colorInput} />
+        <ColorPicker
+          value={watch('cor')}
+          onChange={(hex) => setValue('cor', hex, { shouldDirty: true, shouldValidate: true })}
+          label="Cor"
+        />
       </Field>
 
       <div className={styles.formActions}>

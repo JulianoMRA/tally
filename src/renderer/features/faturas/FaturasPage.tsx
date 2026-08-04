@@ -154,7 +154,7 @@ export default function FaturasPage() {
                     />
                     <div className={styles.faturaInfo}>
                       <span className={styles.faturaMes}>
-                        {formatarMesReferencia(f.mesReferencia)}
+                        {formatarMesReferencia(f.mesReferencia, { capitalizar: true })}
                       </span>
                       <span className={styles.faturaSub}>
                         Fecha {formatarDataIso(f.dataFechamento)} · Vence{' '}

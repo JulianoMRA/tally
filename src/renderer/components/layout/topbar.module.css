@@ -1,33 +1,31 @@
+/* Gruda no topo do container rolável (`.scrollable` do App). O fundo opaco e a
+   régua inferior existem para o conteúdo passar por baixo sem sujar o título.
+   Sem padding horizontal: quem alinha é o PageContainer que o envolve. */
 .topbar {
-  height: 56px;
-  border-bottom: 1px solid var(--rule);
-  display: flex;
-  align-items: center;
-  padding: 0 32px;
-  gap: 16px;
-  background: var(--bg);
   position: sticky;
   top: 0;
-  z-index: 10;
-  flex-shrink: 0;
-}
-
-.crumbs {
+  z-index: 20;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  flex: 1;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  padding: 14px 0 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--rule);
 }
 
-.current {
-  font-weight: 600;
+.title {
+  font-size: 22px;
+  font-weight: 700;
   color: var(--ink);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.03em;
+  margin: 0;
 }
 
 .actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }

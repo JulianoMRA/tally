@@ -1,9 +1,17 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { parseCsv } from '@shared/csv/parse-csv'
 import type { LinhaImportacao, ResultadoImportacao } from '@shared/ipc/importacao'
 import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
-import { Button, EmptyState, Field, Panel, Select, useToast } from '../../components/ui'
+import {
+  Button,
+  EmptyState,
+  Field,
+  FileDropzone,
+  Panel,
+  Select,
+  useToast
+} from '../../components/ui'
 import { mensagemErro } from '../../lib/mensagem-erro'
 import { pluralizar } from '../../lib/pluralizar'
 import {
@@ -30,7 +38,7 @@ export default function ImportarPage() {
   const [preview, setPreview] = useState<Preview>({ kind: 'vazio' })
   const [importando, setImportando] = useState(false)
   const [resultado, setResultado] = useState<ResultadoImportacao | null>(null)
-  const inputArquivo = useRef<HTMLInputElement>(null)
+  const [resetSeq, setResetSeq] = useState(0)
 
   const template = TEMPLATES.find((t) => t.id === templateId) ?? TEMPLATES[0]
 
@@ -70,7 +78,7 @@ export default function ImportarPage() {
       const r = await window.api.dados.importarCsv({ linhas: preview.validas })
       setResultado(r)
       setPreview({ kind: 'vazio' })
-      if (inputArquivo.current) inputArquivo.current.value = ''
+      setResetSeq((n) => n + 1)
       toast.show(`${r.inseridos} ${pluralizar('registro', r.inseridos)} importado(s).`, 'success')
     } catch (e) {
       toast.show(mensagemErro(e, 'Erro ao importar o arquivo.'), 'error')
@@ -95,7 +103,7 @@ export default function ImportarPage() {
                   setTemplateId(e.target.value)
                   setPreview({ kind: 'vazio' })
                   setResultado(null)
-                  if (inputArquivo.current) inputArquivo.current.value = ''
+                  setResetSeq((n) => n + 1)
                 }}
               >
                 {TEMPLATES.map((t) => (
@@ -110,15 +118,13 @@ export default function ImportarPage() {
               <Button type="button" variant="secondary" size="sm" onClick={baixarModelo}>
                 Baixar modelo ({template.arquivo})
               </Button>
-              <label className={styles.inputArquivoLabel}>
-                Arquivo CSV
-                <input
-                  ref={inputArquivo}
-                  type="file"
-                  accept=".csv,text/csv"
-                  onChange={(e) => void aoEscolherArquivo(e.target.files?.[0])}
-                />
-              </label>
+              <FileDropzone
+                key={resetSeq}
+                accept=".csv,text/csv"
+                label="Arquivo CSV"
+                nomeAtual={preview.kind === 'pronto' ? preview.nomeArquivo : undefined}
+                onArquivo={(arquivo) => void aoEscolherArquivo(arquivo)}
+              />
             </div>
             <p className={styles.dica}>
               Colunas esperadas: <code>{template.colunas.join(';')}</code> — datas em AAAA-MM-DD,
