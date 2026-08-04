@@ -17,7 +17,9 @@ import {
   EmptyState,
   Field,
   Input,
-  useToast
+  RowActions,
+  useToast,
+  type AcaoLinha
 } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
@@ -115,6 +117,45 @@ export function FaturaDetalhe({
   function sortIndicator(col: SortBy): string {
     if (col !== sortBy) return ''
     return sortDir === 'asc' ? ' ↑' : ' ↓'
+  }
+
+  // Editar é a primária; Adiantar só existe em parcelada pendente de fatura
+  // Aberta, e Excluir remove a despesa inteira — por isso vai no menu, marcada
+  // como destrutiva, em vez de repetir um botão solto em cada linha.
+  function acoesDaParcela(p: Parcela): AcaoLinha[] {
+    const despesa = detalhe.despesasPorParcela?.[p.id]
+    const acoes: AcaoLinha[] = []
+
+    if (p.status === 'Pendente' && despesa) {
+      acoes.push({
+        label: 'Editar',
+        onClick: () => setDespesaEditar(despesa),
+        disabled: despesa.tipo === 'Assinatura',
+        title:
+          despesa.tipo === 'Assinatura' ? 'Assinaturas se editam na tela Saídas' : 'Editar despesa'
+      })
+    }
+
+    if (kind === 'Aberta' && p.status === 'Pendente' && despesa?.tipo === 'Parcelada') {
+      acoes.push({
+        label: 'Adiantar',
+        onClick: () => setParcelaAdiantar(p),
+        title: 'Adiantar para outra fatura'
+      })
+    }
+
+    acoes.push({
+      label: 'Excluir',
+      onClick: () => setDialogo({ tipo: 'excluir', despesaId: p.despesaId }),
+      disabled: p.status === 'Paga',
+      destrutiva: true,
+      title:
+        p.status === 'Paga'
+          ? 'Não é possível excluir uma despesa com parcela paga'
+          : 'Excluir despesa inteira'
+    })
+
+    return acoes
   }
 
   const ciclo = useCicloFatura(onFaturaAtualizada)
@@ -355,48 +396,10 @@ export function FaturaDetalhe({
                         <Badge variant={p.status === 'Paga' ? 'paid' : 'pending'} />
                       </td>
                       <td>
-                        <div className={styles.rowActions}>
-                          {p.status === 'Pendente' && detalhe.despesasPorParcela?.[p.id] && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDespesaEditar(detalhe.despesasPorParcela![p.id])}
-                              disabled={detalhe.despesasPorParcela[p.id].tipo === 'Assinatura'}
-                              title={
-                                detalhe.despesasPorParcela[p.id].tipo === 'Assinatura'
-                                  ? 'Assinaturas se editam na tela Saídas'
-                                  : 'Editar despesa'
-                              }
-                            >
-                              Editar
-                            </Button>
-                          )}
-                          {kind === 'Aberta' &&
-                            p.status === 'Pendente' &&
-                            detalhe.despesasPorParcela?.[p.id]?.tipo === 'Parcelada' && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setParcelaAdiantar(p)}
-                                title="Adiantar para outra fatura"
-                              >
-                                Adiantar
-                              </Button>
-                            )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDialogo({ tipo: 'excluir', despesaId: p.despesaId })}
-                            disabled={p.status === 'Paga'}
-                            title={
-                              p.status === 'Paga'
-                                ? 'Não é possível excluir uma despesa com parcela paga'
-                                : 'Excluir despesa inteira'
-                            }
-                          >
-                            Excluir
-                          </Button>
-                        </div>
+                        <RowActions
+                          acoes={acoesDaParcela(p)}
+                          contexto={detalhe.despesasPorParcela?.[p.id]?.descricao}
+                        />
                       </td>
                     </tr>
                   ))}

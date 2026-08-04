@@ -36,7 +36,7 @@ export function CartaoList({ cartoes, onEditar, onArquivar, onDesarquivar }: Pro
               Editar
             </Button>
             {cartao.ativo ? (
-              <Button size="sm" variant="danger" onClick={() => onArquivar(cartao.id)}>
+              <Button size="sm" variant="secondary" onClick={() => onArquivar(cartao.id)}>
                 Arquivar
               </Button>
             ) : (

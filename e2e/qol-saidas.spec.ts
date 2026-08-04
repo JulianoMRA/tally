@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
 // Fase 10 — QoL na tela Saídas: busca por descrição e duplicar despesa.
 test.describe('Saídas — QoL (busca e duplicar)', () => {
@@ -47,11 +48,11 @@ test.describe('Saídas — QoL (busca e duplicar)', () => {
     await expect(page.getByRole('cell', { name: 'Notebook Dell' })).toBeVisible()
 
     // Duplicar Notebook Dell → form pré-preenchido com "(cópia)" e valor
-    await page
-      .getByRole('row')
-      .filter({ hasText: 'Notebook Dell' })
-      .getByRole('button', { name: 'Duplicar' })
-      .click()
+    await acionarNoMenuDaLinha(
+      page,
+      page.getByRole('row').filter({ hasText: 'Notebook Dell' }),
+      'Duplicar'
+    )
 
     await expect(page.getByLabel('Descrição')).toHaveValue('Notebook Dell (cópia)')
     await expect(page.getByLabel('Valor (R$)')).toHaveValue('3000,00')
@@ -91,11 +92,11 @@ test.describe('Saídas — QoL (busca e duplicar)', () => {
     await page.getByRole('button', { name: 'Registrar assinatura' }).click()
     await expect(page.getByRole('cell', { name: 'Streaming QoL' })).toBeVisible()
 
-    await page
-      .getByRole('row')
-      .filter({ hasText: 'Streaming QoL' })
-      .getByRole('button', { name: 'Duplicar' })
-      .click()
+    await acionarNoMenuDaLinha(
+      page,
+      page.getByRole('row').filter({ hasText: 'Streaming QoL' }),
+      'Duplicar'
+    )
 
     // A aba Assinatura fica ativa e os campos vêm preenchidos
     await expect(page.getByLabel('Descrição')).toHaveValue('Streaming QoL (cópia)')

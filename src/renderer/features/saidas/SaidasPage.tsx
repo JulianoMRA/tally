@@ -20,8 +20,10 @@ import {
   Field,
   Input,
   Panel,
+  RowActions,
   Select,
-  useToast
+  useToast,
+  type AcaoLinha
 } from '../../components/ui'
 import { alfabetico, porData, porNumero, type Comparador } from '../../lib/comparadores'
 import { formatBRL } from '../../lib/format-brl'
@@ -153,6 +155,39 @@ export default function SaidasPage() {
       toast.show(mensagemErro(e, 'Erro ao salvar nota e tags.'), 'error')
       throw e
     }
+  }
+
+  // Editar é a ação primária (fica visível); o resto entra no menu. Assinatura
+  // cancelada não tem Editar nem Cancelar — só Duplicar, Nota/Tags e Excluir,
+  // como antes.
+  function acoesDaLinha(d: DespesaComTags): AcaoLinha[] {
+    const ehAssinatura = d.tipo === 'Assinatura'
+    const acoes: AcaoLinha[] = []
+
+    if (ehAssinatura) {
+      if (d.ativa) acoes.push({ label: 'Editar', onClick: () => setEditandoAssinatura(d) })
+    } else {
+      acoes.push({ label: 'Editar', onClick: () => setEditandoDespesa(d) })
+    }
+
+    acoes.push({ label: 'Duplicar', onClick: () => duplicar(d) })
+    acoes.push({ label: 'Nota/Tags', onClick: () => setNotaTags(d) })
+
+    if (ehAssinatura && d.ativa) {
+      acoes.push({
+        label: 'Cancelar assinatura',
+        onClick: () => setConfirmacao({ tipo: 'cancelar', despesa: d }),
+        destrutiva: true
+      })
+    }
+
+    acoes.push({
+      label: 'Excluir',
+      onClick: () => setConfirmacao({ tipo: 'excluir', despesa: d }),
+      destrutiva: true
+    })
+
+    return acoes
   }
 
   const { itensOrdenados, handleSort, sortIndicator } = useOrdenacao(
@@ -442,48 +477,7 @@ export default function SaidasPage() {
                             {ehAssinatura ? '/mês' : ''}
                           </td>
                           <td className={styles.colAcoes}>
-                            <div className={styles.rowActions}>
-                              <Button variant="ghost" size="sm" onClick={() => duplicar(d)}>
-                                Duplicar
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => setNotaTags(d)}>
-                                Nota/Tags
-                              </Button>
-                              {ehAssinatura && d.ativa && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setEditandoAssinatura(d)}
-                                  >
-                                    Editar
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setConfirmacao({ tipo: 'cancelar', despesa: d })}
-                                  >
-                                    Cancelar
-                                  </Button>
-                                </>
-                              )}
-                              {!ehAssinatura && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setEditandoDespesa(d)}
-                                >
-                                  Editar
-                                </Button>
-                              )}
-                              <Button
-                                variant="danger"
-                                size="sm"
-                                onClick={() => setConfirmacao({ tipo: 'excluir', despesa: d })}
-                              >
-                                Excluir
-                              </Button>
-                            </div>
+                            <RowActions acoes={acoesDaLinha(d)} contexto={d.descricao} />
                           </td>
                         </tr>
                       )

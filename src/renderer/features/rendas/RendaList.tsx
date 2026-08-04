@@ -45,7 +45,7 @@ export function RendaList({ rendas, onEditar, onArquivar, onDesarquivar }: Props
                 </Button>
               )}
               {r.ativa ? (
-                <Button size="sm" variant="danger" onClick={() => setArquivar(r)}>
+                <Button size="sm" variant="secondary" onClick={() => setArquivar(r)}>
                   Arquivar
                 </Button>
               ) : (

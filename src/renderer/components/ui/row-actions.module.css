@@ -1,0 +1,92 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-2);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.trigger:hover {
+  background: var(--bg-sunk);
+  color: var(--ink);
+}
+
+.trigger[aria-expanded='true'] {
+  background: var(--bg-sunk);
+  color: var(--ink);
+}
+
+/* Menu vai num portal com position: fixed — a tabela de Saídas rola no eixo X
+   (`overflow-x: auto`), e um menu posicionado dentro dela seria recortado. */
+.menu {
+  position: fixed;
+  z-index: 40;
+  min-width: 168px;
+  padding: 4px;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-2);
+  box-shadow: var(--shadow-2);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-radius: var(--r-1);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.item:hover:not(:disabled),
+.item:focus-visible {
+  background: var(--bg-sunk);
+}
+
+.item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Destrutivo só ganha peso visual dentro do menu, nunca como botão solto
+   repetido em toda linha da tabela. */
+.destrutivo {
+  color: var(--expense);
+}
+
+.destrutivo:hover:not(:disabled),
+.destrutivo:focus-visible {
+  background: var(--expense-bg);
+}
+
+.separador {
+  height: 1px;
+  margin: 3px 4px;
+  background: var(--rule);
+}
