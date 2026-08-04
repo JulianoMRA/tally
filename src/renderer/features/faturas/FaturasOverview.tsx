@@ -5,6 +5,7 @@ import { Badge, EmptyState, Panel } from '../../components/ui'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { pluralizar } from '../../lib/pluralizar'
 import { statusVariant } from './status-variant'
+import { aoTeclarComoBotao } from '../../lib/teclado'
 import styles from './faturas.module.css'
 
 type Props = {
@@ -41,7 +42,7 @@ export function FaturasOverview({ grupos, onAbrir }: Props) {
                 onClick={() => onAbrir(f, g.cartao)}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => e.key === 'Enter' && onAbrir(f, g.cartao)}
+                onKeyDown={aoTeclarComoBotao(() => onAbrir(f, g.cartao))}
               >
                 <span className={styles.cardChip} style={{ background: g.cartao.cor }} />
                 <div className={styles.faturaInfo}>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { hojeIsoLocal } from '@shared/datas-locais'
 import { Button, Field, Input } from '../../components/ui'
 import { useEscapeKey } from '../../hooks/use-escape-key'
+import { useFocusTrap } from '../../hooks/use-focus-trap'
 import styles from './rendas.module.css'
 
 type Props = {
@@ -15,6 +16,7 @@ export function MarcarRecebidoModal({ descricao, valorReais, onConfirmar, onCanc
   const [data, setData] = useState(hojeIsoLocal)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const modalRef = useFocusTrap<HTMLDivElement>()
   useEscapeKey(onCancelar)
 
   async function handleConfirmar() {
@@ -35,7 +37,13 @@ export function MarcarRecebidoModal({ descricao, valorReais, onConfirmar, onCanc
 
   return (
     <div className={styles.modalOverlay}>
-      <div className={styles.modal}>
+      <div
+        ref={modalRef}
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Marcar recebimento"
+      >
         <h3 className={styles.modalTitle}>Marcar recebimento</h3>
         <p className={styles.modalDesc}>
           <strong>{descricao}</strong> — {valorReais}

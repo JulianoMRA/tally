@@ -18,6 +18,7 @@ import {
   Field,
   Input,
   RowActions,
+  SortableHeader,
   useToast,
   type AcaoLinha
 } from '../../components/ui'
@@ -112,11 +113,6 @@ export function FaturaDetalhe({
       setSortBy(col)
       setSortDir('asc')
     }
-  }
-
-  function sortIndicator(col: SortBy): string {
-    if (col !== sortBy) return ''
-    return sortDir === 'asc' ? ' ↑' : ' ↓'
   }
 
   // Editar é a primária; Adiantar só existe em parcelada pendente de fatura
@@ -355,24 +351,37 @@ export function FaturaDetalhe({
               <table className={styles.tabela}>
                 <thead>
                   <tr>
-                    <th className={styles.thSortavel} onClick={() => handleSort('descricao')}>
-                      Descrição{sortIndicator('descricao')}
-                    </th>
-                    <th className={styles.thSortavel} onClick={() => handleSort('parcela')}>
-                      Parcela{sortIndicator('parcela')}
-                    </th>
-                    <th className={styles.thSortavel} onClick={() => handleSort('data')}>
-                      Data{sortIndicator('data')}
-                    </th>
-                    <th
-                      className={`${styles.colValor} ${styles.thSortavel}`}
-                      onClick={() => handleSort('valor')}
-                    >
-                      Valor{sortIndicator('valor')}
-                    </th>
-                    <th className={styles.thSortavel} onClick={() => handleSort('status')}>
-                      Status{sortIndicator('status')}
-                    </th>
+                    <SortableHeader
+                      rotulo="Descrição"
+                      ativo={sortBy === 'descricao'}
+                      direcao={sortDir}
+                      onSort={() => handleSort('descricao')}
+                    />
+                    <SortableHeader
+                      rotulo="Parcela"
+                      ativo={sortBy === 'parcela'}
+                      direcao={sortDir}
+                      onSort={() => handleSort('parcela')}
+                    />
+                    <SortableHeader
+                      rotulo="Data"
+                      ativo={sortBy === 'data'}
+                      direcao={sortDir}
+                      onSort={() => handleSort('data')}
+                    />
+                    <SortableHeader
+                      rotulo="Valor"
+                      ativo={sortBy === 'valor'}
+                      direcao={sortDir}
+                      onSort={() => handleSort('valor')}
+                      className={styles.colValor}
+                    />
+                    <SortableHeader
+                      rotulo="Status"
+                      ativo={sortBy === 'status'}
+                      direcao={sortDir}
+                      onSort={() => handleSort('status')}
+                    />
                     <th>Ações</th>
                   </tr>
                 </thead>

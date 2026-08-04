@@ -3,6 +3,7 @@ import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
 import { Button, Field, Input, Select } from '../../components/ui'
 import { useEscapeKey } from '../../hooks/use-escape-key'
+import { useFocusTrap } from '../../hooks/use-focus-trap'
 import { parseCentavos } from '../despesas/parcela-valor'
 import styles from './assinaturas.module.css'
 
@@ -25,6 +26,7 @@ export function EditarAssinaturaModal({ assinatura, categorias, onConfirmar, onC
   )
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const modalRef = useFocusTrap<HTMLDivElement>()
   useEscapeKey(onCancelar)
 
   async function handleConfirmar() {
@@ -58,7 +60,13 @@ export function EditarAssinaturaModal({ assinatura, categorias, onConfirmar, onC
 
   return (
     <div className={styles.modalOverlay}>
-      <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Editar assinatura">
+      <div
+        ref={modalRef}
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Editar assinatura"
+      >
         <h3 className={styles.modalTitle}>Editar assinatura</h3>
         <p className={styles.modalDesc}>
           Mudar o valor mensal aplica o novo valor às ocorrências pendentes em faturas abertas;

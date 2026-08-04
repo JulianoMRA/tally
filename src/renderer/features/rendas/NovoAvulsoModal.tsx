@@ -3,6 +3,7 @@ import type { CriarRecebimentoAvulsoInput } from '@shared/ipc/recebimento'
 import { hojeIsoLocal } from '@shared/datas-locais'
 import { Button, Field, Input } from '../../components/ui'
 import { useEscapeKey } from '../../hooks/use-escape-key'
+import { useFocusTrap } from '../../hooks/use-focus-trap'
 import styles from './rendas.module.css'
 
 type Props = {
@@ -22,6 +23,7 @@ export function NovoAvulsoModal({ onConfirmar, onCancelar }: Props) {
   const [dataRecebida, setDataRecebida] = useState(hojeIsoLocal)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const modalRef = useFocusTrap<HTMLDivElement>()
   useEscapeKey(onCancelar)
 
   async function handleConfirmar() {
@@ -56,7 +58,13 @@ export function NovoAvulsoModal({ onConfirmar, onCancelar }: Props) {
 
   return (
     <div className={styles.modalOverlay}>
-      <div className={styles.modal}>
+      <div
+        ref={modalRef}
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Novo recebimento avulso"
+      >
         <h3 className={styles.modalTitle}>Novo recebimento avulso</h3>
         <p className={styles.modalDesc}>
           Para entradas sem fonte recorrente: freela, presente, venda etc.

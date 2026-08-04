@@ -16,6 +16,7 @@ import { Badge, Button, EmptyState, Select } from '../../components/ui'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { buildFaturasSearch, parseFaturasSearch } from './faturas-search'
 import { statusVariant } from './status-variant'
+import { aoTeclarComoBotao } from '../../lib/teclado'
 import styles from './faturas.module.css'
 
 type Modo = { kind: 'lista' } | { kind: 'detalhe'; faturaId: number }
@@ -146,7 +147,7 @@ export default function FaturasPage() {
                     onClick={() => handleAbrirDetalhe(f)}
                     role="button"
                     tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAbrirDetalhe(f)}
+                    onKeyDown={aoTeclarComoBotao(() => handleAbrirDetalhe(f))}
                   >
                     <span
                       className={styles.cardChip}
