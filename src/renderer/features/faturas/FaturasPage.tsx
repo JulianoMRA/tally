@@ -16,7 +16,6 @@ import { Badge, Button, EmptyState, Select } from '../../components/ui'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { buildFaturasSearch, parseFaturasSearch } from './faturas-search'
 import { statusVariant } from './status-variant'
-import { aoTeclarComoBotao } from '../../lib/teclado'
 import styles from './faturas.module.css'
 
 type Modo = { kind: 'lista' } | { kind: 'detalhe'; faturaId: number }
@@ -141,28 +140,27 @@ export default function FaturasPage() {
             {faturas.length > 0 && (
               <ul className={styles.faturaList}>
                 {faturas.map((f) => (
-                  <li
-                    key={f.id}
-                    className={styles.faturaItem}
-                    onClick={() => handleAbrirDetalhe(f)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={aoTeclarComoBotao(() => handleAbrirDetalhe(f))}
-                  >
-                    <span
-                      className={styles.cardChip}
-                      style={{ background: cartaoSelecionado?.cor ?? 'var(--ink-3)' }}
-                    />
-                    <div className={styles.faturaInfo}>
-                      <span className={styles.faturaMes}>
-                        {formatarMesReferencia(f.mesReferencia, { capitalizar: true })}
-                      </span>
-                      <span className={styles.faturaSub}>
-                        Fecha {formatarDataIso(f.dataFechamento)} · Vence{' '}
-                        {formatarDataIso(f.dataVencimento)}
-                      </span>
-                    </div>
-                    <Badge variant={statusVariant(f.status.kind)} />
+                  <li key={f.id} className={styles.itemBotao}>
+                    <button
+                      type="button"
+                      className={styles.faturaItem}
+                      onClick={() => handleAbrirDetalhe(f)}
+                    >
+                      <span
+                        className={styles.cardChip}
+                        style={{ background: cartaoSelecionado?.cor ?? 'var(--ink-3)' }}
+                      />
+                      <div className={styles.faturaInfo}>
+                        <span className={styles.faturaMes}>
+                          {formatarMesReferencia(f.mesReferencia, { capitalizar: true })}
+                        </span>
+                        <span className={styles.faturaSub}>
+                          Fecha {formatarDataIso(f.dataFechamento)} · Vence{' '}
+                          {formatarDataIso(f.dataVencimento)}
+                        </span>
+                      </div>
+                      <Badge variant={statusVariant(f.status.kind)} />
+                    </button>
                   </li>
                 ))}
               </ul>

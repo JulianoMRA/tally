@@ -94,6 +94,7 @@ npm run test           # Vitest (watch)
 npm run test:run       # Vitest single run
 npm run test:coverage  # Vitest + coverage (gate de CI)
 npm run e2e            # Playwright (precisa de npm run build antes)
+npm run smoke:visual   # Folha de contato: 35 capturas do app em 3 larguras (precisa de build)
 npm run gen:icon       # Regenera build/icon.ico a partir do SVG do brand
 ```
 
