@@ -31,7 +31,12 @@
   /* Semantic */
   --income: #3f6e47;
   --expense: #8c3b2e;
-  --pending: #a87b2c;
+  /* pending: #8a6a1f (era #a87b2c) — 3,24:1 sobre --pending-bg reprovava no
+     WCAG AA para texto pequeno (axe color-contrast, serious) no badge "Aberta";
+     agora ~4,7:1. Mesmo motivo do ajuste de --ink-3, e só apareceu quando a
+     varredura axe passou a rodar com dados na tela: badge nenhum renderiza na
+     base vazia. */
+  --pending: #8a6a1f;
   --paid: #5b7a5e;
 
   /* Superfícies semânticas — fundo + borda dos badges e banners de status.

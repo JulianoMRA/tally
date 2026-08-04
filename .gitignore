@@ -66,3 +66,6 @@ BUGS-INVESTIGADOS.md
 # Stryker (mutation testing)
 .stryker-tmp/
 reports/
+
+# Folha de contato do npm run smoke:visual (material de revisao, nao artefato)
+smoke-visual/

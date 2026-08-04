@@ -20,6 +20,7 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:mutation": "stryker run",
+    "smoke:visual": "node scripts/smoke-visual.mjs",
     "e2e": "playwright test",
     "gen:icon": "node scripts/gen-icon.mjs",
     "dist": "npm run build && electron-builder --win",
