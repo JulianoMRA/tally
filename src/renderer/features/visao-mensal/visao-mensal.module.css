@@ -158,11 +158,29 @@
   margin-top: 4px;
 }
 
+.saldoBigWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
+}
+
 .saldoBig {
   font-size: 32px;
   font-weight: 900;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+}
+
+/* O número grande é o saldo PROJETADO: o hint explicita o critério, que mistura
+   entradas esperadas com saídas ainda não pagas (RN-08). */
+.saldoHint {
+  font-size: 11px;
+  color: var(--ink-3);
+  text-align: right;
+  max-width: 320px;
+  line-height: 1.4;
 }
 
 .positivo {

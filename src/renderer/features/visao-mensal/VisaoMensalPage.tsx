@@ -16,6 +16,7 @@ import { mesAtualReferencia } from '../../lib/mes-atual'
 import { pluralizar } from '../../lib/pluralizar'
 import { useOrdenacao } from '../../lib/use-ordenacao'
 import { FaturasCardCompacto } from './FaturasCardCompacto'
+import { SaldoCard } from './SaldoCard'
 import { useVisaoMensal } from './hooks/use-visao-mensal'
 import styles from './visao-mensal.module.css'
 
@@ -173,30 +174,7 @@ export default function VisaoMensalPage() {
                 </div>
               </div>
 
-              <div className={styles.saldoCard}>
-                <div>
-                  <div className={styles.saldoLabel}>Saldo do mês</div>
-                  <div className={styles.saldoSub}>
-                    Realizado{' '}
-                    <span
-                      className={
-                        detalhe.totais.saldoRealizadoCentavos >= 0
-                          ? styles.positivo
-                          : styles.negativo
-                      }
-                    >
-                      {formatBRL(detalhe.totais.saldoRealizadoCentavos)}
-                    </span>
-                  </div>
-                </div>
-                <div
-                  className={`${styles.saldoBig} ${
-                    detalhe.totais.saldoProjetadoCentavos >= 0 ? styles.positivo : styles.negativo
-                  }`}
-                >
-                  {formatBRL(detalhe.totais.saldoProjetadoCentavos)}
-                </div>
-              </div>
+              <SaldoCard totais={detalhe.totais} />
 
               <FaturasCardCompacto faturas={detalhe.faturas} />
 
