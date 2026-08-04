@@ -9,10 +9,12 @@
    aninhada na coluna direita da Visão mensal (sem padding lateral próprio).
    container-type permite que os grids internos reajam à largura da coluna,
    não do viewport — necessário porque em 1920px a coluna pode ficar estreita. */
-.coluna {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+/* Cada painel é seu próprio container de consulta. Antes quem carregava o
+   `container-type` era a coluna que envolvia os quatro painéis; ela saiu quando
+   o grid da visão mensal foi achatado, e sem container ancestral as
+   `@container` abaixo simplesmente nunca casariam. Medir o painel também é mais
+   correto do que medir a coluna. */
+.painel {
   container-type: inline-size;
 }
 

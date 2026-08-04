@@ -69,6 +69,13 @@ voltar hex hardcoded no CSS de alguma feature.
   mensal e Saídas), dos tokens `--page-max-*`. Expõe `data-width` para asserção em teste e E2E.
   Nenhum CSS de feature deve declarar `max-width` de página.
 
+**Breakpoints — atenção ao número real.** A janela padrão do app (`width: 1280` em
+`createWindow`) é o tamanho **externo**: a viewport resultante é **1266px**. Um
+`@media (min-width: 1280px)` não dispara para quem não maximiza. Larguras medidas:
+`setSize(1024) → 1010`, `(1280) → 1266`, `(1440) → 1426`, `(1760) → 1746`. Em uso hoje:
+1180 na Visão mensal (duas colunas já na janela padrão) e 1400 em Saídas (abaixo disso a
+tabela fica mais estreita ao lado do formulário do que ocupando a largura inteira).
+
 ### UI Primitives (`src/renderer/components/ui/`)
 
 - `Button` — variantes: `primary | secondary | ghost | danger`; tamanhos: `sm | md`

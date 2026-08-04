@@ -6,24 +6,38 @@
   flex-wrap: wrap;
 }
 
-/* Empilhado por padrão (janelas estreitas mantêm o comportamento anterior).
-   Em telas largas vira duas colunas: operacional (55%) + gráficos (45%). */
+/* Empilhado em janelas estreitas; em duas colunas a partir de 1180px.
+   O breakpoint era 1440, acima da janela padrão do app (1280) — quem abria o
+   Tally sem maximizar via a coluna de gráficos empilhada depois de toda a
+   coluna operacional, a mais de uma tela de scroll.
+
+   Os painéis são itens DIRETOS do grid, não filhos de duas divs de coluna.
+   Com colunas fixas, a da direita (4 painéis de gráfico) era muito mais alta
+   que a da esquerda, e sobrava um vazio de ~600px embaixo da esquerda. Com
+   auto-placement o desbalanceamento se distribui linha a linha e no máximo
+   sobra meia célula no fim. */
 .layout {
   display: flex;
   flex-direction: column;
+  gap: 16px;
 }
 
-.colunaOperacional,
-.colunaGraficos {
+.layout > * {
   min-width: 0;
 }
 
-@media (min-width: 1440px) {
+@media (min-width: 1180px) {
   .layout {
     display: grid;
-    grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
-    gap: 28px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
     align-items: start;
+  }
+
+  /* Resumo do mês atravessa as duas colunas. */
+  .cards,
+  .saldoCard {
+    grid-column: 1 / -1;
   }
 }
 
@@ -79,7 +93,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 12px;
-  margin-bottom: 16px;
 }
 
 .card {
@@ -134,7 +147,6 @@
   justify-content: space-between;
   gap: 16px;
   box-shadow: var(--shadow-1);
-  margin-bottom: 24px;
 }
 
 .saldoLabel {
@@ -250,10 +262,6 @@
   color: var(--expense);
   font-size: 13px;
   margin: 0 0 12px;
-}
-
-.panel {
-  margin-bottom: 16px;
 }
 
 .faturaCompactaList {
