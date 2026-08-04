@@ -10,6 +10,7 @@ import {
 } from './hooks/use-faturas'
 import { FaturaDetalhe } from './FaturaDetalhe'
 import { FaturasOverview } from './FaturasOverview'
+import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
 import { Badge, Button, EmptyState, Select } from '../../components/ui'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
@@ -88,13 +89,13 @@ export default function FaturasPage() {
   }
 
   return (
-    <div>
+    <PageContainer>
       <PageHead
         title="Faturas"
         subtitle="Visualize as faturas por cartão e confira as parcelas de cada uma."
       />
 
-      <div className={styles.body}>
+      <div className={styles.corpo}>
         <div className={styles.cartaoSelect}>
           <label htmlFor="cartaoSelect" className={styles.cartaoLabel}>
             Cartão
@@ -196,6 +197,6 @@ export default function FaturasPage() {
           </>
         )}
       </div>
-    </div>
+    </PageContainer>
   )
 }

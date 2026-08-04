@@ -61,4 +61,13 @@
   /* Shadows — soft, daylight */
   --shadow-1: 0 1px 0 rgba(15, 26, 20, 0.04), 0 1px 2px rgba(15, 26, 20, 0.04);
   --shadow-2: 0 1px 0 rgba(15, 26, 20, 0.04), 0 8px 24px -8px rgba(15, 26, 20, 0.12);
+
+  /* Larguras de página — consumidas SÓ pelo PageContainer, que é o único lugar
+     que limita a largura de uma página. Antes cada feature escolhia a sua
+     (1080 na visão mensal, 760 em importar, nenhuma em cartões), e as telas não
+     alinhavam entre si. */
+  --page-pad: 32px;
+  --page-max-narrow: 760px;
+  --page-max: 1200px;
+  --page-max-wide: 1760px;
 }

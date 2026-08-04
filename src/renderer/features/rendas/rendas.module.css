@@ -12,7 +12,6 @@
   grid-template-columns: 1fr 380px;
   gap: 24px;
   align-items: start;
-  padding: 0 32px 32px;
 }
 
 .listSection,
@@ -175,8 +174,8 @@
  * Aba "Recebimentos do mês" (antiga RecebimentosPage)
  * ==================================================================== */
 
-.body {
-  padding: 0 32px 32px;
+.fontesToggle {
+  margin-bottom: 12px;
 }
 
 .tabs {
@@ -187,7 +186,7 @@
   border-radius: var(--r-2);
   padding: 3px;
   width: fit-content;
-  margin: 0 32px 20px;
+  margin: 0 0 20px;
 }
 
 .tabBtn {

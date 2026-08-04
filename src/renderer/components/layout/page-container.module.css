@@ -1,0 +1,22 @@
+/* Container de página compartilhado. Centraliza o conteúdo e aplica o padding
+   lateral que antes cada feature repetia no seu próprio `.body`/`.layout`.
+   O PageHead entra aqui dentro, por isso ele não tem mais padding horizontal:
+   título e conteúdo alinham na mesma margem. */
+.container {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 var(--page-pad) var(--page-pad);
+  min-width: 0;
+}
+
+.narrow {
+  max-width: var(--page-max-narrow);
+}
+
+.default {
+  max-width: var(--page-max);
+}
+
+.wide {
+  max-width: var(--page-max-wide);
+}

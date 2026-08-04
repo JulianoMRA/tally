@@ -1,12 +1,7 @@
-.body {
-  padding: 0 32px 32px;
-}
-
 .form {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-width: 640px;
 }
 
 .campos {
