@@ -36,7 +36,7 @@ export function CategoriaList({ categorias, onEditar, onArquivar, onDesarquivar 
               Editar
             </Button>
             {categoria.ativo ? (
-              <Button size="sm" variant="danger" onClick={() => onArquivar(categoria.id)}>
+              <Button size="sm" variant="secondary" onClick={() => onArquivar(categoria.id)}>
                 Arquivar
               </Button>
             ) : (

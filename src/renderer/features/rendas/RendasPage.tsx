@@ -12,6 +12,7 @@ import {
   Field,
   Input,
   Panel,
+  RowActions,
   useToast
 } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
@@ -205,9 +206,17 @@ function AbaRecebimentos({
                     Marcar recebido
                   </Button>
                 )}
-                <Button size="sm" variant="ghost" onClick={() => setAlvoExcluir(r)}>
-                  Excluir
-                </Button>
+                <RowActions
+                  acoes={[
+                    {
+                      label: 'Excluir',
+                      onClick: () => setAlvoExcluir(r),
+                      destrutiva: true
+                    }
+                  ]}
+                  visiveis={0}
+                  contexto={r.rendaNome ?? 'recebimento avulso'}
+                />
               </div>
             </li>
           ))}

@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
 // Fase 11 — nota livre e tags nas despesas, exibição e filtro na tela Saídas.
 test.describe('Saídas — nota e tags', () => {
@@ -38,11 +39,11 @@ test.describe('Saídas — nota e tags', () => {
     }
 
     // Abre Nota/Tags do Hotel e adiciona nota + duas tags
-    await page
-      .getByRole('row')
-      .filter({ hasText: 'Hotel viagem' })
-      .getByRole('button', { name: 'Nota/Tags' })
-      .click()
+    await acionarNoMenuDaLinha(
+      page,
+      page.getByRole('row').filter({ hasText: 'Hotel viagem' }),
+      'Nota/Tags'
+    )
 
     const dialog = page.getByRole('dialog', { name: 'Nota e tags' })
     await dialog.getByLabel('Nota').fill('Reembolsável pelo trabalho')
@@ -67,11 +68,11 @@ test.describe('Saídas — nota e tags', () => {
 
     // Reabre a modal e confirma que a nota foi persistida
     await page.getByLabel('Filtrar por tag').selectOption('')
-    await page
-      .getByRole('row')
-      .filter({ hasText: 'Hotel viagem' })
-      .getByRole('button', { name: 'Nota/Tags' })
-      .click()
+    await acionarNoMenuDaLinha(
+      page,
+      page.getByRole('row').filter({ hasText: 'Hotel viagem' }),
+      'Nota/Tags'
+    )
     await expect(page.getByRole('dialog', { name: 'Nota e tags' }).getByLabel('Nota')).toHaveValue(
       'Reembolsável pelo trabalho'
     )

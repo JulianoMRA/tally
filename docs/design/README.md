@@ -80,6 +80,13 @@ voltar hex hardcoded no CSS de alguma feature.
 - `Field` — wrapper label + children + hint/erro
 - `EmptyState` — estado vazio centralizado com título, descrição e ação opcional
 - `ConfirmDialog` — confirmação modal de ação destrutiva (Slice 14)
+- `RowActions` — ações de uma linha de tabela/lista: as primeiras `visiveis` viram botões e o
+  resto entra num menu "⋯" (setas, Home/End, Esc, foco devolvido ao gatilho). **Ação marcada
+  como `destrutiva` nunca vira botão solto na linha**, nem sendo a única. O menu é renderizado
+  num portal em `document.body` — containers de tabela com `overflow-x: auto` recortariam um
+  menu posicionado dentro deles — e inverte para cima quando não cabe abaixo do gatilho. O
+  `contexto` da linha rotula o **menu**, não o gatilho: `aria-label` de descendente entra no
+  nome acessível da célula, e a descrição ali dentro colidia com a célula de descrição.
 - `ToastProvider` — feedback de sucesso e erro das mutações (Slice 14)
 - `ErrorBoundary` — captura de erro de render com tela de recuperação
 

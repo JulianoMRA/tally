@@ -1,6 +1,20 @@
 import { test, expect } from './fixtures/electron-app'
+import type { Page } from '@playwright/test'
+import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
 // RF-DES-09 — Excluir despesa com confirmação; bloqueia se houver parcela paga.
+/**
+ * Abre o menu "⋯" da única parcela da fatura e devolve o item Excluir. Desde a
+ * fase 3 do plano de UI/UX a ação destrutiva não é mais botão solto na linha.
+ */
+async function itemExcluirDaParcela(page: Page) {
+  await page
+    .getByRole('button', { name: /^Mais ações/ })
+    .first()
+    .click()
+  return page.getByRole('menu').getByRole('menuitem', { name: 'Excluir', exact: true })
+}
+
 test.describe('Excluir despesa (RF-DES-09)', () => {
   test('cria assinatura, exclui pela tela Saídas e confirma que sumiu', async ({ app }) => {
     const page = await app.firstWindow()
@@ -37,11 +51,11 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     // Filtra Assinaturas e exclui pela linha (ConfirmDialog escopado por role)
     await page.getByRole('button', { name: 'Assinaturas', exact: true }).click()
     await expect(page.getByRole('cell', { name: 'Spotify Excluir E2E' })).toBeVisible()
-    await page
-      .getByRole('row')
-      .filter({ hasText: 'Spotify Excluir E2E' })
-      .getByRole('button', { name: 'Excluir' })
-      .click()
+    await acionarNoMenuDaLinha(
+      page,
+      page.getByRole('row').filter({ hasText: 'Spotify Excluir E2E' }),
+      'Excluir'
+    )
     await page.getByRole('dialog').getByRole('button', { name: 'Excluir' }).click()
 
     // Após exclusão, a assinatura não deve mais aparecer na lista
@@ -99,14 +113,16 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await page.getByRole('button', { name: 'Marcar como paga' }).click()
     await page.getByRole('button', { name: 'Confirmar pagamento' }).click()
 
-    // Sincronização RN-06: parcela vira Paga e a exclusão é bloqueada na UI
-    const excluir = page.getByRole('button', { name: 'Excluir' })
-    await expect(excluir).toBeDisabled()
+    // Sincronização RN-06: parcela vira Paga e a exclusão é bloqueada na UI.
+    // Excluir é destrutiva, então vive no menu "⋯" da linha desde a fase 3.
+    await expect(await itemExcluirDaParcela(page)).toBeDisabled()
+    await page.keyboard.press('Escape')
 
     // Reabrir (fatura não vencida) reverte para Aberta e libera a exclusão
     await page.getByRole('button', { name: 'Reabrir fatura' }).click()
     await page.getByRole('button', { name: 'Reabrir', exact: true }).click()
-    await expect(excluir).toBeEnabled()
+    await expect(await itemExcluirDaParcela(page)).toBeEnabled()
+    await page.keyboard.press('Escape')
   })
 
   test('reabrir fatura vencida volta como Fechada e mantém exclusão bloqueada (RN-06)', async ({
@@ -150,16 +166,17 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await page.getByRole('button', { name: 'Marcar como paga' }).click()
     await page.getByRole('button', { name: 'Confirmar pagamento' }).click()
 
-    const excluir = page.getByRole('button', { name: 'Excluir' })
-    await expect(excluir).toBeDisabled()
+    await expect(await itemExcluirDaParcela(page)).toBeDisabled()
+    await page.keyboard.press('Escape')
 
     // Reabrir uma fatura vencida resulta em Fechada (não Aberta): a parcela
-    // volta a Pendente (botão habilita), mas o backend bloqueia a exclusão
+    // volta a Pendente (item habilita), mas o backend bloqueia a exclusão
     // pela RN-06 — parcela em fatura Fechada preserva o histórico.
     await page.getByRole('button', { name: 'Reabrir fatura' }).click()
     await page.getByRole('button', { name: 'Reabrir', exact: true }).click()
     await expect(page.getByText('Fechada', { exact: true })).toBeVisible()
 
+    const excluir = await itemExcluirDaParcela(page)
     await expect(excluir).toBeEnabled()
     await excluir.click()
     await page.getByRole('dialog').getByRole('button', { name: 'Excluir' }).click()

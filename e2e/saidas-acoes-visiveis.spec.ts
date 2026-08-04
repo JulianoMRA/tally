@@ -61,7 +61,11 @@ async function semear(app: ElectronApplication): Promise<Page> {
   return page
 }
 
-const ACOES_ASSINATURA = ['Duplicar', 'Nota/Tags', 'Editar', 'Cancelar', 'Excluir'] as const
+// Depois da fase 3 do plano de UI/UX a linha tem no máximo dois controles:
+// a ação primária (Editar) e o gatilho "⋯". As demais vivem no menu, que é
+// renderizado num portal em document.body — justamente porque `.tabelaWrap`
+// tem `overflow-x: auto` e recortaria um menu posicionado dentro dela.
+const ACOES_NO_MENU = ['Duplicar', 'Nota/Tags', 'Cancelar assinatura', 'Excluir'] as const
 
 // As três larguras cobrem regimes distintos do bug original:
 // 1000 — janela clampada por telas pequenas (runner de CI): a tabela não cabe e
@@ -79,31 +83,58 @@ for (const largura of [1000, 1280, 1600] as const) {
 
     const linha = page.getByRole('row').filter({ hasText: 'Streaming de video mensal' })
 
-    for (const acao of ACOES_ASSINATURA) {
-      const botao = linha.getByRole('button', { name: acao, exact: true })
-      await expect(botao).toHaveCount(1)
+    // A densidade é o ponto da fase: no máximo 2 controles por linha, contra os
+    // 5 de antes. Se voltarem a empilhar botões soltos, este teste cai.
+    await expect(linha.getByRole('button')).toHaveCount(2)
 
-      // scrollIntoViewIfNeeded rola o container .tabelaWrap — é exatamente o
-      // que o browser faz ao navegar por Tab. Antes da correção o Panel tinha
-      // overflow:hidden e não havia container rolável, então o botão
-      // permanecia fora da viewport.
-      await botao.scrollIntoViewIfNeeded()
-      await expect(botao).toBeInViewport({ ratio: 0.99 })
+    const primaria = linha.getByRole('button', { name: 'Editar', exact: true })
+    const gatilho = linha.getByRole('button', { name: /^Mais ações/ })
 
-      // O botão precisa caber inteiro dentro do container que rola: se estiver
-      // sendo decepado pela borda, o clique não chega no alvo.
-      const cabe = await botao.evaluate((el) => {
+    for (const controle of [primaria, gatilho]) {
+      await controle.scrollIntoViewIfNeeded()
+      await expect(controle).toBeInViewport({ ratio: 0.99 })
+
+      // O controle precisa caber inteiro dentro do container que rola: se
+      // estiver sendo decepado pela borda, o clique não chega no alvo.
+      const cabe = await controle.evaluate((el) => {
         const wrap = el.closest('table')?.parentElement
         if (!wrap) return false
         const b = el.getBoundingClientRect()
         const w = wrap.getBoundingClientRect()
         return b.left >= w.left - 0.5 && b.right <= w.right + 0.5
       })
-      expect(cabe, `"${acao}" foi cortado pela borda do container`).toBe(true)
+      expect(cabe, 'controle da linha foi cortado pela borda do container').toBe(true)
     }
 
-    // Prova funcional: o último botão da linha realmente recebe o clique.
-    await linha.getByRole('button', { name: 'Excluir', exact: true }).click()
+    // Todas as ações continuam alcançáveis, agora pelo menu — e o menu não pode
+    // ser recortado pelo container que rola no eixo X.
+    await gatilho.click()
+    const menu = page.getByRole('menu')
+    await expect(menu).toBeVisible()
+    for (const acao of ACOES_NO_MENU) {
+      await expect(menu.getByRole('menuitem', { name: acao, exact: true })).toBeVisible()
+    }
+    await expect(menu).toBeInViewport({ ratio: 0.99 })
+
+    // Prova funcional: o item destrutivo do menu realmente recebe o clique.
+    await menu.getByRole('menuitem', { name: 'Excluir', exact: true }).click()
     await expect(page.getByRole('dialog')).toContainText('Streaming de video mensal')
   })
 }
+
+test('tabela de Saídas cabe sem rolagem horizontal na janela padrão', async ({ app }) => {
+  const page = await semear(app)
+  await redimensionar(app, 1280)
+  await expect.poll(async () => page.evaluate(() => window.innerWidth)).toBeLessThan(1281)
+
+  // Antes da fase 3 a tabela precisava de ~974px, dois terços só de botões, e
+  // dependia do container rolável para as ações serem alcançáveis.
+  const transbordo = await page.evaluate(() => {
+    const tabela = document.querySelector('table')
+    const wrap = tabela?.parentElement
+    if (!tabela || !wrap) return null
+    return tabela.scrollWidth - wrap.clientWidth
+  })
+  expect(transbordo).not.toBeNull()
+  expect(transbordo!, 'tabela transbordou o container').toBeLessThanOrEqual(0)
+})

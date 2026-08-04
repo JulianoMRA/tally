@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
@@ -64,12 +65,13 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     // --- Cancelar assinatura pela tela Saídas ---
     await page.getByRole('link', { name: 'Saídas' }).click()
     await page.getByRole('button', { name: 'Assinaturas', exact: true }).click()
-    await page
-      .getByRole('row')
-      .filter({ hasText: 'Spotify E2E' })
-      .getByRole('button', { name: 'Cancelar', exact: true })
-      .click()
-    await page.getByRole('button', { name: 'Cancelar assinatura' }).click()
+    await acionarNoMenuDaLinha(
+      page,
+      page.getByRole('row').filter({ hasText: 'Spotify E2E' }),
+      'Cancelar assinatura'
+    )
+    // O ConfirmDialog usa o mesmo rótulo; o menu já fechou, então não colide.
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancelar assinatura' }).click()
 
     // Após cancelar, a linha mostra o badge "Cancelada"
     await expect(
