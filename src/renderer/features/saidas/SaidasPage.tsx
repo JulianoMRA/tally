@@ -21,6 +21,7 @@ import {
   Panel,
   RowActions,
   SegmentedControl,
+  SortableHeader,
   Select,
   useToast,
   type AcaoLinha,
@@ -191,7 +192,7 @@ export default function SaidasPage() {
     return acoes
   }
 
-  const { itensOrdenados, handleSort, sortIndicator } = useOrdenacao(
+  const { itensOrdenados, sortBy, sortDir, handleSort } = useOrdenacao(
     filtradas,
     COMPARADORES,
     'data',
@@ -423,20 +424,27 @@ export default function SaidasPage() {
                 <table className={styles.tabela}>
                   <thead>
                     <tr>
-                      <th className={styles.thSortavel} onClick={() => handleSort('descricao')}>
-                        Descrição{sortIndicator('descricao')}
-                      </th>
+                      <SortableHeader
+                        rotulo="Descrição"
+                        ativo={sortBy === 'descricao'}
+                        direcao={sortDir}
+                        onSort={() => handleSort('descricao')}
+                      />
                       <th>Tipo</th>
                       <th>Categoria</th>
-                      <th className={styles.thSortavel} onClick={() => handleSort('data')}>
-                        Data{sortIndicator('data')}
-                      </th>
-                      <th
-                        className={`${styles.colValor} ${styles.thSortavel}`}
-                        onClick={() => handleSort('valor')}
-                      >
-                        Valor{sortIndicator('valor')}
-                      </th>
+                      <SortableHeader
+                        rotulo="Data"
+                        ativo={sortBy === 'data'}
+                        direcao={sortDir}
+                        onSort={() => handleSort('data')}
+                      />
+                      <SortableHeader
+                        rotulo="Valor"
+                        ativo={sortBy === 'valor'}
+                        direcao={sortDir}
+                        onSort={() => handleSort('valor')}
+                        className={styles.colValor}
+                      />
                       <th className={styles.colAcoes} aria-label="Ações" />
                     </tr>
                   </thead>

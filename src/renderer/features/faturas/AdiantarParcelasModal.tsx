@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Fatura } from '@domain/entities/fatura'
 import { Button, Field, Input, Select } from '../../components/ui'
 import { useEscapeKey } from '../../hooks/use-escape-key'
+import { useFocusTrap } from '../../hooks/use-focus-trap'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import styles from './faturas.module.css'
 
@@ -28,6 +29,7 @@ export function AdiantarParcelasModal({
   const [loadingFaturas, setLoadingFaturas] = useState(true)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const modalRef = useFocusTrap<HTMLDivElement>()
   useEscapeKey(onCancelar)
 
   useEffect(() => {
@@ -76,7 +78,13 @@ export function AdiantarParcelasModal({
 
   return (
     <div className={styles.modalOverlay}>
-      <div className={styles.modal}>
+      <div
+        ref={modalRef}
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Adiantar parcelas"
+      >
         <h3 className={styles.modalTitle}>Adiantar parcelas</h3>
         <p className={styles.modalDesc}>
           Despesa: <strong>{descricao}</strong>. As parcelas mais futuras serão movidas para a

@@ -2,6 +2,7 @@ import { useState, type KeyboardEvent } from 'react'
 import type { DespesaComTags } from '@shared/ipc/despesa'
 import { Button } from '../../components/ui'
 import { useEscapeKey } from '../../hooks/use-escape-key'
+import { useFocusTrap } from '../../hooks/use-focus-trap'
 import styles from './saidas.module.css'
 
 type Props = {
@@ -16,6 +17,7 @@ export function NotaETagsModal({ despesa, onConfirmar, onCancelar }: Props) {
   const [entradaTag, setEntradaTag] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const modalRef = useFocusTrap<HTMLDivElement>()
   useEscapeKey(onCancelar)
 
   function adicionarTag() {
@@ -52,6 +54,7 @@ export function NotaETagsModal({ despesa, onConfirmar, onCancelar }: Props) {
   return (
     <div className={styles.modalOverlay} onClick={onCancelar}>
       <div
+        ref={modalRef}
         className={styles.modal}
         role="dialog"
         aria-modal="true"

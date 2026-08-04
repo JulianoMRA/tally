@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Renda } from '@domain/entities/renda'
 import { Button, Field, Input } from '../../components/ui'
 import { useEscapeKey } from '../../hooks/use-escape-key'
+import { useFocusTrap } from '../../hooks/use-focus-trap'
 import styles from './rendas.module.css'
 
 type Props = {
@@ -30,6 +31,7 @@ export function EditarRendaModal({ renda, onConfirmar, onCancelar }: Props) {
   )
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const modalRef = useFocusTrap<HTMLDivElement>()
   useEscapeKey(onCancelar)
 
   useEffect(() => {
@@ -79,7 +81,13 @@ export function EditarRendaModal({ renda, onConfirmar, onCancelar }: Props) {
 
   return (
     <div className={styles.modalOverlay}>
-      <div className={styles.modal}>
+      <div
+        ref={modalRef}
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Editar renda"
+      >
         <h3 className={styles.modalTitle}>Editar renda</h3>
         <p className={styles.modalDesc}>
           Tipo: <strong>{renda.tipo}</strong>.{' '}

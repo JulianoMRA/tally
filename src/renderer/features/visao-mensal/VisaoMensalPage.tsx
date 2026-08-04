@@ -8,7 +8,15 @@ import {
 import type { RecebimentoComContexto } from '@shared/ipc/recebimento'
 import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
-import { Badge, Button, EmptyState, Input, Panel, useToast } from '../../components/ui'
+import {
+  Badge,
+  Button,
+  EmptyState,
+  Input,
+  Panel,
+  SortableHeader,
+  useToast
+} from '../../components/ui'
 import { mensagemErro } from '../../lib/mensagem-erro'
 import { alfabetico, porData, porNumero } from '../../lib/comparadores'
 import { formatBRL } from '../../lib/format-brl'
@@ -186,30 +194,32 @@ export default function VisaoMensalPage() {
               <table className={styles.tabela}>
                 <thead>
                   <tr>
-                    <th
-                      className={styles.thSortavel}
-                      onClick={() => recebimentos.handleSort('fonte')}
-                    >
-                      Fonte{recebimentos.sortIndicator('fonte')}
-                    </th>
-                    <th
-                      className={styles.thSortavel}
-                      onClick={() => recebimentos.handleSort('data')}
-                    >
-                      Esperada{recebimentos.sortIndicator('data')}
-                    </th>
-                    <th
-                      className={`${styles.colStatus} ${styles.thSortavel}`}
-                      onClick={() => recebimentos.handleSort('status')}
-                    >
-                      Status{recebimentos.sortIndicator('status')}
-                    </th>
-                    <th
-                      className={`${styles.colValor} ${styles.thSortavel}`}
-                      onClick={() => recebimentos.handleSort('valor')}
-                    >
-                      Valor{recebimentos.sortIndicator('valor')}
-                    </th>
+                    <SortableHeader
+                      rotulo="Fonte"
+                      ativo={recebimentos.sortBy === 'fonte'}
+                      direcao={recebimentos.sortDir}
+                      onSort={() => recebimentos.handleSort('fonte')}
+                    />
+                    <SortableHeader
+                      rotulo="Esperada"
+                      ativo={recebimentos.sortBy === 'data'}
+                      direcao={recebimentos.sortDir}
+                      onSort={() => recebimentos.handleSort('data')}
+                    />
+                    <SortableHeader
+                      rotulo="Status"
+                      ativo={recebimentos.sortBy === 'status'}
+                      direcao={recebimentos.sortDir}
+                      onSort={() => recebimentos.handleSort('status')}
+                      className={styles.colStatus}
+                    />
+                    <SortableHeader
+                      rotulo="Valor"
+                      ativo={recebimentos.sortBy === 'valor'}
+                      direcao={recebimentos.sortDir}
+                      onSort={() => recebimentos.handleSort('valor')}
+                      className={styles.colValor}
+                    />
                   </tr>
                 </thead>
                 <tbody>
@@ -245,24 +255,31 @@ export default function VisaoMensalPage() {
               <table className={styles.tabela}>
                 <thead>
                   <tr>
-                    <th
-                      className={styles.thSortavel}
-                      onClick={() => gastos.handleSort('descricao')}
-                    >
-                      Descrição{gastos.sortIndicator('descricao')}
-                    </th>
-                    <th className={styles.thSortavel} onClick={() => gastos.handleSort('forma')}>
-                      Forma{gastos.sortIndicator('forma')}
-                    </th>
-                    <th className={styles.thSortavel} onClick={() => gastos.handleSort('data')}>
-                      Data{gastos.sortIndicator('data')}
-                    </th>
-                    <th
-                      className={`${styles.colValor} ${styles.thSortavel}`}
-                      onClick={() => gastos.handleSort('valor')}
-                    >
-                      Valor{gastos.sortIndicator('valor')}
-                    </th>
+                    <SortableHeader
+                      rotulo="Descrição"
+                      ativo={gastos.sortBy === 'descricao'}
+                      direcao={gastos.sortDir}
+                      onSort={() => gastos.handleSort('descricao')}
+                    />
+                    <SortableHeader
+                      rotulo="Forma"
+                      ativo={gastos.sortBy === 'forma'}
+                      direcao={gastos.sortDir}
+                      onSort={() => gastos.handleSort('forma')}
+                    />
+                    <SortableHeader
+                      rotulo="Data"
+                      ativo={gastos.sortBy === 'data'}
+                      direcao={gastos.sortDir}
+                      onSort={() => gastos.handleSort('data')}
+                    />
+                    <SortableHeader
+                      rotulo="Valor"
+                      ativo={gastos.sortBy === 'valor'}
+                      direcao={gastos.sortDir}
+                      onSort={() => gastos.handleSort('valor')}
+                      className={styles.colValor}
+                    />
                   </tr>
                 </thead>
                 <tbody>

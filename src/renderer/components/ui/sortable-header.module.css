@@ -1,0 +1,31 @@
+/* A célula herda tipografia e fundo do `.tabela th` da feature; aqui só
+   neutralizamos o padding para o botão ocupar a área toda e virar alvo de
+   clique inteiro. */
+.th {
+  padding: 0 !important;
+}
+
+.botao {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  user-select: none;
+}
+
+.botao:hover {
+  color: var(--ink);
+}
+
+.indicador {
+  font-size: 0.9em;
+}

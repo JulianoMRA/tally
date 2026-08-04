@@ -3,6 +3,7 @@ import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
 import { Button, Field, Input, Select } from '../../components/ui'
 import { useEscapeKey } from '../../hooks/use-escape-key'
+import { useFocusTrap } from '../../hooks/use-focus-trap'
 import styles from './faturas.module.css'
 
 type Props = {
@@ -32,6 +33,7 @@ export function EditarDespesaModal({ despesa, categorias, onConfirmar, onCancela
   const [dataCompra, setDataCompra] = useState(despesa.dataCompra)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const modalRef = useFocusTrap<HTMLDivElement>()
   useEscapeKey(onCancelar)
 
   useEffect(() => {
@@ -75,7 +77,13 @@ export function EditarDespesaModal({ despesa, categorias, onConfirmar, onCancela
 
   return (
     <div className={styles.modalOverlay}>
-      <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Editar despesa">
+      <div
+        ref={modalRef}
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Editar despesa"
+      >
         <h3 className={styles.modalTitle}>Editar despesa</h3>
         <p className={styles.modalDesc}>
           Tipo: <strong>{despesa.tipo}</strong>.{' '}

@@ -90,6 +90,9 @@ tabela fica mais estreita ao lado do formulário do que ocupando a largura intei
 - `Field` — wrapper label + children + hint/erro
 - `EmptyState` — estado vazio centralizado com título, descrição e ação opcional
 - `ConfirmDialog` — confirmação modal de ação destrutiva (Slice 14)
+- `SortableHeader` — cabeçalho de coluna ordenável: `<button>` interno (Enter e Espaço de
+  graça) e `aria-sort` na célula. Antes era `<th onClick>` sem role, tabIndex nem teclado —
+  ordenar era exclusivo de mouse, e o axe não pegava porque `<th>` clicável não viola regra
 - `SegmentedControl` — escolha única em pílula, com `radiogroup`/`radio` (padrão) ou
   `tablist`/`tab` quando troca o conteúdo da tela. Setas, Home/End e roving tabindex.
   **Substituiu sete implementações** quase idênticas espalhadas pelas features
@@ -108,8 +111,15 @@ tabela fica mais estreita ao lado do formulário do que ocupando a largura intei
 - `ToastProvider` — feedback de sucesso e erro das mutações (Slice 14)
 - `ErrorBoundary` — captura de erro de render com tela de recuperação
 
-Hook auxiliar: `useEscapeKey` (`src/renderer/hooks/use-escape-key.ts`), fecha
-modal com Esc.
+Hooks auxiliares (`src/renderer/hooks/`): `useEscapeKey` fecha modal com Esc;
+`useFocusTrap` leva o foco para dentro do modal ao abrir, cicla o Tab e devolve o foco ao
+gatilho ao fechar — sem ele o `ConfirmDialog` abria com o foco ainda na linha de trás.
+Helper `aoTeclarComoBotao` (`lib/teclado.ts`) para elementos com `role="button"`: o padrão
+WAI-ARIA exige Enter **e** Espaço.
+
+**Foco visível.** O token `--focus-ring` e a regra `:focus-visible` em `global.css` valem
+para tudo que recebe foco por teclado. Antes não existia nenhuma: o app usava o outline
+default do Chromium (0,8px laranja) sobre fundo creme.
 
 ## Fontes
 
