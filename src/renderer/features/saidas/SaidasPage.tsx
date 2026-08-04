@@ -14,16 +14,17 @@ import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
 import {
   Badge,
-  Button,
   ConfirmDialog,
   EmptyState,
   Field,
   Input,
   Panel,
   RowActions,
+  SegmentedControl,
   Select,
   useToast,
-  type AcaoLinha
+  type AcaoLinha,
+  type OpcaoSegmentada
 } from '../../components/ui'
 import { alfabetico, porData, porNumero, type Comparador } from '../../lib/comparadores'
 import { formatBRL } from '../../lib/format-brl'
@@ -77,11 +78,11 @@ function pertenceAoFiltro(d: Despesa, filtro: Filtro): boolean {
   }
 }
 
-const FILTROS: { chave: Filtro; rotulo: string }[] = [
-  { chave: 'todas', rotulo: 'Todas' },
-  { chave: 'foraCartao', rotulo: 'Fora do cartão' },
-  { chave: 'parcelada', rotulo: 'Parceladas' },
-  { chave: 'assinatura', rotulo: 'Assinaturas' }
+const FILTROS: readonly OpcaoSegmentada<Filtro>[] = [
+  { valor: 'todas', rotulo: 'Todas' },
+  { valor: 'foraCartao', rotulo: 'Fora do cartão' },
+  { valor: 'parcelada', rotulo: 'Parceladas' },
+  { valor: 'assinatura', rotulo: 'Assinaturas' }
 ]
 
 export default function SaidasPage() {
@@ -374,16 +375,12 @@ export default function SaidasPage() {
 
         <div className={styles.colLista}>
           <div className={styles.toolbar}>
-            {FILTROS.map((f) => (
-              <Button
-                key={f.chave}
-                variant={filtro === f.chave ? 'primary' : 'ghost'}
-                size="sm"
-                onClick={() => setFiltro(f.chave)}
-              >
-                {f.rotulo}
-              </Button>
-            ))}
+            <SegmentedControl
+              opcoes={FILTROS}
+              valor={filtro}
+              onChange={setFiltro}
+              label="Filtrar lançamentos por tipo"
+            />
             {filtro === 'foraCartao' && (
               <Field label="Mês">
                 <Input type="month" value={mes} onChange={(e) => setMes(e.target.value)} />

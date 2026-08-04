@@ -218,7 +218,7 @@ export function FaturaDetalhe({
         <div className={styles.detalheTitle}>
           {cartaoCor && <span className={styles.cardChip} style={{ background: cartaoCor }} />}
           <h2 className={styles.detalheTitleText}>
-            {cartaoNome} · {formatarMesReferencia(fatura.mesReferencia)}
+            {cartaoNome} · {formatarMesReferencia(fatura.mesReferencia, { capitalizar: true })}
           </h2>
         </div>
         <div className={styles.detalheActions}>
@@ -233,7 +233,7 @@ export function FaturaDetalhe({
           <div className={styles.resumoLinha}>
             <span className={styles.resumoLabel}>Mês</span>
             <span className={styles.resumoValor}>
-              {formatarMesReferencia(fatura.mesReferencia)}
+              {formatarMesReferencia(fatura.mesReferencia, { capitalizar: true })}
             </span>
           </div>
           <div className={styles.resumoLinha}>

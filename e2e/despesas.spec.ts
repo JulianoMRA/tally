@@ -50,11 +50,11 @@ test.describe('Despesa única + Fatura', () => {
 
     await page.getByLabel('Cartão').selectOption({ label: 'Inter E2E' })
 
-    // Fatura 2026-06 deve aparecer na lista como "junho de 2026"
-    await expect(page.getByText('junho de 2026', { exact: true })).toBeVisible()
+    // Fatura 2026-06 deve aparecer na lista como "Junho de 2026"
+    await expect(page.getByText('Junho de 2026', { exact: true })).toBeVisible()
 
     // Abre detalhe da fatura
-    await page.getByText('junho de 2026', { exact: true }).click()
+    await page.getByText('Junho de 2026', { exact: true }).click()
 
     // Parcela 1/1 com valor R$ 50,00 (espaço pode ser non-breaking → regex tolerante)
     await expect(page.getByText('1/1')).toBeVisible()

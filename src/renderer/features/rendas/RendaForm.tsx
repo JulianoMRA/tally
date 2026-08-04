@@ -8,10 +8,15 @@ import {
   type CriarRendaAvulsaInput,
   type CriarRendaRecorrenteInput
 } from '@shared/ipc/renda'
-import { Button, Field, Input } from '../../components/ui'
+import { Button, Field, Input, SegmentedControl, type OpcaoSegmentada } from '../../components/ui'
 import styles from './rendas.module.css'
 
 type TipoForm = 'recorrente' | 'avulsa'
+
+const TIPOS_RENDA: readonly OpcaoSegmentada<TipoForm>[] = [
+  { valor: 'recorrente', rotulo: 'Recorrente' },
+  { valor: 'avulsa', rotulo: 'Avulsa' }
+]
 
 type AvulsaValues = Omit<CriarRendaAvulsaInput, 'valorPadraoCentavos'> & {
   valorReais: string
@@ -155,22 +160,13 @@ export function RendaForm({ onSalvarAvulsa, onSalvarRecorrente }: Props) {
     <div className={styles.form}>
       <h2 className={styles.formTitle}>Nova fonte de renda</h2>
 
-      <div className={styles.tipoSelector}>
-        <button
-          type="button"
-          className={`${styles.tipoBtn} ${tipo === 'recorrente' ? styles.tipoBtnActive : ''}`}
-          onClick={() => setTipo('recorrente')}
-        >
-          Recorrente
-        </button>
-        <button
-          type="button"
-          className={`${styles.tipoBtn} ${tipo === 'avulsa' ? styles.tipoBtnActive : ''}`}
-          onClick={() => setTipo('avulsa')}
-        >
-          Avulsa
-        </button>
-      </div>
+      <SegmentedControl
+        opcoes={TIPOS_RENDA}
+        valor={tipo}
+        onChange={setTipo}
+        label="Tipo de fonte de renda"
+        size="md"
+      />
 
       {tipo === 'recorrente' ? (
         <FormRecorrente onSalvar={onSalvarRecorrente} />

@@ -27,7 +27,7 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     // --- Cadastrar assinatura (form inline em Saídas, tipo Assinatura) ---
     await page.getByRole('link', { name: 'Saídas' }).click()
     await expect(page.getByLabel('Descrição')).toBeVisible()
-    await page.getByRole('button', { name: 'Assinatura', exact: true }).click()
+    await page.getByRole('radio', { name: 'Assinatura', exact: true }).click()
 
     await page.getByLabel('Descrição').fill('Spotify E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Streaming E2E' })
@@ -40,7 +40,7 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     await expect(page.getByText(/junho de 2026/).first()).toBeVisible()
 
     // --- Filtro Assinaturas: ver a assinatura ativa ---
-    await page.getByRole('button', { name: 'Assinaturas', exact: true }).click()
+    await page.getByRole('radio', { name: 'Assinaturas', exact: true }).click()
     const linha = page.getByRole('row').filter({ hasText: 'Spotify E2E' })
     await expect(linha.getByText(/R\$\s*21,90\/mês/)).toBeVisible()
 
@@ -59,12 +59,12 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     // --- Conferir na fatura junho/2026 ---
     await page.getByRole('link', { name: 'Faturas' }).click()
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Assinatura E2E' })
-    await page.getByText('junho de 2026').first().click()
+    await page.getByText('Junho de 2026').first().click()
     await expect(page.getByText(/R\$\s*24,90/).first()).toBeVisible()
 
     // --- Cancelar assinatura pela tela Saídas ---
     await page.getByRole('link', { name: 'Saídas' }).click()
-    await page.getByRole('button', { name: 'Assinaturas', exact: true }).click()
+    await page.getByRole('radio', { name: 'Assinaturas', exact: true }).click()
     await acionarNoMenuDaLinha(
       page,
       page.getByRole('row').filter({ hasText: 'Spotify E2E' }),

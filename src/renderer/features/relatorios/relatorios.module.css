@@ -31,38 +31,6 @@
   font-weight: 500;
 }
 
-.periodoSelector {
-  display: flex;
-  gap: 4px;
-  background: var(--bg-sunk);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-2);
-  padding: 3px;
-}
-
-.periodoBtn {
-  background: transparent;
-  border: none;
-  border-radius: calc(var(--r-2) - 2px);
-  padding: 5px 12px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ink-3);
-  cursor: pointer;
-}
-
-.periodoBtn:hover {
-  background: var(--bg-elev);
-  color: var(--ink);
-}
-
-.periodoBtnActive,
-.periodoBtnActive:hover {
-  background: var(--ink);
-  color: var(--bg-elev);
-  font-weight: 600;
-}
-
 .gastosMesGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -239,23 +207,6 @@
   border-radius: var(--r-pill);
   padding: 3px;
   margin-bottom: 12px;
-}
-
-.orcEscopoBtn,
-.orcEscopoBtnAtivo {
-  border: none;
-  border-radius: var(--r-pill);
-  padding: 5px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  background: transparent;
-  color: var(--ink-3);
-}
-
-.orcEscopoBtnAtivo {
-  background: var(--ink);
-  color: var(--bg-elev);
 }
 
 .orcOrigem {

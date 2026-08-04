@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Topbar } from './Topbar'
 import styles from './page-head.module.css'
 
 interface PageHeadProps {
@@ -7,14 +8,16 @@ interface PageHeadProps {
   actions?: ReactNode
 }
 
+/**
+ * Cabeçalho de página: barra fixa com título e ações (via `Topbar`), mais o
+ * subtítulo, que rola junto com o conteúdo por ser texto de referência — grudar
+ * as três linhas custaria ~90px de altura fixa numa janela de 800px.
+ */
 export function PageHead({ title, subtitle, actions }: PageHeadProps) {
   return (
-    <div className={styles.head}>
-      <div className={styles.text}>
-        <h1 className={styles.title}>{title}</h1>
-        {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
-      </div>
-      {actions && <div className={styles.actions}>{actions}</div>}
-    </div>
+    <>
+      <Topbar title={title} actions={actions} />
+      {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
+    </>
   )
 }

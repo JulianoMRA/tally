@@ -19,7 +19,7 @@ test.describe('Gastos fora de cartão (RF-DES-01)', () => {
     await expect(page.getByLabel('Descrição')).toBeVisible()
 
     // Aba Única está selecionada por default; trocar forma para Pix
-    await page.getByRole('button', { name: 'Pix', exact: true }).click()
+    await page.getByRole('radio', { name: 'Pix', exact: true }).click()
 
     await page.getByLabel('Descrição').fill('Feira E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Mercado E2E' })
@@ -31,7 +31,7 @@ test.describe('Gastos fora de cartão (RF-DES-01)', () => {
     await expect(page.getByRole('strong').filter({ hasText: 'Pix' })).toBeVisible()
 
     // --- Filtro "Fora do cartão" mostra a despesa ---
-    await page.getByRole('button', { name: 'Fora do cartão', exact: true }).click()
+    await page.getByRole('radio', { name: 'Fora do cartão', exact: true }).click()
     await expect(page.getByRole('cell', { name: 'Feira E2E' })).toBeVisible()
     await expect(
       page

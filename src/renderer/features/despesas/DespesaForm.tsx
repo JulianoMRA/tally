@@ -24,11 +24,23 @@ import {
 import type { Cartao } from '@domain/entities/cartao'
 import type { Categoria } from '@domain/entities/categoria'
 import type { PreenchimentoDespesa } from '../saidas/montar-preenchimento'
-import { Button, Field, Input, Select } from '../../components/ui'
+import {
+  Button,
+  Field,
+  Input,
+  SegmentedControl,
+  Select,
+  type OpcaoSegmentada
+} from '../../components/ui'
 import { parseCentavos, valorTotalCentavosParcelada, type ModoValorParcela } from './parcela-valor'
 import styles from './despesas.module.css'
 
 type TipoDespesa = 'unica' | 'parcelada' | 'em-andamento' | 'assinatura'
+
+const MODOS_VALOR: readonly OpcaoSegmentada<ModoValorParcela>[] = [
+  { valor: 'total', rotulo: 'Valor total' },
+  { valor: 'parcela', rotulo: 'Valor por parcela' }
+]
 
 // ──── Única ────────────────────────────────────────────────────
 type UniqueValues = Omit<DespesaUnicaCreditoInput, 'valorCentavos'> & { valorReais: string }
@@ -295,27 +307,21 @@ function FormUnica({
 }) {
   const [forma, setForma] = useState<FormaPagamento>(formaInicial)
 
-  const formaLabels: { value: FormaPagamento; label: string }[] = [
-    { value: 'Credito', label: 'Crédito' },
-    { value: 'Pix', label: 'Pix' },
-    { value: 'Debito', label: 'Débito' },
-    { value: 'Dinheiro', label: 'Dinheiro' }
+  const formaLabels: readonly OpcaoSegmentada<FormaPagamento>[] = [
+    { valor: 'Credito', rotulo: 'Crédito' },
+    { valor: 'Pix', rotulo: 'Pix' },
+    { valor: 'Debito', rotulo: 'Débito' },
+    { valor: 'Dinheiro', rotulo: 'Dinheiro' }
   ]
 
   return (
     <div className={styles.formInner}>
-      <div className={styles.formaSelector}>
-        {formaLabels.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            className={`${styles.formaBtn} ${forma === value ? styles.formaBtnActive : ''}`}
-            onClick={() => setForma(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        opcoes={formaLabels}
+        valor={forma}
+        onChange={setForma}
+        label="Forma de pagamento"
+      />
 
       {forma === 'Credito' ? (
         <FormUnicaCredito
@@ -390,23 +396,12 @@ function FormParcelada({
     <form onSubmit={handleSubmit(onSubmit)} className={styles.formInner}>
       <CamposComuns register={register} errors={errors} cartoes={cartoes} categorias={categorias} />
 
-      <div className={styles.formaSelector}>
-        {(
-          [
-            { value: 'total', label: 'Valor total' },
-            { value: 'parcela', label: 'Valor por parcela' }
-          ] as const
-        ).map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            className={`${styles.formaBtn} ${modoValor === value ? styles.formaBtnActive : ''}`}
-            onClick={() => setModoValor(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        opcoes={MODOS_VALOR}
+        valor={modoValor}
+        onChange={setModoValor}
+        label="Como informar o valor"
+      />
 
       <div className={styles.fieldRow}>
         <Field
@@ -609,11 +604,11 @@ export function DespesaForm({
 }: Props) {
   const [tipo, setTipo] = useState<TipoDespesa>(preenchimento?.tipo ?? 'unica')
 
-  const tipoLabels: { value: TipoDespesa; label: string }[] = [
-    { value: 'unica', label: 'Única' },
-    { value: 'parcelada', label: 'Parcelada' },
-    { value: 'em-andamento', label: 'Em andamento' },
-    { value: 'assinatura', label: 'Assinatura' }
+  const tipoLabels: readonly OpcaoSegmentada<TipoDespesa>[] = [
+    { valor: 'unica', rotulo: 'Única' },
+    { valor: 'parcelada', rotulo: 'Parcelada' },
+    { valor: 'em-andamento', rotulo: 'Em andamento' },
+    { valor: 'assinatura', rotulo: 'Assinatura' }
   ]
 
   const preUnica = preenchimento?.tipo === 'unica' ? preenchimento : undefined
@@ -624,18 +619,13 @@ export function DespesaForm({
     <div className={styles.form}>
       <h2 className={styles.formTitle}>Nova despesa</h2>
 
-      <div className={styles.tipoSelector}>
-        {tipoLabels.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            className={`${styles.tipoBtn} ${tipo === value ? styles.tipoBtnActive : ''}`}
-            onClick={() => setTipo(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        opcoes={tipoLabels}
+        valor={tipo}
+        onChange={setTipo}
+        label="Tipo de despesa"
+        size="md"
+      />
 
       {tipo === 'unica' && (
         <FormUnica

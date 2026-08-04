@@ -1,7 +1,20 @@
 import { useMemo, useState } from 'react'
 import type { Categoria } from '@domain/entities/categoria'
 import type { StatusOrcamento } from '@domain/services/calcular-orcamento'
-import { Button, EmptyState, Field, Input, Select } from '../../../components/ui'
+import {
+  Button,
+  EmptyState,
+  Field,
+  Input,
+  SegmentedControl,
+  Select,
+  type OpcaoSegmentada
+} from '../../../components/ui'
+
+const ESCOPOS: readonly OpcaoSegmentada<'global' | 'mensal'>[] = [
+  { valor: 'global', rotulo: 'Todos os meses' },
+  { valor: 'mensal', rotulo: 'Só este mês' }
+]
 import { formatBRL } from '../../../lib/format-brl'
 import { useOrcamento } from '../hooks/use-orcamento'
 import styles from '../relatorios.module.css'
@@ -65,21 +78,13 @@ export function OrcamentoPanel({ mes, categorias }: Props) {
 
   return (
     <>
-      <div className={styles.orcEscopo} role="group" aria-label="Escopo do limite">
-        <button
-          type="button"
-          className={escopo === 'global' ? styles.orcEscopoBtnAtivo : styles.orcEscopoBtn}
-          onClick={() => setEscopo('global')}
-        >
-          Todos os meses
-        </button>
-        <button
-          type="button"
-          className={escopo === 'mensal' ? styles.orcEscopoBtnAtivo : styles.orcEscopoBtn}
-          onClick={() => setEscopo('mensal')}
-        >
-          Só este mês
-        </button>
+      <div className={styles.orcEscopo}>
+        <SegmentedControl
+          opcoes={ESCOPOS}
+          valor={escopo}
+          onChange={setEscopo}
+          label="Escopo do limite"
+        />
       </div>
 
       <div className={styles.orcForm}>

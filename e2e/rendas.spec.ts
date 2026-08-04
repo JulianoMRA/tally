@@ -14,7 +14,7 @@ test.describe('Rendas (RF-REN-01..05) — tela unificada Recebimentos + Fontes',
     await expect(page.getByRole('heading', { name: 'Rendas', exact: true })).toBeVisible()
 
     // --- Aba "Fontes de renda": criar Recorrente "Bolsa PET" ---
-    await page.getByRole('button', { name: 'Fontes de renda' }).click()
+    await page.getByRole('tab', { name: 'Fontes de renda' }).click()
     await page.getByLabel('Nome').fill('Bolsa PET E2E')
     await page.getByLabel('Valor padrão (R$)').fill('1200,00')
     await page.getByLabel('Dia esperado').fill('5')
@@ -24,7 +24,7 @@ test.describe('Rendas (RF-REN-01..05) — tela unificada Recebimentos + Fontes',
     await expect(page.getByText(/R\$\s*1\.200,00/).first()).toBeVisible()
 
     // --- Aba "Recebimentos do mês": mês 2026-06 mostra a Bolsa ---
-    await page.getByRole('button', { name: 'Recebimentos do mês' }).click()
+    await page.getByRole('tab', { name: 'Recebimentos do mês' }).click()
     await page.getByLabel('Mês').fill('2026-06')
     await expect(page.getByText('Bolsa PET E2E').first()).toBeVisible()
     await expect(page.getByText(/R\$\s*1\.200,00/).first()).toBeVisible()

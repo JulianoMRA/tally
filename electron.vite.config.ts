@@ -1,7 +1,14 @@
 import { resolve } from 'path'
+import { createRequire } from 'node:module'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import type { Plugin } from 'vite'
+
+// A versao exibida na sidebar vinha hardcoded e ficou defasada do package.json
+// (dizia v1.1 numa build 1.1.1). Agora e injetada em build time.
+const { version: versaoDoApp } = createRequire(import.meta.url)('./package.json') as {
+  version: string
+}
 
 // CSP estrita aplicada APENAS no build de producao, via <meta> no index.html.
 // O index.html e compartilhado com o dev server, onde a CSP chega por header
@@ -69,6 +76,9 @@ export default defineConfig({
   renderer: {
     root: resolve(__dirname, 'src/renderer'),
     plugins: [react(), cspMetaPlugin()],
+    define: {
+      __APP_VERSION__: JSON.stringify(versaoDoApp)
+    },
     build: {
       rollupOptions: {
         output: {

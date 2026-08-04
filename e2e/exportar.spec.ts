@@ -17,7 +17,7 @@ test.describe('Exportação — rota de impressão', () => {
     await expect(page.getByText('Mercado Print E2E')).toBeVisible()
 
     await page.getByRole('link', { name: 'Saídas' }).click()
-    await page.getByRole('button', { name: 'Pix', exact: true }).click()
+    await page.getByRole('radio', { name: 'Pix', exact: true }).click()
     await page.getByLabel('Descrição').fill('Feira Print E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Mercado Print E2E' })
     await page.getByLabel('Valor (R$)').fill('42,00')

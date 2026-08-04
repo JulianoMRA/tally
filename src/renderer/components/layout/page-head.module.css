@@ -1,33 +1,6 @@
-.head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  /* Sem padding horizontal: quem alinha é o PageContainer que o envolve. */
-  padding: 28px 0 20px;
-}
-
-.text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.title {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: -0.03em;
-}
-
+/* Título e ações vivem no Topbar (fixo). Aqui sobra só o subtítulo, que rola. */
 .subtitle {
   font-size: 13px;
   color: var(--ink-3);
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-top: 4px;
+  margin: 12px 0 20px;
 }

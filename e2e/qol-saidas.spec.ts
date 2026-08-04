@@ -83,7 +83,7 @@ test.describe('Saídas — QoL (busca e duplicar)', () => {
     await expect(page.getByText('Lazer QoL E2E')).toBeVisible()
 
     await page.getByRole('link', { name: 'Saídas' }).click()
-    await page.getByRole('button', { name: 'Assinatura', exact: true }).click()
+    await page.getByRole('radio', { name: 'Assinatura', exact: true }).click()
     await page.getByLabel('Descrição').fill('Streaming QoL')
     await page.getByLabel('Categoria').selectOption({ label: 'Lazer QoL E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Nubank QoL E2E' })

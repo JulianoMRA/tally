@@ -49,7 +49,7 @@ async function semear(app: ElectronApplication): Promise<Page> {
 
   // Assinatura ativa = 5 botões na linha (pior caso: Duplicar, Nota/Tags,
   // Editar, Cancelar, Excluir).
-  await page.getByRole('button', { name: 'Assinatura', exact: true }).click()
+  await page.getByRole('radio', { name: 'Assinatura', exact: true }).click()
   await page.getByLabel('Descrição').fill('Streaming de video mensal')
   await page.getByLabel('Categoria').selectOption({ label: 'Mercado Acoes E2E' })
   await page.getByLabel('Cartão').selectOption({ label: 'Inter Acoes E2E' })

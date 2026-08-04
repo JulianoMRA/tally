@@ -58,7 +58,7 @@ test.describe('Orçamento por categoria (Bloco D)', () => {
     await expect(linha.getByText(/Atenção/)).toBeVisible()
 
     // --- Fase 8: limite só deste mês sobrepõe o global ---
-    await orcPanel.getByRole('button', { name: 'Só este mês' }).click()
+    await orcPanel.getByRole('radio', { name: 'Só este mês' }).click()
     await orcPanel.getByLabel('Categoria').selectOption({ label: 'Mercado Orc E2E' })
     await orcPanel.getByLabel('Limite (R$)').fill('200,00')
     await orcPanel.getByRole('button', { name: 'Definir limite' }).click()

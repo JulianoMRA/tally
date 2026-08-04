@@ -48,7 +48,7 @@ async function semear(app: ElectronApplication): Promise<Page> {
   const dataCompra = `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, '0')}-03`
 
   await page.getByRole('link', { name: 'Saídas' }).click()
-  await page.getByRole('button', { name: 'Parcelada', exact: true }).click()
+  await page.getByRole('radio', { name: 'Parcelada', exact: true }).click()
   // Descrição longa de propósito: é o pior caso para a largura da tabela.
   await page.getByLabel('Descrição').fill('Notebook Dell comprado em doze vezes sem juros')
   await page.getByLabel('Categoria').selectOption({ label: 'Mercado Geometria E2E' })
