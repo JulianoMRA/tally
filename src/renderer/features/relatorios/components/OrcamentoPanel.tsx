@@ -26,8 +26,9 @@ const TEXT_CLASS: Record<StatusOrcamento, string> = {
   estourado: styles.textEstourado
 }
 
+// "No limite" lia-se como "no teto" — o oposto do que o status ok significa.
 const STATUS_LABEL: Record<StatusOrcamento, string> = {
-  ok: 'No limite',
+  ok: 'Dentro do limite',
   alerta: 'Atenção',
   estourado: 'Estourado'
 }

@@ -364,7 +364,7 @@ export function FaturaDetalhe({
                               disabled={detalhe.despesasPorParcela[p.id].tipo === 'Assinatura'}
                               title={
                                 detalhe.despesasPorParcela[p.id].tipo === 'Assinatura'
-                                  ? 'Edite assinaturas na tela Assinaturas'
+                                  ? 'Assinaturas se editam na tela Saídas'
                                   : 'Editar despesa'
                               }
                             >

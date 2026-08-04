@@ -45,7 +45,7 @@ export default function PrintMensalPage() {
           <strong>{formatBRL(totais.totalSaidasCentavos)}</strong>
         </div>
         <div>
-          <span>Saldo realizado</span>
+          <span>Saldo só com entradas recebidas</span>
           <strong>{formatBRL(totais.saldoRealizadoCentavos)}</strong>
         </div>
         <div>

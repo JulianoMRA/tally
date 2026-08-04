@@ -195,7 +195,7 @@ function AbaRecebimentos({
                     Recebido {formatarDataIso(r.dataRecebida)}
                   </span>
                 ) : (
-                  <span>Pendente</span>
+                  <span>Esperado</span>
                 )}
               </span>
               <div className={styles.acoes}>
