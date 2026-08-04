@@ -22,7 +22,6 @@ export function FaturasCardCompacto({ faturas }: Props) {
       title="Faturas"
       meta={`${faturas.length} ${pluralizar('cartão', faturas.length, 'ões')}`}
       flush
-      className={styles.panel}
     >
       {faturas.length === 0 ? (
         <EmptyState title="Nenhuma fatura neste mês." />

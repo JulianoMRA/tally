@@ -40,8 +40,12 @@ export default function PaineisRelatorios({ mes }: Props) {
   )
 
   return (
-    <div className={styles.coluna}>
-      <Panel title="Evolução do saldo" meta="Entradas, saídas e saldo realizado nos últimos meses">
+    <>
+      <Panel
+        className={styles.painel}
+        title="Evolução do saldo"
+        meta="Entradas, saídas e saldo realizado nos últimos meses"
+      >
         <div className={styles.toolbar}>
           <span className={styles.toolbarLabel}>Período:</span>
           <div className={styles.periodoSelector}>
@@ -69,6 +73,7 @@ export default function PaineisRelatorios({ mes }: Props) {
       </Panel>
 
       <Panel
+        className={styles.painel}
         title="Gastos do mês por categoria"
         meta="Pizza e ranking — combina parcelas de fatura + gastos fora cartão"
       >
@@ -87,6 +92,7 @@ export default function PaineisRelatorios({ mes }: Props) {
       </Panel>
 
       <Panel
+        className={styles.painel}
         title="Orçamento por categoria"
         meta="Defina um limite mensal por categoria e acompanhe o quanto já foi gasto"
       >
@@ -94,6 +100,7 @@ export default function PaineisRelatorios({ mes }: Props) {
       </Panel>
 
       <Panel
+        className={styles.painel}
         title="Evolução por categoria"
         meta="Acompanhe como você vem gastando em uma categoria específica"
       >
@@ -142,6 +149,6 @@ export default function PaineisRelatorios({ mes }: Props) {
           </div>
         )}
       </Panel>
-    </div>
+    </>
   )
 }

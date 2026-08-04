@@ -122,19 +122,25 @@ for (const largura of [1000, 1280, 1600] as const) {
   })
 }
 
-test('tabela de Saídas cabe sem rolagem horizontal na janela padrão', async ({ app }) => {
-  const page = await semear(app)
-  await redimensionar(app, 1280)
-  await expect.poll(async () => page.evaluate(() => window.innerWidth)).toBeLessThan(1281)
+// 1280 é a janela padrão (layout empilhado, tabela com a largura inteira) e
+// 1440 é a primeira faixa em que a fase 4 liga as duas colunas. A segunda é a
+// que importa: foi lá que a medição mostrou que um breakpoint em 1280 deixaria
+// a lista com 606px contra os ~698px que a tabela precisa.
+for (const largura of [1280, 1440] as const) {
+  test(`tabela de Saídas cabe sem rolagem horizontal em ${largura}px`, async ({ app }) => {
+    const page = await semear(app)
+    await redimensionar(app, largura)
+    await expect.poll(async () => page.evaluate(() => window.innerWidth)).toBeLessThan(largura + 1)
 
-  // Antes da fase 3 a tabela precisava de ~974px, dois terços só de botões, e
-  // dependia do container rolável para as ações serem alcançáveis.
-  const transbordo = await page.evaluate(() => {
-    const tabela = document.querySelector('table')
-    const wrap = tabela?.parentElement
-    if (!tabela || !wrap) return null
-    return tabela.scrollWidth - wrap.clientWidth
+    // Antes da fase 3 a tabela precisava de ~974px, dois terços só de botões, e
+    // dependia do container rolável para as ações serem alcançáveis.
+    const transbordo = await page.evaluate(() => {
+      const tabela = document.querySelector('table')
+      const wrap = tabela?.parentElement
+      if (!tabela || !wrap) return null
+      return tabela.scrollWidth - wrap.clientWidth
+    })
+    expect(transbordo).not.toBeNull()
+    expect(transbordo!, 'tabela transbordou o container').toBeLessThanOrEqual(0)
   })
-  expect(transbordo).not.toBeNull()
-  expect(transbordo!, 'tabela transbordou o container').toBeLessThanOrEqual(0)
-})
+}

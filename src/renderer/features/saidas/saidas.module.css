@@ -1,19 +1,32 @@
-/* Empilhado por padrão; em telas largas, cadastro à esquerda e lista à direita.
-   O breakpoint é 1940 (não 1440) porque a coluna da lista recebe 3/5 do espaço:
-   em 1440 sobrariam ~770px para uma tabela que precisa de ~974px, ou seja, as
-   duas colunas deixavam a tabela MAIS estreita do que o layout empilhado. */
+/* Empilhado em janelas estreitas; em duas colunas a partir de 1400px, com o
+   cadastro fixo à esquerda e a lista à direita.
+
+   O breakpoint era 1940 porque a tabela pedia ~974px (dois terços só de botões
+   de ação) e as duas colunas a deixavam MAIS estreita do que empilhada. A fase
+   3 recolheu as ações num menu e a largura mínima caiu para ~698px, mas isso
+   ainda não chega para a janela padrão: ela entrega 1266px de viewport (o
+   `width: 1280` do BrowserWindow é o tamanho EXTERNO), o que sobra 606px para a
+   lista — 93px a menos do que a tabela precisa. Medido em 1400px de viewport a
+   lista recebe ~740px, com folga de ~42px. Abaixo disso o layout empilhado dá à
+   tabela a largura inteira, que é melhor do que espremê-la ao lado do form. */
 .layout {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-@media (min-width: 1940px) {
+@media (min-width: 1400px) {
   .layout {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
     align-items: start;
     gap: 28px;
+  }
+
+  /* O formulário acompanha a rolagem da lista, que é bem mais alta. */
+  .colCadastro {
+    position: sticky;
+    top: 0;
   }
 }
 
