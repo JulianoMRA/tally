@@ -32,10 +32,28 @@ export const configArquivoSchema = configSchema.partial().transform((parcial) =>
   ...Object.fromEntries(Object.entries(parcial).filter(([, v]) => v !== undefined))
 }))
 
+export const restaurarBackupInputSchema = z.object({
+  caminho: z.string().min(1, 'Caminho do backup é obrigatório')
+})
+
+export type RestaurarBackupInput = z.infer<typeof restaurarBackupInputSchema>
+
+export type CopiaDeBackupDTO = {
+  caminho: string
+  criadoEm: string
+  tamanhoBytes: number
+}
+
 export type ConfigApi = {
   get: () => Promise<Config>
   set: (config: Config) => Promise<Config>
   escolherPastaBackup: () => Promise<string | null>
+  listarBackups: () => Promise<CopiaDeBackupDTO[]>
+  /** Cópia sob demanda, para antes de uma operação arriscada. */
+  criarBackupAgora: () => Promise<CopiaDeBackupDTO[]>
+  /** Substitui o banco atual pela cópia. A janela recarrega depois. */
+  restaurarBackup: (input: RestaurarBackupInput) => Promise<void>
+  abrirPastaBackups: () => Promise<void>
 }
 
 export { CONFIG_IPC_CHANNELS }

@@ -60,6 +60,9 @@
   display: flex;
   width: 100%;
   align-items: center;
+  /* O UA centraliza texto de <button>: sem isto o mês e as datas ficavam no
+     meio da linha depois da conversão de <li role="button"> para <li><button>. */
+  text-align: left;
   gap: 12px;
   padding: 10px 16px;
   border-bottom: 1px solid var(--rule);
@@ -86,6 +89,7 @@
   display: flex;
   width: 100%;
   align-items: center;
+  text-align: left;
   gap: 12px;
   background: var(--bg-elev);
   border: 1px solid var(--rule);
@@ -108,6 +112,25 @@
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+/* Valor da fatura: era a informação que faltava na lista inteira. */
+.faturaTotal {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.overviewFiltro {
+  margin-bottom: 16px;
+}
+
+.anterioresBarra {
+  padding: 6px 10px;
+  border-top: 1px solid var(--rule);
 }
 
 .faturaInfo {

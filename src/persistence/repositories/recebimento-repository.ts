@@ -48,26 +48,51 @@ export class RecebimentoRepository implements Repository {
   }
 
   /**
-   * Cria um recebimento avulso. Internamente cria uma `renda` Avulsa com o
-   * nome informado para preservar o vínculo de descrição → entrada.
+   * Cria um recebimento avulso, reusando a fonte informada em `rendaId` ou
+   * criando uma nova a partir de `nome`.
+   *
+   * Antes o INSERT da renda era incondicional: cada "+ Novo avulso" criava uma
+   * fonte, então três freelas do mesmo cliente viravam três fontes idênticas na
+   * aba Fontes — e as avulsas cadastradas à mão não serviam para nada, porque
+   * nenhum fluxo as reutilizava.
    */
   criarAvulsoCompleto(input: CriarRecebimentoAvulsoInput): Recebimento {
     return this.db.transaction(() => {
-      const rendaInfo = this.db
-        .prepare(
-          `INSERT INTO renda (nome, tipo, valor_padrao_centavos, dia_esperado)
-           VALUES (?, 'Avulsa', ?, NULL)`
-        )
-        .run(input.nome, input.valorCentavos)
-      const rendaId = Number(rendaInfo.lastInsertRowid)
+      const rendaId = 'rendaId' in input ? this.validarFonteAvulsa(input.rendaId) : null
 
       return this.criar({
-        rendaId,
+        rendaId: rendaId ?? this.criarFonteAvulsa(input as { nome: string }, input.valorCentavos),
         valorCentavos: input.valorCentavos,
         dataEsperada: input.dataEsperada,
         dataRecebida: input.dataRecebida ?? null
       })
     })()
+  }
+
+  /** Consulta direta em vez de RendaRepository: evita import circular. */
+  private validarFonteAvulsa(rendaId: number): number {
+    const row = this.db.prepare('SELECT id, tipo FROM renda WHERE id = ?').get(rendaId) as
+      | { id: number; tipo: string }
+      | undefined
+    if (!row) {
+      throw new Error(`Renda #${rendaId} não encontrada`)
+    }
+    if (row.tipo !== 'Avulsa') {
+      throw new Error(
+        `Renda #${rendaId} é ${row.tipo}: um recebimento avulso só se vincula a uma fonte Avulsa`
+      )
+    }
+    return row.id
+  }
+
+  private criarFonteAvulsa(input: { nome: string }, valorCentavos: number): number {
+    const info = this.db
+      .prepare(
+        `INSERT INTO renda (nome, tipo, valor_padrao_centavos, dia_esperado)
+         VALUES (?, 'Avulsa', ?, NULL)`
+      )
+      .run(input.nome, valorCentavos)
+    return Number(info.lastInsertRowid)
   }
 
   listar(input?: ListarRecebimentosInput): RecebimentoComContexto[] {

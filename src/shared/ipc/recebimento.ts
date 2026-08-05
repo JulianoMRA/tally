@@ -7,16 +7,32 @@ const valorSchema = z
   .int()
   .min(1, 'Valor deve ser maior que zero')
 
-export const criarRecebimentoAvulsoInputSchema = z.object({
-  nome: z
-    .string()
-    .trim()
-    .min(1, 'Descrição é obrigatória')
-    .max(80, 'Descrição deve ter no máximo 80 caracteres'),
+const camposComunsAvulso = {
   valorCentavos: valorSchema,
   dataEsperada: dataIsoSchema,
   dataRecebida: dataIsoSchema.optional()
-})
+}
+
+/**
+ * Um recebimento avulso ou cria uma fonte nova (`nome`) ou pendura numa que já
+ * existe (`rendaId`). Antes só havia `nome`, e o repositório inseria uma renda
+ * a cada chamada: três freelas do mesmo cliente viravam três fontes idênticas,
+ * e as fontes avulsas cadastradas à mão não eram reutilizáveis por fluxo nenhum.
+ */
+export const criarRecebimentoAvulsoInputSchema = z.union([
+  z.object({
+    nome: z
+      .string()
+      .trim()
+      .min(1, 'Descrição é obrigatória')
+      .max(80, 'Descrição deve ter no máximo 80 caracteres'),
+    ...camposComunsAvulso
+  }),
+  z.object({
+    rendaId: z.number().int().positive('Fonte inválida'),
+    ...camposComunsAvulso
+  })
+])
 
 export type CriarRecebimentoAvulsoInput = z.infer<typeof criarRecebimentoAvulsoInputSchema>
 

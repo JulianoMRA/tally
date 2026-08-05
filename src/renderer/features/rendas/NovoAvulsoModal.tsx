@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import type { Renda } from '@domain/entities/renda'
 import type { CriarRecebimentoAvulsoInput } from '@shared/ipc/recebimento'
 import { hojeIsoLocal } from '@shared/datas-locais'
-import { Button, Field, Input } from '../../components/ui'
+import { Button, Field, Input, Select } from '../../components/ui'
 import { useEscapeKey } from '../../hooks/use-escape-key'
 import { useFocusTrap } from '../../hooks/use-focus-trap'
 import styles from './rendas.module.css'
@@ -9,13 +10,18 @@ import styles from './rendas.module.css'
 type Props = {
   onConfirmar: (input: CriarRecebimentoAvulsoInput) => Promise<void>
   onCancelar: () => void
+  /** Fontes avulsas já cadastradas, para reaproveitar em vez de duplicar. */
+  fontes: Renda[]
 }
+
+const FONTE_NOVA = 'nova'
 
 function parseCentavos(reais: string): number {
   return Math.round(parseFloat(reais.replace(',', '.')) * 100)
 }
 
-export function NovoAvulsoModal({ onConfirmar, onCancelar }: Props) {
+export function NovoAvulsoModal({ onConfirmar, onCancelar, fontes }: Props) {
+  const [fonteId, setFonteId] = useState<string>(FONTE_NOVA)
   const [nome, setNome] = useState('')
   const [valorReais, setValorReais] = useState('')
   const [dataEsperada, setDataEsperada] = useState(hojeIsoLocal)
@@ -26,8 +32,10 @@ export function NovoAvulsoModal({ onConfirmar, onCancelar }: Props) {
   const modalRef = useFocusTrap<HTMLDivElement>()
   useEscapeKey(onCancelar)
 
+  const ehFonteNova = fonteId === FONTE_NOVA
+
   async function handleConfirmar() {
-    if (!nome.trim()) {
+    if (ehFonteNova && !nome.trim()) {
       setErro('Descrição é obrigatória.')
       return
     }
@@ -43,12 +51,17 @@ export function NovoAvulsoModal({ onConfirmar, onCancelar }: Props) {
     setErro(null)
     setLoading(true)
     try {
-      await onConfirmar({
-        nome: nome.trim(),
+      const comum = {
         valorCentavos: centavos,
         dataEsperada,
         dataRecebida: jaRecebido ? dataRecebida : undefined
-      })
+      }
+      // Fonte existente reusa o vínculo; só "nova fonte" cria uma renda. Antes
+      // todo avulso criava uma, e três freelas do mesmo cliente viravam três
+      // fontes idênticas na aba Fontes.
+      await onConfirmar(
+        ehFonteNova ? { nome: nome.trim(), ...comum } : { rendaId: Number(fonteId), ...comum }
+      )
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Erro ao criar recebimento.')
     } finally {
@@ -70,15 +83,27 @@ export function NovoAvulsoModal({ onConfirmar, onCancelar }: Props) {
           Para entradas sem fonte recorrente: freela, presente, venda etc.
         </p>
 
-        <Field label="Descrição">
-          <Input
-            type="text"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            placeholder="Ex: Freela X"
-            autoFocus
-          />
+        <Field label="Fonte">
+          <Select value={fonteId} onChange={(e) => setFonteId(e.target.value)} autoFocus>
+            <option value={FONTE_NOVA}>— nova fonte —</option>
+            {fontes.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.nome}
+              </option>
+            ))}
+          </Select>
         </Field>
+
+        {ehFonteNova && (
+          <Field label="Descrição">
+            <Input
+              type="text"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Ex: Freela X"
+            />
+          </Field>
+        )}
 
         <div className={styles.modalRow}>
           <Field label="Valor (R$)">

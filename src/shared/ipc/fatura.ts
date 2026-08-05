@@ -27,8 +27,20 @@ export type FaturaDetalhada = {
   despesasPorParcela?: Record<number, Despesa>
 }
 
+/**
+ * Fatura com o total já somado. Existe para a LISTA de faturas: obter o total
+ * por `detalharComParcelas` seria uma chamada por fatura, um N+1 sobre 13+
+ * faturas por cartão.
+ */
+export type FaturaComTotal = {
+  fatura: Fatura
+  mesReferencia: string
+  totalCentavos: number
+}
+
 export type FaturaApi = {
   listarPorCartao: (cartaoId: number) => Promise<Fatura[]>
+  listarResumoPorCartao: (cartaoId: number) => Promise<FaturaComTotal[]>
   detalharComParcelas: (faturaId: number) => Promise<FaturaDetalhada | null>
   fechar: (faturaId: number) => Promise<Fatura>
   pagar: (faturaId: number, dataPagamento: string) => Promise<Fatura>

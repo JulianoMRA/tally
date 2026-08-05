@@ -41,3 +41,36 @@
   display: flex;
   justify-content: flex-end;
 }
+
+.copias {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.copia {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+}
+
+.copiaData {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.copiaTamanho {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  margin-left: 8px;
+}

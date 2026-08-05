@@ -38,8 +38,12 @@ test.describe('Faturas — visão geral sem cartão selecionado', () => {
     await page.getByRole('link', { name: 'Faturas' }).click()
     await expect(page.getByRole('heading', { name: 'Faturas' })).toBeVisible()
 
-    // Painel da visão geral leva o nome do cartão e mostra a fatura do mês
+    // Painel da visão geral leva o nome do cartão
     await expect(page.getByRole('heading', { name: 'Inter Overview E2E' })).toBeVisible()
+
+    // Junho/2026 já passou: desde a fase 8 os meses anteriores ficam colapsados,
+    // para o mês atual não se perder no meio de 13+ faturas por cartão.
+    await page.getByRole('button', { name: /meses anteriores/ }).click()
     const item = page.getByText('Junho de 2026', { exact: true })
     await expect(item).toBeVisible()
 
