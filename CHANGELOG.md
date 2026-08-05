@@ -46,6 +46,23 @@ vista técnico.
 
 ---
 
+## v1.2.0 (ago/2026)
+
+Entrega das 8 fases do plano de UI/UX derivado da auditoria de ago/2026 — app executado com base isolada, 8 telas capturadas em 3 estados e 3 larguras, mais medição de foco de teclado em runtime. Fecha os 24 pontos levantados (detalhes por fase abaixo).
+
+**Minor, e não patch:** entram features de usuário, não só correções. Valor das faturas na lista (a informação número um, que só existia abrindo cada fatura), reuso de fonte em renda avulsa, onboarding de primeiro uso, restauração de cópia de segurança pela interface, e quatro primitivos novos no design system (`PageContainer`, `RowActions`, `SegmentedControl`, `SortableHeader`, além de `ColorPicker` e `FileDropzone`).
+
+Destaques por eixo:
+
+- **Layout** — a janela padrão do app entrega 1266px de viewport, não 1280 (o `width` do `BrowserWindow` é o tamanho externo), e os breakpoints estavam calibrados acima disso. Visão mensal passou a duas colunas em 1180px com o grid achatado (o vazio de ~600px embaixo da coluna esquerda virou meia célula), Saídas em 1400px com formulário sticky, e toda página passou a ter largura definida num único lugar.
+- **Densidade** — a tabela de Saídas tinha 4 botões por linha e 5 em assinatura; as ações foram recolhidas num menu, e ação destrutiva deixou de ser botão solto repetido.
+- **Acessibilidade** — foco preso em modal (o `ConfirmDialog` abria com o foco ainda na linha de trás), ordenação de tabela alcançável por teclado, anel de foco do design system no lugar do outline default do Chromium, e toast de erro que interrompe a leitura.
+- **Gates** — a varredura axe rodava só com a base vazia; passou a 21 cenários (vazio, com dados, modais) e achou dois defeitos serious de imediato. Novo gate de navegação por teclado e novo `npm run smoke:visual`, folha de contato de 35 telas para revisão antes de release.
+
+Cobertura: **771 testes unitários** (era 706) e **78 specs E2E** (era 42). Nenhuma mudança de regra de negócio, schema ou migration: o RN-08 foi mantido intacto por decisão explícita, com ajuste apenas de rótulo.
+
+---
+
 ## v1.1.1 (jul/2026)
 
 Release de correção. Torna acessíveis as ações da tabela de Lançamentos na tela Saídas, que ficavam decepadas pelo `overflow: hidden` do `Panel` quando a tabela excedia a largura disponível — os botões Editar, Cancelar e Excluir não ficavam apenas escondidos, ficavam inalcançáveis por clique. Detalhes técnicos e medições na entrada abaixo. Acompanham duas mudanças de infraestrutura de CI: remoção do workflow do CodeQL (code scanning exige GitHub Advanced Security em repositório privado, então reprovava todo PR sem nunca publicar resultado) e remoção do Dependabot (volume de PRs de deps-dev e actions acima do valor para um projeto pessoal; o gate `npm audit --omit=dev --audit-level=high` segue cobrindo dependências de produção). Cobertura: **696 testes unitários** e **39 specs E2E**.
