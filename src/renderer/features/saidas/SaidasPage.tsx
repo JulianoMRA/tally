@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { Cartao } from '@domain/entities/cartao'
 import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
@@ -14,6 +15,7 @@ import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
 import {
   Badge,
+  Button,
   ConfirmDialog,
   EmptyState,
   Field,
@@ -102,6 +104,7 @@ export default function SaidasPage() {
   const [editandoAssinatura, setEditandoAssinatura] = useState<Despesa | null>(null)
   const [confirmacao, setConfirmacao] = useState<Confirmacao | null>(null)
   const toast = useToast()
+  const navigate = useNavigate()
 
   useEffect(() => {
     window.api.cartao.list({ incluirArquivados: true }).then(setCartoes)
@@ -358,6 +361,22 @@ export default function SaidasPage() {
                   <strong>{ultimaRegistrada.cartaoNome}</strong>.
                 </>
               )}
+            </div>
+          )}
+
+          {/* Sem cartão ativo o formulário convidava a registrar uma despesa no
+              crédito com o select de Cartão vazio, e só falhava no submit. O
+              aviso fica ACIMA do formulário, não no lugar dele: gasto por Pix,
+              débito ou dinheiro não depende de cartão nenhum. */}
+          {cartoesAtivos.length === 0 && (
+            <div className={styles.avisoSemCartao}>
+              <div>
+                <strong>Nenhum cartão cadastrado.</strong> Você ainda pode registrar gastos por Pix,
+                débito ou dinheiro — mas despesa no crédito precisa de um cartão.
+              </div>
+              <Button variant="secondary" size="sm" onClick={() => navigate('/cartoes')}>
+                Cadastrar cartão
+              </Button>
             </div>
           )}
 

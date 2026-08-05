@@ -35,6 +35,18 @@ import { registerOrcamentoHandlers } from './ipc/orcamento-handlers'
 import { registerConfigHandlers } from './ipc/config-handlers'
 import { registerDadosHandlers } from './ipc/dados-handlers'
 import { verificarAvisos } from './avisos'
+import {
+  CARTAO_IPC_CHANNELS,
+  CATEGORIA_IPC_CHANNELS,
+  DADOS_IPC_CHANNELS,
+  DESPESA_IPC_CHANNELS,
+  FATURA_IPC_CHANNELS,
+  ORCAMENTO_IPC_CHANNELS,
+  RECEBIMENTO_IPC_CHANNELS,
+  RELATORIO_IPC_CHANNELS,
+  RENDA_IPC_CHANNELS,
+  VISAO_MENSAL_IPC_CHANNELS
+} from '../src/shared/ipc/channels'
 
 let db: Database | null = null
 let mainWindow: BrowserWindow | null = null
@@ -133,6 +145,60 @@ function inicializarBancoDeDados(): Database {
     console.log(`[faturas] ${fechadas} fatura(s) Aberta vencidas → Fechada`)
   }
   return database
+}
+
+/**
+ * Registra (ou re-registra) todos os handlers que dependem do banco.
+ *
+ * Os handlers capturam a instância de `Database` no closure, então trocar o
+ * arquivo — o que a restauração de backup faz — exige recriá-los apontando para
+ * a conexão nova. `removeHandler` antes, senão o Electron recusa o segundo
+ * `handle` no mesmo canal. Os handlers de config ficam de fora de propósito:
+ * eles não dependem do banco e são quem dispara a restauração.
+ */
+function reregistrarHandlersDeDados(database: Database): void {
+  const grupos = [
+    CARTAO_IPC_CHANNELS,
+    CATEGORIA_IPC_CHANNELS,
+    DESPESA_IPC_CHANNELS,
+    FATURA_IPC_CHANNELS,
+    RENDA_IPC_CHANNELS,
+    RECEBIMENTO_IPC_CHANNELS,
+    VISAO_MENSAL_IPC_CHANNELS,
+    RELATORIO_IPC_CHANNELS,
+    ORCAMENTO_IPC_CHANNELS,
+    DADOS_IPC_CHANNELS
+  ]
+  for (const grupo of grupos) {
+    for (const canal of Object.values(grupo)) ipcMain.removeHandler(canal)
+  }
+
+  registerCartaoHandlers(database, ipcMain)
+  registerCategoriaHandlers(database, ipcMain)
+  registerDespesaHandlers(database, ipcMain)
+  registerFaturaHandlers(database, ipcMain)
+  registerRendaHandlers(database, ipcMain)
+  registerRecebimentoHandlers(database, ipcMain)
+  registerVisaoMensalHandlers(database, ipcMain)
+  registerRelatorioHandlers(database, ipcMain)
+  registerOrcamentoHandlers(database, ipcMain)
+  registerDadosHandlers(database, ipcMain, janelaAtual)
+}
+
+/**
+ * Reabre a conexão e reinstala os handlers sobre o banco novo. Usado pela
+ * restauração de backup, que troca o arquivo embaixo da conexão aberta.
+ */
+function reabrirBanco(): void {
+  if (!dbPathAtual) throw new Error('Sem caminho de banco para reabrir')
+  // Mesmo tratamento do boot: o node-sqlite3-wasm usa `<db>.lock` como
+  // primitiva e o diretório sobrevive ao close, então reabrir sem limpar dava
+  // "database is locked". Aqui o lock é comprovadamente nosso — acabamos de
+  // fechar a conexão duas linhas acima de quem chama.
+  limparLockOrfao(dbPathAtual)
+  db = openDatabase(dbPathAtual)
+  runMigrations(db)
+  reregistrarHandlersDeDados(db)
 }
 
 function fecharBanco(): void {
@@ -453,17 +519,12 @@ if (!obteveLock) {
     try {
       instalarCSP()
       db = inicializarBancoDeDados()
-      registerCartaoHandlers(db, ipcMain)
-      registerCategoriaHandlers(db, ipcMain)
-      registerDespesaHandlers(db, ipcMain)
-      registerFaturaHandlers(db, ipcMain)
-      registerRendaHandlers(db, ipcMain)
-      registerRecebimentoHandlers(db, ipcMain)
-      registerVisaoMensalHandlers(db, ipcMain)
-      registerRelatorioHandlers(db, ipcMain)
-      registerOrcamentoHandlers(db, ipcMain)
-      registerConfigHandlers(resolveSettingsPath(), ipcMain, janelaAtual)
-      registerDadosHandlers(db, ipcMain, janelaAtual)
+      reregistrarHandlersDeDados(db)
+      registerConfigHandlers(resolveSettingsPath(), ipcMain, janelaAtual, {
+        caminhoDoBanco: () => dbPathAtual,
+        fechar: fecharBanco,
+        reabrir: reabrirBanco
+      })
       construirMenuApp()
       createWindow()
       iniciarTimerFechamento(db)

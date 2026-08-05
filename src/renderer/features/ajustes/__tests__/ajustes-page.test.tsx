@@ -11,7 +11,10 @@ function instalarApiMock(configInicial: Config = CONFIG_DEFAULTS) {
     config: {
       get: vi.fn().mockResolvedValue(configInicial),
       set: vi.fn().mockImplementation((c: Config) => Promise.resolve(c)),
-      escolherPastaBackup: vi.fn().mockResolvedValue(null)
+      escolherPastaBackup: vi.fn(),
+      listarBackups: vi.fn().mockResolvedValue([]),
+      restaurarBackup: vi.fn(),
+      abrirPastaBackups: vi.fn().mockResolvedValue(null)
     }
   }
   vi.stubGlobal('window', Object.assign(window, { api }))

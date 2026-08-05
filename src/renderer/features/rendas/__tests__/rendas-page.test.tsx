@@ -20,6 +20,10 @@ function recebimento(overrides: Partial<RecebimentoComContexto> = {}): Recebimen
 
 function instalarApiMock(recebimentos: RecebimentoComContexto[]) {
   const api = {
+    // A aba de recebimentos carrega as fontes avulsas para o modal de avulso.
+    renda: {
+      list: vi.fn().mockResolvedValue([])
+    },
     recebimento: {
       listar: vi.fn().mockResolvedValue(recebimentos),
       marcarRecebido: vi.fn(),

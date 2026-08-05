@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { StatusRecebimento } from '@domain/entities/recebimento'
 import type { Renda } from '@domain/entities/renda'
 import type { CriarRendaAvulsaInput, CriarRendaRecorrenteInput } from '@shared/ipc/renda'
@@ -98,9 +98,18 @@ function AbaRecebimentos({
     mesReferencia: mes,
     status: statusFiltro === 'Todos' ? undefined : statusFiltro
   })
+  const [fontesAvulsas, setFontesAvulsas] = useState<Renda[]>([])
   const [alvoMarcar, setAlvoMarcar] = useState<RecebimentoComContexto | null>(null)
   const [acaoErro, setAcaoErro] = useState<string | null>(null)
   const [alvoExcluir, setAlvoExcluir] = useState<RecebimentoComContexto | null>(null)
+
+  // Só as avulsas ativas: um recebimento avulso não se pendura em fonte
+  // recorrente, e o repositório recusa esse vínculo.
+  useEffect(() => {
+    window.api.renda
+      .list()
+      .then((todas) => setFontesAvulsas(todas.filter((r) => r.tipo === 'Avulsa' && r.ativa)))
+  }, [novoAvulsoAberto])
 
   async function handleMarcarRecebido(dataRecebida: string) {
     if (!alvoMarcar) return
@@ -234,7 +243,11 @@ function AbaRecebimentos({
       )}
 
       {novoAvulsoAberto && (
-        <NovoAvulsoModal onConfirmar={handleCriarAvulso} onCancelar={onFecharNovoAvulso} />
+        <NovoAvulsoModal
+          fontes={fontesAvulsas}
+          onConfirmar={handleCriarAvulso}
+          onCancelar={onFecharNovoAvulso}
+        />
       )}
 
       {alvoExcluir && (

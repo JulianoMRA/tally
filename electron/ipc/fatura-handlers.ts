@@ -19,6 +19,11 @@ export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
   const faturaRepo = new FaturaRepository(db)
   const parcelaRepo = new ParcelaRepository(db)
 
+  ipcMain.handle(FATURA_IPC_CHANNELS.listarResumoPorCartao, (_event, payload: unknown) => {
+    const cartaoId = cartaoIdSchema.parse(payload)
+    return faturaRepo.listarResumoPorCartao(cartaoId)
+  })
+
   ipcMain.handle(FATURA_IPC_CHANNELS.listarPorCartao, (_event, payload: unknown) => {
     const cartaoId = cartaoIdSchema.parse(payload)
     return faturaRepo.list(cartaoId)

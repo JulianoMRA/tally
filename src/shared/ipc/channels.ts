@@ -45,6 +45,7 @@ export const DESPESA_IPC_CHANNELS = {
 
 export const FATURA_IPC_CHANNELS = {
   listarPorCartao: 'fatura:listarPorCartao',
+  listarResumoPorCartao: 'fatura:listarResumoPorCartao',
   detalharComParcelas: 'fatura:detalharComParcelas',
   fechar: 'fatura:fechar',
   pagar: 'fatura:pagar',
@@ -87,7 +88,11 @@ export const ORCAMENTO_IPC_CHANNELS = {
 export const CONFIG_IPC_CHANNELS = {
   get: 'config:get',
   set: 'config:set',
-  escolherPastaBackup: 'config:escolher-pasta-backup'
+  escolherPastaBackup: 'config:escolher-pasta-backup',
+  listarBackups: 'config:listar-backups',
+  criarBackupAgora: 'config:criar-backup-agora',
+  restaurarBackup: 'config:restaurar-backup',
+  abrirPastaBackups: 'config:abrir-pasta-backups'
 } as const
 
 export const DADOS_IPC_CHANNELS = {

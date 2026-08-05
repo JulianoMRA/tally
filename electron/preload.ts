@@ -57,7 +57,7 @@ import type {
   RemoverLimiteInput,
   ListarProgressoInput
 } from '@shared/ipc/orcamento'
-import type { Config } from '@shared/ipc/config'
+import type { Config, RestaurarBackupInput } from '@shared/ipc/config'
 import type { ImportarCsvInput, ExportarMesInput } from '@shared/ipc/importacao'
 
 contextBridge.exposeInMainWorld('api', {
@@ -118,6 +118,8 @@ contextBridge.exposeInMainWorld('api', {
   fatura: {
     listarPorCartao: (cartaoId: number) =>
       ipcRenderer.invoke(FATURA_IPC_CHANNELS.listarPorCartao, cartaoId),
+    listarResumoPorCartao: (cartaoId: number) =>
+      ipcRenderer.invoke(FATURA_IPC_CHANNELS.listarResumoPorCartao, cartaoId),
     detalharComParcelas: (faturaId: number) =>
       ipcRenderer.invoke(FATURA_IPC_CHANNELS.detalharComParcelas, faturaId),
     fechar: (faturaId: number) => ipcRenderer.invoke(FATURA_IPC_CHANNELS.fechar, faturaId),
@@ -170,7 +172,12 @@ contextBridge.exposeInMainWorld('api', {
   config: {
     get: () => ipcRenderer.invoke(CONFIG_IPC_CHANNELS.get),
     set: (config: Config) => ipcRenderer.invoke(CONFIG_IPC_CHANNELS.set, config),
-    escolherPastaBackup: () => ipcRenderer.invoke(CONFIG_IPC_CHANNELS.escolherPastaBackup)
+    escolherPastaBackup: () => ipcRenderer.invoke(CONFIG_IPC_CHANNELS.escolherPastaBackup),
+    listarBackups: () => ipcRenderer.invoke(CONFIG_IPC_CHANNELS.listarBackups),
+    criarBackupAgora: () => ipcRenderer.invoke(CONFIG_IPC_CHANNELS.criarBackupAgora),
+    restaurarBackup: (input: RestaurarBackupInput) =>
+      ipcRenderer.invoke(CONFIG_IPC_CHANNELS.restaurarBackup, input),
+    abrirPastaBackups: () => ipcRenderer.invoke(CONFIG_IPC_CHANNELS.abrirPastaBackups)
   },
   dados: {
     importarCsv: (input: ImportarCsvInput) =>

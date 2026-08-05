@@ -25,6 +25,7 @@ import { mesAtualReferencia } from '../../lib/mes-atual'
 import { pluralizar } from '../../lib/pluralizar'
 import { useOrdenacao } from '../../lib/use-ordenacao'
 import { FaturasCardCompacto } from './FaturasCardCompacto'
+import { PrimeiroUso } from './PrimeiroUso'
 import { SaldoCard } from './SaldoCard'
 import { useVisaoMensal } from './hooks/use-visao-mensal'
 import styles from './visao-mensal.module.css'
@@ -90,6 +91,14 @@ export default function VisaoMensalPage() {
     setMes(proxMesReferencia(mes))
   }
 
+  // Base ainda sem nada: sem isso a tela era R$ 0,00 em tudo, sem dizer por
+  // onde começar.
+  const baseVazia =
+    detalhe !== null &&
+    detalhe.faturas.length === 0 &&
+    detalhe.gastosForaCartao.length === 0 &&
+    detalhe.recebimentos.length === 0
+
   const mesesAdiante = diferencaEmMeses(mesAtualReferencia(), mes)
   const ehProjecao = mesesAdiante > 0
 
@@ -146,6 +155,8 @@ export default function VisaoMensalPage() {
         <EmptyState title="Carregando…" />
       ) : detalhe ? (
         <div className={styles.layout}>
+          {baseVazia && <PrimeiroUso />}
+
           <div className={styles.cards}>
             <div className={styles.card}>
               <span className={styles.cardLabel}>Entradas</span>

@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Cartao } from '@domain/entities/cartao'
 import type { Fatura } from '@domain/entities/fatura'
-import type { FaturaDetalhada } from '@shared/ipc/fatura'
+import type { FaturaComTotal, FaturaDetalhada } from '@shared/ipc/fatura'
 
-export type GrupoFaturasCartao = { cartao: Cartao; faturas: Fatura[] }
+export type GrupoFaturasCartao = { cartao: Cartao; faturas: FaturaComTotal[] }
 
 export function useCicloFatura(onSucesso: (fatura: Fatura) => void) {
   const [loading, setLoading] = useState(false)
@@ -38,7 +38,7 @@ export function useCicloFatura(onSucesso: (fatura: Fatura) => void) {
 }
 
 export function useFaturasPorCartao(cartaoId: number | null) {
-  const [faturas, setFaturas] = useState<Fatura[]>([])
+  const [faturas, setFaturas] = useState<FaturaComTotal[]>([])
   const [loading, setLoading] = useState(false)
 
   const refetch = useCallback(async () => {
@@ -47,7 +47,7 @@ export function useFaturasPorCartao(cartaoId: number | null) {
       return
     }
     setLoading(true)
-    const data = await window.api.fatura.listarPorCartao(cartaoId)
+    const data = await window.api.fatura.listarResumoPorCartao(cartaoId)
     setFaturas(data)
     setLoading(false)
   }, [cartaoId])
@@ -63,7 +63,7 @@ export function useFaturasPorCartao(cartaoId: number | null) {
 // Promise.all). Pura para permitir teste sem montar o hook.
 export function agruparFaturasPorCartao(
   cartoes: Cartao[],
-  listas: Fatura[][]
+  listas: FaturaComTotal[][]
 ): GrupoFaturasCartao[] {
   return cartoes.map((cartao, i) => ({ cartao, faturas: listas[i] ?? [] }))
 }
@@ -81,7 +81,11 @@ export function useFaturasDeTodosCartoes(cartoes: Cartao[]) {
       return
     }
     setLoading(true)
-    const listas = await Promise.all(cartoes.map((c) => window.api.fatura.listarPorCartao(c.id)))
+    // listarResumoPorCartao e nao listarPorCartao: a lista precisa do total de
+    // cada fatura, e obter isso por detalharComParcelas seria um N+1.
+    const listas = await Promise.all(
+      cartoes.map((c) => window.api.fatura.listarResumoPorCartao(c.id))
+    )
     setGrupos(agruparFaturasPorCartao(cartoes, listas))
     setLoading(false)
   }, [cartoes])

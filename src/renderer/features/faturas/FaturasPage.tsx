@@ -13,6 +13,7 @@ import { FaturasOverview } from './FaturasOverview'
 import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
 import { Badge, Button, EmptyState, Select } from '../../components/ui'
+import { formatBRL } from '../../lib/format-brl'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { buildFaturasSearch, parseFaturasSearch } from './faturas-search'
 import { statusVariant } from './status-variant'
@@ -139,12 +140,12 @@ export default function FaturasPage() {
             )}
             {faturas.length > 0 && (
               <ul className={styles.faturaList}>
-                {faturas.map((f) => (
-                  <li key={f.id} className={styles.itemBotao}>
+                {faturas.map((item) => (
+                  <li key={item.fatura.id} className={styles.itemBotao}>
                     <button
                       type="button"
                       className={styles.faturaItem}
-                      onClick={() => handleAbrirDetalhe(f)}
+                      onClick={() => handleAbrirDetalhe(item.fatura)}
                     >
                       <span
                         className={styles.cardChip}
@@ -152,14 +153,17 @@ export default function FaturasPage() {
                       />
                       <div className={styles.faturaInfo}>
                         <span className={styles.faturaMes}>
-                          {formatarMesReferencia(f.mesReferencia, { capitalizar: true })}
+                          {formatarMesReferencia(item.mesReferencia, { capitalizar: true })}
                         </span>
                         <span className={styles.faturaSub}>
-                          Fecha {formatarDataIso(f.dataFechamento)} · Vence{' '}
-                          {formatarDataIso(f.dataVencimento)}
+                          Fecha {formatarDataIso(item.fatura.dataFechamento)} · Vence{' '}
+                          {formatarDataIso(item.fatura.dataVencimento)}
                         </span>
                       </div>
-                      <Badge variant={statusVariant(f.status.kind)} />
+                      <span className={`${styles.faturaTotal} tnum`}>
+                        {formatBRL(item.totalCentavos)}
+                      </span>
+                      <Badge variant={statusVariant(item.fatura.status.kind)} />
                     </button>
                   </li>
                 ))}

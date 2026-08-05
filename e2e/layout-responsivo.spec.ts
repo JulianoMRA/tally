@@ -1,5 +1,6 @@
 import type { ElectronApplication, Page } from '@playwright/test'
 import { test, expect } from './fixtures/electron-app'
+import { semear } from './fixtures/seed'
 
 /**
  * Fase 4 do plano de UI/UX. Três defeitos que este spec trava:
@@ -55,6 +56,9 @@ test.describe('Layout responsivo', () => {
   }
 
   test('Visão mensal mostra os gráficos sem rolar na janela padrão (1280px)', async ({ app }) => {
+    // Com dados: na base vazia o painel de primeiro uso ocupa o topo, o que é o
+    // comportamento certo — quem não tem nada cadastrado não precisa de gráfico.
+    await semear(app)
     const page = await abrir(app, 1280, 'Visão mensal')
 
     // O painel de gráficos é lazy: espera o chunk chegar.

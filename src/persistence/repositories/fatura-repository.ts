@@ -9,6 +9,12 @@ import { clampDiaNoMes } from '../../domain/services/mes-referencia'
 import type { Repository } from './types'
 import { mapFatura, type FaturaRow } from './row-mappers'
 
+export type ResumoFatura = {
+  fatura: Fatura
+  mesReferencia: string
+  totalCentavos: number
+}
+
 export type AvisoFatura = {
   tipo: 'fechamento' | 'vencimento'
   cartaoNome: string
@@ -30,6 +36,37 @@ export class FaturaRepository implements Repository {
       .prepare('SELECT * FROM fatura WHERE cartao_id = ? AND mes_referencia = ?')
       .get(cartaoId, mesReferencia) as FaturaRow | undefined
     return row ? mapFatura(row) : null
+  }
+
+  /**
+   * Faturas do cartão com o total de cada uma, em UMA query.
+   *
+   * A lista de faturas mostrava mês, fechamento, vencimento e status, mas não o
+   * valor — a informação número um. O total só existia em
+   * `detalharComParcelas`, que é uma chamada por fatura: usá-lo na lista seria
+   * um N+1 sobre 13+ faturas por cartão.
+   *
+   * LEFT JOIN e `COALESCE`: fatura sem parcela (criada por adiantamento ou por
+   * uma despesa depois excluída) precisa aparecer com total zero, não sumir.
+   */
+  listarResumoPorCartao(cartaoId: number): ResumoFatura[] {
+    type Row = FaturaRow & { total_centavos: number }
+    const rows = this.db
+      .prepare(
+        `SELECT f.*, COALESCE(SUM(p.valor_centavos), 0) AS total_centavos
+           FROM fatura f
+           LEFT JOIN parcela p ON p.fatura_id = f.id
+          WHERE f.cartao_id = ?
+          GROUP BY f.id
+          ORDER BY f.mes_referencia`
+      )
+      .all(cartaoId) as Row[]
+
+    return rows.map((row) => ({
+      fatura: mapFatura(row),
+      mesReferencia: row.mes_referencia,
+      totalCentavos: Number(row.total_centavos)
+    }))
   }
 
   list(cartaoId?: number): Fatura[] {
