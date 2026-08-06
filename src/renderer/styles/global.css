@@ -87,6 +87,33 @@ textarea {
   border: 0;
 }
 
+/* Barra de rolagem do design system. Além de trocar a barra cinza do Chromium
+   por uma que combina com o creme, a largura é o que torna viável o
+   `scrollbar-gutter: stable` da área rolável: a calha nativa do Windows come
+   15px de TODA página, e o detalhe da fatura em 1280px só tinha 12px de folga.
+   A 8px o custo da calha cabe na folga existente. */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--rule-strong);
+  border-radius: var(--r-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-4);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Foco visível do design system, aplicado a tudo que recebe foco por teclado.
    `:focus-visible` (e não `:focus`) para o anel não aparecer em clique de mouse. */
 :focus-visible {

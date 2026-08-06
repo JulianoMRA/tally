@@ -13,9 +13,14 @@
   background: var(--bg);
 }
 
+/* `scrollbar-gutter: stable` reserva a calha mesmo sem scroll: sem isso, telas
+   que rolam ficam ~8px mais estreitas que as que não rolam, e o conteúdo
+   centralizado desloca metade disso — Ajustes e Importar abriam com 7,6px de
+   diferença só por causa da barra. */
 .scrollable {
   flex: 1;
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .pageLoading {

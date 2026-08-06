@@ -1,10 +1,28 @@
-/* Container de página compartilhado. Centraliza o conteúdo e aplica o padding
-   lateral que antes cada feature repetia no seu próprio `.body`/`.layout`.
-   O PageHead entra aqui dentro, por isso ele não tem mais padding horizontal:
-   título e conteúdo alinham na mesma margem. */
-.container {
-  width: 100%;
+/* Container de página compartilhado. Separa duas responsabilidades que antes
+   saíam do mesmo `max-width` e brigavam entre si:
+
+   - `.rail` decide ONDE a página começa. É o mesmo para todas as telas, então a
+     borda esquerda não depende do tier.
+   - `.block` decide QUANTO a página ocupa, e fica alinhado à esquerda do trilho.
+
+   Antes, `.block` centralizava sozinho: quando a área disponível superava o
+   `max-width` da tela, a sobra virava margem esquerda. Como cada tela tem um
+   tier diferente, o título abria num x diferente em cada rota — 32px na Visão
+   mensal (wide), 95px em Rendas (default) e 315px em Ajustes (narrow) numa
+   janela maximizada. Travado por `e2e/alinhamento-paginas.spec.ts`.
+
+   O PageHead entra aqui dentro, por isso ele não tem padding horizontal: título
+   e conteúdo alinham na mesma margem. */
+
+/* O trilho é o tier mais largo. Ao adicionar um tier maior que `wide`, este
+   `max-width` precisa acompanhar, senão o novo tier nunca alcança sua largura. */
+.rail {
+  max-width: var(--page-max-wide);
   margin: 0 auto;
+}
+
+.block {
+  margin-right: auto;
   padding: 0 var(--page-pad) var(--page-pad);
   min-width: 0;
 }
