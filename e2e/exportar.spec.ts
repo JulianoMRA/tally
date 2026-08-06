@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { irPara } from './fixtures/navegacao'
 
 // Fase 9 — a rota #/print/:mes alimenta o printToPDF da janela oculta do main.
 // Os fluxos de salvar CSV/PDF usam dialog nativo (nao automatizavel); a
@@ -16,7 +17,7 @@ test.describe('Exportação — rota de impressão', () => {
     await page.getByRole('button', { name: 'Salvar' }).click()
     await expect(page.getByText('Mercado Print E2E')).toBeVisible()
 
-    await page.getByRole('link', { name: 'Saídas' }).click()
+    await irPara(page, 'Saídas')
     await page.getByRole('radio', { name: 'Pix', exact: true }).click()
     await page.getByLabel('Descrição').fill('Feira Print E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Mercado Print E2E' })

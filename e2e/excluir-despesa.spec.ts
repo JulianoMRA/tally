@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { irPara } from './fixtures/navegacao'
 import type { Page } from '@playwright/test'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
@@ -39,7 +40,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     // Cria assinatura na tela Saídas
     const hoje = new Date()
     const inicio = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
-    await page.getByRole('link', { name: 'Saídas' }).click()
+    await irPara(page, 'Saídas')
     await page.getByRole('radio', { name: 'Assinatura', exact: true }).click()
     await page.getByLabel('Descrição').fill('Spotify Excluir E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Streaming Excluir E2E' })
@@ -94,7 +95,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     const nomeMes = alvo.toLocaleString('pt-BR', { month: 'long' })
     const labelMes = `${nomeMes[0].toUpperCase()}${nomeMes.slice(1)} de ${alvo.getFullYear()}`
 
-    await page.getByRole('link', { name: 'Saídas' }).click()
+    await irPara(page, 'Saídas')
     await page.getByLabel('Descrição').fill('Compra Paga E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Mercado Paga E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Paga E2E' })
@@ -104,7 +105,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await expect(page.getByRole('cell', { name: 'Compra Paga E2E' })).toBeVisible()
 
     // Abre o detalhe da fatura
-    await page.getByRole('link', { name: 'Faturas' }).click()
+    await irPara(page, 'Faturas')
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Paga E2E' })
     await page.getByText(labelMes, { exact: true }).click()
     await expect(page.getByText('1/1')).toBeVisible()
@@ -149,7 +150,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await expect(page.getByText('Mercado Vencida E2E')).toBeVisible()
 
     // Compra retroativa: fatura de junho/2026 já passou do fechamento (2026-06-05)
-    await page.getByRole('link', { name: 'Saídas' }).click()
+    await irPara(page, 'Saídas')
     await page.getByLabel('Descrição').fill('Compra Vencida E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Mercado Vencida E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Vencida E2E' })
@@ -158,7 +159,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
     await expect(page.getByRole('cell', { name: 'Compra Vencida E2E' })).toBeVisible()
 
-    await page.getByRole('link', { name: 'Faturas' }).click()
+    await irPara(page, 'Faturas')
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Vencida E2E' })
     await page.getByText('Junho de 2026', { exact: true }).click()
     await expect(page.getByText('1/1')).toBeVisible()

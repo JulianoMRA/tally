@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { irPara } from './fixtures/navegacao'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
 // Fase 10 — QoL na tela Saídas: busca por descrição e duplicar despesa.
@@ -82,7 +83,7 @@ test.describe('Saídas — QoL (busca e duplicar)', () => {
     await page.getByRole('button', { name: 'Salvar' }).click()
     await expect(page.getByText('Lazer QoL E2E')).toBeVisible()
 
-    await page.getByRole('link', { name: 'Saídas' }).click()
+    await irPara(page, 'Saídas')
     await page.getByRole('radio', { name: 'Assinatura', exact: true }).click()
     await page.getByLabel('Descrição').fill('Streaming QoL')
     await page.getByLabel('Categoria').selectOption({ label: 'Lazer QoL E2E' })

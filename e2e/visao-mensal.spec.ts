@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { irPara } from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 // TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
@@ -28,7 +29,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     await expect(page.getByText('Geral Mensal E2E')).toBeVisible()
 
     // Despesa única R$ 100 em 2026-06-03 → fatura junho/2026
-    await page.getByRole('link', { name: 'Saídas' }).click()
+    await irPara(page, 'Saídas')
     await page.getByLabel('Descrição').fill('Compra Mensal E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Geral Mensal E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Mensal E2E' })
@@ -47,7 +48,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     await expect(page.getByRole('cell', { name: 'Pix Mensal E2E' })).toBeVisible()
 
     // --- /mensal: filtrar 2026-06 ---
-    await page.getByRole('link', { name: 'Visão mensal' }).click()
+    await irPara(page, 'Visão mensal')
     await page.getByLabel('Mês', { exact: true }).fill('2026-06')
 
     // Cards devem mostrar valores (moeda usa espaço não-quebrável)
@@ -94,7 +95,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     // Assinatura mensal de R$ 30,00 começando hoje (form inline em Despesas, tipo Assinatura)
     const hoje = new Date()
     const isoHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
-    await page.getByRole('link', { name: 'Saídas' }).click()
+    await irPara(page, 'Saídas')
     await page.getByRole('radio', { name: 'Assinatura', exact: true }).click()
     await page.getByLabel('Descrição').fill('Spotify Projecao E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Streaming Projecao E2E' })
@@ -119,7 +120,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     const alvo = new Date(hoje.getFullYear(), hoje.getMonth() + 15, 1)
     const mesAlvo = `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, '0')}`
 
-    await page.getByRole('link', { name: 'Visão mensal' }).click()
+    await irPara(page, 'Visão mensal')
     await page.getByLabel('Mês', { exact: true }).fill(mesAlvo)
 
     // Badge "Projeção" visível

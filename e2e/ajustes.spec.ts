@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { irPara } from './fixtures/navegacao'
 
 // Ajustes do app (backups + avisos) persistidos em settings.json no userData.
 test.describe('Ajustes', () => {
@@ -22,7 +23,7 @@ test.describe('Ajustes', () => {
     // Persistência real: sai da tela e volta — valores vêm do settings.json
     await page.getByRole('link', { name: 'Cartões' }).click()
     await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
-    await page.getByRole('link', { name: 'Ajustes' }).click()
+    await irPara(page, 'Ajustes')
     await expect(page.getByLabel('Quantidade de backups mantidos')).toHaveValue('15')
     await expect(page.getByLabel(/Fazer backup ao sair/)).not.toBeChecked()
   })
@@ -31,7 +32,7 @@ test.describe('Ajustes', () => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
-    await page.getByRole('link', { name: 'Ajustes' }).click()
+    await irPara(page, 'Ajustes')
     const retencao = page.getByLabel('Quantidade de backups mantidos')
     await expect(retencao).toHaveValue('10')
 

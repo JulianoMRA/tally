@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { irPara } from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 // Bloco D — Orçamento por categoria: definir limite e ver o status (RN ok/alerta/estourado).
@@ -25,7 +26,7 @@ test.describe('Orçamento por categoria (Bloco D)', () => {
     await expect(page.getByText('Mercado Orc E2E')).toBeVisible()
 
     // --- Despesa única R$ 80,00 em 2026-06-03 → realizado de junho/2026 ---
-    await page.getByRole('link', { name: 'Saídas' }).click()
+    await irPara(page, 'Saídas')
     await page.getByLabel('Descrição').fill('Compra Orc E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Mercado Orc E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Orc E2E' })

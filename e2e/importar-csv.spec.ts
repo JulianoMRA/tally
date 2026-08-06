@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { irPara } from './fixtures/navegacao'
 
 // Importador CSV (migração da planilha): templates fixos, preview com erros
 // por linha e importação atômica no main process.
@@ -46,7 +47,7 @@ test.describe('Importar dados (CSV)', () => {
     await expect(page.getByText('2 registros importado(s).')).toBeVisible()
 
     // Confere na fatura de junho do cartão
-    await page.getByRole('link', { name: 'Faturas' }).click()
+    await irPara(page, 'Faturas')
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Import E2E' })
     await page.getByText('Junho de 2026', { exact: true }).click()
     await expect(page.getByText('Supermercado Import')).toBeVisible()
@@ -85,7 +86,7 @@ test.describe('Importar dados (CSV)', () => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
-    await page.getByRole('link', { name: 'Importar dados' }).click()
+    await irPara(page, 'Importar dados')
     await page.getByLabel('Tipo de dados').selectOption({
       label: 'Rendas recorrentes (bolsa, salário)'
     })

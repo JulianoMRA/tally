@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { irPara } from './fixtures/navegacao'
 import type { ElectronApplication, Page } from '@playwright/test'
 
 /**
@@ -47,7 +48,7 @@ async function semear(app: ElectronApplication): Promise<Page> {
   const alvo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 3)
   const dataCompra = `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, '0')}-03`
 
-  await page.getByRole('link', { name: 'Saídas' }).click()
+  await irPara(page, 'Saídas')
   await page.getByRole('radio', { name: 'Parcelada', exact: true }).click()
   // Descrição longa de propósito: é o pior caso para a largura da tabela.
   await page.getByLabel('Descrição').fill('Notebook Dell comprado em doze vezes sem juros')
@@ -73,7 +74,7 @@ for (const largura of [1000, 1280, 1600] as const) {
     await redimensionar(app, largura)
     await expect.poll(async () => page.evaluate(() => window.innerWidth)).toBeLessThan(largura + 1)
 
-    await page.getByRole('link', { name: 'Faturas' }).click()
+    await irPara(page, 'Faturas')
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Geometria E2E' })
     await page.locator('[class*="faturaMes"]').first().click()
 
