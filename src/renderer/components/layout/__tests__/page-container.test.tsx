@@ -5,9 +5,13 @@ import { PageContainer } from '../PageContainer'
 
 // O vitest roda com `css: false`, então CSS Module devolve string vazia e a
 // classe não serve de asserção — por isso o componente expõe `data-width`.
-function larguraRenderizada(elemento: React.JSX.Element): string | undefined {
+function blocoDePagina(elemento: React.JSX.Element): HTMLElement | null {
   const { container } = render(elemento)
-  return (container.firstElementChild as HTMLElement | null)?.dataset.width
+  return container.querySelector<HTMLElement>('[data-width]')
+}
+
+function larguraRenderizada(elemento: React.JSX.Element): string | undefined {
+  return blocoDePagina(elemento)?.dataset.width
 }
 
 describe('PageContainer', () => {
@@ -36,6 +40,19 @@ describe('PageContainer', () => {
     )
 
     expect(container.children).toHaveLength(1)
-    expect(container.firstElementChild?.children).toHaveLength(2)
+    expect(container.querySelector('[data-width]')?.children).toHaveLength(2)
+  })
+
+  // O trilho é o que garante que todas as telas comecem no mesmo x: ele é
+  // idêntico em qualquer tier, e só o bloco interno varia. Se alguém colapsar os
+  // dois de volta num elemento só, o desalinhamento entre telas volta junto.
+  it('separa o trilho do bloco que carrega a largura', () => {
+    const { container } = render(<PageContainer width="narrow">conteudo</PageContainer>)
+
+    const trilho = container.firstElementChild
+    expect(trilho).not.toBeNull()
+    expect(trilho?.hasAttribute('data-width')).toBe(false)
+    expect(trilho?.children).toHaveLength(1)
+    expect(trilho?.firstElementChild?.getAttribute('data-width')).toBe('narrow')
   })
 })

@@ -67,10 +67,21 @@ voltar hex hardcoded no CSS de alguma feature.
 - `PageHead` — compõe o `Topbar` (título + ações, fixos) e o subtítulo, que rola junto com o
   conteúdo: grudar as três linhas custaria ~90px fixos numa janela de 800px
 - `PageContainer` — **único lugar que limita a largura de uma página**. Envolve o `PageHead` e o
-  conteúdo, centraliza e aplica o padding lateral. Larguras: `narrow` (760px, formulário único —
-  Ajustes e Importar), `default` (1200px, o caso comum) e `wide` (1760px, telas densas — Visão
-  mensal e Saídas), dos tokens `--page-max-*`. Expõe `data-width` para asserção em teste e E2E.
-  Nenhum CSS de feature deve declarar `max-width` de página.
+  conteúdo. São dois níveis com propósitos distintos: um **trilho** externo, idêntico em todas as
+  telas, que centraliza no tier mais largo e define **onde a página começa**; e um **bloco** interno,
+  alinhado à esquerda do trilho, que carrega o `max-width` do tier e define **até onde ela vai**.
+  Larguras: `narrow` (760px, formulário único — Ajustes e Importar), `default` (1200px, o caso
+  comum) e `wide` (1760px, telas densas — Visão mensal e Saídas), dos tokens `--page-max-*`. Expõe
+  `data-width` no bloco para asserção em teste e E2E. Nenhum CSS de feature deve declarar
+  `max-width` de página.
+  - **Por que dois níveis:** com um só, o `margin: auto` transformava a sobra de largura em margem
+    esquerda, e como cada tela tem um tier diferente a borda esquerda mudava de rota para rota.
+    Numa janela maximizada: 32px na Visão mensal, 95px em Rendas, 315px em Ajustes. Travado por
+    `e2e/alinhamento-paginas.spec.ts`.
+  - **Ao adicionar um tier maior que `wide`**, o `max-width` do trilho precisa acompanhar — senão o
+    tier novo nunca alcança a largura declarada.
+- A área rolável do `App` usa `scrollbar-gutter: stable`. Sem isso, telas que rolam ficam ~8px mais
+  estreitas que as que não rolam e o conteúdo desloca metade disso.
 
 **Breakpoints — atenção ao número real.** A janela padrão do app (`width: 1280` em
 `createWindow`) é o tamanho **externo**: a viewport resultante é **1266px**. Um
