@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { irPara } from './fixtures/navegacao'
 
 // RF-VIS-05 + RF-VIS-06 — relatórios: ranking por categoria + pizza + evolução
 // TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
@@ -38,7 +39,7 @@ test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
     const dataMercado = `${yyyy}-${mm}-03`
     const dataLazer = `${yyyy}-${mm}-04`
 
-    await page.getByRole('link', { name: 'Saídas' }).click()
+    await irPara(page, 'Saídas')
     await page.getByLabel('Descrição').fill('Compra mercado')
     await page.getByLabel('Categoria').selectOption({ label: 'Mercado E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Rel E2E' })

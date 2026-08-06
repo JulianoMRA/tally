@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { irPara } from './fixtures/navegacao'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
@@ -57,13 +58,13 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     ).toBeVisible()
 
     // --- Conferir na fatura junho/2026 ---
-    await page.getByRole('link', { name: 'Faturas' }).click()
+    await irPara(page, 'Faturas')
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Assinatura E2E' })
     await page.getByText('Junho de 2026').first().click()
     await expect(page.getByText(/R\$\s*24,90/).first()).toBeVisible()
 
     // --- Cancelar assinatura pela tela Saídas ---
-    await page.getByRole('link', { name: 'Saídas' }).click()
+    await irPara(page, 'Saídas')
     await page.getByRole('radio', { name: 'Assinaturas', exact: true }).click()
     await acionarNoMenuDaLinha(
       page,
