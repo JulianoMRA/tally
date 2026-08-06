@@ -100,6 +100,29 @@ npm run gen:icon       # Regenera build/icon.ico a partir do SVG do brand
 
 ---
 
+## Log do main process
+
+O main escreve em `<userData>/logs/main.log` via `electron-log`
+(`%APPDATA%\Tally\logs\main.log` no Windows; em E2E vai para o diretório
+isolado do `TALLY_USER_DATA`). É o primeiro lugar a olhar quando o auto-update
+não se comporta: o logger do `electron-updater` está plugado nele e registra a
+versão encontrada, a URL consultada e o progresso do download.
+
+O motivo de existir: uma checagem que falhava com 404 deixou o app instalado
+sem atualizar **em silêncio**, porque o `catch` do boot só fazia
+`console.error` e binário empacotado não tem console.
+
+## Nomes dos artefatos
+
+O `artifactName` do NSIS é `${productName}-Setup-${version}.${ext}`, e não o
+default com espaços. O `latest.yml` que o electron-builder gera referencia o
+instalador por URL, onde espaço não sobrevive — com o default, o arquivo saía
+como `Tally Setup X.Y.Z.exe` e era preciso renomear à mão antes de subir, senão
+o electron-updater baixava uma URL inexistente. Agora o nome gerado já é o nome
+que o `latest.yml` referencia.
+
+---
+
 ## Estratégia de testes
 
 - **Unit** (`Vitest`) — `src/**/__tests__/*.test.ts`. Domain layer com TDD.

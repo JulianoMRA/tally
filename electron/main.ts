@@ -14,6 +14,7 @@ import { is } from '@electron-toolkit/utils'
 // electron-updater e CJS; o default import + destructuring e o padrao seguro
 // para o bundle CJS do electron-vite (named import quebra o interop).
 import electronUpdater from 'electron-updater'
+import log from 'electron-log/main'
 import type { Database } from '../src/persistence/database'
 import { openDatabase } from '../src/persistence/database'
 import { backupDatabase, type BackupOptions } from '../src/persistence/backup'
@@ -82,6 +83,17 @@ const userDataOverride = process.env.TALLY_USER_DATA
 if (userDataOverride) {
   app.setPath('userData', userDataOverride)
 }
+
+// Log em arquivo do main process, em `<userData>/logs/main.log`. Precisa vir
+// DEPOIS do override acima, senão o E2E escreveria no log do app real.
+//
+// Existe por causa de uma falha concreta: quando o repositório ficou privado, a
+// checagem de atualização passou a receber 404 e o app instalado parou de
+// atualizar **em silêncio** — o catch do boot só fazia `console.error`, e
+// binário empacotado não tem console para onde escrever. A falha só apareceu
+// comparando o cache do updater na mão. Com o log, o próximo 404 fica gravado.
+log.initialize()
+log.transports.file.level = 'info'
 
 function resolveDbPath(): string {
   const userDataDir = app.getPath('userData')
@@ -297,6 +309,10 @@ function janelaAtual(): BrowserWindow | undefined {
 
 const { autoUpdater } = electronUpdater
 
+// O logger do electron-updater é verboso por natureza (versão encontrada, URL
+// consultada, progresso do download) — é exatamente o rastro que faltava.
+autoUpdater.logger = log
+
 // O launcher portable do electron-builder seta esta env; o binario portable
 // nao tem instalador substituivel, entao auto-update fica desabilitado nele.
 function ehPortable(): boolean {
@@ -304,10 +320,13 @@ function ehPortable(): boolean {
 }
 
 function iniciarAutoUpdate(): void {
+  log.info(
+    `[updater] versão ${app.getVersion()}, empacotado=${app.isPackaged}, portable=${ehPortable()}`
+  )
   if (!app.isPackaged || ehPortable()) return
   autoUpdater.checkForUpdatesAndNotify().catch((err) => {
     // Sem rede ou release indisponivel nao e erro fatal — apenas loga.
-    console.error('[updater] checagem automatica falhou:', err)
+    log.error('[updater] checagem automatica falhou:', err)
   })
 }
 
@@ -349,6 +368,7 @@ async function verificarAtualizacoesManual(): Promise<void> {
       })
     }
   } catch (err) {
+    log.error('[updater] checagem manual falhou:', err)
     dialog.showErrorBox(
       'Falha ao checar atualizações',
       err instanceof Error ? err.message : String(err)
