@@ -50,7 +50,7 @@ Quality strategy is treated as a first-class concern, not an afterthought.
 - **TDD mandatory in the domain layer.** All business rules (RN-01 through RN-08 documented in [`PRD.md`](./PRD.md)) start with a failing test before any implementation.
 - **Coverage minimums:** 80% in the domain layer, 60% global.
 - **Integration tests** run against in-memory SQLite to validate repositories without mocking the database.
-- **E2E tests** (43 Playwright specs against the real Electron app, each in an isolated temp database) cover the critical user flows: registering an in-progress installment plan, advancing parcelas, paying a statement — which locks its expenses against edit/deletion (RN-06) —, deleting expenses, navigating to a projected future month, per-category budgets, and reports.
+- **E2E tests** (84 Playwright specs against the real Electron app, each in an isolated temp database) cover the critical user flows: registering an in-progress installment plan, advancing parcelas, paying a statement — which locks its expenses against edit/deletion (RN-06) —, deleting expenses, navigating to a projected future month, per-category budgets, and reports. Beyond flows, they also assert things a click-through never catches: that no screen scrolls horizontally at three window widths, that row actions aren't clipped by their container, and that every page opens at the same left edge regardless of its width tier.
 - **Accessibility scans** (axe-core via Playwright) run against every main screen — serious/critical WCAG violations fail the suite.
 - **Mutation testing** (Stryker) runs against the domain layer, measuring whether the tests actually detect behavioral changes — not just line coverage. Current score: **93%** (650 mutants, 4 of 14 services at 100%).
 - **The whole pipeline runs locally** through npm scripts (`lint`, `typecheck`, `test:coverage`, `e2e`, `test:mutation`, `build`), run before opening a PR. Git hooks enforce the fast half automatically: pre-commit runs ESLint and Prettier on staged files, commit-msg validates Conventional Commits, and pre-push runs typecheck plus the full unit suite.
@@ -62,7 +62,7 @@ Bug reports during development follow a structured template (preconditions, step
 
 ## Status
 
-Tally has been in daily real use since **v1.0.0** and is currently at **v1.1.1**. The MVP and the whole V2 scope in [`PRD.md`](./PRD.md) are delivered; development continues in releases. The implementation was built in vertical slices — each one a thin end-to-end feature with UI, logic, persistence, and tests.
+Tally has been in daily real use since **v1.0.0** and is currently at **v1.2.1**. The MVP and the whole V2 scope in [`PRD.md`](./PRD.md) are delivered; development continues in releases. The implementation was built in vertical slices — each one a thin end-to-end feature with UI, logic, persistence, and tests.
 
 ### Roadmap
 
@@ -96,6 +96,8 @@ From here the project stopped delivering in slices and started delivering in rel
 - [x] **v1.1.0** (jul/2026) — the 11-phase post-audit improvement plan, which **closes the entire V2 scope** in [`PRD.md`](./PRD.md): per-category budgets with monthly overrides, CSV/PDF export, configurable automatic backups, and free-form tags/notes. Plus auto-update via GitHub Releases, a CSV importer for migrating off the spreadsheet, OS notifications for statement closing/due dates, and a Settings screen
 - [x] **v1.1.1** (jul/2026) — fix release: the Saídas row actions were unreachable, not merely hidden, when the table outgrew its panel
 - [x] **Post-1.1.1 (ago/2026)** — repository cleanup: color tokens for status surfaces, removal of the dark theme that never shipped a switcher, design reference material moved under `docs/`, and removal of the hosted CI (the pipeline now runs locally — see [`CONTRIBUTING.md`](./CONTRIBUTING.md))
+- [x] **v1.2.0** (ago/2026) — the 8-phase UI/UX plan derived from a full interface audit (the app run against an isolated database, 8 screens captured in 3 states and 3 widths). Ships statement totals in the invoice list, income-source reuse for one-off entries, a first-run onboarding panel, and backup restore from the UI. Row actions collapsed from 5 buttons into a menu; modals gained focus traps; table sorting became keyboard-reachable. The accessibility scan had been running against an **empty** database — with data on screen it immediately found two serious WCAG violations. Coverage went from 706 to 771 unit tests and from 42 to 78 E2E specs
+- [x] **v1.2.1** (ago/2026) — fix release: every screen opened at a different left edge, because the page container derived _where a page starts_ from the same `max-width` that capped _how wide it gets_. Also closes a race in the E2E suite where a locator could resolve against the previous route, still mounted mid-navigation
 
 Detalhes técnicos de cada slice em [`CHANGELOG.md`](./CHANGELOG.md).
 
@@ -149,12 +151,14 @@ Detalhes técnicos de cada slice em [`CHANGELOG.md`](./CHANGELOG.md).
 
 Grab the latest binaries from [GitHub Releases](https://github.com/JulianoMRA/tally/releases) (built locally with `npm run dist` and uploaded to the release):
 
-- **`Tally Setup <version>.exe`** — NSIS installer. Creates desktop + Start Menu shortcuts, lets you pick the install dir, supports clean uninstall. **Auto-updates**: the app checks GitHub Releases on startup (and via the `Arquivo > Verificar atualizações` menu) and applies new versions on quit.
+- **`Tally-Setup-<version>.exe`** — NSIS installer. Creates desktop + Start Menu shortcuts, lets you pick the install dir, supports clean uninstall. **Auto-updates**: the app checks GitHub Releases on startup (and via the `Arquivo > Verificar atualizações` menu) and applies new versions on quit.
 - **`Tally-<version>-portable.exe`** — single-file executable. Just double-click — no install. Good for USB drives or restricted machines. Does **not** auto-update — download new versions manually.
 
 On first launch Windows SmartScreen may warn that the publisher is unverified (the binary is unsigned — this is a personal project, not a commercial app). Click **More info → Run anyway** to proceed. Auto-update itself works on unsigned builds.
 
 Your data lives in `%APPDATA%\tally\tally.db` regardless of which build you use (NSIS, portable, or `npm run dev`) and survives updates. Backups are written to `%APPDATA%\tally\backups\` on every boot and quit; you can also export everything as JSON via `Arquivo > Exportar dados`.
+
+If an update never arrives, `%APPDATA%\Tally\logs\main.log` records what the updater found — the version it saw, the URL it queried, and any error.
 
 ---
 
