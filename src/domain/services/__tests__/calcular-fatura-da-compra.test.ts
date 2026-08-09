@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  calcularDatasDaFatura,
   calcularReferenciaFaturaDaCompra,
   formatarMesReferencia
 } from '../calcular-fatura-da-compra'
@@ -83,5 +84,84 @@ describe('formatarMesReferencia', () => {
     expect(formatarMesReferencia({ ano: 2026, mes: 6 })).toBe('2026-06')
     expect(formatarMesReferencia({ ano: 2026, mes: 12 })).toBe('2026-12')
     expect(formatarMesReferencia({ ano: 2027, mes: 1 })).toBe('2027-01')
+  })
+})
+
+describe('calcularDatasDaFatura', () => {
+  describe('vencimento no mesmo mês do fechamento (V > F)', () => {
+    it('Inter (F=05, V=12): fatura de junho fecha 05/06 e vence 12/06', () => {
+      expect(calcularDatasDaFatura({ ano: 2026, mes: 6 }, 5, 12)).toEqual({
+        dataFechamento: '2026-06-05',
+        dataVencimento: '2026-06-12'
+      })
+    })
+
+    it('Nubank (F=15, V=22): fatura de junho fecha 15/06 e vence 22/06', () => {
+      expect(calcularDatasDaFatura({ ano: 2026, mes: 6 }, 15, 22)).toEqual({
+        dataFechamento: '2026-06-15',
+        dataVencimento: '2026-06-22'
+      })
+    })
+
+    it('V igual a F mantém as duas datas no mesmo dia', () => {
+      expect(calcularDatasDaFatura({ ano: 2026, mes: 6 }, 10, 10)).toEqual({
+        dataFechamento: '2026-06-10',
+        dataVencimento: '2026-06-10'
+      })
+    })
+  })
+
+  describe('vencimento no mês seguinte ao fechamento (V < F)', () => {
+    it('cartão que fecha 24 e vence 01: fatura de agosto fecha 24/08 e vence 01/09', () => {
+      expect(calcularDatasDaFatura({ ano: 2026, mes: 8 }, 24, 1)).toEqual({
+        dataFechamento: '2026-08-24',
+        dataVencimento: '2026-09-01'
+      })
+    })
+
+    it('vencimento nunca é anterior ao fechamento', () => {
+      const { dataFechamento, dataVencimento } = calcularDatasDaFatura({ ano: 2026, mes: 8 }, 24, 1)
+      expect(dataVencimento > dataFechamento).toBe(true)
+    })
+
+    it('fatura de dezembro vence em janeiro do ano seguinte', () => {
+      expect(calcularDatasDaFatura({ ano: 2026, mes: 12 }, 24, 1)).toEqual({
+        dataFechamento: '2026-12-24',
+        dataVencimento: '2027-01-01'
+      })
+    })
+  })
+
+  describe('clamp de dias que não existem no mês', () => {
+    it('F=31 em fevereiro fecha no último dia do mês', () => {
+      expect(calcularDatasDaFatura({ ano: 2027, mes: 2 }, 31, 5)).toEqual({
+        dataFechamento: '2027-02-28',
+        dataVencimento: '2027-03-05'
+      })
+    })
+
+    it('V=31 no mesmo mês cai no último dia disponível', () => {
+      expect(calcularDatasDaFatura({ ano: 2026, mes: 8 }, 24, 31)).toEqual({
+        dataFechamento: '2026-08-24',
+        dataVencimento: '2026-08-31'
+      })
+    })
+
+    it('V=30 rolando para fevereiro é clamped ao último dia de fevereiro', () => {
+      expect(calcularDatasDaFatura({ ano: 2027, mes: 1 }, 31, 30)).toEqual({
+        dataFechamento: '2027-01-31',
+        dataVencimento: '2027-02-28'
+      })
+    })
+  })
+
+  describe('validação de input', () => {
+    it.each([0, 32, -1, 1.5, NaN])('rejeita diaFechamento inválido (%s)', (dia) => {
+      expect(() => calcularDatasDaFatura({ ano: 2026, mes: 6 }, dia, 12)).toThrow()
+    })
+
+    it.each([0, 32, -1, 1.5, NaN])('rejeita diaVencimento inválido (%s)', (dia) => {
+      expect(() => calcularDatasDaFatura({ ano: 2026, mes: 6 }, 5, dia)).toThrow()
+    })
   })
 })
