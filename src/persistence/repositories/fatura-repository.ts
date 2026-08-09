@@ -2,10 +2,10 @@ import type { Database } from '../database'
 import type { Cartao } from '../../domain/entities/cartao'
 import type { Fatura } from '../../domain/entities/fatura'
 import {
+  calcularDatasDaFatura,
   calcularReferenciaFaturaDaCompra,
   formatarMesReferencia
 } from '../../domain/services/calcular-fatura-da-compra'
-import { clampDiaNoMes } from '../../domain/services/mes-referencia'
 import type { Repository } from './types'
 import { mapFatura, type FaturaRow } from './row-mappers'
 
@@ -208,10 +208,11 @@ export class FaturaRepository implements Repository {
     mesReferencia: string
   ): Fatura {
     const [anoStr, mesStr] = mesReferencia.split('-')
-    const ano = Number(anoStr)
-    const mes = Number(mesStr)
-    const dataFechamento = clampDiaNoMes(ano, mes, cartao.diaFechamento)
-    const dataVencimento = clampDiaNoMes(ano, mes, cartao.diaVencimento)
+    const { dataFechamento, dataVencimento } = calcularDatasDaFatura(
+      { ano: Number(anoStr), mes: Number(mesStr) },
+      cartao.diaFechamento,
+      cartao.diaVencimento
+    )
 
     this.db
       .prepare(
@@ -240,8 +241,11 @@ export class FaturaRepository implements Repository {
   ): Fatura {
     const ref = calcularReferenciaFaturaDaCompra(dataCompra, cartao.diaFechamento)
     const mesReferencia = formatarMesReferencia(ref)
-    const dataFechamento = clampDiaNoMes(ref.ano, ref.mes, cartao.diaFechamento)
-    const dataVencimento = clampDiaNoMes(ref.ano, ref.mes, cartao.diaVencimento)
+    const { dataFechamento, dataVencimento } = calcularDatasDaFatura(
+      ref,
+      cartao.diaFechamento,
+      cartao.diaVencimento
+    )
 
     this.db
       .prepare(

@@ -292,3 +292,41 @@ describe('VisaoMensalRepository.detalhar — extensão de horizonte (RF-VIS-04, 
     expect(recebimentos.n).toBe(1)
   })
 })
+
+describe('VisaoMensalRepository — cartão que vence no mês seguinte ao fechamento', () => {
+  let db: Database
+  let repo: VisaoMensalRepository
+
+  beforeEach(() => {
+    db = openInMemoryDatabase()
+    runMigrations(db)
+    repo = new VisaoMensalRepository(db)
+  })
+
+  /**
+   * Cartão F=24/V=01: o ciclo fecha 24/08 e é pago em 01/09. O mês de
+   * referência continua sendo o do fechamento (agosto) — decisão de produto:
+   * a fatura é agrupada pelo ciclo que a originou, não pela data em que sai o
+   * dinheiro. O que mudou é só o vencimento exibido, que antes caía em 01/08.
+   */
+  it('agrupa a compra no mês do fechamento, exibindo o vencimento do mês seguinte', () => {
+    const cartaoId = inserirCartao(db, 'Fecha24Vence01', 24, 1)
+    const categoriaId = inserirCategoria(db)
+
+    new DespesaRepository(db).criarUnicaCredito({
+      descricao: 'Compra',
+      categoriaId,
+      cartaoId,
+      valorCentavos: 10_000,
+      dataCompra: '2026-08-09'
+    })
+
+    const agosto = repo.detalharSomenteLeitura('2026-08')
+    const setembro = repo.detalharSomenteLeitura('2026-09')
+
+    expect(agosto.faturas).toHaveLength(1)
+    expect(agosto.faturas[0].fatura.dataVencimento).toBe('2026-09-01')
+    expect(agosto.faturas[0].totalCentavos).toBe(10_000)
+    expect(setembro.faturas).toEqual([])
+  })
+})

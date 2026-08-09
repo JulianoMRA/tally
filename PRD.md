@@ -241,6 +241,27 @@ Exemplo Nubank (F=15, V=22):
 - Compra 10/06 → fatura fecha 15/06, vence 22/06
 - Compra 20/06 → fatura fecha 15/07, vence 22/07
 
+#### Data de vencimento do ciclo
+
+Com `dia_vencimento = V`, a fatura de um mês de referência vence em V **desse
+mesmo mês** quando `V >= F`, e em V do **mês seguinte** quando `V < F`. Dias que
+não existem no mês são clamped ao último dia (31 em fevereiro → 28/29).
+
+O mês de referência continua sendo o do **fechamento**, mesmo quando o
+pagamento acontece no mês seguinte: a fatura é agrupada pelo ciclo que a
+originou, não pela data em que o dinheiro sai.
+
+Exemplo de cartão que fecha 24 e vence 01 (F=24, V=01):
+
+- Compra 09/08 → fatura de referência 2026-08, fecha 24/08, vence 01/09
+- Compra 25/08 → fatura de referência 2026-09, fecha 24/09, vence 01/10
+
+> Regra explicitada em 09/08/2026. Antes, fechamento e vencimento eram sempre
+> calculados no mesmo mês — correto para os dois cartões de exemplo acima
+> (ambos com V > F), mas em um cartão com V < F a fatura vencia antes de fechar:
+> nascia vencida, esvaziava a janela `Fechada` de RN-06 e nunca gerava aviso de
+> vencimento próximo. Migration `0009` corrige as faturas já gravadas.
+
 ### RN-02 — Geração de parcelas
 
 Ao cadastrar despesa parcelada com `total_parcelas = N` e parcela inicial = `K` (default 1):

@@ -81,6 +81,41 @@ describe('FaturaRepository.upsertParaCompra', () => {
     expect(fatura.dataFechamento).toBe('2028-02-29')
   })
 
+  it('vence no mês seguinte quando o dia de vencimento é anterior ao de fechamento (F=24, V=01)', () => {
+    const cartao = inserirCartao(db, 'Fecha24Vence01', 24, 1)
+
+    const fatura = repo.upsertParaCompra(cartao, '2026-08-09')
+
+    expect(fatura).toMatchObject({
+      mesReferencia: '2026-08',
+      dataFechamento: '2026-08-24',
+      dataVencimento: '2026-09-01'
+    })
+  })
+
+  it('mantém o vencimento após o fechamento também na compra que rola de mês (F=24, V=01)', () => {
+    const cartao = inserirCartao(db, 'Fecha24Vence01', 24, 1)
+
+    const fatura = repo.upsertParaCompra(cartao, '2026-08-25')
+
+    expect(fatura).toMatchObject({
+      mesReferencia: '2026-09',
+      dataFechamento: '2026-09-24',
+      dataVencimento: '2026-10-01'
+    })
+  })
+
+  it('upsertParaMesReferencia aplica a mesma regra de vencimento (F=24, V=01)', () => {
+    const cartao = inserirCartao(db, 'Fecha24Vence01', 24, 1)
+
+    const fatura = repo.upsertParaMesReferencia(cartao, '2026-12')
+
+    expect(fatura).toMatchObject({
+      dataFechamento: '2026-12-24',
+      dataVencimento: '2027-01-01'
+    })
+  })
+
   it('mapeia status row → discriminated union', () => {
     const inter = inserirCartao(db, 'Inter', 5, 12)
     const fatura = repo.upsertParaCompra(inter, '2026-06-03')

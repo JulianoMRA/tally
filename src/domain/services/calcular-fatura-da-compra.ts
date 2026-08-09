@@ -1,4 +1,4 @@
-import { diasNoMes } from './mes-referencia'
+import { clampDiaNoMes, diasNoMes } from './mes-referencia'
 
 export type ReferenciaFatura = {
   ano: number
@@ -26,8 +26,12 @@ function parseDataIso(data: string): { ano: number; mes: number; dia: number } {
 }
 
 function validarDiaFechamento(dia: number): void {
+  validarDiaDoMes(dia, 'diaFechamento')
+}
+
+function validarDiaDoMes(dia: number, campo: string): void {
   if (!Number.isInteger(dia) || dia < 1 || dia > 31) {
-    throw new Error(`diaFechamento inválido: ${dia}. Deve ser inteiro entre 1 e 31.`)
+    throw new Error(`${campo} inválido: ${dia}. Deve ser inteiro entre 1 e 31.`)
   }
 }
 
@@ -54,6 +58,44 @@ export function calcularReferenciaFaturaDaCompra(
     return { ano: ano + 1, mes: 1 }
   }
   return { ano, mes: mes + 1 }
+}
+
+export type DatasDaFatura = {
+  dataFechamento: string
+  dataVencimento: string
+}
+
+/**
+ * Datas do ciclo de uma fatura em um mês de referência.
+ *
+ * Quando o dia de vencimento é anterior ao de fechamento (ex.: fecha 24, vence
+ * 01), o vencimento pertence ao **mês seguinte** ao do fechamento — é o mesmo
+ * ciclo, só pago no mês adiante. Calcular as duas datas no mesmo mês fazia a
+ * fatura nascer vencida no instante em que fechava, anulava a janela `Fechada`
+ * de RN-06 e impedia o aviso de vencimento próximo.
+ *
+ * Com V >= F (Inter F=05/V=12, Nubank F=15/V=22) as duas datas ficam no mesmo
+ * mês, como sempre estiveram.
+ */
+export function calcularDatasDaFatura(
+  ref: ReferenciaFatura,
+  diaFechamento: number,
+  diaVencimento: number
+): DatasDaFatura {
+  validarDiaDoMes(diaFechamento, 'diaFechamento')
+  validarDiaDoMes(diaVencimento, 'diaVencimento')
+
+  const refVencimento = diaVencimento < diaFechamento ? proximaReferencia(ref) : ref
+
+  return {
+    dataFechamento: clampDiaNoMes(ref.ano, ref.mes, diaFechamento),
+    dataVencimento: clampDiaNoMes(refVencimento.ano, refVencimento.mes, diaVencimento)
+  }
+}
+
+function proximaReferencia(ref: ReferenciaFatura): ReferenciaFatura {
+  if (ref.mes === 12) return { ano: ref.ano + 1, mes: 1 }
+  return { ano: ref.ano, mes: ref.mes + 1 }
 }
 
 export function formatarMesReferencia(ref: ReferenciaFatura): string {
