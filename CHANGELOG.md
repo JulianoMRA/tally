@@ -22,6 +22,19 @@ vista técnico.
 
 ---
 
+## v1.2.2 (ago/2026)
+
+Patch de correção: um erro de cálculo de data que afeta cartões cujo dia de vencimento é anterior ao de fechamento, e a confiabilidade do próprio pipeline de release. Nenhuma feature nova.
+
+**Patch, e não minor:** nada foi adicionado ao produto. A migration `0009` não muda isso — ela é corretiva (reescreve datas erradas), não estrutural: não cria, remove nem altera tabela ou coluna.
+
+- **Vencimento anterior ao fechamento** — em um cartão que fecha dia 24 e vence dia 01, a fatura de agosto era gravada com fechamento 24/08 e vencimento 01/08, 23 dias antes de fechar. A consequência visível é que a fatura nascia marcada como vencida no instante do fechamento e nunca gerava aviso de vencimento próximo. O vencimento passa a cair no mês seguinte quando o dia de vencimento é anterior ao de fechamento; o mês de referência continua sendo o do fechamento, então a compra de 09/08 segue aparecendo na visão de agosto — agora vencendo 01/09. A migration `0009` corrige as faturas já gravadas no primeiro boot desta versão, preservando status, ids e vínculos. Cartões com vencimento depois do fechamento (Inter, Nubank) não são afetados.
+- **Confiabilidade do pipeline de release** — `electron-log` grava o diagnóstico do updater em `<userData>/logs/main.log`, o que torna visível uma falha de atualização que antes era silenciosa; e o nome do instalador NSIS passa a ser exatamente o que o `latest.yml` referencia, sem renomear à mão antes de publicar.
+
+Cobertura: **801 testes unitários** (era 772) e **84 specs E2E** (era 82).
+
+---
+
 ## v1.2.1 (ago/2026)
 
 Patch de correção: duas falhas de qualidade, nenhuma feature nova e nenhuma mudança de regra de negócio, schema ou migration.
