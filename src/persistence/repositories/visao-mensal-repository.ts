@@ -6,7 +6,7 @@ import { calcularBalancoMensal } from '../../domain/services/calcular-balanco-me
 import { diferencaEmMeses } from '../../domain/services/mes-referencia'
 import { hojeIsoLocal, mesAtualReferencia } from '../../shared/datas-locais'
 import { DespesaRepository } from './despesa-repository'
-import { FaturaRepository } from './fatura-repository'
+import { FaturaRepository, SQL_FATURA_VISIVEL } from './fatura-repository'
 import { ParcelaRepository } from './parcela-repository'
 import { RecebimentoRepository } from './recebimento-repository'
 import { RendaRepository } from './renda-repository'
@@ -41,7 +41,10 @@ export class VisaoMensalRepository implements Repository {
 
     const faturaRows = this.db
       .prepare(
-        'SELECT * FROM fatura WHERE mes_referencia = ? ORDER BY data_vencimento ASC, cartao_id ASC'
+        `SELECT f.* FROM fatura f
+         INNER JOIN cartao c ON c.id = f.cartao_id
+         WHERE f.mes_referencia = ? AND ${SQL_FATURA_VISIVEL}
+         ORDER BY f.data_vencimento ASC, f.cartao_id ASC`
       )
       .all(mesReferencia) as FaturaRow[]
 

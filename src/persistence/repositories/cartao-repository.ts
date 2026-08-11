@@ -2,6 +2,7 @@ import type { Database } from '../database'
 import type { Cartao } from '../../domain/entities/cartao'
 import type { CartaoInput, ListCartaoOptions } from '../../shared/ipc/cartao'
 import type { Repository } from './types'
+import { FaturaRepository } from './fatura-repository'
 import { mapCartao, type CartaoRow } from './row-mappers'
 
 export class CartaoRepository implements Repository {
@@ -33,17 +34,26 @@ export class CartaoRepository implements Repository {
   }
 
   update(id: number, input: CartaoInput): Cartao {
-    const info = this.db
-      .prepare(
-        `UPDATE cartao
-         SET nome = ?, dia_fechamento = ?, dia_vencimento = ?, cor = ?, updated_at = CURRENT_TIMESTAMP
-         WHERE id = ?`
-      )
-      .run(input.nome, input.diaFechamento, input.diaVencimento, input.cor, id)
-    if (info.changes === 0) throw new Error(`Cartão #${id} não encontrado`)
-    const cartao = this.findById(id)
-    if (!cartao) throw new Error(`Falha ao recuperar cartão #${id} após update`)
-    return cartao
+    return this.db.transaction(() => {
+      const info = this.db
+        .prepare(
+          `UPDATE cartao
+           SET nome = ?, dia_fechamento = ?, dia_vencimento = ?, cor = ?, updated_at = CURRENT_TIMESTAMP
+           WHERE id = ?`
+        )
+        .run(input.nome, input.diaFechamento, input.diaVencimento, input.cor, id)
+      if (info.changes === 0) throw new Error(`Cartão #${id} não encontrado`)
+
+      new FaturaRepository(this.db).realinharDatasDoCartao({
+        id,
+        diaFechamento: input.diaFechamento,
+        diaVencimento: input.diaVencimento
+      })
+
+      const cartao = this.findById(id)
+      if (!cartao) throw new Error(`Falha ao recuperar cartão #${id} após update`)
+      return cartao
+    })()
   }
 
   arquivar(id: number): Cartao {

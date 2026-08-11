@@ -242,6 +242,117 @@ describe('FaturaRepository — sincronização parcela <-> fatura (RN-06)', () =
   })
 })
 
+describe('FaturaRepository.realinharDatasDoCartao', () => {
+  let db: Database
+  let repo: FaturaRepository
+
+  beforeEach(() => {
+    db = openInMemoryDatabase()
+    runMigrations(db)
+    repo = new FaturaRepository(db)
+  })
+
+  function inserirFatura(
+    cartaoId: number,
+    mes: string,
+    fechamento: string,
+    vencimento: string,
+    status: 'Aberta' | 'Fechada' | 'Paga'
+  ): number {
+    const info = db
+      .prepare(
+        `INSERT INTO fatura (cartao_id, mes_referencia, data_fechamento, data_vencimento, status, data_pagamento)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      )
+      .run(cartaoId, mes, fechamento, vencimento, status, status === 'Paga' ? vencimento : null)
+    return Number(info.lastInsertRowid)
+  }
+
+  it('fatura Aberta realinha fechamento e vencimento aos novos dias do cartao', () => {
+    const inter = inserirCartao(db, 'Inter', 5, 12)
+    const id = inserirFatura(inter.id, '2026-07', '2026-07-05', '2026-07-12', 'Aberta')
+
+    repo.realinharDatasDoCartao({ id: inter.id, diaFechamento: 10, diaVencimento: 20 })
+
+    expect(repo.findById(id)).toMatchObject({
+      mesReferencia: '2026-07',
+      dataFechamento: '2026-07-10',
+      dataVencimento: '2026-07-20'
+    })
+  })
+
+  it('fatura Fechada mantem o fechamento ja ocorrido e realinha so o vencimento', () => {
+    const inter = inserirCartao(db, 'Inter', 5, 12)
+    const id = inserirFatura(inter.id, '2026-07', '2026-07-05', '2026-07-12', 'Fechada')
+
+    repo.realinharDatasDoCartao({ id: inter.id, diaFechamento: 10, diaVencimento: 20 })
+
+    expect(repo.findById(id)).toMatchObject({
+      dataFechamento: '2026-07-05',
+      dataVencimento: '2026-07-20'
+    })
+  })
+
+  it('fatura Paga fica intocada — e historico', () => {
+    const inter = inserirCartao(db, 'Inter', 5, 12)
+    const id = inserirFatura(inter.id, '2026-07', '2026-07-05', '2026-07-12', 'Paga')
+
+    repo.realinharDatasDoCartao({ id: inter.id, diaFechamento: 10, diaVencimento: 20 })
+
+    expect(repo.findById(id)).toMatchObject({
+      dataFechamento: '2026-07-05',
+      dataVencimento: '2026-07-12'
+    })
+  })
+
+  it('RN-01: vencimento volta para o mes do fechamento quando V deixa de ser menor que F', () => {
+    // Caso real: cartao criado com F=24/V=01 (vencimento no mes seguinte) e
+    // depois corrigido para V=30, com a fatura ja criada pela configuracao antiga.
+    const inter = inserirCartao(db, 'Inter', 24, 1)
+    const id = inserirFatura(inter.id, '2026-09', '2026-09-24', '2026-10-01', 'Aberta')
+
+    repo.realinharDatasDoCartao({ id: inter.id, diaFechamento: 24, diaVencimento: 30 })
+
+    expect(repo.findById(id)).toMatchObject({
+      dataFechamento: '2026-09-24',
+      dataVencimento: '2026-09-30'
+    })
+  })
+
+  it('nao toca em faturas de outros cartoes e devolve quantas realinhou', () => {
+    const inter = inserirCartao(db, 'Inter', 5, 12)
+    const nubank = inserirCartao(db, 'Nubank', 15, 22)
+    inserirFatura(inter.id, '2026-07', '2026-07-05', '2026-07-12', 'Aberta')
+    inserirFatura(inter.id, '2026-08', '2026-08-05', '2026-08-12', 'Aberta')
+    const idNubank = inserirFatura(nubank.id, '2026-07', '2026-07-15', '2026-07-22', 'Aberta')
+
+    const alteradas = repo.realinharDatasDoCartao({
+      id: inter.id,
+      diaFechamento: 10,
+      diaVencimento: 20
+    })
+
+    expect(alteradas).toBe(2)
+    expect(repo.findById(idNubank)).toMatchObject({
+      dataFechamento: '2026-07-15',
+      dataVencimento: '2026-07-22'
+    })
+  })
+
+  it('nao conta fatura que ja estava com as datas certas', () => {
+    const inter = inserirCartao(db, 'Inter', 5, 12)
+    inserirFatura(inter.id, '2026-07', '2026-07-05', '2026-07-12', 'Aberta')
+
+    const alteradas = repo.realinharDatasDoCartao({
+      id: inter.id,
+      diaFechamento: 5,
+      diaVencimento: 12
+    })
+
+    expect(alteradas).toBe(0)
+  })
+})
+
 describe('FaturaRepository.listarAvisos (fase 7 — notificações)', () => {
   let db: Database
   let repo: FaturaRepository
@@ -305,5 +416,34 @@ describe('FaturaRepository.listarAvisos (fase 7 — notificações)', () => {
 
     const avisos = repo.listarAvisos('2026-07-16', '2026-07-19')
     expect(avisos.filter((a) => a.tipo === 'vencimento')).toEqual([])
+  })
+
+  it('nao avisa fatura sem parcelas de cartao arquivado', () => {
+    const inter = inserirCartao(db, 'Inter', 5, 12)
+    inserirFatura(inter.id, '2026-08', '2026-07-19', '2026-07-26', 'Aberta')
+    db.prepare('UPDATE cartao SET ativo = 0 WHERE id = ?').run(inter.id)
+
+    expect(repo.listarAvisos('2026-07-16', '2026-07-19')).toEqual([])
+  })
+
+  it('RF-CAR-02: avisa fatura com parcelas de cartao arquivado (ainda ha o que pagar)', () => {
+    const inter = inserirCartao(db, 'Inter', 5, 12)
+    const catId = db
+      .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Geral', 'Despesa', '#000')")
+      .run().lastInsertRowid as number
+    new DespesaRepository(db).criarUnicaCredito({
+      descricao: 'Compra antes de arquivar',
+      categoriaId: Number(catId),
+      cartaoId: inter.id,
+      valorCentavos: 5000,
+      dataCompra: '2026-07-10' // dia 10 > F=5 → fatura de agosto, fecha 2026-08-05
+    })
+    db.prepare('UPDATE cartao SET ativo = 0 WHERE id = ?').run(inter.id)
+
+    const avisos = repo.listarAvisos('2026-08-03', '2026-08-06')
+
+    expect(avisos).toContainEqual(
+      expect.objectContaining({ tipo: 'fechamento', cartaoNome: 'Inter' })
+    )
   })
 })

@@ -141,6 +141,34 @@ describe('CartaoRepository', () => {
         repo.update(999, { nome: 'X', diaFechamento: 1, diaVencimento: 1, cor: '#000000' })
       ).toThrow()
     })
+
+    it('realinha as datas das faturas não pagas ao mudar os dias do cartão', () => {
+      const cartao = repo.create({
+        nome: 'Inter',
+        diaFechamento: 24,
+        diaVencimento: 1,
+        cor: '#ff7a00'
+      })
+      db.prepare(
+        `INSERT INTO fatura (cartao_id, mes_referencia, data_fechamento, data_vencimento, status)
+         VALUES (?, '2026-09', '2026-09-24', '2026-10-01', 'Aberta')`
+      ).run(cartao.id)
+
+      repo.update(cartao.id, {
+        nome: 'Inter',
+        diaFechamento: 24,
+        diaVencimento: 30,
+        cor: '#ff7a00'
+      })
+
+      const fatura = db
+        .prepare('SELECT data_fechamento, data_vencimento FROM fatura WHERE cartao_id = ?')
+        .get(cartao.id)
+      expect(fatura).toEqual({
+        data_fechamento: '2026-09-24',
+        data_vencimento: '2026-09-30'
+      })
+    })
   })
 
   describe('arquivar / desarquivar', () => {
