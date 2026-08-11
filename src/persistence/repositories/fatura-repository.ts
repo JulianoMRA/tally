@@ -21,6 +21,20 @@ export type AvisoFatura = {
   fatura: Fatura
 }
 
+/**
+ * Predicado de fatura visível, para queries que partem da FATURA (e não do
+ * cartão). Espera os aliases `f` (fatura) e `c` (cartao).
+ *
+ * A RF-CAR-02 mantém o histórico do cartão arquivado visível — mas fatura sem
+ * nenhuma parcela não é histórico, é resíduo: a fatura nasce no upsert da
+ * compra e sobrevive à exclusão da despesa. Sem esse filtro, um cartão criado
+ * por engano continuava aparecendo na visão mensal e nas notificações depois
+ * de arquivado.
+ */
+export const SQL_FATURA_VISIVEL = `(
+    c.ativo = 1 OR EXISTS (SELECT 1 FROM parcela px WHERE px.fatura_id = f.id)
+  )`
+
 export class FaturaRepository implements Repository {
   constructor(public readonly db: Database) {}
 
@@ -172,10 +186,12 @@ export class FaturaRepository implements Repository {
         `SELECT f.*, c.nome AS cartao_nome, 'fechamento' AS tipo
          FROM fatura f INNER JOIN cartao c ON c.id = f.cartao_id
          WHERE f.status = 'Aberta' AND f.data_fechamento BETWEEN ? AND ?
+           AND ${SQL_FATURA_VISIVEL}
          UNION ALL
          SELECT f.*, c.nome AS cartao_nome, 'vencimento' AS tipo
          FROM fatura f INNER JOIN cartao c ON c.id = f.cartao_id
-         WHERE f.status = 'Fechada' AND f.data_vencimento BETWEEN ? AND ?`
+         WHERE f.status = 'Fechada' AND f.data_vencimento BETWEEN ? AND ?
+           AND ${SQL_FATURA_VISIVEL}`
       )
       .all(hoje, ateData, hoje, ateData) as Row[]
 
@@ -196,6 +212,57 @@ export class FaturaRepository implements Repository {
       .all(...ids) as { id: number; status: 'Aberta' | 'Fechada' | 'Paga' }[]
     for (const row of rows) mapa.set(row.id, row.status)
     return mapa
+  }
+
+  /**
+   * Realinha as datas das faturas do cartão depois que seus dias de fechamento
+   * ou vencimento mudaram. Sem isso, editar o cartão deixava as faturas já
+   * criadas com datas da configuração antiga.
+   *
+   * Fatura Paga não muda (é histórico) e Fechada preserva o `data_fechamento`
+   * (o fechamento já aconteceu — só o vencimento ainda está por vir). O
+   * `mes_referencia` nunca muda: mexer nele realocaria parcelas entre faturas.
+   */
+  realinharDatasDoCartao(cartao: Pick<Cartao, 'id' | 'diaFechamento' | 'diaVencimento'>): number {
+    return this.db.transaction(() => {
+      const rows = this.db
+        .prepare(
+          `SELECT id, mes_referencia, data_fechamento, data_vencimento, status
+             FROM fatura WHERE cartao_id = ? AND status <> 'Paga'`
+        )
+        .all(cartao.id) as Pick<
+        FaturaRow,
+        'id' | 'mes_referencia' | 'data_fechamento' | 'data_vencimento' | 'status'
+      >[]
+
+      let alteradas = 0
+      for (const row of rows) {
+        const [ano, mes] = row.mes_referencia.split('-')
+        const datas = calcularDatasDaFatura(
+          { ano: Number(ano), mes: Number(mes) },
+          cartao.diaFechamento,
+          cartao.diaVencimento
+        )
+        const dataFechamento = row.status === 'Fechada' ? row.data_fechamento : datas.dataFechamento
+
+        if (
+          dataFechamento === row.data_fechamento &&
+          datas.dataVencimento === row.data_vencimento
+        ) {
+          continue
+        }
+
+        this.db
+          .prepare(
+            `UPDATE fatura
+             SET data_fechamento = ?, data_vencimento = ?, updated_at = datetime('now')
+             WHERE id = ?`
+          )
+          .run(dataFechamento, datas.dataVencimento, row.id)
+        alteradas++
+      }
+      return alteradas
+    })()
   }
 
   /**

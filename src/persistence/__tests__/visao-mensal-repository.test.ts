@@ -13,6 +13,10 @@ function inserirCartao(db: Database, nome: string, dF = 5, dV = 12): number {
     .run(nome, dF, dV, '#abc').lastInsertRowid as number
 }
 
+function arquivarCartao(db: Database, id: number): void {
+  db.prepare('UPDATE cartao SET ativo = 0 WHERE id = ?').run(id)
+}
+
 function inserirCategoria(db: Database, nome = 'Geral', tipo = 'Despesa'): number {
   return db
     .prepare('INSERT INTO categoria (nome, tipo, cor) VALUES (?, ?, ?)')
@@ -146,6 +150,51 @@ describe('VisaoMensalRepository.detalhar (RF-VIS-01/02 + RN-08)', () => {
     const julho = repo.detalhar('2026-07')
     expect(julho.faturas).toHaveLength(1)
     expect(julho.totais.totalSaidasCentavos).toBe(2000)
+  })
+
+  it('omite fatura sem parcelas de cartão arquivado', () => {
+    const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+    db.prepare(
+      `INSERT INTO fatura (cartao_id, mes_referencia, data_fechamento, data_vencimento, status)
+       VALUES (?, '2026-06', '2026-06-05', '2026-06-12', 'Aberta')`
+    ).run(cartaoId)
+    arquivarCartao(db, cartaoId)
+
+    const result = repo.detalhar('2026-06')
+
+    expect(result.faturas).toEqual([])
+  })
+
+  it('RF-CAR-02: mantém fatura com parcelas de cartão arquivado (histórico permanece visível)', () => {
+    const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+    const catId = inserirCategoria(db)
+    new DespesaRepository(db).criarUnicaCredito({
+      descricao: 'Compra antes de arquivar',
+      categoriaId: catId,
+      cartaoId,
+      valorCentavos: 7000,
+      dataCompra: '2026-06-03'
+    })
+    arquivarCartao(db, cartaoId)
+
+    const result = repo.detalhar('2026-06')
+
+    expect(result.faturas).toHaveLength(1)
+    expect(result.faturas[0].cartaoNome).toBe('Inter')
+    expect(result.totais.totalSaidasCentavos).toBe(7000)
+  })
+
+  it('mantém fatura sem parcelas de cartão ativo', () => {
+    const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+    db.prepare(
+      `INSERT INTO fatura (cartao_id, mes_referencia, data_fechamento, data_vencimento, status)
+       VALUES (?, '2026-06', '2026-06-05', '2026-06-12', 'Aberta')`
+    ).run(cartaoId)
+
+    const result = repo.detalhar('2026-06')
+
+    expect(result.faturas).toHaveLength(1)
+    expect(result.faturas[0].totalCentavos).toBe(0)
   })
 
   it('contabiliza recebido vs esperado corretamente', () => {
