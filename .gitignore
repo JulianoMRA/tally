@@ -69,3 +69,9 @@ reports/
 
 # Folha de contato do npm run smoke:visual (material de revisao, nao artefato)
 smoke-visual/
+
+# Entrega bruta da proposta de UI de ago/2026. O material versionado dela esta
+# em docs/design/referencia/proposta-2026-08/; isto aqui e o zip e a thumbnail
+# que vieram junto.
+refactor/
+refactor.zip

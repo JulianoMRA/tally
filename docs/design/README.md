@@ -19,6 +19,22 @@ apenas para eles renderizarem como foram desenhados em mai/2026 e já divergiu d
 paleta viva — o cabeçalho do arquivo lista as diferenças. Mudança de paleta vai
 em `src/renderer/styles/tokens.css`, nunca ali.
 
+### Proposta de refactor visual (ago/2026)
+
+Em `docs/design/referencia/proposta-2026-08/`. Auditoria de interface sobre
+`src/renderer`, com diagnóstico de 17 pontos e painéis antes/depois de seis
+telas. O plano de execução está em `docs/design/PLANO-REFACTOR-UI.md`.
+
+| Arquivo               | Conteúdo                                               |
+| --------------------- | ------------------------------------------------------ |
+| `proposta-ui.dc.html` | A proposta: princípios, diagnóstico, antes/depois      |
+| `tally-atual.dc.html` | Recriação da UI atual, usada como painel "antes"       |
+| `mapa-telas.md`       | Mapa tela → arquivos de origem, sincronizado em 15/08  |
+| `support.js`          | Runtime do renderizador — sem ele os HTML abrem vazios |
+
+Os dois `.dc.html` puxam Geist do Google Fonts. Vale só para eles: o app carrega
+as fontes localmente via `@fontsource`, sem CDN.
+
 ## Tokens (`src/renderer/styles/tokens.css`)
 
 Tema único: **Cream** (`:root`), tom papel quente. Um tema escuro chegou a ser
