@@ -43,6 +43,22 @@ export function formatarDiaMes(iso: string | null | undefined): string {
 }
 
 /**
+ * Converte 'YYYY-MM-DD' em 'DD mmm' (ex.: '2026-08-20' -> '20 ago'), formato de
+ * coluna estreita da agenda, onde o mês precisa aparecer — a lista atravessa a
+ * virada do mês — mas '20/09' ao lado de '03/10' se lê pior que '20 set' e
+ * '03 out'. Mesma política de valores ausentes/inválidos.
+ */
+export function formatarDiaMesAbreviado(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const match = DATA_ISO_REGEX.exec(iso)
+  if (!match) return iso
+  const [, , mes, dia] = match
+  const nomeMes = MESES_EXTENSO[Number(mes) - 1]
+  if (!nomeMes) return iso
+  return `${dia} ${nomeMes.slice(0, 3)}`
+}
+
+/**
  * Converte 'YYYY-MM' (ou 'YYYY-MM-DD', ignorando o dia) em mês por extenso
  * (ex.: '2026-06' -> 'junho de 2026'). Valores ausentes viram '—'; formatos
  * inesperados passam intactos.

@@ -31,39 +31,10 @@
   font-weight: 500;
 }
 
-.gastosMesGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-/* Na coluna estreita da Visão mensal a pizza e o ranking empilham, dando
-   largura total ao ranking (nomes de categoria longos cabem em uma linha). */
-@container (max-width: 760px) {
-  .gastosMesGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.ranking {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.rankItem {
-  display: grid;
-  grid-template-columns: 16px minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background: var(--bg-sunk);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-2);
-}
+/* .gastosMesGrid, .ranking, .rankItem, .rankValor e .rankPct saíram com a
+   pizza e o CategoriaRanking no refactor visual de ago/2026: o ranking do mês
+   virou "Para onde foi", na feature visao-mensal, com o limite de orçamento
+   embutido. .rankChip e .rankNome ficam — o OrcamentoPanel ainda usa. */
 
 .rankChip {
   width: 12px;
@@ -78,20 +49,6 @@
   color: var(--ink);
   min-width: 0;
   overflow-wrap: anywhere;
-}
-
-.rankValor {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-
-.rankPct {
-  font-size: 11px;
-  color: var(--ink-3);
-  text-align: right;
-  font-variant-numeric: tabular-nums;
 }
 
 .chartWrap {

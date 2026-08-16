@@ -52,6 +52,22 @@
   --closed-bg: #f0edf8;
   --closed-border: #cfc8e8;
 
+  /* Composição do saldo — as três fatias da barra do hero da visão mensal.
+     São tons dessaturados de --income/--expense/--pending, escolhidos para ler
+     sobre o fundo escuro --forest do card, onde os semânticos normais (pensados
+     para texto sobre creme) fecham demais o contraste. Ordem = ordem da barra. */
+  --fatia-entradas: #7fb389;
+  --fatia-faturas: #c98a7c;
+  --fatia-fora-cartao: #d9b06a;
+
+  /* Texto de apoio sobre --forest. --ink-3 é calibrado para o fundo creme e
+     some no escuro. */
+  --on-forest: #f1ebdd;
+  --on-forest-2: #a9b0a4;
+
+  /* Marca do limite de orçamento sobre a barra do ranking (RF-ORC-02). */
+  --limite-marca: #0f1a14;
+
   /* Typography */
   --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;

@@ -1,41 +1,57 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import type { Despesa } from '@domain/entities/despesa'
 import {
   diferencaEmMeses,
   mesReferenciaAnterior,
   proxMesReferencia
 } from '@domain/services/mes-referencia'
+import { montarAgendaDoMes } from '@domain/services/montar-agenda-do-mes'
+import { hojeIsoLocal } from '@shared/datas-locais'
 import type { RecebimentoComContexto } from '@shared/ipc/recebimento'
 import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
 import {
   Badge,
-  Button,
   EmptyState,
   Input,
   Panel,
+  RowActions,
+  SegmentedControl,
   SortableHeader,
-  useToast
+  useToast,
+  type AcaoLinha,
+  type OpcaoSegmentada
 } from '../../components/ui'
 import { mensagemErro } from '../../lib/mensagem-erro'
 import { alfabetico, porData, porNumero } from '../../lib/comparadores'
 import { formatBRL } from '../../lib/format-brl'
-import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
+import { formatarDataIso } from '../../lib/formatar-data'
 import { mesAtualReferencia } from '../../lib/mes-atual'
 import { pluralizar } from '../../lib/pluralizar'
 import { useOrdenacao } from '../../lib/use-ordenacao'
+import { useOrcamento } from '../relatorios/hooks/use-orcamento'
+import { useTotaisCategoria } from '../relatorios/hooks/use-totais-categoria'
+import { AgendaPanel } from './AgendaPanel'
 import { FaturasCardCompacto } from './FaturasCardCompacto'
+import { montarRanking } from './montar-ranking'
 import { PrimeiroUso } from './PrimeiroUso'
-import { SaldoCard } from './SaldoCard'
+import { RankingCategorias } from './RankingCategorias'
+import { SaldoHero } from './SaldoHero'
 import { useVisaoMensal } from './hooks/use-visao-mensal'
+import { diasAteFimDoMes } from './horizonte'
 import styles from './visao-mensal.module.css'
 
 // Os painéis de gráficos (recharts) ficam num chunk separado: só são baixados
-// quando há dados para renderizar na coluna direita.
+// quando a aba Análise é aberta.
 const PaineisRelatorios = lazy(() => import('../relatorios/PaineisRelatorios'))
 
-// Comparadores estáveis (módulo) para a ordenação dos painéis. Gastos fora do
-// cartão não têm status, então só recebimentos ordenam por status.
+type Aba = 'mes' | 'analise'
+
+const ABAS: readonly OpcaoSegmentada<Aba>[] = [
+  { valor: 'mes', rotulo: 'Mês' },
+  { valor: 'analise', rotulo: 'Análise' }
+]
+
 const COMPARADORES_RECEBIMENTOS = {
   fonte: alfabetico<RecebimentoComContexto>((r) => r.rendaNome),
   data: porData<RecebimentoComContexto>((r) => r.dataEsperada),
@@ -55,7 +71,10 @@ const SEM_GASTOS: Despesa[] = []
 
 export default function VisaoMensalPage() {
   const [mes, setMes] = useState(mesAtualReferencia())
+  const [aba, setAba] = useState<Aba>('mes')
   const { detalhe, loading, erro } = useVisaoMensal(mes)
+  const { totais: totaisCategoria } = useTotaisCategoria(mes)
+  const { progresso: orcamento } = useOrcamento(mes)
   const toast = useToast()
   const [exportando, setExportando] = useState(false)
 
@@ -84,6 +103,36 @@ export default function VisaoMensalPage() {
   )
   const gastos = useOrdenacao(detalhe?.gastosForaCartao ?? SEM_GASTOS, COMPARADORES_GASTOS, 'data')
 
+  const hoje = hojeIsoLocal()
+
+  const agenda = useMemo(() => {
+    if (!detalhe) return []
+    return montarAgendaDoMes({
+      faturas: detalhe.faturas.map((f) => ({
+        cartaoNome: f.cartaoNome,
+        cartaoCor: f.cartaoCor,
+        totalCentavos: f.totalCentavos,
+        dataFechamento: f.fatura.dataFechamento,
+        dataVencimento: f.fatura.dataVencimento,
+        status: f.fatura.status
+      })),
+      recebimentos: detalhe.recebimentos.map((r) => ({
+        fonte: r.rendaNome,
+        dataEsperada: r.dataEsperada,
+        valorCentavos: r.valorCentavos,
+        status: r.status
+      })),
+      hoje
+    })
+  }, [detalhe, hoje])
+
+  const ranking = useMemo(
+    () => montarRanking(totaisCategoria, orcamento),
+    [totaisCategoria, orcamento]
+  )
+
+  const gastoTotalCategorias = totaisCategoria.reduce((s, t) => s + t.totalCentavos, 0)
+
   function irAnterior() {
     setMes(mesReferenciaAnterior(mes))
   }
@@ -102,8 +151,23 @@ export default function VisaoMensalPage() {
   const mesesAdiante = diferencaEmMeses(mesAtualReferencia(), mes)
   const ehProjecao = mesesAdiante > 0
 
+  // Exportar é ação rara e ocupava posição nobre na mesma barra do seletor de
+  // mês. `visiveis={0}` empurra as duas para o menu ⋯.
+  const acoesExportar: AcaoLinha[] = [
+    { label: 'Exportar CSV', onClick: () => exportar('csv'), disabled: exportando },
+    { label: 'Exportar PDF', onClick: () => exportar('pdf'), disabled: exportando }
+  ]
+
+  const totalFaturasCentavos = detalhe?.faturas.reduce((s, f) => s + f.totalCentavos, 0) ?? 0
+  const totalForaCartaoCentavos =
+    detalhe?.gastosForaCartao.reduce((s, g) => s + g.valorCentavos, 0) ?? 0
+
   return (
     <PageContainer width="wide">
+      {/* O h1 continua sendo o nome da rota: `irPara` (e o leitor de tela) usam
+          o par link-de-nav ↔ h1 para confirmar onde a navegação parou. O mês
+          quem diz é o seletor ao lado — era ele que estava duplicado, com um
+          rótulo "Agosto de 2026" repetindo o que o campo já mostra. */}
       <PageHead title="Visão mensal" subtitle="Faturas, gastos, recebimentos e saldo do mês." />
 
       <div className={styles.header}>
@@ -130,7 +194,6 @@ export default function VisaoMensalPage() {
         >
           →
         </button>
-        <span className={styles.mesLabel}>{formatarMesReferencia(mes, { capitalizar: true })}</span>
         {ehProjecao && (
           <span className={styles.headerBadges}>
             <Badge variant="projection" />
@@ -140,12 +203,14 @@ export default function VisaoMensalPage() {
           </span>
         )}
         <span className={styles.headerAcoes}>
-          <Button variant="ghost" size="sm" disabled={exportando} onClick={() => exportar('csv')}>
-            Exportar CSV
-          </Button>
-          <Button variant="ghost" size="sm" disabled={exportando} onClick={() => exportar('pdf')}>
-            Exportar PDF
-          </Button>
+          <SegmentedControl
+            opcoes={ABAS}
+            valor={aba}
+            onChange={setAba}
+            label="Seção da visão mensal"
+            semantica="abas"
+          />
+          <RowActions acoes={acoesExportar} visiveis={0} contexto="exportar o mês" />
         </span>
       </div>
 
@@ -157,158 +222,158 @@ export default function VisaoMensalPage() {
         <div className={styles.layout}>
           {baseVazia && <PrimeiroUso />}
 
-          <div className={styles.cards}>
-            <div className={styles.card}>
-              <span className={styles.cardLabel}>Entradas</span>
-              <span className={`${styles.cardValor} ${styles.cardValorIncome}`}>
-                {formatBRL(detalhe.totais.totalEntradasProjetadasCentavos)}
-              </span>
-              <span className={styles.cardMeta}>
-                {formatBRL(detalhe.totais.totalEntradasRecebidasCentavos)} recebidas
-              </span>
-            </div>
+          {aba === 'mes' ? (
+            <>
+              <div className={styles.gradeTopo}>
+                <SaldoHero
+                  totais={detalhe.totais}
+                  totalFaturasCentavos={totalFaturasCentavos}
+                  totalForaCartaoCentavos={totalForaCartaoCentavos}
+                  qtdCartoes={detalhe.faturas.length}
+                  qtdGastosForaCartao={detalhe.gastosForaCartao.length}
+                />
+                <AgendaPanel eventos={agenda} diasNoHorizonte={diasAteFimDoMes(mes, hoje)} />
+              </div>
 
-            <div className={styles.card}>
-              <span className={styles.cardLabel}>Faturas</span>
-              <span className={`${styles.cardValor} ${styles.cardValorExpense}`}>
-                {formatBRL(detalhe.faturas.reduce((s, f) => s + f.totalCentavos, 0))}
-              </span>
-              <span className={styles.cardMeta}>
-                {detalhe.faturas.length} {pluralizar('cartão', detalhe.faturas.length, 'ões')}
-              </span>
-            </div>
+              <div className={styles.gradeCorpo}>
+                <div className={styles.colunaPrincipal}>
+                  <FaturasCardCompacto faturas={detalhe.faturas} />
+                  <RankingCategorias linhas={ranking} totalCentavos={gastoTotalCategorias} />
+                </div>
 
-            <div className={styles.card}>
-              <span className={styles.cardLabel}>Gastos fora de cartão</span>
-              <span className={`${styles.cardValor} ${styles.cardValorExpense}`}>
-                {formatBRL(detalhe.gastosForaCartao.reduce((s, g) => s + g.valorCentavos, 0))}
-              </span>
-              <span className={styles.cardMeta}>
-                {detalhe.gastosForaCartao.length}{' '}
-                {pluralizar('lançamento', detalhe.gastosForaCartao.length)}
-              </span>
-            </div>
-          </div>
+                <Panel
+                  title="Fora do cartão"
+                  meta={formatBRL(totalForaCartaoCentavos)}
+                  flush
+                  className={styles.painelForaCartao}
+                >
+                  {detalhe.gastosForaCartao.length === 0 ? (
+                    <EmptyState title="Nenhum gasto fora de cartão neste mês." />
+                  ) : (
+                    <table className={styles.tabela}>
+                      <thead>
+                        <tr>
+                          <SortableHeader
+                            rotulo="Descrição"
+                            ativo={gastos.sortBy === 'descricao'}
+                            direcao={gastos.sortDir}
+                            onSort={() => gastos.handleSort('descricao')}
+                          />
+                          <SortableHeader
+                            rotulo="Forma"
+                            ativo={gastos.sortBy === 'forma'}
+                            direcao={gastos.sortDir}
+                            onSort={() => gastos.handleSort('forma')}
+                          />
+                          <SortableHeader
+                            rotulo="Data"
+                            ativo={gastos.sortBy === 'data'}
+                            direcao={gastos.sortDir}
+                            onSort={() => gastos.handleSort('data')}
+                          />
+                          <SortableHeader
+                            rotulo="Valor"
+                            ativo={gastos.sortBy === 'valor'}
+                            direcao={gastos.sortDir}
+                            onSort={() => gastos.handleSort('valor')}
+                            className={styles.colValor}
+                          />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {gastos.itensOrdenados.map((g) => (
+                          <tr key={g.id}>
+                            <td>{g.descricao}</td>
+                            <td className="mono">{g.formaPagamento}</td>
+                            <td className="mono">{formatarDataIso(g.dataCompra)}</td>
+                            <td className={`${styles.colValor} tnum`}>
+                              {formatBRL(g.valorCentavos)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </Panel>
+              </div>
 
-          <SaldoCard totais={detalhe.totais} />
+              <p className={styles.rodapeAnalise}>
+                Recebimentos, evolução do saldo, evolução por categoria e orçamento estão na aba{' '}
+                <strong>Análise</strong>.
+              </p>
+            </>
+          ) : (
+            <>
+              <Panel
+                title="Recebimentos"
+                meta={`${detalhe.recebimentos.length} ${pluralizar('entrada', detalhe.recebimentos.length)}`}
+                flush
+              >
+                {detalhe.recebimentos.length === 0 ? (
+                  <EmptyState title="Nenhum recebimento neste mês." />
+                ) : (
+                  <table className={styles.tabela}>
+                    <thead>
+                      <tr>
+                        <SortableHeader
+                          rotulo="Fonte"
+                          ativo={recebimentos.sortBy === 'fonte'}
+                          direcao={recebimentos.sortDir}
+                          onSort={() => recebimentos.handleSort('fonte')}
+                        />
+                        <SortableHeader
+                          rotulo="Esperada"
+                          ativo={recebimentos.sortBy === 'data'}
+                          direcao={recebimentos.sortDir}
+                          onSort={() => recebimentos.handleSort('data')}
+                        />
+                        <SortableHeader
+                          rotulo="Status"
+                          ativo={recebimentos.sortBy === 'status'}
+                          direcao={recebimentos.sortDir}
+                          onSort={() => recebimentos.handleSort('status')}
+                          className={styles.colStatus}
+                        />
+                        <SortableHeader
+                          rotulo="Valor"
+                          ativo={recebimentos.sortBy === 'valor'}
+                          direcao={recebimentos.sortDir}
+                          onSort={() => recebimentos.handleSort('valor')}
+                          className={styles.colValor}
+                        />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recebimentos.itensOrdenados.map((r) => (
+                        <tr key={r.id}>
+                          <td>{r.rendaNome ?? '—'}</td>
+                          <td className="mono">{formatarDataIso(r.dataEsperada)}</td>
+                          <td className={styles.colStatus}>
+                            {r.status === 'Recebido' ? (
+                              <span className={styles.recebimentoStatusBadgeRecebido}>
+                                Recebido {formatarDataIso(r.dataRecebida)}
+                              </span>
+                            ) : (
+                              <span className={styles.recebimentoStatusBadgePendente}>
+                                Esperado
+                              </span>
+                            )}
+                          </td>
+                          <td className={`${styles.colValor} tnum`}>
+                            {formatBRL(r.valorCentavos)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </Panel>
 
-          <FaturasCardCompacto faturas={detalhe.faturas} />
-
-          <Panel
-            title="Recebimentos"
-            meta={`${detalhe.recebimentos.length} ${pluralizar('entrada', detalhe.recebimentos.length)}`}
-            flush
-          >
-            {detalhe.recebimentos.length === 0 ? (
-              <EmptyState title="Nenhum recebimento neste mês." />
-            ) : (
-              <table className={styles.tabela}>
-                <thead>
-                  <tr>
-                    <SortableHeader
-                      rotulo="Fonte"
-                      ativo={recebimentos.sortBy === 'fonte'}
-                      direcao={recebimentos.sortDir}
-                      onSort={() => recebimentos.handleSort('fonte')}
-                    />
-                    <SortableHeader
-                      rotulo="Esperada"
-                      ativo={recebimentos.sortBy === 'data'}
-                      direcao={recebimentos.sortDir}
-                      onSort={() => recebimentos.handleSort('data')}
-                    />
-                    <SortableHeader
-                      rotulo="Status"
-                      ativo={recebimentos.sortBy === 'status'}
-                      direcao={recebimentos.sortDir}
-                      onSort={() => recebimentos.handleSort('status')}
-                      className={styles.colStatus}
-                    />
-                    <SortableHeader
-                      rotulo="Valor"
-                      ativo={recebimentos.sortBy === 'valor'}
-                      direcao={recebimentos.sortDir}
-                      onSort={() => recebimentos.handleSort('valor')}
-                      className={styles.colValor}
-                    />
-                  </tr>
-                </thead>
-                <tbody>
-                  {recebimentos.itensOrdenados.map((r) => (
-                    <tr key={r.id}>
-                      <td>{r.rendaNome ?? '—'}</td>
-                      <td className="mono">{formatarDataIso(r.dataEsperada)}</td>
-                      <td className={styles.colStatus}>
-                        {r.status === 'Recebido' ? (
-                          <span className={styles.recebimentoStatusBadgeRecebido}>
-                            Recebido {formatarDataIso(r.dataRecebida)}
-                          </span>
-                        ) : (
-                          <span className={styles.recebimentoStatusBadgePendente}>Esperado</span>
-                        )}
-                      </td>
-                      <td className={`${styles.colValor} tnum`}>{formatBRL(r.valorCentavos)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </Panel>
-
-          <Panel
-            title="Gastos fora de cartão"
-            meta={`${detalhe.gastosForaCartao.length} ${pluralizar('lançamento', detalhe.gastosForaCartao.length)}`}
-            flush
-          >
-            {detalhe.gastosForaCartao.length === 0 ? (
-              <EmptyState title="Nenhum gasto fora de cartão neste mês." />
-            ) : (
-              <table className={styles.tabela}>
-                <thead>
-                  <tr>
-                    <SortableHeader
-                      rotulo="Descrição"
-                      ativo={gastos.sortBy === 'descricao'}
-                      direcao={gastos.sortDir}
-                      onSort={() => gastos.handleSort('descricao')}
-                    />
-                    <SortableHeader
-                      rotulo="Forma"
-                      ativo={gastos.sortBy === 'forma'}
-                      direcao={gastos.sortDir}
-                      onSort={() => gastos.handleSort('forma')}
-                    />
-                    <SortableHeader
-                      rotulo="Data"
-                      ativo={gastos.sortBy === 'data'}
-                      direcao={gastos.sortDir}
-                      onSort={() => gastos.handleSort('data')}
-                    />
-                    <SortableHeader
-                      rotulo="Valor"
-                      ativo={gastos.sortBy === 'valor'}
-                      direcao={gastos.sortDir}
-                      onSort={() => gastos.handleSort('valor')}
-                      className={styles.colValor}
-                    />
-                  </tr>
-                </thead>
-                <tbody>
-                  {gastos.itensOrdenados.map((g) => (
-                    <tr key={g.id}>
-                      <td>{g.descricao}</td>
-                      <td className="mono">{g.formaPagamento}</td>
-                      <td className="mono">{formatarDataIso(g.dataCompra)}</td>
-                      <td className={`${styles.colValor} tnum`}>{formatBRL(g.valorCentavos)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </Panel>
-          <Suspense fallback={<EmptyState title="Carregando gráficos…" />}>
-            <PaineisRelatorios mes={mes} />
-          </Suspense>
+              <Suspense fallback={<EmptyState title="Carregando gráficos…" />}>
+                <PaineisRelatorios mes={mes} />
+              </Suspense>
+            </>
+          )}
         </div>
       ) : null}
     </PageContainer>

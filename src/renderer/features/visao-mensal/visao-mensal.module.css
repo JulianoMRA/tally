@@ -6,16 +6,6 @@
   flex-wrap: wrap;
 }
 
-/* Empilhado em janelas estreitas; em duas colunas a partir de 1180px.
-   O breakpoint era 1440, acima da janela padrão do app (1280) — quem abria o
-   Tally sem maximizar via a coluna de gráficos empilhada depois de toda a
-   coluna operacional, a mais de uma tela de scroll.
-
-   Os painéis são itens DIRETOS do grid, não filhos de duas divs de coluna.
-   Com colunas fixas, a da direita (4 painéis de gráfico) era muito mais alta
-   que a da esquerda, e sobrava um vazio de ~600px embaixo da esquerda. Com
-   auto-placement o desbalanceamento se distribui linha a linha e no máximo
-   sobra meia célula no fim. */
 .layout {
   display: flex;
   flex-direction: column;
@@ -26,18 +16,42 @@
   min-width: 0;
 }
 
+/* Duas colunas a partir de 1180px, não 1280: a janela padrão do app entrega
+   1266px de viewport (o `width: 1280` de createWindow é tamanho externo), então
+   um breakpoint em 1280 nunca dispara para quem não maximiza.
+
+   A proporção 1.35fr/1fr vem da proposta, desenhada a 1906px. Aqui ela vale a
+   partir de 1180 porque o que precisa caber é o número em corpo display de um
+   lado e uma lista de data + rótulo + valor do outro — ambos sobrevivem à
+   janela padrão. */
+.gradeTopo,
+.gradeCorpo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.colunaPrincipal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
 @media (min-width: 1180px) {
-  .layout {
+  .gradeTopo,
+  .gradeCorpo {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
     gap: 20px;
-    align-items: start;
   }
 
-  /* Resumo do mês atravessa as duas colunas. */
-  .cards,
-  .saldoCard {
-    grid-column: 1 / -1;
+  .gradeTopo {
+    align-items: stretch;
+  }
+
+  .gradeCorpo {
+    align-items: start;
   }
 }
 
@@ -66,16 +80,8 @@
   width: 170px;
 }
 
-.mesLabel {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ink);
-  letter-spacing: -0.01em;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  margin-left: 4px;
-}
+/* .mesLabel saiu no refactor visual: era o rótulo "Agosto de 2026" ao lado do
+   campo de mês, repetindo o que o próprio campo já mostra (ponto 06). */
 
 .headerBadges {
   display: inline-flex;
@@ -89,112 +95,314 @@
   font-weight: 500;
 }
 
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px;
-}
-
-.card {
-  background: var(--bg-elev);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-3);
-  padding: 16px 18px;
+/* Hero do saldo — o único bloco escuro da tela. Ele existe para quebrar a
+   monotonia creme e fixar o ponto de entrada da leitura: antes, os oito painéis
+   tinham a mesma borda, o mesmo header de 13px e o mesmo raio, e o olho não
+   encontrava onde parar. */
+.hero {
+  background: var(--forest);
+  border-radius: var(--r-4);
+  padding: 24px 28px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  box-shadow: var(--shadow-1);
+  gap: 18px;
+  color: var(--on-forest);
 }
 
-.cardLabel {
-  font-size: 11px;
-  color: var(--ink-3);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-family: var(--font-mono);
-}
-
-.cardValor {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--ink);
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-
-.cardValorIncome {
-  color: var(--income);
-}
-
-.cardValorExpense {
-  color: var(--expense);
-}
-
-.cardMeta {
-  font-size: 11px;
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-}
-
-/* Saldo grande */
-.saldoCard {
-  background: var(--bg-elev);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-3);
-  padding: 20px 24px;
+.heroTopo {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
-  box-shadow: var(--shadow-1);
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
-.saldoLabel {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink-2);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.saldoSub {
-  font-size: 12px;
-  color: var(--ink-3);
+.heroLabel {
+  margin: 0;
   font-family: var(--font-mono);
-  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--on-forest-2);
 }
 
-.saldoBigWrap {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  min-width: 0;
+.heroApoio {
+  margin: 0;
+  font-size: 12px;
+  color: var(--on-forest-2);
 }
 
-.saldoBig {
-  font-size: 32px;
-  font-weight: 900;
-  letter-spacing: -0.02em;
+.heroApoioValor {
+  color: var(--on-forest);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-/* O número grande é o saldo PROJETADO: o hint explicita o critério, que mistura
-   entradas esperadas com saídas ainda não pagas (RN-08). */
-.saldoHint {
-  font-size: 11px;
-  color: var(--ink-3);
-  text-align: right;
-  max-width: 320px;
+.heroNumeroLinha {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* clamp porque a janela padrão tem 1266px: em 64px fixos um valor de sete
+   dígitos negativo estoura a coluna do hero antes de o grid virar uma coluna. */
+.heroNumero {
+  font-size: clamp(40px, 4.4vw, 64px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+
+.heroNumeroNegativo {
+  color: var(--fatia-faturas);
+}
+
+.heroNota {
+  font-size: 12px;
+  color: var(--on-forest-2);
+  padding-bottom: 6px;
+  max-width: 300px;
   line-height: 1.4;
 }
 
-.positivo {
+.heroBarra {
+  display: flex;
+  height: 10px;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  background: var(--ink-2);
+}
+
+.fatiaEntradas {
+  background: var(--fatia-entradas);
+}
+
+.fatiaFaturas {
+  background: var(--fatia-faturas);
+}
+
+.fatiaForaCartao {
+  background: var(--fatia-fora-cartao);
+}
+
+.heroComposicao {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin: 0;
+}
+
+.heroFatia {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-left: 2px solid;
+  padding-left: 12px;
+}
+
+.bordaEntradas {
+  border-left-color: var(--fatia-entradas);
+}
+
+.bordaFaturas {
+  border-left-color: var(--fatia-faturas);
+}
+
+.bordaForaCartao {
+  border-left-color: var(--fatia-fora-cartao);
+}
+
+.heroFatiaRotulo {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--on-forest-2);
+}
+
+.heroFatiaValor {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.heroFatiaNota {
+  margin: 0;
+  font-size: 11px;
+  color: var(--on-forest-2);
+}
+
+/* Agenda — "Ainda vai acontecer" (RF-VIS-07) */
+.agendaLista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.agendaItem {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.agendaItem:last-child {
+  border-bottom: none;
+}
+
+.agendaDia {
+  font-size: 12px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.agendaTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.agendaNome {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agendaMeta {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.agendaValor {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.agendaValorEntrada {
   color: var(--income);
 }
 
-.negativo {
+.agendaValorSaida {
   color: var(--expense);
+}
+
+.agendaValorNeutro {
+  color: var(--ink-3);
+}
+
+/* Ranking com o limite de orçamento embutido (RF-ORC-02, leitura) */
+.legendaLimite {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.rankLista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rankLinha {
+  display: grid;
+  grid-template-columns: minmax(90px, 128px) minmax(0, 1fr) auto 84px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.rankLinha:last-child {
+  border-bottom: none;
+}
+
+.rankNome {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rankTrilho {
+  position: relative;
+  display: block;
+  height: 16px;
+  background: var(--bg-sunk);
+  border-radius: var(--r-1);
+  overflow: hidden;
+}
+
+.rankBarra {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--r-1);
+}
+
+/* A marca sangra 2px para fora do trilho nas duas pontas: dentro do overflow
+   hidden ela some quando o limite cai exatamente em 0% ou 100%. O -2px de
+   margem esquerda centra a marca sobre a posição em vez de deixá-la à direita
+   dela, e evita que ela saia do trilho quando encosta em 100%. */
+.rankMarcaLimite {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--limite-marca);
+}
+
+/* Limite acima da escala: a marca fica no fim, mas tracejada, para não se ler
+   como "o limite é exatamente o teto do gráfico". */
+.rankMarcaForaDeEscala {
+  background: repeating-linear-gradient(to bottom, var(--limite-marca) 0 3px, transparent 3px 6px);
+}
+
+.rankValor {
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.rankUso {
+  font-size: 11px;
+  text-align: right;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.usoOk {
+  color: var(--income);
+}
+
+.usoAlerta {
+  color: var(--pending);
+}
+
+.usoEstourado {
+  color: var(--expense);
+  font-weight: 600;
+}
+
+.rodapeAnalise {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin: 0;
 }
 
 /* Tabelas internas dos panels */
