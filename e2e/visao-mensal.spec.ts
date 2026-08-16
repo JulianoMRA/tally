@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { irPara } from './fixtures/navegacao'
+import { abrirAba, irPara } from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 // TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
@@ -126,11 +126,25 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     // Badge "Projeção" visível
     await expect(page.getByText('Projeção').first()).toBeVisible()
 
-    // Fatura projetada da assinatura aparece
-    await expect(page.getByText('Inter Projecao E2E')).toBeVisible()
+    // Fatura projetada da assinatura aparece no painel de Faturas. Locator por
+    // role: o nome do cartão também aparece na agenda, em "X fecha" e
+    // "Fatura X", e um getByText solto casaria com os três.
+    await expect(page.getByRole('button', { name: 'Inter Projecao E2E' })).toBeVisible()
     await expect(page.getByText(/R\$\s*30,00/).first()).toBeVisible()
 
-    // Recebimento projetado
+    // RF-VIS-07 — num mês inteiramente futuro a agenda lista os eventos que
+    // sustentam o saldo projetado: o vencimento da fatura e a entrada esperada.
+    const agenda = page
+      .getByRole('heading', { name: 'Ainda vai acontecer' })
+      .locator('..')
+      .locator('..')
+    await expect(agenda.getByText('Fatura Inter Projecao E2E')).toBeVisible()
+    await expect(agenda.getByText('Bolsa Mensal E2E')).toBeVisible()
+    await expect(agenda.getByText(/\+R\$\s*800,00/)).toBeVisible()
+
+    // Recebimentos em tabela agora ficam na aba Análise (RF-VIS-02).
+    await abrirAba(page, 'Análise')
+    await expect(page.getByRole('heading', { name: 'Recebimentos' })).toBeVisible()
     await expect(page.getByText(/R\$\s*800,00/).first()).toBeVisible()
   })
 })

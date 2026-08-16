@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures/electron-app'
-import { irPara } from './fixtures/navegacao'
+import { abrirAba, irPara } from './fixtures/navegacao'
 
-// RF-VIS-05 + RF-VIS-06 — relatórios: ranking por categoria + pizza + evolução
+// RF-VIS-05 + RF-VIS-06 — relatórios: ranking por categoria + evolução
 // TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
 test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
   test('cadastra 2 despesas em categorias distintas e valida ranking em /relatorios', async ({
@@ -56,14 +56,13 @@ test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
     await expect(page.getByRole('cell', { name: 'Cinema' })).toBeVisible()
 
-    // Relatórios agora vivem na Visão mensal (coluna de gráficos)
-    await page.getByRole('link', { name: 'Visão mensal' }).click()
-    await expect(page.getByRole('heading', { name: 'Visão mensal' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Gastos do mês por categoria' })).toBeVisible()
+    // O ranking subiu para a aba Mês da Visão mensal, sob o título "Para onde
+    // foi" — é operação, responde "gastei em quê neste mês". A evolução, que é
+    // histórico, ficou na aba Análise.
+    await irPara(page, 'Visão mensal')
+    await expect(page.getByRole('heading', { name: 'Para onde foi' })).toBeVisible()
 
-    // Ranking deve listar Mercado e Lazer com seus valores (escopado ao item da lista,
-    // pois os nomes também aparecem nos selects de categoria da página)
-    // O nome aparece também na legenda do gráfico (recharts) e nos selects; o item do
+    // O nome também aparece nos selects de categoria da página; o item do
     // ranking é o único listitem que também contém o valor em R$.
     const rankingMercado = page
       .getByRole('listitem')
@@ -75,5 +74,12 @@ test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
       .filter({ hasText: 'R$' })
     await expect(rankingMercado.getByText(/R\$\s*80,00/)).toBeVisible()
     await expect(rankingLazer.getByText(/R\$\s*30,00/)).toBeVisible()
+
+    // A pizza saiu (RF-VIS-06): dizia o mesmo que o ranking ao lado.
+    await expect(page.getByRole('heading', { name: 'Gastos do mês por categoria' })).toHaveCount(0)
+
+    // Evolução do saldo continua existindo, agora atrás da aba Análise.
+    await abrirAba(page, 'Análise')
+    await expect(page.getByRole('heading', { name: 'Evolução do saldo' })).toBeVisible()
   })
 })

@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { irPara } from './fixtures/navegacao'
+import { abrirAba, irPara } from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 // Bloco D — Orçamento por categoria: definir limite e ver o status (RN ok/alerta/estourado).
@@ -35,10 +35,12 @@ test.describe('Orçamento por categoria (Bloco D)', () => {
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
     await expect(page.getByRole('cell', { name: 'Compra Orc E2E' })).toBeVisible()
 
-    // --- Visão mensal (coluna de gráficos): definir limite de R$ 100,00 no mês 2026-06 ---
-    await page.getByRole('link', { name: 'Visão mensal' }).click()
-    await expect(page.getByRole('heading', { name: 'Visão mensal' })).toBeVisible()
+    // --- Visão mensal, aba Análise: definir limite de R$ 100,00 no mês 2026-06 ---
+    // A leitura do limite virou marca vertical no ranking da aba Mês
+    // (RF-ORC-02); a edição, que é configuração, ficou na aba Análise.
+    await irPara(page, 'Visão mensal')
     await page.getByLabel('Mês', { exact: true }).fill('2026-06')
+    await abrirAba(page, 'Análise')
 
     // Escopa ao painel de Orçamento (a página tem outro select "Categoria").
     // Estrutura do Panel: h3 (título) → div.head → div.panel.

@@ -55,29 +55,40 @@ test.describe('Layout responsivo', () => {
     })
   }
 
-  test('Visão mensal mostra os gráficos sem rolar na janela padrão (1280px)', async ({ app }) => {
+  // O refactor visual moveu os gráficos para a aba Análise: a aba Mês passou a
+  // ser só operação. A promessa de "sem rolar" migrou junto — quem responde a
+  // pergunta da tela agora é o hero de saldo com a agenda ao lado, e são esses
+  // dois que precisam caber na primeira tela da janela padrão.
+  test('Visão mensal responde na primeira tela da janela padrão (1280px)', async ({ app }) => {
     // Com dados: na base vazia o painel de primeiro uso ocupa o topo, o que é o
-    // comportamento certo — quem não tem nada cadastrado não precisa de gráfico.
+    // comportamento certo — quem não tem nada cadastrado não precisa disso.
     await semear(app)
     const page = await abrir(app, 1280, 'Visão mensal')
 
-    // O painel de gráficos é lazy: espera o chunk chegar.
-    const evolucao = page.getByRole('heading', { name: 'Evolução do saldo' })
-    await expect(evolucao).toBeVisible()
+    await expect(page.getByText('Sobra projetada do mês')).toBeInViewport()
+    await expect(page.getByRole('heading', { name: 'Ainda vai acontecer' })).toBeInViewport()
+  })
 
-    // Sem rolar: o painel precisa estar dentro da primeira tela.
-    await expect(evolucao).toBeInViewport()
+  test('gráficos continuam acessíveis na aba Análise', async ({ app }) => {
+    await semear(app)
+    const page = await abrir(app, 1280, 'Visão mensal')
+
+    await page.getByRole('tab', { name: 'Análise', exact: true }).click()
+    // O painel de gráficos é lazy: espera o chunk chegar.
+    await expect(page.getByRole('heading', { name: 'Evolução do saldo' })).toBeVisible()
   })
 
   test('Visão mensal usa duas colunas a partir de 1180px e uma abaixo disso', async ({ app }) => {
+    await semear(app)
     const larga = await abrir(app, 1280, 'Visão mensal')
-    await expect(larga.getByRole('heading', { name: 'Evolução do saldo' })).toBeVisible()
+    await expect(larga.getByRole('heading', { name: 'Ainda vai acontecer' })).toBeVisible()
 
+    // `.layout` virou wrapper flex; quem carrega o grid são as duas faixas.
     const colunas = async (page: Page) =>
       page.evaluate(() => {
-        const layout = document.querySelector('[class*="layout"]')
-        if (!layout) return null
-        const cs = getComputedStyle(layout)
+        const grade = document.querySelector('[class*="gradeTopo"]')
+        if (!grade) return null
+        const cs = getComputedStyle(grade)
         return cs.display === 'grid' ? cs.gridTemplateColumns.split(' ').length : 1
       })
 
