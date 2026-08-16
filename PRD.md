@@ -137,16 +137,18 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 ### 4.9 Visão Mensal e Multi-Mês (RF-VIS)
 
 - **RF-VIS-01** — Mês de referência segue o calendário (Junho/2026 agrupa fatura Inter venc 12/06, fatura Nubank venc 22/06, gastos fora de cartão de 01–30/06 e recebimentos de 01–30/06).
-- **RF-VIS-02** — Tela mensal mostra: faturas do mês, gastos fora de cartão, recebimentos, ajudas a receber, balanço final (entradas − gastos líquidos).
+- **RF-VIS-02** — Tela mensal separa **operação** de **análise** em duas abas. A aba **Mês** mostra o saldo do mês como resposta principal, a agenda do horizonte (RF-VIS-07), as faturas do mês, o ranking de categorias e os gastos fora de cartão. A aba **Análise** concentra o que é histórico ou configuração: evolução do saldo (RF-VIS-05), evolução por categoria (RF-VIS-06) e o painel de orçamento (RF-ORC-02).
 - **RF-VIS-03** — Navegação entre meses (anterior/próximo) e seletor direto de mês/ano.
 - **RF-VIS-04** — Projeção: visualizar mês futuro com parcelas e assinaturas ativas já calculadas e recebimentos recorrentes esperados.
 - **RF-VIS-05** — Comparativo: visualizar últimos 6 ou 12 meses com gráfico de evolução de entradas, gastos e saldo.
-- **RF-VIS-06** — Relatórios por categoria: pizza de gastos no mês, ranking de categorias, evolução temporal de uma categoria específica.
+- **RF-VIS-06** — Relatórios por categoria: ranking de categorias no mês e evolução temporal de uma categoria específica.
+  > A pizza de gastos do mês existiu até ago/2026 e foi removida no refactor visual: mostrava o mesmo dado do ranking, que já ordena, e com sete fatias deixava de ser legível. O ranking absorveu a leitura de proporção.
+- **RF-VIS-07** — **Agenda do horizonte** ("Ainda vai acontecer"): lista os eventos futuros que compõem o saldo projetado — fechamento e vencimento de fatura, e recebimentos ainda esperados — ordenados por data. Fatura Paga e fatura sem lançamentos não entram (não movem mais o saldo); fatura Fechada emite só o vencimento. Torna o número projetado do RN-08 auditável: sem a lista, ele só pode ser aceito, não conferido.
 
 ### 4.10 Orçamento (RF-ORC)
 
 - **RF-ORC-01** — Limite de gasto por categoria com dois escopos: **global** (`mes_referencia` NULL, vale para todo mês) e **mensal** (vale só naquele mês e sobrepõe o global na visão do mês). Upsert por (categoria, escopo); remover respeita o escopo — apagar o limite mensal restaura o global.
-- **RF-ORC-02** — Painel de progresso no mês: realizado vs limite efetivo, percentual e status (ok < 80%, alerta >= 80%, estourado >= 100%), com indicação de origem do limite (global ou "este mês").
+- **RF-ORC-02** — Progresso no mês: realizado vs limite efetivo, percentual e status (ok < 80%, alerta >= 80%, estourado >= 100%), com indicação de origem do limite (global ou "este mês"). A **leitura** vive no ranking de categorias da aba Mês, onde o limite efetivo aparece como marca vertical sobre a barra da categoria — um objeto no lugar de dois painéis dizendo o mesmo. A **edição** (definir e remover limite, escolher escopo) fica no painel de orçamento da aba Análise, único lugar onde limites são definidos.
 
 ### 4.11 Exportação (RF-EXP)
 

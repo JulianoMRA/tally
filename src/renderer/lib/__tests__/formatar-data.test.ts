@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { formatarDataIso, formatarDiaMes, formatarMesReferencia } from '../formatar-data'
+import {
+  formatarDataIso,
+  formatarDiaMes,
+  formatarDiaMesAbreviado,
+  formatarMesReferencia
+} from '../formatar-data'
 
 // A implementação NÃO deve usar new Date('YYYY-MM-DD'): o parse é UTC e em
 // fusos negativos (UTC-3) a data exibida voltaria um dia. Split de string.
@@ -73,5 +78,35 @@ describe('formatarDiaMes', () => {
   it('devolve a string original quando o formato não é ISO completo', () => {
     expect(formatarDiaMes('abc')).toBe('abc')
     expect(formatarDiaMes('2026-06')).toBe('2026-06')
+  })
+})
+
+describe('formatarDiaMesAbreviado', () => {
+  it('converte ISO para DD mmm com o mês em três letras', () => {
+    expect(formatarDiaMesAbreviado('2026-08-20')).toBe('20 ago')
+    expect(formatarDiaMesAbreviado('2026-01-05')).toBe('05 jan')
+  })
+
+  it('abrevia março sem perder a cedilha', () => {
+    expect(formatarDiaMesAbreviado('2026-03-14')).toBe('14 mar')
+  })
+
+  it('preserva o zero à esquerda do dia', () => {
+    expect(formatarDiaMesAbreviado('2026-12-01')).toBe('01 dez')
+  })
+
+  it('devolve travessão para valores ausentes', () => {
+    expect(formatarDiaMesAbreviado(null)).toBe('—')
+    expect(formatarDiaMesAbreviado(undefined)).toBe('—')
+    expect(formatarDiaMesAbreviado('')).toBe('—')
+  })
+
+  it('devolve a string original quando o formato não é ISO completo', () => {
+    expect(formatarDiaMesAbreviado('abc')).toBe('abc')
+    expect(formatarDiaMesAbreviado('2026-06')).toBe('2026-06')
+  })
+
+  it('devolve a string original quando o mês não existe', () => {
+    expect(formatarDiaMesAbreviado('2026-13-01')).toBe('2026-13-01')
   })
 })

@@ -54,7 +54,10 @@ test.describe('Fatura vencida', () => {
     // nunca por cliques relativos ao mês corrente.
     await ir(page, 'Visão mensal')
     await page.getByLabel('Mês', { exact: true }).fill('2026-05')
-    await expect(page.getByText('Maio de 2026')).toBeVisible()
+    // Confirma o filtro pelo próprio campo. Antes isto olhava um rótulo
+    // "Maio de 2026" ao lado do input, que repetia o que o campo já dizia e
+    // saiu no refactor visual (ponto 06 do diagnóstico).
+    await expect(page.getByLabel('Mês', { exact: true })).toHaveValue('2026-05')
     await expect(page.getByText(/vencida há \d+ dias?/)).toBeVisible()
 
     // Detalhe da fatura: o aside de status também exibe o selo.

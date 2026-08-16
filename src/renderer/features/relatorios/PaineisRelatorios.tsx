@@ -8,14 +8,11 @@ import {
   Select,
   type OpcaoSegmentada
 } from '../../components/ui'
-import { CategoriaPieChart } from './components/CategoriaPieChart'
-import { CategoriaRanking } from './components/CategoriaRanking'
 import { EvolucaoCategoriaChart } from './components/EvolucaoCategoriaChart'
 import { EvolucaoLineChart } from './components/EvolucaoLineChart'
 import { OrcamentoPanel } from './components/OrcamentoPanel'
 import { useEvolucaoCategoria } from './hooks/use-evolucao-categoria'
 import { useEvolucaoSaldo } from './hooks/use-evolucao-saldo'
-import { useTotaisCategoria } from './hooks/use-totais-categoria'
 import styles from './relatorios.module.css'
 
 type Periodo = 6 | 12
@@ -36,7 +33,6 @@ export default function PaineisRelatorios({ mes }: Props) {
   const [categoriaIdSelecionada, setCategoriaIdSelecionada] = useState<number | null>(null)
 
   const { dados: evolucao, loading: loadingEvolucao } = useEvolucaoSaldo(mes, periodoEvolucao)
-  const { totais, loading: loadingTotais } = useTotaisCategoria(mes)
   const { dados: evolucaoCat } = useEvolucaoCategoria(categoriaIdSelecionada, mes, periodoCategoria)
 
   useEffect(() => {
@@ -78,27 +74,8 @@ export default function PaineisRelatorios({ mes }: Props) {
 
       <Panel
         className={styles.painel}
-        title="Gastos do mês por categoria"
-        meta="Pizza e ranking — combina parcelas de fatura + gastos fora cartão"
-      >
-        {loadingTotais ? (
-          <EmptyState title="Carregando…" />
-        ) : totais.length === 0 ? (
-          <EmptyState title="Nenhum gasto neste mês." />
-        ) : (
-          <div className={styles.gastosMesGrid}>
-            <div className={styles.chartWrap}>
-              <CategoriaPieChart dados={totais} />
-            </div>
-            <CategoriaRanking dados={totais} />
-          </div>
-        )}
-      </Panel>
-
-      <Panel
-        className={styles.painel}
         title="Orçamento por categoria"
-        meta="Defina um limite mensal por categoria e acompanhe o quanto já foi gasto"
+        meta="Limite mensal por categoria"
       >
         <OrcamentoPanel mes={mes} categorias={categorias} />
       </Panel>

@@ -36,3 +36,19 @@ export async function irPara(page: Page, rota: Rota): Promise<void> {
   await page.getByRole('link', { name: rota }).click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(rota)
 }
+
+/** Abas da Visão mensal (RF-VIS-02): operação em "Mês", histórico em "Análise". */
+export type AbaVisaoMensal = 'Mês' | 'Análise'
+
+/**
+ * Troca de aba dentro da Visão mensal, esperando o `aria-selected` virar.
+ *
+ * Sem o guard, o clique e a asserção seguinte correm entre si igual ao caso do
+ * `irPara`: os painéis da aba anterior continuam montados por um frame, e um
+ * locator por heading resolve contra eles.
+ */
+export async function abrirAba(page: Page, aba: AbaVisaoMensal): Promise<void> {
+  const tab = page.getByRole('tab', { name: aba, exact: true })
+  await tab.click()
+  await expect(tab).toHaveAttribute('aria-selected', 'true')
+}
