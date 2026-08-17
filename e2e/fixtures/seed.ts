@@ -61,6 +61,17 @@ export async function semear(app: ElectronApplication): Promise<{
       return iso(x)
     }
 
+    // Dia 1 de N meses atrás. Aritmética de calendário, não de dias: só assim o
+    // mês de referência da fatura é previsível independentemente de quando o
+    // teste roda. `emDias(-40)` parecia dar um mês anterior, mas 40 dias antes
+    // do dia 17 é o dia 8 — e o Nubank fecha dia 3, então o RN-01 mandava a
+    // compra de volta para o mês corrente. Rodando dia 2, daria mês anterior:
+    // era esta a origem da falha intermitente de "meses anteriores".
+    // Dia 1 fica antes do fechamento dos dois cartões da seed (3 e 25), então
+    // a fatura é sempre a do próprio mês escolhido.
+    const primeiroDiaDeMesesAtras = (meses: number) =>
+      iso(new Date(Date.UTC(hoje.getFullYear(), hoje.getMonth() - meses, 1)))
+
     const nubank = await api.cartao.create({
       nome: 'Nubank Seed',
       diaFechamento: 3,
@@ -113,6 +124,19 @@ export async function semear(app: ElectronApplication): Promise<{
       formaPagamento: 'Pix',
       valorCentavos: 8500,
       dataCompra: emDias(0)
+    })
+
+    // Fatura em mês anterior, para o agrupamento de "meses anteriores" ter o
+    // que colapsar. Vai no Nubank de propósito: o painel do Inter é o que
+    // `fluxos-fase-8` usa para conferir o total do cartão, e o total soma só as
+    // faturas do mês corrente — mas manter o cartão de fora evita depender
+    // disso.
+    await api.despesa.criarUnicaCredito({
+      descricao: 'Compra de dois meses atras',
+      categoriaId: cats.Mercado.id,
+      cartaoId: nubank.id,
+      valorCentavos: 12700,
+      dataCompra: primeiroDiaDeMesesAtras(2)
     })
 
     await api.renda.criarRecorrente({
