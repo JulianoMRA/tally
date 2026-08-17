@@ -49,13 +49,11 @@ test.describe('Despesa única + Fatura', () => {
     await page.getByRole('link', { name: 'Faturas' }).click()
     await expect(page.getByRole('heading', { name: 'Faturas' })).toBeVisible()
 
+    // Pôr o cartão em foco já abre a fatura dele — não há mais lista no meio
+    // (ponto 12). Como a única fatura deste cartão é a de junho, é ela que o
+    // painel escolhe.
     await focarCartao(page, 'Inter E2E')
-
-    // Fatura 2026-06 deve aparecer na lista como "Junho de 2026"
-    await expect(page.getByText('Junho de 2026', { exact: true })).toBeVisible()
-
-    // Abre detalhe da fatura
-    await page.getByText('Junho de 2026', { exact: true }).click()
+    await expect(page.getByRole('heading', { name: /Inter E2E · Junho de 2026/ })).toBeVisible()
 
     // Parcela 1/1 com valor R$ 50,00 (espaço pode ser non-breaking → regex tolerante)
     await expect(page.getByText('1/1')).toBeVisible()

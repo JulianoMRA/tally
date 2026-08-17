@@ -77,7 +77,8 @@ for (const largura of [1000, 1280, 1600] as const) {
 
     await irPara(page, 'Faturas')
     await focarCartao(page, 'Inter Geometria E2E')
-    await page.locator('[class*="faturaMes"]').first().click()
+    // O cartão em foco já abre a fatura dele: não há mais lista para clicar
+    // (ponto 12). Estes testes usam cartão com uma fatura só, então é ela.
 
     const linha = page
       .getByRole('row')

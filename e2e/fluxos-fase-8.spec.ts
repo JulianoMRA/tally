@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, focarCartao } from './fixtures/navegacao'
 import { semear } from './fixtures/seed'
 
 /**
@@ -8,20 +8,29 @@ import { semear } from './fixtures/seed'
  */
 
 test.describe('Faturas — valor na lista', () => {
-  test('a visão geral mostra o total de cada fatura e o do cartão', async ({ app }) => {
+  // A visão geral por cartão foi absorvida pelo trilho na fusão de lista e
+  // detalhe (ponto 12). O que ela garantia — ver o valor de cada cartão sem
+  // abrir nada — passa a ser garantido aqui.
+  test('o trilho mostra o total da fatura corrente de cada cartão', async ({ app }) => {
     const { page } = await semear(app)
     await page.getByRole('link', { name: 'Faturas' }).click()
 
-    const painel = page.getByRole('heading', { name: 'Inter Seed' }).locator('..').locator('..')
+    const trilho = page.getByRole('group', { name: 'Cartões' })
+    await expect(trilho.getByRole('button', { name: /^Inter Seed/ })).toBeVisible()
+    await expect(trilho.getByRole('button', { name: /^Nubank Seed/ })).toBeVisible()
 
     // Antes a lista trazia mês, fechamento, vencimento e status — sem o valor,
     // que é a informação número um e só existia abrindo cada fatura.
-    await expect(painel.getByText(/R\$\s*400,00/).first()).toBeVisible()
+    await expect(trilho.getByText(/R\$\s*400,00/).first()).toBeVisible()
   })
 
   test('meses anteriores ficam colapsados e abrem sob demanda', async ({ app }) => {
     const { page } = await semear(app)
     await page.getByRole('link', { name: 'Faturas' }).click()
+
+    // O histórico é do cartão em foco. A fatura de mês anterior da seed está no
+    // Nubank, e o foco padrão é o primeiro cartão — então é preciso trocar.
+    await focarCartao(page, 'Nubank Seed')
 
     const expandir = page.getByRole('button', { name: /meses anteriores/ }).first()
     await expect(expandir).toHaveAttribute('aria-expanded', 'false')
@@ -33,11 +42,15 @@ test.describe('Faturas — valor na lista', () => {
   test('o filtro por status reduz a lista', async ({ app }) => {
     const { page } = await semear(app)
     await page.getByRole('link', { name: 'Faturas' }).click()
+    await focarCartao(page, 'Nubank Seed')
 
+    // O filtro veio da visão geral, onde varria todos os cartões. Agora vive no
+    // histórico e age sobre as faturas passadas do cartão em foco — decisão de
+    // ago/2026, tomada ao fundir as telas.
     const grupo = page.getByRole('radiogroup', { name: 'Filtrar faturas por status' })
     await grupo.getByRole('radio', { name: 'Pagas' }).click()
 
-    // Nenhuma fatura está paga no seed: os painéis mostram o vazio do filtro.
+    // Nenhuma fatura está paga no seed: o histórico mostra o vazio do filtro.
     await expect(page.getByText('Nenhuma fatura neste filtro.').first()).toBeVisible()
   })
 })

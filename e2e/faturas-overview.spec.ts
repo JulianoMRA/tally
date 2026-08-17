@@ -2,8 +2,12 @@ import { test, expect } from './fixtures/electron-app'
 import { abrirCadastroDeSaida } from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
-test.describe('Faturas — visão geral sem cartão selecionado', () => {
-  test('lista faturas de todos os cartões e abre o detalhe pela visão geral', async ({ app }) => {
+// A visão geral sem cartão selecionado deixou de existir: a fusão de lista e
+// detalhe (ponto 12) fez a tela abrir já com um cartão em foco e a fatura dele
+// aberta. Este spec passou a cobrir o que aquele estado garantia — chegar à
+// fatura sem escolher nada, e o deep-link refletindo o que está na tela.
+test.describe('Faturas — chegada sem escolher cartão', () => {
+  test('abre já com um cartão em foco e a fatura dele, e reflete no deep-link', async ({ app }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
@@ -35,25 +39,24 @@ test.describe('Faturas — visão geral sem cartão selecionado', () => {
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
     await expect(page.getByText('junho de 2026', { exact: true })).toBeVisible()
 
-    // --- Faturas SEM selecionar cartão: a visão geral aparece ---
+    // --- Faturas sem escolher nada: o trilho já põe um cartão em foco ---
     await page.getByRole('link', { name: 'Faturas' }).click()
     await expect(page.getByRole('heading', { name: 'Faturas' })).toBeVisible()
 
-    // Painel da visão geral leva o nome do cartão
-    await expect(page.getByRole('heading', { name: 'Inter Overview E2E' })).toBeVisible()
+    const trilho = page.getByRole('group', { name: 'Cartões' })
+    await expect(trilho.getByRole('button', { name: /^Inter Overview E2E/ })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
 
-    // Junho/2026 já passou: desde a fase 8 os meses anteriores ficam colapsados,
-    // para o mês atual não se perder no meio de 13+ faturas por cartão.
-    await page.getByRole('button', { name: /meses anteriores/ }).click()
-    const item = page.getByText('Junho de 2026', { exact: true })
-    await expect(item).toBeVisible()
-
-    // --- Abre o detalhe diretamente pela visão geral ---
-    await item.click()
+    // E a fatura desse cartão já está aberta: zero cliques até as parcelas.
+    // Junho é a única fatura, e o mês corrente não tem nenhuma — a resolução
+    // cai na mais recente do passado.
+    await expect(page.getByText('Inter Overview E2E · junho de 2026')).toBeVisible()
     await expect(page.getByText('1/1')).toBeVisible()
     await expect(page.getByRole('cell', { name: /R\$\s*80,00/ })).toBeVisible()
 
-    // O deep-link reflete o cartão e a fatura selecionados
+    // O deep-link reflete o cartão e a fatura em foco, sem ninguém ter clicado
     expect(page.url()).toMatch(/cartaoId=\d+&faturaId=\d+/)
   })
 })

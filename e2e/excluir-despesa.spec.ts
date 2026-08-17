@@ -164,7 +164,8 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
 
     await irPara(page, 'Faturas')
     await focarCartao(page, 'Inter Vencida E2E')
-    await page.getByText('Junho de 2026', { exact: true }).click()
+    // O cartão em foco já abre a fatura dele: não há mais lista para clicar
+    // (ponto 12). Estes testes usam cartão com uma fatura só, então é ela.
     await expect(page.getByText('1/1')).toBeVisible()
 
     await page.getByRole('button', { name: 'Fechar fatura' }).click()
@@ -180,7 +181,10 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     // pela RN-06 — parcela em fatura Fechada preserva o histórico.
     await page.getByRole('button', { name: 'Reabrir fatura' }).click()
     await page.getByRole('button', { name: 'Reabrir', exact: true }).click()
-    await expect(page.getByText('Fechada', { exact: true })).toBeVisible()
+    // Escopado ao resumo do painel: o trilho também exibe o status do cartão,
+    // e um getByText solto passou a casar com os dois.
+    const resumo = page.getByText('Status', { exact: true }).locator('..')
+    await expect(resumo.getByText('Fechada', { exact: true })).toBeVisible()
 
     const excluir = await itemExcluirDaParcela(page)
     await expect(excluir).toBeEnabled()

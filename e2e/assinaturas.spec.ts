@@ -63,7 +63,8 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     // --- Conferir na fatura junho/2026 ---
     await irPara(page, 'Faturas')
     await focarCartao(page, 'Inter Assinatura E2E')
-    await page.getByText('Junho de 2026').first().click()
+    // O cartão em foco já abre a fatura dele: não há mais lista para clicar
+    // (ponto 12). Estes testes usam cartão com uma fatura só, então é ela.
     await expect(page.getByText(/R\$\s*24,90/).first()).toBeVisible()
 
     // --- Cancelar assinatura pela tela Saídas ---

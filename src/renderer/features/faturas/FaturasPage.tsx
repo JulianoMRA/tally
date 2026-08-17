@@ -59,12 +59,18 @@ export default function FaturasPage() {
   // adiante faria o id de um cartão ser procurado no outro.
   const [deepLinkPendente, setDeepLinkPendente] = useState(pedido.faturaId !== null)
 
-  // Escolhe a fatura do painel quando os grupos chegam ou o cartão muda. Um
-  // `faturaId` que já pertence ao cartão em foco é preservado: é o caso de
-  // quem acabou de clicar no histórico.
+  // Um `faturaId` que já pertence ao cartão em foco é preservado — é o caso de
+  // quem acabou de clicar no histórico. Fora isso, precisa resolver.
+  //
+  // Esta condição entra nas deps do efeito de propósito: sem ela, zerar o
+  // `faturaId` com o mesmo cartão em foco não mudava `grupoEmFoco`, o efeito
+  // não re-rodava e o painel ficava preso em "Nenhuma fatura neste cartão"
+  // enquanto o trilho exibia a fatura logo acima.
+  const precisaResolver =
+    grupoEmFoco !== null && !grupoEmFoco.faturas.some((f) => f.fatura.id === faturaId)
+
   useEffect(() => {
-    if (!grupoEmFoco) return
-    if (grupoEmFoco.faturas.some((f) => f.fatura.id === faturaId)) return
+    if (!grupoEmFoco || !precisaResolver) return
 
     const resolucao = resolverFaturaDoDeepLink(
       grupoEmFoco.faturas,
@@ -74,10 +80,10 @@ export default function FaturasPage() {
     setFaturaId(resolucao.fatura?.fatura.id ?? null)
     if (resolucao.linkQuebrado) setLinkQuebrado(true)
     if (deepLinkPendente) setDeepLinkPendente(false)
-    // `faturaId` fora das deps de propósito: este efeito o DEFINE, e incluí-lo
-    // reexecutaria a resolução a cada mudança que ele mesmo causa.
+    // `faturaId` fora das deps de propósito: este efeito o DEFINE, e quem
+    // observa a necessidade de resolver é `precisaResolver`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grupoEmFoco, mesAtual, deepLinkPendente])
+  }, [grupoEmFoco, mesAtual, deepLinkPendente, precisaResolver])
 
   const { detalhe, loading: loadingDetalhe, refetch: refetchDetalhe } = useFaturaDetalhe(faturaId)
 
@@ -90,6 +96,8 @@ export default function FaturasPage() {
   }, [cartaoEmFoco, faturaId])
 
   function selecionarCartao(proximo: number) {
+    // Clicar no cartão que já está em foco não deve descartar a fatura aberta.
+    if (proximo === cartaoEmFoco) return
     setCartaoId(proximo)
     setFaturaId(null)
     setLinkQuebrado(false)
