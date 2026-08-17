@@ -99,6 +99,17 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 - **RF-DES-11** — Duplicar despesa: pré-preenche o formulário de nova despesa com descrição (sufixo " (cópia)"), categoria, cartão, valor e forma da despesa de origem, na aba correspondente ao tipo. A data não é copiada (nova compra). Não cria nada até o usuário confirmar.
 - **RF-DES-12** — Busca por descrição na lista de Saídas: filtro client-side, tolerante a acentos e caixa (substring), combinável com os filtros de tipo/mês.
 - **RF-DES-13** — Nota livre e tags por despesa: nota de texto (até 2000 caracteres) e conjunto de tags (nome único case-insensitive, compartilhável entre despesas). Editáveis por despesa; as tags aparecem na linha da lista e há filtro por tag. São metadados — não afetam valores, parcelas nem status de fatura. Migração `0008` adiciona `despesa.nota` e as tabelas `tag`/`despesa_tag` (N:N com CASCADE nos dois lados). Incluídas no export/import JSON (formatVersion segue 1; export antigo importa com listas vazias).
+- **RF-DES-14** — **Lista de Saídas por ocorrência do mês.** A tela mostra um mês de cada vez (seletor próprio, abrindo no mês corrente) e uma linha por **ocorrência** — a parcela daquele mês —, não uma por despesa cadastrada. Cada linha traz:
+  - **Impacto do mês**: o valor da parcela. É a única grandeza somável da tela, e é o que alimenta o total do período e o subtotal de cada grupo. Vem sempre da parcela gravada, nunca de dividir o valor da despesa: o resto dos centavos fica na última parcela (RN-02) e em parcelada em andamento o valor da despesa é o restante, não a compra.
+  - **Valor de origem** (`de R$ X`), como contexto secundário: só para parcelada criada do zero, identificada por possuir parcela número 1. Parcelada cadastrada em andamento não exibe origem — o app guarda o saldo devedor, não o preço da compra.
+  - **Rótulo da parcela** (`7/12`, `mensal`, `à vista`) e barra de progresso, esta só para parcelada.
+  - Agrupamento por **origem do dinheiro**: uma seção por cartão (a fatura daquele mês) e uma para o que sai da conta, cada uma com subtotal. O subtotal de um cartão bate com o total da fatura em RF-FAT.
+  - Recorte do mês pela **fatura** quando a parcela tem fatura, e por `data_referencia` só para gasto fora do cartão. Uma compra feita depois do fechamento aparece no mês da fatura (RN-01), não no da compra.
+  - Ao registrar, a tela salta para o mês em que o lançamento caiu — senão o painel fecharia sobre uma lista que não mostra o que acabou de ser criado.
+
+  > Consequência aceita: Saídas deixa de ser o registro histórico completo. Uma parcelada já quitada não aparece nos meses correntes, e uma assinatura cancelada some dos meses cujas faturas ainda estavam abertas (RF-DES-07 apaga essas ocorrências), podendo desaparecer da lista inteira.
+
+- **RF-DES-15** — **Prévia de destino no cadastro**: com cartão e data preenchidos, o formulário mostra em qual fatura o lançamento vai cair, aplicando RN-01 antes de salvar. Cobre compra única, primeira parcela e primeira mensalidade. Sem isso, lançamento em cartão ou mês errado só aparece depois de salvar e navegar até Faturas.
 
 ### 4.4 Faturas (RF-FAT)
 
