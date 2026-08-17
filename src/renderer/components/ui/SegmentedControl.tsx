@@ -18,6 +18,14 @@ interface SegmentedControlProps<T extends string | number> {
    * conteúdo visível da tela — vira `tablist`.
    */
   semantica?: 'opcoes' | 'abas'
+  /**
+   * `pilula` (padrão) é a barra compacta. `cartoes` espalha as opções como
+   * blocos de alvo grande, para escolha que abre um formulário diferente a
+   * cada valor — é o caso de forma de pagamento, onde a pílula escondia que a
+   * escolha muda quais campos existem. Só o visual muda: papéis, nomes
+   * acessíveis e teclado são os mesmos.
+   */
+  variante?: 'pilula' | 'cartoes'
 }
 
 /**
@@ -34,7 +42,8 @@ export function SegmentedControl<T extends string | number>({
   onChange,
   label,
   size = 'sm',
-  semantica = 'opcoes'
+  semantica = 'opcoes',
+  variante = 'pilula'
 }: SegmentedControlProps<T>) {
   const rootRef = useRef<HTMLDivElement>(null)
   const ehAbas = semantica === 'abas'
@@ -65,7 +74,7 @@ export function SegmentedControl<T extends string | number>({
       ref={rootRef}
       role={ehAbas ? 'tablist' : 'radiogroup'}
       aria-label={label}
-      className={styles.root}
+      className={`${styles.root} ${variante === 'cartoes' ? styles.rootCartoes : ''}`}
       onKeyDown={navegar}
     >
       {opcoes.map((opcao) => {
@@ -80,7 +89,7 @@ export function SegmentedControl<T extends string | number>({
             // Roving tabindex: o grupo inteiro é uma parada de Tab, e as setas
             // movem dentro dele.
             tabIndex={ativa ? 0 : -1}
-            className={`${styles.opcao} ${styles[size]} ${ativa ? styles.ativa : ''}`}
+            className={`${styles.opcao} ${variante === 'cartoes' ? styles.cartao : styles[size]} ${ativa ? styles.ativa : ''}`}
             onClick={() => onChange(opcao.valor)}
           >
             {opcao.rotulo}

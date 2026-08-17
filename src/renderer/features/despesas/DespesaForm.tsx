@@ -33,6 +33,7 @@ import {
   type OpcaoSegmentada
 } from '../../components/ui'
 import { parseCentavos, valorTotalCentavosParcelada, type ModoValorParcela } from './parcela-valor'
+import { PreviaDestino } from './PreviaDestino'
 import styles from './despesas.module.css'
 
 type TipoDespesa = 'unica' | 'parcelada' | 'em-andamento' | 'assinatura'
@@ -173,6 +174,7 @@ function FormUnicaCredito({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting }
   } = useForm<UniqueValues>({ resolver: zodResolver(uniqueSchema), defaultValues })
 
@@ -199,12 +201,19 @@ function FormUnicaCredito({
             {...register('valorReais')}
             placeholder="0,00"
             error={!!errors.valorReais}
+            className={styles.valorDestaque}
           />
         </Field>
         <Field label="Data da compra" error={errors.dataCompra?.message} required>
           <Input type="date" {...register('dataCompra')} error={!!errors.dataCompra} />
         </Field>
       </div>
+
+      <PreviaDestino
+        cartoes={cartoes}
+        cartaoId={watch('cartaoId')}
+        dataCompra={watch('dataCompra')}
+      />
 
       <div className={styles.formActions}>
         <Button type="submit" variant="primary" disabled={isSubmitting}>
@@ -272,6 +281,7 @@ function FormUnicaForaCartao({
             {...register('valorReais')}
             placeholder="0,00"
             error={!!errors.valorReais}
+            className={styles.valorDestaque}
           />
         </Field>
         <Field label="Data da compra" error={errors.dataCompra?.message} required>
@@ -316,11 +326,15 @@ function FormUnica({
 
   return (
     <div className={styles.formInner}>
+      {/* Cartões, não pílula: a forma de pagamento decide QUAIS CAMPOS existem
+          (crédito pede cartão, o resto não), e a pílula compacta escondia isso
+          atrás de um controle que parecia um filtro. Ponto 09 do diagnóstico. */}
       <SegmentedControl
         opcoes={formaLabels}
         valor={forma}
         onChange={setForma}
         label="Forma de pagamento"
+        variante="cartoes"
       />
 
       {forma === 'Credito' ? (
@@ -415,6 +429,7 @@ function FormParcelada({
             {...register('valorReais')}
             placeholder="0,00"
             error={!!errors.valorReais}
+            className={styles.valorDestaque}
           />
         </Field>
         <Field label="Total de parcelas" error={errors.totalParcelas?.message} required>
@@ -434,6 +449,13 @@ function FormParcelada({
       <Field label="Data da compra" error={errors.dataCompra?.message} required>
         <Input type="date" {...register('dataCompra')} error={!!errors.dataCompra} />
       </Field>
+
+      <PreviaDestino
+        cartoes={cartoes}
+        cartaoId={watch('cartaoId')}
+        dataCompra={watch('dataCompra')}
+        sujeito="A 1ª parcela"
+      />
 
       <div className={styles.formActions}>
         <Button type="submit" variant="primary" disabled={isSubmitting}>
@@ -511,6 +533,7 @@ function FormEmAndamento({
             {...register('valorReais')}
             placeholder="0,00"
             error={!!errors.valorReais}
+            className={styles.valorDestaque}
           />
         </Field>
         <Field label="Data da 1ª parcela restante" error={errors.dataCompra?.message} required>
@@ -542,6 +565,7 @@ function FormAssinatura({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting }
   } = useForm<AssinaturaValues>({ resolver: zodResolver(assinaturaSchema), defaultValues })
 
@@ -568,6 +592,7 @@ function FormAssinatura({
             {...register('valorReais')}
             placeholder="0,00"
             error={!!errors.valorReais}
+            className={styles.valorDestaque}
           />
         </Field>
         <Field label="Data de início" error={errors.dataInicio?.message} required>
@@ -578,6 +603,13 @@ function FormAssinatura({
       <p className={styles.valorParcela}>
         Serão geradas 12 ocorrências a partir da data de início.
       </p>
+
+      <PreviaDestino
+        cartoes={cartoes}
+        cartaoId={watch('cartaoId')}
+        dataCompra={watch('dataInicio')}
+        sujeito="A 1ª mensalidade"
+      />
 
       <div className={styles.formActions}>
         <Button type="submit" variant="primary" disabled={isSubmitting}>
@@ -617,8 +649,6 @@ export function DespesaForm({
 
   return (
     <div className={styles.form}>
-      <h2 className={styles.formTitle}>Nova despesa</h2>
-
       <SegmentedControl
         opcoes={tipoLabels}
         valor={tipo}

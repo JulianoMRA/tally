@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { abrirCadastroDeSaida } from './fixtures/navegacao'
 import { semear } from './fixtures/seed'
 
 /**
@@ -71,8 +72,11 @@ test.describe('Primeiro uso', () => {
     await expect(page.getByRole('button', { name: 'Cadastre um cartão' })).toBeVisible()
 
     await page.getByRole('link', { name: 'Saídas' }).click()
+    // O aviso fica na página, não dentro do painel: quem chega sem cartão
+    // precisa vê-lo antes de abrir o formulário.
     await expect(page.getByText('Nenhum cartão cadastrado.')).toBeVisible()
-    // O formulário continua utilizável: Pix e débito não dependem de cartão.
+    // E o formulário continua utilizável: Pix e débito não dependem de cartão.
+    await abrirCadastroDeSaida(page)
     await expect(page.getByLabel('Descrição')).toBeVisible()
   })
 

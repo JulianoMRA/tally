@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Cartao } from '@domain/entities/cartao'
 import type { Categoria } from '@domain/entities/categoria'
@@ -9,7 +9,8 @@ import type {
   DespesaEmAndamentoInput,
   DespesaAssinaturaCreditoInput,
   DespesaUnicaForaCartaoInput,
-  DespesaComTags
+  DespesaComTags,
+  OcorrenciaDoMes
 } from '@shared/ipc/despesa'
 import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
@@ -18,28 +19,31 @@ import {
   Button,
   ConfirmDialog,
   EmptyState,
-  Field,
   Input,
   Panel,
   RowActions,
   SegmentedControl,
+  SidePanel,
   SortableHeader,
   Select,
   useToast,
-  type AcaoLinha,
-  type OpcaoSegmentada
+  type AcaoLinha
 } from '../../components/ui'
 import { alfabetico, porData, porNumero, type Comparador } from '../../lib/comparadores'
 import { formatBRL } from '../../lib/format-brl'
-import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
+import { formatarMesReferencia } from '../../lib/formatar-data'
 import { mensagemErro } from '../../lib/mensagem-erro'
+import { mesAtualReferencia } from '../../lib/mes-atual'
+import { mesReferenciaAnterior, proxMesReferencia } from '@domain/services/mes-referencia'
 import { useOrdenacao } from '../../lib/use-ordenacao'
 import { DespesaForm } from '../despesas/DespesaForm'
 import { EditarDespesaModal } from '../faturas/EditarDespesaModal'
 import { EditarAssinaturaModal } from '../assinaturas/EditarAssinaturaModal'
+import { agruparOcorrencias } from './agrupar-ocorrencias'
 import { filtrarPorDescricao } from './filtrar-saidas'
 import { montarPreenchimentoDespesa, type PreenchimentoDespesa } from './montar-preenchimento'
 import { NotaETagsModal } from './NotaETagsModal'
+import { useOcorrencias } from './hooks/use-ocorrencias'
 import { useSaidas } from './hooks/use-saidas'
 import styles from './saidas.module.css'
 
@@ -55,20 +59,22 @@ type UltimaRegistrada = {
 
 type Confirmacao = { tipo: 'cancelar'; despesa: Despesa } | { tipo: 'excluir'; despesa: Despesa }
 
-const COMPARADORES: Record<string, Comparador<DespesaComTags>> = {
-  descricao: alfabetico((d) => d.descricao),
-  data: porData((d) => d.dataCompra),
-  valor: porNumero((d) => d.valorCentavos)
+const COMPARADORES: Record<string, Comparador<OcorrenciaDoMes>> = {
+  descricao: alfabetico((o) => o.descricao),
+  data: porData((o) => o.dataCompra),
+  valor: porNumero((o) => o.impactoCentavos)
 }
 
-function rotuloTipo(d: Despesa): string {
+type ClassificavelPorTipo = Pick<Despesa, 'tipo' | 'formaPagamento'>
+
+function rotuloTipo(d: ClassificavelPorTipo): string {
   if (d.tipo === 'Assinatura') return 'Assinatura'
   if (d.tipo === 'Parcelada') return 'Parcelada'
   if (d.formaPagamento === 'Credito') return 'Única'
   return 'Fora do cartão'
 }
 
-function pertenceAoFiltro(d: Despesa, filtro: Filtro): boolean {
+function pertenceAoFiltro(d: ClassificavelPorTipo, filtro: Filtro): boolean {
   switch (filtro) {
     case 'todas':
       return true
@@ -81,7 +87,7 @@ function pertenceAoFiltro(d: Despesa, filtro: Filtro): boolean {
   }
 }
 
-const FILTROS: readonly OpcaoSegmentada<Filtro>[] = [
+const FILTROS: readonly { valor: Filtro; rotulo: string }[] = [
   { valor: 'todas', rotulo: 'Todas' },
   { valor: 'foraCartao', rotulo: 'Fora do cartão' },
   { valor: 'parcelada', rotulo: 'Parceladas' },
@@ -89,16 +95,21 @@ const FILTROS: readonly OpcaoSegmentada<Filtro>[] = [
 ]
 
 export default function SaidasPage() {
-  const { despesas, loading, erro, recarregar } = useSaidas()
+  const [mes, setMes] = useState(mesAtualReferencia())
+  const { ocorrencias, loading, erro, recarregar } = useOcorrencias(mes)
+  // As ações da linha (editar, duplicar, excluir) operam na despesa-mestre, que
+  // a ocorrência não carrega — ela traz o impacto do mês, não o valor cheio nem
+  // o total de parcelas. Esta lista é só o índice para o RowActions.
+  const { despesas, recarregar: recarregarDespesas } = useSaidas()
   const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [ultimaRegistrada, setUltimaRegistrada] = useState<UltimaRegistrada | null>(null)
   const [filtro, setFiltro] = useState<Filtro>('todas')
-  const [mes, setMes] = useState('')
   const [busca, setBusca] = useState('')
   const [tagFiltro, setTagFiltro] = useState('')
   const [preenchimento, setPreenchimento] = useState<PreenchimentoDespesa | null>(null)
   const [dupSeq, setDupSeq] = useState(0)
+  const [cadastroAberto, setCadastroAberto] = useState(false)
   const [notaTags, setNotaTags] = useState<DespesaComTags | null>(null)
   const [editandoDespesa, setEditandoDespesa] = useState<Despesa | null>(null)
   const [editandoAssinatura, setEditandoAssinatura] = useState<Despesa | null>(null)
@@ -127,26 +138,55 @@ export default function SaidasPage() {
     return categorias.find((c) => c.id === id)?.nome ?? `#${id}`
   }
 
+  const despesaPorId = useMemo(() => new Map(despesas.map((d) => [d.id, d])), [despesas])
+
+  // A contagem entra no rótulo do próprio filtro: dizer "Parceladas 2" antes do
+  // clique poupa o clique quando a resposta é zero, e dá a composição do mês de
+  // relance.
+  const filtrosComContagem = useMemo(
+    () =>
+      FILTROS.map((f) => ({
+        valor: f.valor,
+        rotulo: `${f.rotulo} ${ocorrencias.filter((o) => pertenceAoFiltro(o, f.valor)).length}`
+      })),
+    [ocorrencias]
+  )
+
   const tagsDisponiveis = useMemo(() => {
     const set = new Set<string>()
-    for (const d of despesas) for (const t of d.tags) set.add(t)
+    for (const o of ocorrencias) for (const t of o.tags) set.add(t)
     return [...set].sort((a, b) => a.localeCompare(b, 'pt-BR'))
-  }, [despesas])
+  }, [ocorrencias])
 
   const filtradas = useMemo(() => {
-    const porTipo = despesas.filter((d) => {
-      if (!pertenceAoFiltro(d, filtro)) return false
-      if (filtro === 'foraCartao' && mes && d.dataCompra.slice(0, 7) !== mes) return false
-      if (tagFiltro && !d.tags.includes(tagFiltro)) return false
+    const porTipo = ocorrencias.filter((o) => {
+      if (!pertenceAoFiltro(o, filtro)) return false
+      if (tagFiltro && !o.tags.includes(tagFiltro)) return false
       return true
     })
     return filtrarPorDescricao(porTipo, busca)
-  }, [despesas, filtro, mes, busca, tagFiltro])
+  }, [ocorrencias, filtro, busca, tagFiltro])
 
+  // `dupSeq` remonta o DespesaForm: ele guarda o estado dos campos internamente
+  // e sem a troca de key um segundo "Nova saída" reabriria com o que sobrou do
+  // anterior.
+  function abrirCadastro() {
+    setPreenchimento(null)
+    setDupSeq((n) => n + 1)
+    setCadastroAberto(true)
+  }
+
+  function fecharCadastro() {
+    setCadastroAberto(false)
+    setPreenchimento(null)
+  }
+
+  // Duplicar abre o painel já preenchido. Antes rolava a página até o topo para
+  // revelar o formulário fixo — com o painel, o formulário vem até o usuário.
   function duplicar(despesa: Despesa) {
     setPreenchimento(montarPreenchimentoDespesa(despesa))
     setDupSeq((n) => n + 1)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setCadastroAberto(true)
   }
 
   async function handleSalvarNotaETags(input: { nota: string | null; tags: string[] }) {
@@ -155,7 +195,7 @@ export default function SaidasPage() {
       await window.api.despesa.definirNotaETags({ despesaId: notaTags.id, ...input })
       toast.show('Nota e tags salvas.', 'success')
       setNotaTags(null)
-      await recarregar()
+      await Promise.all([recarregar(), recarregarDespesas()])
     } catch (e) {
       toast.show(mensagemErro(e, 'Erro ao salvar nota e tags.'), 'error')
       throw e
@@ -202,6 +242,21 @@ export default function SaidasPage() {
     'desc'
   )
 
+  const grupos = useMemo(
+    () => agruparOcorrencias(itensOrdenados, nomeCartao),
+    // `nomeCartao` fecha sobre `cartoes`; recriar o índice a cada render seria
+    // pior que depender da lista.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [itensOrdenados, cartoes]
+  )
+
+  // Soma IMPACTO, não valor de compra: é o que torna o número somável e o que
+  // faz o subtotal de cada cartão bater com o total da fatura.
+  const totalDoMesCentavos = useMemo(
+    () => itensOrdenados.reduce((s, o) => s + o.impactoCentavos, 0),
+    [itensOrdenados]
+  )
+
   async function registrar<T>(
     acao: () => Promise<T>,
     montarBanner: (resultado: T) => UltimaRegistrada,
@@ -209,8 +264,21 @@ export default function SaidasPage() {
   ) {
     try {
       const resultado = await acao()
-      setUltimaRegistrada(montarBanner(resultado))
-      await recarregar()
+      const banner = montarBanner(resultado)
+      setUltimaRegistrada(banner)
+      // Salta para o mês em que o lançamento caiu. Sem isto, registrar uma
+      // compra depois do fechamento — que o RN-01 manda para a fatura seguinte
+      // — fecharia o painel numa lista onde ela não aparece. O banner diz em
+      // qual fatura entrou; a lista tem que mostrar.
+      const mesDoLancamento = banner.mesReferencia.slice(0, 7)
+      if (/^\d{4}-\d{2}$/.test(mesDoLancamento) && mesDoLancamento !== mes) {
+        setMes(mesDoLancamento)
+      }
+      // Salvou: o painel fecha e o resultado aparece na lista atrás dele. É o
+      // "formulário é episódio" — deixá-lo aberto esconderia o que acabou de
+      // ser registrado. O erro NÃO fecha: quem errou precisa do que digitou.
+      fecharCadastro()
+      await Promise.all([recarregar(), recarregarDespesas()])
     } catch (e) {
       toast.show(mensagemErro(e, erroMsg), 'error')
     }
@@ -291,7 +359,7 @@ export default function SaidasPage() {
       await window.api.despesa.atualizar({ despesaId: editandoDespesa.id, ...input })
       toast.show('Despesa atualizada.', 'success')
       setEditandoDespesa(null)
-      await recarregar()
+      await Promise.all([recarregar(), recarregarDespesas()])
     } catch (e) {
       toast.show(mensagemErro(e, 'Erro ao atualizar despesa.'), 'error')
       throw e
@@ -314,7 +382,7 @@ export default function SaidasPage() {
     try {
       await window.api.despesa.cancelarAssinatura({ despesaId: despesa.id })
       toast.show(`"${despesa.descricao}" cancelada.`, 'success')
-      await recarregar()
+      await Promise.all([recarregar(), recarregarDespesas()])
     } catch (e) {
       toast.show(mensagemErro(e, 'Erro ao cancelar assinatura.'), 'error')
     } finally {
@@ -326,7 +394,7 @@ export default function SaidasPage() {
     try {
       await window.api.despesa.excluir({ despesaId: despesa.id })
       toast.show(`"${despesa.descricao}" excluída.`, 'success')
-      await recarregar()
+      await Promise.all([recarregar(), recarregarDespesas()])
     } catch (e) {
       toast.show(mensagemErro(e, 'Erro ao excluir despesa.'), 'error')
     } finally {
@@ -342,44 +410,235 @@ export default function SaidasPage() {
       />
 
       <div className={styles.layout}>
-        <div className={styles.colCadastro}>
-          {ultimaRegistrada && (
-            <div className={styles.successBanner}>
-              <strong>{ultimaRegistrada.descricao}</strong>
-              {ultimaRegistrada.formaForaCartao ? (
-                <>
-                  {' '}
-                  registrada via <strong>{ultimaRegistrada.formaForaCartao}</strong> em{' '}
-                  <strong>{formatarMesReferencia(ultimaRegistrada.mesReferencia)}</strong>.
-                </>
-              ) : (
-                <>
-                  {ultimaRegistrada.parcelas
-                    ? ` registrada com ${ultimaRegistrada.parcelas} parcelas a partir de `
-                    : ' registrada na fatura '}
-                  <strong>{formatarMesReferencia(ultimaRegistrada.mesReferencia)}</strong> · cartão{' '}
-                  <strong>{ultimaRegistrada.cartaoNome}</strong>.
-                </>
-              )}
+        {ultimaRegistrada && (
+          <div className={styles.successBanner}>
+            <strong>{ultimaRegistrada.descricao}</strong>
+            {ultimaRegistrada.formaForaCartao ? (
+              <>
+                {' '}
+                registrada via <strong>{ultimaRegistrada.formaForaCartao}</strong> em{' '}
+                <strong>{formatarMesReferencia(ultimaRegistrada.mesReferencia)}</strong>.
+              </>
+            ) : (
+              <>
+                {ultimaRegistrada.parcelas
+                  ? ` registrada com ${ultimaRegistrada.parcelas} parcelas a partir de `
+                  : ' registrada na fatura '}
+                <strong>{formatarMesReferencia(ultimaRegistrada.mesReferencia)}</strong> · cartão{' '}
+                <strong>{ultimaRegistrada.cartaoNome}</strong>.
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Sem cartão ativo, registrar no crédito falha só no submit. O aviso
+            fica na página, não no painel: quem chega aqui precisa vê-lo antes
+            de abrir o formulário, e gasto por Pix, débito ou dinheiro não
+            depende de cartão nenhum. */}
+        {cartoesAtivos.length === 0 && (
+          <div className={styles.avisoSemCartao}>
+            <div>
+              <strong>Nenhum cartão cadastrado.</strong> Você ainda pode registrar gastos por Pix,
+              débito ou dinheiro — mas despesa no crédito precisa de um cartão.
+            </div>
+            <Button variant="secondary" size="sm" onClick={() => navigate('/cartoes')}>
+              Cadastrar cartão
+            </Button>
+          </div>
+        )}
+
+        <div className={styles.toolbar}>
+          <button
+            type="button"
+            className={styles.navBtn}
+            onClick={() => setMes(mesReferenciaAnterior(mes))}
+            aria-label="Mês anterior"
+          >
+            ←
+          </button>
+          <Input
+            type="month"
+            value={mes}
+            onChange={(e) => e.target.value && setMes(e.target.value)}
+            className={styles.mesInput}
+            aria-label="Mês"
+          />
+          <button
+            type="button"
+            className={styles.navBtn}
+            onClick={() => setMes(proxMesReferencia(mes))}
+            aria-label="Próximo mês"
+          >
+            →
+          </button>
+          <SegmentedControl
+            opcoes={filtrosComContagem}
+            valor={filtro}
+            onChange={setFiltro}
+            label="Filtrar lançamentos por tipo"
+          />
+          {tagsDisponiveis.length > 0 && (
+            <Select
+              value={tagFiltro}
+              onChange={(e) => setTagFiltro(e.target.value)}
+              aria-label="Filtrar por tag"
+              className={styles.filtroTag}
+            >
+              <option value="">Todas as tags</option>
+              {tagsDisponiveis.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </Select>
+          )}
+          <div className={styles.buscaWrap}>
+            <Input
+              type="search"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por descrição…"
+              aria-label="Buscar saídas"
+            />
+          </div>
+          <Button size="sm" onClick={abrirCadastro}>
+            + Nova saída
+          </Button>
+        </div>
+
+        {erro && <p className={styles.erro}>{erro}</p>}
+
+        {/* O total do período era o número que faltava (ponto 11): a lista
+              mostrava nove lançamentos soltos e nenhuma soma. */}
+        <Panel
+          title="Lançamentos"
+          meta={`${itensOrdenados.length} · ${formatBRL(totalDoMesCentavos)}`}
+          flush
+        >
+          {loading ? (
+            <EmptyState title="Carregando…" />
+          ) : itensOrdenados.length === 0 ? (
+            <EmptyState title="Nenhuma saída para este filtro." />
+          ) : (
+            <div className={styles.tabelaWrap}>
+              <table className={styles.tabela}>
+                <thead>
+                  <tr>
+                    <SortableHeader
+                      rotulo="Descrição"
+                      ativo={sortBy === 'descricao'}
+                      direcao={sortDir}
+                      onSort={() => handleSort('descricao')}
+                    />
+                    <th>Tipo</th>
+                    <th>Categoria</th>
+                    <th className={styles.colParcela}>Parcela</th>
+                    <SortableHeader
+                      rotulo="Neste mês"
+                      ativo={sortBy === 'valor'}
+                      direcao={sortDir}
+                      onSort={() => handleSort('valor')}
+                      className={styles.colValor}
+                    />
+                    <th className={styles.colAcoes} aria-label="Ações" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {grupos.map((grupo) => (
+                    <Fragment key={grupo.chave}>
+                      <tr className={styles.grupoDia}>
+                        <td colSpan={6}>
+                          <div className={styles.grupoDiaConteudo}>
+                            <span className={styles.grupoDiaData}>
+                              {grupo.cartaoId !== null && (
+                                <span
+                                  className={styles.chip}
+                                  style={{ background: corCartao(grupo.cartaoId) }}
+                                />
+                              )}
+                              {grupo.rotulo}
+                            </span>
+                            <span className={styles.grupoDiaTotal}>
+                              {formatBRL(grupo.totalCentavos)}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                      {grupo.itens.map((o) => {
+                        const despesa = despesaPorId.get(o.despesaId)
+                        return (
+                          <tr
+                            key={o.parcelaId}
+                            className={!o.ativa ? styles.itemCancelada : undefined}
+                          >
+                            <td>
+                              <div className={styles.descricaoCell}>
+                                <span>{o.descricao}</span>
+                                {!o.ativa && <Badge variant="archived" label="Cancelada" />}
+                              </div>
+                              {o.tags.length > 0 && (
+                                <div className={styles.tagCell}>
+                                  {o.tags.map((t) => (
+                                    <span key={t} className={styles.tagCellChip}>
+                                      {t}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                            <td>
+                              <span className={styles.tagTipo}>{rotuloTipo(o)}</span>
+                            </td>
+                            <td>{nomeCategoria(o.categoriaId)}</td>
+                            <td className={styles.colParcela}>
+                              <span className={`${styles.parcelaRotulo} mono`}>
+                                {o.rotuloParcela}
+                              </span>
+                              {o.progressoPct !== null && (
+                                <span className={styles.parcelaTrilho} aria-hidden="true">
+                                  <span
+                                    className={styles.parcelaBarra}
+                                    style={{ width: `${o.progressoPct}%` }}
+                                  />
+                                </span>
+                              )}
+                            </td>
+                            {/* Duas colunas de dinheiro numa só célula: o impacto
+                                do mês é o número somável, e o valor da compra
+                                desce para contexto. Antes os dois disputavam a
+                                mesma linha como se fossem comparáveis. */}
+                            <td className={`${styles.colValor} tnum`}>
+                              <span className={styles.impacto}>{formatBRL(o.impactoCentavos)}</span>
+                              {o.origemCentavos !== null && (
+                                <span className={styles.origem}>
+                                  de {formatBRL(o.origemCentavos)}
+                                </span>
+                              )}
+                            </td>
+                            <td className={styles.colAcoes}>
+                              {despesa && (
+                                <RowActions acoes={acoesDaLinha(despesa)} contexto={o.descricao} />
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
+        </Panel>
+      </div>
 
-          {/* Sem cartão ativo o formulário convidava a registrar uma despesa no
-              crédito com o select de Cartão vazio, e só falhava no submit. O
-              aviso fica ACIMA do formulário, não no lugar dele: gasto por Pix,
-              débito ou dinheiro não depende de cartão nenhum. */}
-          {cartoesAtivos.length === 0 && (
-            <div className={styles.avisoSemCartao}>
-              <div>
-                <strong>Nenhum cartão cadastrado.</strong> Você ainda pode registrar gastos por Pix,
-                débito ou dinheiro — mas despesa no crédito precisa de um cartão.
-              </div>
-              <Button variant="secondary" size="sm" onClick={() => navigate('/cartoes')}>
-                Cadastrar cartão
-              </Button>
-            </div>
-          )}
-
+      {cadastroAberto && (
+        <SidePanel
+          titulo="Nova saída"
+          descricao="Compra no crédito, gasto fora do cartão, parcelamento ou assinatura."
+          onFechar={fecharCadastro}
+          fecharNoOverlay={false}
+        >
           <DespesaForm
             key={dupSeq}
             cartoes={cartoesAtivos}
@@ -391,128 +650,8 @@ export default function SaidasPage() {
             onSalvarEmAndamento={handleSalvarEmAndamento}
             onSalvarAssinatura={handleSalvarAssinatura}
           />
-        </div>
-
-        <div className={styles.colLista}>
-          <div className={styles.toolbar}>
-            <SegmentedControl
-              opcoes={FILTROS}
-              valor={filtro}
-              onChange={setFiltro}
-              label="Filtrar lançamentos por tipo"
-            />
-            {filtro === 'foraCartao' && (
-              <Field label="Mês">
-                <Input type="month" value={mes} onChange={(e) => setMes(e.target.value)} />
-              </Field>
-            )}
-            {tagsDisponiveis.length > 0 && (
-              <Select
-                value={tagFiltro}
-                onChange={(e) => setTagFiltro(e.target.value)}
-                aria-label="Filtrar por tag"
-              >
-                <option value="">Todas as tags</option>
-                {tagsDisponiveis.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </Select>
-            )}
-            <div className={styles.buscaWrap}>
-              <Input
-                type="search"
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar por descrição…"
-                aria-label="Buscar saídas"
-              />
-            </div>
-          </div>
-
-          {erro && <p className={styles.erro}>{erro}</p>}
-
-          <Panel title="Lançamentos" meta={`${itensOrdenados.length}`} flush>
-            {loading ? (
-              <EmptyState title="Carregando…" />
-            ) : itensOrdenados.length === 0 ? (
-              <EmptyState title="Nenhuma saída para este filtro." />
-            ) : (
-              <div className={styles.tabelaWrap}>
-                <table className={styles.tabela}>
-                  <thead>
-                    <tr>
-                      <SortableHeader
-                        rotulo="Descrição"
-                        ativo={sortBy === 'descricao'}
-                        direcao={sortDir}
-                        onSort={() => handleSort('descricao')}
-                      />
-                      <th>Tipo</th>
-                      <th>Categoria</th>
-                      <SortableHeader
-                        rotulo="Data"
-                        ativo={sortBy === 'data'}
-                        direcao={sortDir}
-                        onSort={() => handleSort('data')}
-                      />
-                      <SortableHeader
-                        rotulo="Valor"
-                        ativo={sortBy === 'valor'}
-                        direcao={sortDir}
-                        onSort={() => handleSort('valor')}
-                        className={styles.colValor}
-                      />
-                      <th className={styles.colAcoes} aria-label="Ações" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {itensOrdenados.map((d) => {
-                      const ehAssinatura = d.tipo === 'Assinatura'
-                      return (
-                        <tr key={d.id} className={!d.ativa ? styles.itemCancelada : undefined}>
-                          <td>
-                            <div className={styles.descricaoCell}>
-                              <span
-                                className={styles.chip}
-                                style={{ background: corCartao(d.cartaoId) }}
-                              />
-                              <span>{d.descricao}</span>
-                              {!d.ativa && <Badge variant="archived" label="Cancelada" />}
-                            </div>
-                            {d.tags.length > 0 && (
-                              <div className={styles.tagCell}>
-                                {d.tags.map((t) => (
-                                  <span key={t} className={styles.tagCellChip}>
-                                    {t}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                          <td>
-                            <span className={styles.tagTipo}>{rotuloTipo(d)}</span>
-                          </td>
-                          <td>{nomeCategoria(d.categoriaId)}</td>
-                          <td className="mono">{formatarDataIso(d.dataCompra)}</td>
-                          <td className={`${styles.colValor} tnum`}>
-                            {formatBRL(d.valorCentavos)}
-                            {ehAssinatura ? '/mês' : ''}
-                          </td>
-                          <td className={styles.colAcoes}>
-                            <RowActions acoes={acoesDaLinha(d)} contexto={d.descricao} />
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Panel>
-        </div>
-      </div>
+        </SidePanel>
+      )}
 
       {notaTags && (
         <NotaETagsModal

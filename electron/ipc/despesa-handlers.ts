@@ -1,6 +1,7 @@
 import type { IpcMain } from 'electron'
 import type { Database } from '../../src/persistence/database'
-import type { DespesaComTags } from '../../src/shared/ipc/despesa'
+import type { DespesaComTags, OcorrenciaDoMes } from '../../src/shared/ipc/despesa'
+import { descreverOcorrencia } from '../../src/domain/services/descrever-ocorrencia'
 import { DespesaRepository } from '../../src/persistence/repositories/despesa-repository'
 import { ParcelaRepository } from '../../src/persistence/repositories/parcela-repository'
 import { TagRepository } from '../../src/persistence/repositories/tag-repository'
@@ -17,6 +18,7 @@ import {
   despesaUnicaForaCartaoInputSchema,
   listarGastosForaCartaoInputSchema,
   listarDespesasInputSchema,
+  listarOcorrenciasInputSchema,
   excluirDespesaInputSchema,
   atualizarDespesaInputSchema,
   definirNotaETagsInputSchema,
@@ -97,6 +99,54 @@ export function registerDespesaHandlers(db: Database, ipcMain: IpcMain): void {
       const despesas = repo.listarDespesas(filtro)
       const tagsMap = new TagRepository(db).tagsPorDespesaIds(despesas.map((d) => d.id))
       return despesas.map((d) => ({ ...d, tags: tagsMap.get(d.id) ?? [] }))
+    }
+  )
+
+  ipcMain.handle(
+    DESPESA_IPC_CHANNELS.listarOcorrenciasDoMes,
+    (_event, payload: unknown): OcorrenciaDoMes[] => {
+      const { mesReferencia } = listarOcorrenciasInputSchema.parse(payload)
+      const linhas = repo.listarOcorrenciasDoMes(mesReferencia)
+      const tagsMap = new TagRepository(db).tagsPorDespesaIds(linhas.map((l) => l.despesa_id))
+
+      return linhas.map((l) => {
+        const { impactoCentavos, origemCentavos, rotuloParcela, progressoPct } =
+          descreverOcorrencia(
+            {
+              tipo: l.tipo,
+              valorCentavos: l.despesa_valor_centavos,
+              totalParcelas: l.total_parcelas
+            },
+            {
+              numero: l.numero,
+              total: l.total,
+              valorCentavos: l.parcela_valor_centavos,
+              dataReferencia: l.data_referencia,
+              status: l.status
+            },
+            l.menor_numero
+          )
+
+        return {
+          parcelaId: l.parcela_id,
+          despesaId: l.despesa_id,
+          descricao: l.descricao,
+          categoriaId: l.categoria_id,
+          cartaoId: l.cartao_id,
+          formaPagamento: l.forma_pagamento,
+          tipo: l.tipo,
+          dataCompra: l.data_compra,
+          dataReferencia: l.data_referencia,
+          statusParcela: l.status,
+          ativa: l.ativa === 1,
+          nota: l.nota ?? null,
+          tags: tagsMap.get(l.despesa_id) ?? [],
+          impactoCentavos,
+          origemCentavos,
+          rotuloParcela,
+          progressoPct
+        }
+      })
     }
   )
 

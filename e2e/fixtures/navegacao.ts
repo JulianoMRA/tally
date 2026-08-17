@@ -37,6 +37,19 @@ export async function irPara(page: Page, rota: Rota): Promise<void> {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(rota)
 }
 
+/**
+ * Abre o painel de cadastro de Saídas e espera o formulário estar pronto.
+ *
+ * O formulário deixou de ser fixo na tela e virou `SidePanel` sob demanda
+ * (ponto 08 do diagnóstico), então preencher um campo agora exige abrir o
+ * painel antes. Esperar o diálogo evita a mesma corrida do `irPara`: entre o
+ * clique e a montagem, `getByLabel('Descrição')` resolveria contra a página.
+ */
+export async function abrirCadastroDeSaida(page: Page): Promise<void> {
+  await page.getByRole('button', { name: '+ Nova saída' }).click()
+  await expect(page.getByRole('dialog', { name: 'Nova saída' })).toBeVisible()
+}
+
 /** Abas da Visão mensal (RF-VIS-02): operação em "Mês", histórico em "Análise". */
 export type AbaVisaoMensal = 'Mês' | 'Análise'
 

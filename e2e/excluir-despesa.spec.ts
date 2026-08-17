@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { irPara } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
 import type { Page } from '@playwright/test'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
@@ -41,6 +41,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     const hoje = new Date()
     const inicio = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
     await irPara(page, 'Saídas')
+    await abrirCadastroDeSaida(page)
     await page.getByRole('radio', { name: 'Assinatura', exact: true }).click()
     await page.getByLabel('Descrição').fill('Spotify Excluir E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Streaming Excluir E2E' })
@@ -50,7 +51,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await page.getByRole('button', { name: 'Registrar assinatura' }).click()
 
     // Filtra Assinaturas e exclui pela linha (ConfirmDialog escopado por role)
-    await page.getByRole('radio', { name: 'Assinaturas', exact: true }).click()
+    await page.getByRole('radio', { name: /^Assinaturas/ }).click()
     await expect(page.getByRole('cell', { name: 'Spotify Excluir E2E' })).toBeVisible()
     await acionarNoMenuDaLinha(
       page,
@@ -96,6 +97,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     const labelMes = `${nomeMes[0].toUpperCase()}${nomeMes.slice(1)} de ${alvo.getFullYear()}`
 
     await irPara(page, 'Saídas')
+    await abrirCadastroDeSaida(page)
     await page.getByLabel('Descrição').fill('Compra Paga E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Mercado Paga E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Paga E2E' })
@@ -151,6 +153,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
 
     // Compra retroativa: fatura de junho/2026 já passou do fechamento (2026-06-05)
     await irPara(page, 'Saídas')
+    await abrirCadastroDeSaida(page)
     await page.getByLabel('Descrição').fill('Compra Vencida E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Mercado Vencida E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Vencida E2E' })

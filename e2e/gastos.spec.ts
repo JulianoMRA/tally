@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { abrirCadastroDeSaida } from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Gastos fora de cartão (RF-DES-01)', () => {
@@ -16,9 +17,9 @@ test.describe('Gastos fora de cartão (RF-DES-01)', () => {
 
     // --- Cadastrar despesa Pix (form inline na tela Saídas) ---
     await page.getByRole('link', { name: 'Saídas' }).click()
-    await expect(page.getByLabel('Descrição')).toBeVisible()
 
     // Aba Única está selecionada por default; trocar forma para Pix
+    await abrirCadastroDeSaida(page)
     await page.getByRole('radio', { name: 'Pix', exact: true }).click()
 
     await page.getByLabel('Descrição').fill('Feira E2E')
@@ -31,7 +32,7 @@ test.describe('Gastos fora de cartão (RF-DES-01)', () => {
     await expect(page.getByRole('strong').filter({ hasText: 'Pix' })).toBeVisible()
 
     // --- Filtro "Fora do cartão" mostra a despesa ---
-    await page.getByRole('radio', { name: 'Fora do cartão', exact: true }).click()
+    await page.getByRole('radio', { name: /^Fora do cartão/ }).click()
     await expect(page.getByRole('cell', { name: 'Feira E2E' })).toBeVisible()
     await expect(
       page
@@ -40,8 +41,10 @@ test.describe('Gastos fora de cartão (RF-DES-01)', () => {
         .getByText(/R\$\s*35,00/)
     ).toBeVisible()
 
-    // --- Sub-filtro de mês: 2026-07 não tem lançamentos ---
-    await page.getByLabel('Mês').fill('2026-07')
+    // --- Seletor de mês: 2026-07 não tem lançamentos ---
+    // `exact: true` porque "Mês anterior" e "Próximo mês" também casam com o
+    // rótulo parcial, agora que a tela tem navegação de mês própria.
+    await page.getByLabel('Mês', { exact: true }).fill('2026-07')
     await expect(page.getByText('Nenhuma saída para este filtro.')).toBeVisible()
   })
 })

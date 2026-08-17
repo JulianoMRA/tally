@@ -3,6 +3,7 @@ import {
   formatarDataIso,
   formatarDiaMes,
   formatarDiaMesAbreviado,
+  formatarDiaPorExtenso,
   formatarMesReferencia
 } from '../formatar-data'
 
@@ -108,5 +109,39 @@ describe('formatarDiaMesAbreviado', () => {
 
   it('devolve a string original quando o mês não existe', () => {
     expect(formatarDiaMesAbreviado('2026-13-01')).toBe('2026-13-01')
+  })
+})
+
+describe('formatarDiaPorExtenso', () => {
+  it('monta dia da semana, dia e mês por extenso', () => {
+    // 14/08/2026 é uma sexta-feira.
+    expect(formatarDiaPorExtenso('2026-08-14')).toBe('Sex · 14 de agosto')
+  })
+
+  it('acerta o dia da semana em fuso negativo, sem voltar um dia', () => {
+    // new Date('2026-08-10') parseia como UTC 00:00; em UTC-3 o getDay local
+    // devolveria domingo (09). Tem que ser segunda.
+    expect(formatarDiaPorExtenso('2026-08-10')).toBe('Seg · 10 de agosto')
+  })
+
+  it('não zera à esquerda o dia — é texto corrido, não coluna', () => {
+    expect(formatarDiaPorExtenso('2026-08-05')).toBe('Qua · 5 de agosto')
+  })
+
+  it('preserva a cedilha de sábado e o til de março', () => {
+    expect(formatarDiaPorExtenso('2026-08-15')).toBe('Sáb · 15 de agosto')
+    expect(formatarDiaPorExtenso('2026-03-14')).toBe('Sáb · 14 de março')
+  })
+
+  it('devolve travessão para valores ausentes', () => {
+    expect(formatarDiaPorExtenso(null)).toBe('—')
+    expect(formatarDiaPorExtenso(undefined)).toBe('—')
+    expect(formatarDiaPorExtenso('')).toBe('—')
+  })
+
+  it('devolve a string original para formato inesperado', () => {
+    expect(formatarDiaPorExtenso('abc')).toBe('abc')
+    expect(formatarDiaPorExtenso('2026-08')).toBe('2026-08')
+    expect(formatarDiaPorExtenso('2026-13-01')).toBe('2026-13-01')
   })
 })

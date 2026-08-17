@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirAba, irPara } from './fixtures/navegacao'
+import { abrirAba, abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 // TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
@@ -30,6 +30,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
 
     // Despesa única R$ 100 em 2026-06-03 → fatura junho/2026
     await irPara(page, 'Saídas')
+    await abrirCadastroDeSaida(page)
     await page.getByLabel('Descrição').fill('Compra Mensal E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Geral Mensal E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Mensal E2E' })
@@ -39,6 +40,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     await expect(page.getByRole('cell', { name: 'Compra Mensal E2E' })).toBeVisible()
 
     // Pix R$ 50 em 2026-06-10
+    await abrirCadastroDeSaida(page)
     await page.getByRole('radio', { name: 'Pix', exact: true }).click()
     await page.getByLabel('Descrição').fill('Pix Mensal E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Geral Mensal E2E' })
@@ -96,6 +98,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     const hoje = new Date()
     const isoHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
     await irPara(page, 'Saídas')
+    await abrirCadastroDeSaida(page)
     await page.getByRole('radio', { name: 'Assinatura', exact: true }).click()
     await page.getByLabel('Descrição').fill('Spotify Projecao E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Streaming Projecao E2E' })

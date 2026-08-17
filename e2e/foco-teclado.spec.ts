@@ -43,9 +43,12 @@ test.describe('Navegação por teclado', () => {
     // Espera a lista terminar de carregar: sob concorrência o cabeçalho existe
     // antes das linhas, e a tecla chegava numa tabela que o React ainda ia
     // substituir — a ordenação não registrava.
-    await expect(page.getByRole('cell', { name: 'Mercado da semana' })).toBeVisible()
+    await expect(page.getByRole('cell', { name: 'Feira no Pix' })).toBeVisible()
 
-    const cabecalho = page.getByRole('columnheader', { name: /Descrição/ })
+    // "Neste mês" é a coluna ordenável que sobrou: com a lista recortada por
+    // mês e agrupada por origem, ordenar por descrição ou data brigaria com o
+    // agrupamento. A ordenação por valor continua útil dentro de cada grupo.
+    const cabecalho = page.getByRole('columnheader', { name: /Neste mês/ })
     const botao = cabecalho.getByRole('button')
 
     // Antes era um <th onClick>: sem role, sem tabIndex, sem teclado.
@@ -62,7 +65,7 @@ test.describe('Navegação por teclado', () => {
     const { page } = await semear(app)
     await page.getByRole('link', { name: 'Saídas' }).click()
 
-    const linha = page.getByRole('row').filter({ hasText: 'Mercado da semana' })
+    const linha = page.getByRole('row').filter({ hasText: 'Feira no Pix' })
     const gatilho = linha.getByRole('button', { name: /^Mais ações/ })
 
     await gatilho.focus()
@@ -84,7 +87,7 @@ test.describe('Navegação por teclado', () => {
     const { page } = await semear(app)
     await page.getByRole('link', { name: 'Saídas' }).click()
 
-    const linha = page.getByRole('row').filter({ hasText: 'Mercado da semana' })
+    const linha = page.getByRole('row').filter({ hasText: 'Feira no Pix' })
     const editar = linha.getByRole('button', { name: 'Editar', exact: true })
     await editar.focus()
     await page.keyboard.press('Enter')
@@ -114,11 +117,11 @@ test.describe('Navegação por teclado', () => {
     const grupo = page.getByRole('radiogroup', { name: 'Filtrar lançamentos por tipo' })
     await expect(grupo).toBeVisible()
 
-    await grupo.getByRole('radio', { name: 'Todas' }).focus()
+    await grupo.getByRole('radio', { name: /^Todas/ }).focus()
     await page.keyboard.press('ArrowRight')
 
     // Roving tabindex: a opção escolhida acompanha a seta.
-    await expect(grupo.getByRole('radio', { name: 'Fora do cartão' })).toHaveAttribute(
+    await expect(grupo.getByRole('radio', { name: /^Fora do cartão/ })).toHaveAttribute(
       'aria-checked',
       'true'
     )

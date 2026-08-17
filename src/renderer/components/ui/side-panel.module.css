@@ -1,0 +1,110 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 100;
+}
+
+/* 440px é a largura da proposta. `min()` porque a janela do app desce até
+   1010px de viewport (setSize(1024)): a partir daí o painel divide a tela com
+   a lista em vez de cobri-la, o que mantém o contexto de onde o registro cai. */
+.painel {
+  background: var(--bg-elev);
+  border-left: 1px solid var(--rule);
+  width: min(440px, 92vw);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-2);
+  animation: entrar 180ms ease-out;
+}
+
+.cabecalho {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--rule);
+  flex-shrink: 0;
+}
+
+.tituloBloco {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.titulo {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.descricao {
+  font-size: 12px;
+  color: var(--ink-3);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.fechar {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--r-2);
+  color: var(--ink-2);
+  cursor: pointer;
+  padding: 0;
+}
+
+.fechar:hover {
+  border-color: var(--rule);
+  color: var(--ink);
+}
+
+/* O corpo é quem rola. Se a rolagem ficasse no painel inteiro, o cabeçalho e o
+   rodapé sairiam de vista — e o rodapé é onde está o botão de salvar. */
+.corpo {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rodape {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 14px 20px;
+  border-top: 1px solid var(--rule);
+  background: var(--bg-elev);
+  flex-shrink: 0;
+}
+
+@keyframes entrar {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+}
+
+/* O deslize comunica de onde o painel veio; para quem pediu menos movimento no
+   SO, a informação não vale o custo. */
+@media (prefers-reduced-motion: reduce) {
+  .painel {
+    animation: none;
+  }
+}

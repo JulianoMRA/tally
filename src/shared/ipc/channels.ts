@@ -37,6 +37,7 @@ export const DESPESA_IPC_CHANNELS = {
   listarGastosForaCartao: 'despesa:listar-gastos-fora-cartao',
   listarDespesas: 'despesa:listar-despesas',
   listarComTags: 'despesa:listar-com-tags',
+  listarOcorrenciasDoMes: 'despesa:listar-ocorrencias-do-mes',
   listarTags: 'despesa:listar-tags',
   excluir: 'despesa:excluir',
   atualizar: 'despesa:atualizar',

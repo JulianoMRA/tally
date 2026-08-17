@@ -1,42 +1,13 @@
-/* Empilhado em janelas estreitas; em duas colunas a partir de 1400px, com o
-   cadastro fixo à esquerda e a lista à direita.
+/* A lista ocupa a largura inteira, sempre. O cadastro saiu do layout permanente
+   e virou `SidePanel` (ponto 08 do diagnóstico): consultar é contínuo, registrar
+   é episódico, e o formulário fixo de 400px cobrava o preço do episódico em toda
+   visita.
 
-   O breakpoint era 1940 porque a tabela pedia ~974px (dois terços só de botões
-   de ação) e as duas colunas a deixavam MAIS estreita do que empilhada. A fase
-   3 recolheu as ações num menu e a largura mínima caiu para ~698px, mas isso
-   ainda não chega para a janela padrão: ela entrega 1266px de viewport (o
-   `width: 1280` do BrowserWindow é o tamanho EXTERNO), o que sobra 606px para a
-   lista — 93px a menos do que a tabela precisa. Medido em 1400px de viewport a
-   lista recebe ~740px, com folga de ~42px. Abaixo disso o layout empilhado dá à
-   tabela a largura inteira, que é melhor do que espremê-la ao lado do form. */
+   Isto encerra o breakpoint de 1400px que existia só para decidir se o form
+   cabia ao lado da tabela. A tabela precisa de ~698px e a janela padrão entrega
+   1266px de viewport (o `width: 1280` do BrowserWindow é o tamanho EXTERNO) —
+   com a coluna do form fora do caminho, sobra folga em qualquer largura. */
 .layout {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-@media (min-width: 1400px) {
-  .layout {
-    display: grid;
-    grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
-    align-items: start;
-    gap: 28px;
-  }
-
-  /* O formulário acompanha a rolagem da lista, que é bem mais alta. */
-  .colCadastro {
-    position: sticky;
-    top: 0;
-  }
-}
-
-.colCadastro {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.colLista {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -59,10 +30,121 @@
   flex-wrap: wrap;
 }
 
-/* Busca por descrição encostada à direita da toolbar. */
+/* O Select não tem largura própria e, com a lista agora em largura inteira,
+   esticava sozinho até o fim da linha — empurrando busca e "+ Nova saída" para
+   uma terceira linha. */
+.filtroTag {
+  flex: 0 0 auto;
+  width: 170px;
+}
+
+/* Busca por descrição encostada à direita da toolbar, com "+ Nova saída"
+   depois dela — a ação primária fecha a linha. */
 .buscaWrap {
   margin-left: auto;
   min-width: 200px;
+}
+
+.navBtn {
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.navBtn:hover {
+  border-color: var(--forest);
+}
+
+.mesInput {
+  width: 150px;
+  flex-shrink: 0;
+}
+
+/* Coluna de parcela: rótulo X/Y com a barra de progresso embaixo. A barra dá a
+   leitura que o texto sozinho não dá — quanto falta para acabar. */
+.colParcela {
+  width: 96px;
+  white-space: nowrap;
+}
+
+.parcelaRotulo {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.parcelaTrilho {
+  display: block;
+  height: 3px;
+  margin-top: 4px;
+  background: var(--bg-sunk);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+
+.parcelaBarra {
+  display: block;
+  height: 100%;
+  background: var(--sage);
+  border-radius: var(--r-pill);
+}
+
+/* O impacto do mês é o número da linha; o valor da compra desce a um degrau de
+   apoio, em cinza, para as duas grandezas pararem de competir (ponto 10). */
+.impacto {
+  display: block;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.origem {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 1px;
+}
+
+/* Cabeçalho de grupo. É `<tr>` dentro da mesma tabela, não uma lista separada,
+   para os `getByRole('cell')` da suíte E2E continuarem valendo e a coluna de
+   valor seguir alinhada entre os grupos. */
+.grupoDia > td {
+  background: var(--bg-sunk);
+  padding: 7px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.grupoDiaConteudo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.grupoDiaData {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.grupoDiaTotal {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 
 .erro {

@@ -223,6 +223,16 @@ try {
   await capturar('estado-modal-editar')
   await page.keyboard.press('Escape')
 
+  // O formulário de despesa é a maior superfície do app e agora vive num painel
+  // sob demanda: sem este estado, ele não entra na folha de contato.
+  await page.getByRole('button', { name: '+ Nova saída' }).click({ timeout: 5000 })
+  await page.waitForTimeout(400)
+  await capturar('estado-painel-nova-saida')
+  await page.getByRole('radio', { name: 'Parcelada', exact: true }).click({ timeout: 5000 })
+  await page.waitForTimeout(300)
+  await capturar('estado-painel-parcelada')
+  await page.keyboard.press('Escape')
+
   await page.getByRole('link', { name: 'Cartões' }).click()
   await page.waitForTimeout(600)
   await page.getByRole('radio', { name: 'Bronze' }).focus()

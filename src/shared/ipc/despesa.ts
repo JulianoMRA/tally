@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import type { Despesa } from '../../domain/entities/despesa'
+import type { Despesa, FormaPagamento, TipoDespesa } from '../../domain/entities/despesa'
 import type { Fatura } from '../../domain/entities/fatura'
-import type { Parcela } from '../../domain/entities/parcela'
+import type { Parcela, StatusParcela } from '../../domain/entities/parcela'
 import { dataIsoSchema } from './date-schema'
 
 export const despesaUnicaCreditoInputSchema = z.object({
@@ -248,6 +248,40 @@ export type DefinirNotaETagsInput = z.infer<typeof definirNotaETagsInputSchema>
 /** Despesa com os nomes das tags vinculadas — usado na lista de Saídas. */
 export type DespesaComTags = Despesa & { tags: string[] }
 
+export const listarOcorrenciasInputSchema = z.object({
+  mesReferencia: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Mês deve estar no formato YYYY-MM')
+})
+
+export type ListarOcorrenciasInput = z.infer<typeof listarOcorrenciasInputSchema>
+
+/**
+ * RF-DES-14 — uma ocorrência de despesa em um mês.
+ *
+ * `impactoCentavos` é a única grandeza somável da lista: é o que sai naquele
+ * mês, valha a despesa uma parcela de um parcelado, a mensalidade de uma
+ * assinatura ou um gasto à vista. `origemCentavos` é contexto secundário e
+ * vem null quando não há um valor de compra confiável a mostrar.
+ */
+export type OcorrenciaDoMes = {
+  parcelaId: number
+  despesaId: number
+  descricao: string
+  categoriaId: number
+  cartaoId: number | null
+  formaPagamento: FormaPagamento
+  tipo: TipoDespesa
+  dataCompra: string
+  dataReferencia: string
+  statusParcela: StatusParcela
+  ativa: boolean
+  nota: string | null
+  tags: string[]
+  impactoCentavos: number
+  origemCentavos: number | null
+  rotuloParcela: string
+  progressoPct: number | null
+}
+
 export type DespesaApi = {
   criarUnicaCredito: (input: DespesaUnicaCreditoInput) => Promise<ResultadoCriarDespesa>
   criarParceladaCredito: (input: DespesaParceladaCreditoInput) => Promise<ResultadoCriarParcelada>
@@ -268,6 +302,7 @@ export type DespesaApi = {
   listarGastosForaCartao: (input?: ListarGastosForaCartaoInput) => Promise<Despesa[]>
   listarDespesas: (input?: ListarDespesasInput) => Promise<Despesa[]>
   listarComTags: (input?: ListarDespesasInput) => Promise<DespesaComTags[]>
+  listarOcorrenciasDoMes: (input: ListarOcorrenciasInput) => Promise<OcorrenciaDoMes[]>
   listarTags: () => Promise<string[]>
   excluir: (input: ExcluirDespesaInput) => Promise<ResultadoExcluirDespesa>
   atualizar: (input: AtualizarDespesaInput) => Promise<Despesa>

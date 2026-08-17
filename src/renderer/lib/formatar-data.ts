@@ -58,6 +58,29 @@ export function formatarDiaMesAbreviado(iso: string | null | undefined): string 
   return `${dia} ${nomeMes.slice(0, 3)}`
 }
 
+const DIAS_SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
+
+/**
+ * Converte 'YYYY-MM-DD' em 'Qui · 14 de agosto', cabeçalho dos grupos de dia da
+ * lista de Saídas. O dia da semana entra porque é o que ancora a memória de um
+ * gasto ("o que saiu naquele sábado"), e a data numérica sozinha não dá isso.
+ *
+ * `Date.UTC` + `getUTCDay` para a aritmética de calendário: `new Date(iso)`
+ * parseia como UTC e, em fuso negativo, exibiria o dia anterior.
+ */
+export function formatarDiaPorExtenso(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const match = DATA_ISO_REGEX.exec(iso)
+  if (!match) return iso
+  const [, ano, mes, dia] = match
+  const nomeMes = MESES_EXTENSO[Number(mes) - 1]
+  if (!nomeMes) return iso
+  const diaSemana =
+    DIAS_SEMANA[new Date(Date.UTC(Number(ano), Number(mes) - 1, Number(dia))).getUTCDay()]
+  const rotuloDia = diaSemana ? `${diaSemana.charAt(0).toUpperCase()}${diaSemana.slice(1)} · ` : ''
+  return `${rotuloDia}${Number(dia)} de ${nomeMes}`
+}
+
 /**
  * Converte 'YYYY-MM' (ou 'YYYY-MM-DD', ignorando o dia) em mês por extenso
  * (ex.: '2026-06' -> 'junho de 2026'). Valores ausentes viram '—'; formatos

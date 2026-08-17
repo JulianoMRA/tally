@@ -94,7 +94,7 @@ test.describe('Acessibilidade (axe-core) — modais abertos', () => {
     const { page } = await semear(app)
     await page.getByRole('link', { name: 'Saídas' }).click()
 
-    const linha = page.getByRole('row').filter({ hasText: 'Mercado da semana' })
+    const linha = page.getByRole('row').filter({ hasText: 'Feira no Pix' })
     await acionarNoMenuDaLinha(page, linha, 'Excluir')
     await expect(page.getByRole('dialog')).toBeVisible()
 
@@ -105,7 +105,7 @@ test.describe('Acessibilidade (axe-core) — modais abertos', () => {
     const { page } = await semear(app)
     await page.getByRole('link', { name: 'Saídas' }).click()
 
-    const linha = page.getByRole('row').filter({ hasText: 'Mercado da semana' })
+    const linha = page.getByRole('row').filter({ hasText: 'Feira no Pix' })
     await acionarNoMenuDaLinha(page, linha, 'Nota/Tags')
     await expect(page.getByRole('dialog', { name: 'Nota e tags' })).toBeVisible()
 
@@ -116,7 +116,7 @@ test.describe('Acessibilidade (axe-core) — modais abertos', () => {
     const { page } = await semear(app)
     await page.getByRole('link', { name: 'Saídas' }).click()
 
-    const linha = page.getByRole('row').filter({ hasText: 'Mercado da semana' })
+    const linha = page.getByRole('row').filter({ hasText: 'Feira no Pix' })
     await linha.getByRole('button', { name: 'Editar', exact: true }).click()
     await expect(page.getByRole('dialog', { name: 'Editar despesa' })).toBeVisible()
 
@@ -137,7 +137,7 @@ test.describe('Acessibilidade (axe-core) — modais abertos', () => {
     const { page } = await semear(app)
     await page.getByRole('link', { name: 'Saídas' }).click()
 
-    const linha = page.getByRole('row').filter({ hasText: 'Mercado da semana' })
+    const linha = page.getByRole('row').filter({ hasText: 'Feira no Pix' })
     await linha.getByRole('button', { name: /^Mais ações/ }).click()
     await expect(page.getByRole('menu')).toBeVisible()
 

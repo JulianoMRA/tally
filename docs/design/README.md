@@ -135,6 +135,15 @@ tabela fica mais estreita ao lado do formulário do que ocupando a largura intei
   menu posicionado dentro deles — e inverte para cima quando não cabe abaixo do gatilho. O
   `contexto` da linha rotula o **menu**, não o gatilho: `aria-label` de descendente entra no
   nome acessível da célula, e a descrição ali dentro colidia com a célula de descrição.
+- `SidePanel` — painel lateral sobreposto para cadastro sob demanda, com `useFocusTrap` e
+  `useEscapeKey` (mesmo par do `ConfirmDialog`). Quem controla a abertura é o pai,
+  renderizando ou não o componente: montar só quando visível garante formulário limpo a
+  cada abertura e foco entrando de fato. Cabeçalho e rodapé são fixos e só o corpo rola —
+  o rodapé carrega o botão de salvar e não pode sair de vista. `fecharNoOverlay={false}`
+  para formulário com dado digitado, pelo mesmo motivo que o `ConfirmDialog` trava o
+  overlay em ação destrutiva. **Sempre overlay, nunca coluna**: a proposta desenhou 440px
+  ao lado da lista, mas isso pressupõe os 1906px do mockup — na janela padrão sobrariam
+  618px para a tabela de Saídas, menos que os ~698px que ela precisa
 - `ToastProvider` — feedback de sucesso e erro das mutações (Slice 14)
 - `ErrorBoundary` — captura de erro de render com tela de recuperação
 

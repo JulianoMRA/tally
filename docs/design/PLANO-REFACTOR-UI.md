@@ -24,7 +24,9 @@ princípios:
 4. Uma largura de conteúdo (hoje são três tiers)
 5. Peso visual = importância — seis degraus de tipo, três de densidade
 
-## 2. Decisões tomadas (Juliano, 16/08/2026)
+## 2. Decisões tomadas
+
+Tomadas por Juliano em 16/08/2026:
 
 | Decisão            | Escolha                                                  |
 | ------------------ | -------------------------------------------------------- |
@@ -32,6 +34,14 @@ princípios:
 | Escopo do lote     | **F1–F3**, depois reavaliar                              |
 | Aba Análise        | Confirmada. Pizza sai. Orçamento vira marca no ranking.  |
 | Arquivos de design | Commitados em `docs/design/referencia/proposta-2026-08/` |
+
+Em 17/08/2026, já com a F3 em andamento:
+
+| Decisão         | Escolha                                                                  |
+| --------------- | ------------------------------------------------------------------------ |
+| Ordem           | **F4 antes de terminar a F3** — o total da F3 nascia errado sem ela      |
+| Lista de Saídas | **Recortada por mês, uma linha por ocorrência**, abrindo no mês corrente |
+| Specs E2E       | Ajustar os specs ao recorte, em vez de abrir no mês do último lançamento |
 
 ## 3. Restrições que condicionam todas as fases
 
@@ -83,11 +93,17 @@ lugar onde limites são definidos. Nenhuma capacidade é perdida.
 
 ---
 
-## 4. Lote 1 — F1 a F3
+## 4. Lote 1 — F1 a F4 — CONCLUÍDO
 
-### F1 — Visão mensal: hero, agenda e aba Análise
+O lote foi combinado como F1–F3, mas a F4 entrou junto: sem ela o total que a
+F3 introduziu ficava errado. Ver a nota de inversão na F4.
 
-Resolve os pontos 01–07. Branch `feat/refactor-visao-mensal`.
+Estado em 17/08/2026: F1 mergeada na `main` (PRs #90 e #91); F2, F3 e F4 na
+branch `feat/refactor-saidas`, aguardando PR.
+
+### F1 — Visão mensal: hero, agenda e aba Análise — CONCLUÍDA
+
+Resolve os pontos 01–07. Branch `feat/refactor-visao-mensal`, mergeada.
 
 **O problema, confirmado no código:** `VisaoMensalPage.tsx` renderiza os três
 cards (Entradas / Faturas / Gastos) na linha 160 e só chega ao `SaldoCard` na
@@ -129,62 +145,111 @@ reaproveitar esse valor, não introduzir outro.
 mudam junto. `a11y.spec.ts` precisa rodar com dados — badge nenhum renderiza na
 base vazia, e foi assim que os problemas de contraste apareceram da última vez.
 
-### F2 — `SidePanel`
+### F2 — `SidePanel` — CONCLUÍDA
 
-Pré-requisito de F3, F6 e F7. Branch `feat/side-panel`. PR próprio, pequeno.
+Pré-requisito de F3, F6 e F7. Entregue na branch `feat/refactor-saidas` junto
+com a F3: o componente sozinho não tem consumidor, e um PR só dele não teria
+como ser revisado em funcionamento.
 
-Painel lateral sobreposto, com `useFocusTrap` e `useEscapeKey` (ambos já
-existem e são usados pelo `ConfirmDialog`). Não muda nenhuma tela sozinho —
-entra com testes unitários próprios.
+Painel lateral sobreposto, com `useFocusTrap` e `useEscapeKey` (o mesmo par do
+`ConfirmDialog`). Sem prop `aberto` — quem monta é o pai, o que garante
+formulário limpo a cada abertura. Cabeçalho e rodapé fixos, só o corpo rola.
+`fecharNoOverlay={false}` para formulário com dado digitado.
 
-**Adaptação a 1266px:** o mockup mostra o painel de 440px como coluna ao lado
-da lista. Em 1058px de conteúdo isso deixaria 618px para a tabela, menos que os
-~698px que ela precisa — o mesmo cálculo que já empurrou o breakpoint de Saídas
-para 1400px. Abaixo de 1400px o painel é **overlay** sobre a lista; acima, pode
-ser coluna.
+**Desvio do plano: é sempre overlay, nunca coluna.** O plano previa "coluna
+acima de 1400px, overlay abaixo". Implementar os dois modos empurraria a decisão
+de layout para dentro do componente e inflaria um PR que era para ser pequeno.
+O drawer resolve as duas faixas; se a coluna voltar a fazer sentido, é layout de
+página, não do componente.
 
-### F3 — Saídas: a lista assume a tela
+### F3 — Saídas: a lista assume a tela — CONCLUÍDA
 
 Resolve os pontos 08, 09 e 11. Branch `feat/refactor-saidas`.
 
 **O problema:** `DespesaForm.tsx` tem 698 linhas — o maior arquivo do renderer —
-e fica fixo na tela de consulta. Dois `SegmentedControl` empilhados (tipo +
-forma) somam oito botões antes do primeiro campo, e mudam quais campos existem;
-nunca se vê o formulário inteiro.
+e ficava fixo na tela de consulta. Dois `SegmentedControl` empilhados (tipo +
+forma) somavam oito botões antes do primeiro campo.
 
-**Renderer:**
+**Entregue:**
 
-- Form sai do layout permanente e vai para o `SidePanel`, aberto por "+ Nova
-  saída". A lista ocupa a largura toda.
-- Forma de pagamento vira quatro cartões em vez de segmented; valor em 24px por
-  ser o campo que de fato se digita; parcelas ao lado dele.
-- Agrupamento por dia com subtotal à direita, e total do período no topo.
-- Chips de filtro com contagem (Tudo / Em fatura / Fora do cartão / Parceladas
-  / Assinaturas).
-- Bloco "Vai cair em" antes de salvar, mostrando em qual fatura o lançamento
-  entra. Usa `calcular-fatura-da-compra`, que já existe — sem domínio novo.
+- Form saiu do layout permanente e foi para o `SidePanel`, aberto por "+ Nova
+  saída". A lista ocupa a largura toda, e o breakpoint de 1400px foi eliminado
+  — ele existia só para decidir se o form cabia ao lado da tabela.
+- Fecha ao salvar, **não** fecha ao errar (quem errou precisa do que digitou) e
+  não fecha por clique no overlay.
+- Duplicar abre o painel preenchido, em vez de rolar a página até o topo.
+- Forma de pagamento em cartões 2×2, via variante `cartoes` no
+  `SegmentedControl` — só CSS: papéis, nomes acessíveis e teclado idênticos, o
+  que evitou churn em todos os `getByRole('radio')` da suíte.
+- Valor em 22px nos cinco formulários; parcelas ao lado dele.
+- Chips de filtro com contagem do mês.
+- Prévia "Vai cair em" (RF-DES-15), aplicando RN-01 na digitação.
 
-**Fora do escopo da F3:** a coluna de impacto mensal (ponto 10) fica para a F4,
-porque exige cálculo novo e mudança de contrato IPC. Até lá a coluna de valor
-segue como está.
+**Desvio: a tabela ficou tabela.** A proposta desenha uma lista de linhas, mas
+15 specs dependem de `getByRole('cell')`. Os cabeçalhos de grupo entraram como
+`<tr>` na mesma tabela — entrega o ritmo e o subtotal sem invalidar a suíte nem
+desalinhar a coluna de valor entre grupos.
+
+**Custo que o plano não previu:** 15 specs E2E precisaram abrir o painel antes
+de preencher o formulário. Resolvido com o helper `abrirCadastroDeSaida` em
+`e2e/fixtures/navegacao.ts`.
+
+### F4 — Impacto mensal — CONCLUÍDA (executada antes do fim da F3)
+
+Resolve o ponto 10. Mesma branch.
+
+**Inversão de ordem, e por quê.** A F3 introduziu um "total do período" que
+somava o preço cheio de um parcelado com uma mensalidade e um gasto à vista —
+herdando exatamente o ponto 10. O número ficava errado até a F4 entrar, então a
+F4 foi executada antes de terminar a F3.
+
+**Mudança de escopo em relação ao plano.** O plano descrevia "adicionar uma
+coluna". A investigação mostrou que isso não bastava:
+
+1. A lista não tinha recorte de mês — `listarDespesas()` devolvia todas as
+   despesas já cadastradas. "Total do período" não era período nenhum.
+2. Em parcelada em andamento, `despesa.valor_centavos` é o valor **restante** e
+   `total_parcelas` é o total cheio; dividir um pelo outro dá errado.
+3. O mockup da proposta já resolvia os dois: seletor de mês no cabeçalho e uma
+   linha por ocorrência, não por despesa.
+
+Decidido com o Juliano em 17/08: **escopar ao mês, uma linha por ocorrência**,
+abrindo no mês corrente. Especificado em RF-DES-14.
+
+**Entregue:** domínio `descrever-ocorrencia.ts` (TDD, 18 testes), consulta
+`listarOcorrenciasDoMes` (9 testes de integração), contrato `OcorrenciaDoMes`
+em `src/shared`, handler, preload, e o renderer com seletor de mês, agrupamento
+por origem e as duas colunas de dinheiro.
+
+**Desvio: agrupamento por origem, não por dia.** O mockup agrupa por dia, e a
+F3 chegou a entregar isso. Mas quando a linha vira ocorrência, a parcela 7/12 de
+uma compra de sete meses atrás não aconteceu em dia nenhum do mês exibido — ela
+pertence a uma fatura. Agrupar por cartão também faz o subtotal reconciliar com
+o total da fatura em RF-FAT. O `agruparPorDia` da F3 foi descartado.
+
+**Bug pré-existente que a F4 expôs:** `criarUnicaCredito` grava
+`parcela.data_referencia` com a data da compra, enquanto as parceladas gravam o
+mês da fatura. A consulta contorna usando a fatura como fonte de verdade
+(`COALESCE`), com teste cobrindo; a inconsistência de origem continua no banco e
+precisa de migration para ser corrigida.
 
 ---
 
-## 5. Fases seguintes — a detalhar após o lote 1
+## 5. Fases seguintes — a detalhar
 
-| Fase | Escopo                                                         | Pontos     | Custo         |
-| ---- | -------------------------------------------------------------- | ---------- | ------------- |
-| F4   | Impacto mensal: parcela do mês vs. valor da compra             | 10         | domínio + IPC |
-| F5   | Faturas: trilho de cartões, funde lista + overview + detalhe   | 12, 13, 14 | alto          |
-| F6   | Rendas: barra recebido/previsto, ponto colorido, média 6 meses | 15         | médio         |
-| F7   | Cartões e Categorias: padrão único, sparkline, arquivar no ⋯   | 13, 14, 16 | médio         |
-| F8   | Sistema: 6 degraus de tipo, largura única, 3 densidades        | 17         | alto          |
-| F9   | Ajustes/Importar: herdam; "Restaurar backup" ganha confirmação | —          | baixo         |
+| Fase | Escopo                                                         | Pontos     | Custo |
+| ---- | -------------------------------------------------------------- | ---------- | ----- |
+| F5   | Faturas: trilho de cartões, funde lista + overview + detalhe   | 12, 13, 14 | alto  |
+| F6   | Rendas: barra recebido/previsto, ponto colorido, média 6 meses | 15         | médio |
+| F7   | Cartões e Categorias: padrão único, sparkline, arquivar no ⋯   | 13, 14, 16 | médio |
+| F8   | Sistema: 6 degraus de tipo, largura única, 3 densidades        | 17         | alto  |
+| F9   | Ajustes/Importar: herdam; "Restaurar backup" ganha confirmação | —          | baixo |
 
 Notas de risco já levantadas:
 
-- **F4 deixa de ser refactor visual.** Cálculo novo no domínio (TDD obrigatório)
-  e mudança do contrato tipado em `src/shared/`.
+- **F5 herda o precedente da F4.** Se o trilho de cartões passar a somar valores,
+  a grandeza somável é o `impactoCentavos` da ocorrência, nunca o valor da
+  despesa — o mesmo raciocínio de RF-DES-14.
 - **F5 é a de maior risco funcional.** Fundir `FaturasPage`, `FaturasOverview` e
   `FaturaDetalhe` mexe no deep-link (`buildFaturasSearch` / `parseFaturasSearch`)
   coberto por `e2e/deep-link-faturas.spec.ts`.
@@ -207,13 +272,17 @@ abre.
 npm run lint && npm run typecheck && npm run test:run && npm run build && npm run e2e
 ```
 
-Toda fase deste plano é visível na UI, então o `e2e` **sempre** entra. Antes de
-release, `npm run smoke:visual` — 35 telas em 3 larguras. Não é regressão com
-baseline; é folha de contato para revisão, e foi ela que pegou uma regressão de
-alinhamento que os testes não viam.
+Toda fase deste plano é visível na UI, então o `e2e` **sempre** entra. E o
+`npm run smoke:visual` deixou de ser só ritual de release: no lote 1 ele pegou
+três defeitos que teste nenhum via — a escala do ranking achatada por um limite
+grande, a barra de progresso cheia em gasto à vista, e o formulário virando
+caixa dentro de caixa ao entrar no painel. Rodar a folha de contato **dentro da
+fase**, não só antes de publicar.
 
 Specs E2E são atualizadas **dentro da fase que as quebra**, não acumuladas para
-o fim. São 27 arquivos de spec e 87 arquivos de teste unitário hoje.
+o fim. O lote 1 mexeu em 20 dos 27 arquivos de spec; a maior parte por causa de
+duas mudanças estruturais — o formulário virando painel e a lista ganhando
+recorte de mês.
 
 Fluxo por fase: branch a partir da `main` atualizada → TDD no domínio quando
 houver → implementação → gates → PR citando os pontos do diagnóstico cobertos →
@@ -225,6 +294,8 @@ merge na `main` antes de iniciar a próxima.
 
 - Paleta Cream, tokens de cor, raios e sombras
 - Geist / Geist Mono como famílias
-- Qualquer regra de negócio do PRD — RN-01 a RN-08 ficam intactas
+- Qualquer regra de negócio do PRD — RN-01 a RN-08 ficam intactas. O lote 1
+  acrescentou requisitos funcionais (RF-VIS-07, RF-DES-14, RF-DES-15) e
+  reescreveu outros (RF-VIS-02, RF-VIS-06, RF-ORC-02), mas nenhuma RN mudou
 - O schema do banco: nenhuma fase do lote 1 exige migration
 - Ajustes e Importar, que são telas de passo único já resolvidas
