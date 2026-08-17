@@ -173,4 +173,26 @@ describe('descreverOcorrencia — progresso', () => {
 
     expect(o.progressoPct).toBeNull()
   })
+
+  // Gasto à vista grava total = 1: sem este corte, 1/1 renderizaria uma barra
+  // cheia em toda linha à vista, sugerindo um parcelamento recém-encerrado.
+  it('gasto à vista não tem progresso, apesar de total = 1', () => {
+    const o = descreverOcorrencia(
+      despesa({ tipo: 'Unica', totalParcelas: 1 }),
+      parcela({ numero: 1, total: 1 }),
+      1
+    )
+
+    expect(o.progressoPct).toBeNull()
+  })
+
+  it('assinatura com total preenchido também não mostra progresso', () => {
+    const o = descreverOcorrencia(
+      despesa({ tipo: 'Assinatura', totalParcelas: null }),
+      parcela({ numero: 3, total: 12 }),
+      1
+    )
+
+    expect(o.progressoPct).toBeNull()
+  })
 })

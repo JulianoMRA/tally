@@ -43,7 +43,10 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     // --- Filtro Assinaturas: ver a assinatura ativa ---
     await page.getByRole('radio', { name: 'Assinaturas', exact: true }).click()
     const linha = page.getByRole('row').filter({ hasText: 'Spotify E2E' })
-    await expect(linha.getByText(/R\$\s*21,90\/mês/)).toBeVisible()
+    // O sufixo "/mês" saiu da coluna de valor: agora ela mostra só o impacto do
+    // mês, e quem diz a periodicidade é a coluna Parcela ("mensal").
+    await expect(linha.getByText(/R\$\s*21,90/)).toBeVisible()
+    await expect(linha.getByText('mensal')).toBeVisible()
 
     // --- Editar: reajusta o valor mensal para R$ 24,90 (modal escopado) ---
     await linha.getByRole('button', { name: 'Editar' }).click()
@@ -54,7 +57,7 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
       page
         .getByRole('row')
         .filter({ hasText: 'Spotify E2E' })
-        .getByText(/R\$\s*24,90\/mês/)
+        .getByText(/R\$\s*24,90/)
     ).toBeVisible()
 
     // --- Conferir na fatura junho/2026 ---
@@ -74,12 +77,20 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     // O ConfirmDialog usa o mesmo rótulo; o menu já fechou, então não colide.
     await page.getByRole('dialog').getByRole('button', { name: 'Cancelar assinatura' }).click()
 
-    // Após cancelar, a linha mostra o badge "Cancelada"
-    await expect(
-      page
-        .getByRole('row')
-        .filter({ hasText: 'Spotify E2E' })
-        .getByText('Cancelada', { exact: true })
-    ).toBeVisible()
+    // Cancelar apaga as ocorrências em fatura Aberta (RF-DES-07). Como a lista
+    // passou a mostrar ocorrências do mês, e não a despesa-mestre, a assinatura
+    // cancelada some dos meses cujas faturas ainda estavam abertas — aqui,
+    // todos eles. O badge "Cancelada" segue existindo, mas só aparece em mês
+    // cuja fatura já tinha fechado, onde a ocorrência sobrevive no histórico.
+    await expect(page.getByRole('row').filter({ hasText: 'Spotify E2E' })).toHaveCount(0)
+
+    await page.getByLabel('Mês', { exact: true }).fill('2026-06')
+    await expect(page.getByRole('row').filter({ hasText: 'Spotify E2E' })).toHaveCount(0)
+
+    // A fatura de junho perdeu a parcela junto — é o efeito que o cancelamento
+    // tem que produzir, e o que a tela de Faturas passa a mostrar.
+    await irPara(page, 'Faturas')
+    await page.getByLabel('Cartão').selectOption({ label: 'Inter Assinatura E2E' })
+    await expect(page.getByText(/R\$\s*24,90/)).toHaveCount(0)
   })
 })

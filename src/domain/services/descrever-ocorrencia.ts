@@ -50,7 +50,11 @@ export function descreverOcorrencia(
     impactoCentavos: parcela.valorCentavos,
     origemCentavos: despesa.tipo === 'Parcelada' && nasceuDoZero ? despesa.valorCentavos : null,
     rotuloParcela: rotular(despesa.tipo, parcela),
-    progressoPct: parcela.total ? (parcela.numero / parcela.total) * 100 : null
+    // Só parcelada tem progresso. Gasto à vista grava total = 1, e 1/1 daria
+    // uma barra cheia em toda linha à vista — ruído sugerindo um parcelamento
+    // que acabou de terminar.
+    progressoPct:
+      despesa.tipo === 'Parcelada' && parcela.total ? (parcela.numero / parcela.total) * 100 : null
   }
 }
 

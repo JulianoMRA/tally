@@ -9,7 +9,8 @@ import type {
   DespesaEmAndamentoInput,
   DespesaAssinaturaCreditoInput,
   DespesaUnicaForaCartaoInput,
-  DespesaComTags
+  DespesaComTags,
+  OcorrenciaDoMes
 } from '@shared/ipc/despesa'
 import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
@@ -18,7 +19,6 @@ import {
   Button,
   ConfirmDialog,
   EmptyState,
-  Field,
   Input,
   Panel,
   RowActions,
@@ -32,20 +32,19 @@ import {
 } from '../../components/ui'
 import { alfabetico, porData, porNumero, type Comparador } from '../../lib/comparadores'
 import { formatBRL } from '../../lib/format-brl'
-import {
-  formatarDataIso,
-  formatarDiaPorExtenso,
-  formatarMesReferencia
-} from '../../lib/formatar-data'
+import { formatarMesReferencia } from '../../lib/formatar-data'
 import { mensagemErro } from '../../lib/mensagem-erro'
+import { mesAtualReferencia } from '../../lib/mes-atual'
+import { mesReferenciaAnterior, proxMesReferencia } from '@domain/services/mes-referencia'
 import { useOrdenacao } from '../../lib/use-ordenacao'
 import { DespesaForm } from '../despesas/DespesaForm'
 import { EditarDespesaModal } from '../faturas/EditarDespesaModal'
 import { EditarAssinaturaModal } from '../assinaturas/EditarAssinaturaModal'
-import { agruparPorDia } from './agrupar-por-dia'
+import { agruparOcorrencias } from './agrupar-ocorrencias'
 import { filtrarPorDescricao } from './filtrar-saidas'
 import { montarPreenchimentoDespesa, type PreenchimentoDespesa } from './montar-preenchimento'
 import { NotaETagsModal } from './NotaETagsModal'
+import { useOcorrencias } from './hooks/use-ocorrencias'
 import { useSaidas } from './hooks/use-saidas'
 import styles from './saidas.module.css'
 
@@ -61,20 +60,22 @@ type UltimaRegistrada = {
 
 type Confirmacao = { tipo: 'cancelar'; despesa: Despesa } | { tipo: 'excluir'; despesa: Despesa }
 
-const COMPARADORES: Record<string, Comparador<DespesaComTags>> = {
-  descricao: alfabetico((d) => d.descricao),
-  data: porData((d) => d.dataCompra),
-  valor: porNumero((d) => d.valorCentavos)
+const COMPARADORES: Record<string, Comparador<OcorrenciaDoMes>> = {
+  descricao: alfabetico((o) => o.descricao),
+  data: porData((o) => o.dataCompra),
+  valor: porNumero((o) => o.impactoCentavos)
 }
 
-function rotuloTipo(d: Despesa): string {
+type ClassificavelPorTipo = Pick<Despesa, 'tipo' | 'formaPagamento'>
+
+function rotuloTipo(d: ClassificavelPorTipo): string {
   if (d.tipo === 'Assinatura') return 'Assinatura'
   if (d.tipo === 'Parcelada') return 'Parcelada'
   if (d.formaPagamento === 'Credito') return 'Única'
   return 'Fora do cartão'
 }
 
-function pertenceAoFiltro(d: Despesa, filtro: Filtro): boolean {
+function pertenceAoFiltro(d: ClassificavelPorTipo, filtro: Filtro): boolean {
   switch (filtro) {
     case 'todas':
       return true
@@ -95,12 +96,16 @@ const FILTROS: readonly OpcaoSegmentada<Filtro>[] = [
 ]
 
 export default function SaidasPage() {
-  const { despesas, loading, erro, recarregar } = useSaidas()
+  const [mes, setMes] = useState(mesAtualReferencia())
+  const { ocorrencias, loading, erro, recarregar } = useOcorrencias(mes)
+  // As ações da linha (editar, duplicar, excluir) operam na despesa-mestre, que
+  // a ocorrência não carrega — ela traz o impacto do mês, não o valor cheio nem
+  // o total de parcelas. Esta lista é só o índice para o RowActions.
+  const { despesas, recarregar: recarregarDespesas } = useSaidas()
   const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [ultimaRegistrada, setUltimaRegistrada] = useState<UltimaRegistrada | null>(null)
   const [filtro, setFiltro] = useState<Filtro>('todas')
-  const [mes, setMes] = useState('')
   const [busca, setBusca] = useState('')
   const [tagFiltro, setTagFiltro] = useState('')
   const [preenchimento, setPreenchimento] = useState<PreenchimentoDespesa | null>(null)
@@ -134,21 +139,22 @@ export default function SaidasPage() {
     return categorias.find((c) => c.id === id)?.nome ?? `#${id}`
   }
 
+  const despesaPorId = useMemo(() => new Map(despesas.map((d) => [d.id, d])), [despesas])
+
   const tagsDisponiveis = useMemo(() => {
     const set = new Set<string>()
-    for (const d of despesas) for (const t of d.tags) set.add(t)
+    for (const o of ocorrencias) for (const t of o.tags) set.add(t)
     return [...set].sort((a, b) => a.localeCompare(b, 'pt-BR'))
-  }, [despesas])
+  }, [ocorrencias])
 
   const filtradas = useMemo(() => {
-    const porTipo = despesas.filter((d) => {
-      if (!pertenceAoFiltro(d, filtro)) return false
-      if (filtro === 'foraCartao' && mes && d.dataCompra.slice(0, 7) !== mes) return false
-      if (tagFiltro && !d.tags.includes(tagFiltro)) return false
+    const porTipo = ocorrencias.filter((o) => {
+      if (!pertenceAoFiltro(o, filtro)) return false
+      if (tagFiltro && !o.tags.includes(tagFiltro)) return false
       return true
     })
     return filtrarPorDescricao(porTipo, busca)
-  }, [despesas, filtro, mes, busca, tagFiltro])
+  }, [ocorrencias, filtro, busca, tagFiltro])
 
   // `dupSeq` remonta o DespesaForm: ele guarda o estado dos campos internamente
   // e sem a troca de key um segundo "Nova saída" reabriria com o que sobrou do
@@ -178,7 +184,7 @@ export default function SaidasPage() {
       await window.api.despesa.definirNotaETags({ despesaId: notaTags.id, ...input })
       toast.show('Nota e tags salvas.', 'success')
       setNotaTags(null)
-      await recarregar()
+      await Promise.all([recarregar(), recarregarDespesas()])
     } catch (e) {
       toast.show(mensagemErro(e, 'Erro ao salvar nota e tags.'), 'error')
       throw e
@@ -225,13 +231,18 @@ export default function SaidasPage() {
     'desc'
   )
 
-  // Agrupa por dia só quando a lista está ordenada por data. Ordenada por valor
-  // ou descrição, as datas se intercalam e cada linha viraria seu próprio grupo
-  // — ruído em vez de ritmo.
-  const agrupado = sortBy === 'data'
-  const grupos = useMemo(() => agruparPorDia(itensOrdenados), [itensOrdenados])
-  const totalPeriodoCentavos = useMemo(
-    () => itensOrdenados.reduce((s, d) => s + d.valorCentavos, 0),
+  const grupos = useMemo(
+    () => agruparOcorrencias(itensOrdenados, nomeCartao),
+    // `nomeCartao` fecha sobre `cartoes`; recriar o índice a cada render seria
+    // pior que depender da lista.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [itensOrdenados, cartoes]
+  )
+
+  // Soma IMPACTO, não valor de compra: é o que torna o número somável e o que
+  // faz o subtotal de cada cartão bater com o total da fatura.
+  const totalDoMesCentavos = useMemo(
+    () => itensOrdenados.reduce((s, o) => s + o.impactoCentavos, 0),
     [itensOrdenados]
   )
 
@@ -242,12 +253,21 @@ export default function SaidasPage() {
   ) {
     try {
       const resultado = await acao()
-      setUltimaRegistrada(montarBanner(resultado))
+      const banner = montarBanner(resultado)
+      setUltimaRegistrada(banner)
+      // Salta para o mês em que o lançamento caiu. Sem isto, registrar uma
+      // compra depois do fechamento — que o RN-01 manda para a fatura seguinte
+      // — fecharia o painel numa lista onde ela não aparece. O banner diz em
+      // qual fatura entrou; a lista tem que mostrar.
+      const mesDoLancamento = banner.mesReferencia.slice(0, 7)
+      if (/^\d{4}-\d{2}$/.test(mesDoLancamento) && mesDoLancamento !== mes) {
+        setMes(mesDoLancamento)
+      }
       // Salvou: o painel fecha e o resultado aparece na lista atrás dele. É o
       // "formulário é episódio" — deixá-lo aberto esconderia o que acabou de
       // ser registrado. O erro NÃO fecha: quem errou precisa do que digitou.
       fecharCadastro()
-      await recarregar()
+      await Promise.all([recarregar(), recarregarDespesas()])
     } catch (e) {
       toast.show(mensagemErro(e, erroMsg), 'error')
     }
@@ -328,7 +348,7 @@ export default function SaidasPage() {
       await window.api.despesa.atualizar({ despesaId: editandoDespesa.id, ...input })
       toast.show('Despesa atualizada.', 'success')
       setEditandoDespesa(null)
-      await recarregar()
+      await Promise.all([recarregar(), recarregarDespesas()])
     } catch (e) {
       toast.show(mensagemErro(e, 'Erro ao atualizar despesa.'), 'error')
       throw e
@@ -351,7 +371,7 @@ export default function SaidasPage() {
     try {
       await window.api.despesa.cancelarAssinatura({ despesaId: despesa.id })
       toast.show(`"${despesa.descricao}" cancelada.`, 'success')
-      await recarregar()
+      await Promise.all([recarregar(), recarregarDespesas()])
     } catch (e) {
       toast.show(mensagemErro(e, 'Erro ao cancelar assinatura.'), 'error')
     } finally {
@@ -363,7 +383,7 @@ export default function SaidasPage() {
     try {
       await window.api.despesa.excluir({ despesaId: despesa.id })
       toast.show(`"${despesa.descricao}" excluída.`, 'success')
-      await recarregar()
+      await Promise.all([recarregar(), recarregarDespesas()])
     } catch (e) {
       toast.show(mensagemErro(e, 'Erro ao excluir despesa.'), 'error')
     } finally {
@@ -417,17 +437,35 @@ export default function SaidasPage() {
         )}
 
         <div className={styles.toolbar}>
+          <button
+            type="button"
+            className={styles.navBtn}
+            onClick={() => setMes(mesReferenciaAnterior(mes))}
+            aria-label="Mês anterior"
+          >
+            ←
+          </button>
+          <Input
+            type="month"
+            value={mes}
+            onChange={(e) => e.target.value && setMes(e.target.value)}
+            className={styles.mesInput}
+            aria-label="Mês"
+          />
+          <button
+            type="button"
+            className={styles.navBtn}
+            onClick={() => setMes(proxMesReferencia(mes))}
+            aria-label="Próximo mês"
+          >
+            →
+          </button>
           <SegmentedControl
             opcoes={FILTROS}
             valor={filtro}
             onChange={setFiltro}
             label="Filtrar lançamentos por tipo"
           />
-          {filtro === 'foraCartao' && (
-            <Field label="Mês">
-              <Input type="month" value={mes} onChange={(e) => setMes(e.target.value)} />
-            </Field>
-          )}
           {tagsDisponiveis.length > 0 && (
             <Select
               value={tagFiltro}
@@ -463,7 +501,7 @@ export default function SaidasPage() {
               mostrava nove lançamentos soltos e nenhuma soma. */}
         <Panel
           title="Lançamentos"
-          meta={`${itensOrdenados.length} · ${formatBRL(totalPeriodoCentavos)}`}
+          meta={`${itensOrdenados.length} · ${formatBRL(totalDoMesCentavos)}`}
           flush
         >
           {loading ? (
@@ -483,14 +521,9 @@ export default function SaidasPage() {
                     />
                     <th>Tipo</th>
                     <th>Categoria</th>
+                    <th className={styles.colParcela}>Parcela</th>
                     <SortableHeader
-                      rotulo="Data"
-                      ativo={sortBy === 'data'}
-                      direcao={sortDir}
-                      onSort={() => handleSort('data')}
-                    />
-                    <SortableHeader
-                      rotulo="Valor"
+                      rotulo="Neste mês"
                       ativo={sortBy === 'valor'}
                       direcao={sortDir}
                       onSort={() => handleSort('valor')}
@@ -501,37 +534,40 @@ export default function SaidasPage() {
                 </thead>
                 <tbody>
                   {grupos.map((grupo) => (
-                    <Fragment key={grupo.data}>
-                      {agrupado && (
-                        <tr className={styles.grupoDia}>
-                          <td colSpan={6}>
-                            <div className={styles.grupoDiaConteudo}>
-                              <span className={styles.grupoDiaData}>
-                                {formatarDiaPorExtenso(grupo.data)}
-                              </span>
-                              <span className={styles.grupoDiaTotal}>
-                                {formatBRL(grupo.totalCentavos)}
-                              </span>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                      {grupo.itens.map((d) => {
-                        const ehAssinatura = d.tipo === 'Assinatura'
-                        return (
-                          <tr key={d.id} className={!d.ativa ? styles.itemCancelada : undefined}>
-                            <td>
-                              <div className={styles.descricaoCell}>
+                    <Fragment key={grupo.chave}>
+                      <tr className={styles.grupoDia}>
+                        <td colSpan={6}>
+                          <div className={styles.grupoDiaConteudo}>
+                            <span className={styles.grupoDiaData}>
+                              {grupo.cartaoId !== null && (
                                 <span
                                   className={styles.chip}
-                                  style={{ background: corCartao(d.cartaoId) }}
+                                  style={{ background: corCartao(grupo.cartaoId) }}
                                 />
-                                <span>{d.descricao}</span>
-                                {!d.ativa && <Badge variant="archived" label="Cancelada" />}
+                              )}
+                              {grupo.rotulo}
+                            </span>
+                            <span className={styles.grupoDiaTotal}>
+                              {formatBRL(grupo.totalCentavos)}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                      {grupo.itens.map((o) => {
+                        const despesa = despesaPorId.get(o.despesaId)
+                        return (
+                          <tr
+                            key={o.parcelaId}
+                            className={!o.ativa ? styles.itemCancelada : undefined}
+                          >
+                            <td>
+                              <div className={styles.descricaoCell}>
+                                <span>{o.descricao}</span>
+                                {!o.ativa && <Badge variant="archived" label="Cancelada" />}
                               </div>
-                              {d.tags.length > 0 && (
+                              {o.tags.length > 0 && (
                                 <div className={styles.tagCell}>
-                                  {d.tags.map((t) => (
+                                  {o.tags.map((t) => (
                                     <span key={t} className={styles.tagCellChip}>
                                       {t}
                                     </span>
@@ -540,16 +576,38 @@ export default function SaidasPage() {
                               )}
                             </td>
                             <td>
-                              <span className={styles.tagTipo}>{rotuloTipo(d)}</span>
+                              <span className={styles.tagTipo}>{rotuloTipo(o)}</span>
                             </td>
-                            <td>{nomeCategoria(d.categoriaId)}</td>
-                            <td className="mono">{formatarDataIso(d.dataCompra)}</td>
+                            <td>{nomeCategoria(o.categoriaId)}</td>
+                            <td className={styles.colParcela}>
+                              <span className={`${styles.parcelaRotulo} mono`}>
+                                {o.rotuloParcela}
+                              </span>
+                              {o.progressoPct !== null && (
+                                <span className={styles.parcelaTrilho} aria-hidden="true">
+                                  <span
+                                    className={styles.parcelaBarra}
+                                    style={{ width: `${o.progressoPct}%` }}
+                                  />
+                                </span>
+                              )}
+                            </td>
+                            {/* Duas colunas de dinheiro numa só célula: o impacto
+                                do mês é o número somável, e o valor da compra
+                                desce para contexto. Antes os dois disputavam a
+                                mesma linha como se fossem comparáveis. */}
                             <td className={`${styles.colValor} tnum`}>
-                              {formatBRL(d.valorCentavos)}
-                              {ehAssinatura ? '/mês' : ''}
+                              <span className={styles.impacto}>{formatBRL(o.impactoCentavos)}</span>
+                              {o.origemCentavos !== null && (
+                                <span className={styles.origem}>
+                                  de {formatBRL(o.origemCentavos)}
+                                </span>
+                              )}
                             </td>
                             <td className={styles.colAcoes}>
-                              <RowActions acoes={acoesDaLinha(d)} contexto={d.descricao} />
+                              {despesa && (
+                                <RowActions acoes={acoesDaLinha(despesa)} contexto={o.descricao} />
+                              )}
                             </td>
                           </tr>
                         )

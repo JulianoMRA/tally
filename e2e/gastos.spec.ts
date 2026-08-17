@@ -41,8 +41,10 @@ test.describe('Gastos fora de cartão (RF-DES-01)', () => {
         .getByText(/R\$\s*35,00/)
     ).toBeVisible()
 
-    // --- Sub-filtro de mês: 2026-07 não tem lançamentos ---
-    await page.getByLabel('Mês').fill('2026-07')
+    // --- Seletor de mês: 2026-07 não tem lançamentos ---
+    // `exact: true` porque "Mês anterior" e "Próximo mês" também casam com o
+    // rótulo parcial, agora que a tela tem navegação de mês própria.
+    await page.getByLabel('Mês', { exact: true }).fill('2026-07')
     await expect(page.getByText('Nenhuma saída para este filtro.')).toBeVisible()
   })
 })
