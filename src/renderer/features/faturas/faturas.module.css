@@ -9,9 +9,12 @@
    geral, que diziam a mesma coisa em dois lugares (ponto 12). `auto-fit` com
    mínimo de 200px cabe três cartões na janela padrão e degrada para dois e um
    sem breakpoint. */
+/* O teto de 300px evita que dois cartões virem duas lajes de 650px numa janela
+   larga — o conteúdo de cada bloco é curto, e esticá-lo só afasta o nome do
+   total. Com três ou mais cartões o grid preenche a linha naturalmente. */
 .trilho {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 300px));
   gap: 12px;
 }
 

@@ -235,11 +235,51 @@ precisa de migration para ser corrigida.
 
 ---
 
-## 5. Fases seguintes — a detalhar
+## 5. F5 — Faturas — CONCLUÍDA
+
+Resolve os pontos 12, 13 e 14. Branch `feat/refactor-faturas`.
+
+**O problema:** três cliques até a fatura atual — select de cartão, lista
+agrupada por cartão (que repetia o select), item. 1.283 linhas em três
+componentes.
+
+**Entregue:** `escolherFaturaCorrente` (regra pura, 11 testes) decide o padrão
+que faz os zero cliques valerem; `TrilhoCartoes` substitui select e
+agrupamento; `HistoricoFaturas` colapsa o passado com filtro por status;
+`FaturasPage` funde tudo e preserva o deep-link. Especificado em RF-FAT-06.
+
+`FaturaDetalhe` foi preservado inteiro de propósito — só perdeu o `onVoltar`.
+Refatorar layout e ciclo de vida da fatura no mesmo commit confundiria a causa
+de qualquer regressão.
+
+**Desvios e decisões:**
+
+- **Faturas futuras saíram da lista** e viraram navegação de mês. A F5 chegou a
+  listá-las, e a captura mostrou onze faturas idênticas de R$ 400 — uma por
+  parcela de um 12x. Era o ponto 13 reaparecendo dentro da própria correção.
+- **Link morto abre a fatura corrente e avisa**, em vez do estado vazio com
+  "Voltar". Com lista e detalhe fundidos não há mais para onde voltar.
+- **O trilho não acompanha o mês do painel** — mostra a situação de hoje.
+- **O filtro por status voltou com escopo novo.** Ele vivia na `FaturasOverview`
+  varrendo todos os cartões; ao absorver a tela eu o perdi por omissão, e o
+  spec da fase 8 é que denunciou. Voltou dentro do histórico, agindo sobre o
+  cartão em foco — o recorte que a tela nova tem.
+
+**Bug que os specs acharam:** clicar num cartão já em foco zerava o `faturaId`,
+mas o efeito de resolução não re-rodava porque `grupoEmFoco` não mudava de
+identidade — o trilho exibia a fatura enquanto o painel dizia "Nenhuma fatura
+neste cartão". Corrigido com a condição `precisaResolver` nas dependências.
+
+**Custo em teste:** 15 dos 86 specs quebraram. Nove eram mecânicos (o caminho de
+navegação), seis conceituais. `faturas-overview.spec.ts` não foi apagado —
+virou a cobertura de "chegar à fatura sem escolher nada", que é a prova do ponto 12.
+
+---
+
+## 6. Fases seguintes — a detalhar
 
 | Fase | Escopo                                                         | Pontos     | Custo |
 | ---- | -------------------------------------------------------------- | ---------- | ----- |
-| F5   | Faturas: trilho de cartões, funde lista + overview + detalhe   | 12, 13, 14 | alto  |
 | F6   | Rendas: barra recebido/previsto, ponto colorido, média 6 meses | 15         | médio |
 | F7   | Cartões e Categorias: padrão único, sparkline, arquivar no ⋯   | 13, 14, 16 | médio |
 | F8   | Sistema: 6 degraus de tipo, largura única, 3 densidades        | 17         | alto  |
@@ -247,12 +287,6 @@ precisa de migration para ser corrigida.
 
 Notas de risco já levantadas:
 
-- **F5 herda o precedente da F4.** Se o trilho de cartões passar a somar valores,
-  a grandeza somável é o `impactoCentavos` da ocorrência, nunca o valor da
-  despesa — o mesmo raciocínio de RF-DES-14.
-- **F5 é a de maior risco funcional.** Fundir `FaturasPage`, `FaturasOverview` e
-  `FaturaDetalhe` mexe no deep-link (`buildFaturasSearch` / `parseFaturasSearch`)
-  coberto por `e2e/deep-link-faturas.spec.ts`.
 - **F8 colapsa três tiers de `PageContainer` em um.** `--page-max-narrow`,
   `--page-max` e `--page-max-wide` viram uma largura só. Isso invalida
   `e2e/alinhamento-paginas.spec.ts`, que é justamente o guard que trava o
@@ -262,7 +296,7 @@ Notas de risco já levantadas:
 
 ---
 
-## 6. Gates por fase
+## 7. Gates por fase
 
 Regra 6 do `CLAUDE.md`: não há CI hospedada desde ago/2026. O pipeline local
 precisa estar verde antes de abrir o PR, e verificar é responsabilidade de quem
@@ -290,7 +324,7 @@ merge na `main` antes de iniciar a próxima.
 
 ---
 
-## 7. O que a proposta não muda
+## 8. O que a proposta não muda
 
 - Paleta Cream, tokens de cor, raios e sombras
 - Geist / Geist Mono como famílias

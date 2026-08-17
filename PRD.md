@@ -115,7 +115,14 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 
 - **RF-FAT-01** — Faturas são geradas automaticamente para cada cartão a cada mês de referência conforme parcelas vão sendo vinculadas.
 - **RF-FAT-02** — Cada fatura tem status `Aberta` (recebendo novas despesas), `Fechada` (passou da data de fechamento, sem novas despesas) e `Paga` (registrada como paga pelo usuário).
-- **RF-FAT-03** — Visualizar fatura com lista de parcelas, total bruto, total de ajudas vinculadas, total líquido a pagar.
+- **RF-FAT-03** — Visualizar fatura com lista de parcelas e total a pagar.
+  > A menção a "total de ajudas vinculadas" e "total líquido" ficou obsoleta com a remoção da feature de Ajudas no Slice 12.1 (ver nota em RN-07). Corrigido em ago/2026.
+- **RF-FAT-06** — **Tela única de faturas.** Lista e detalhe deixam de ser modos separados:
+  - **Trilho de cartões** no topo, um bloco por cartão ativo, sempre com a **fatura corrente** dele — total, status e prazo. O trilho não acompanha o mês exibido no painel: ele responde "como cada cartão está hoje", mesmo enquanto se navega no histórico.
+  - **Painel da fatura em foco** abre sem clique nenhum. A fatura corrente é a do mês de referência atual; sem ela, a próxima a vencer; sem nenhuma futura, a mais recente do passado.
+  - **Navegação entre meses** (`←`/`→`) anda pelas faturas que existem daquele cartão, em ordem de mês — não soma mês no calendário, porque cartão sem compra num mês não tem fatura.
+  - **Histórico** num bloco colapsado, só com meses já encerrados, exibindo o total agregado mesmo fechado, e com filtro por status (`Todas`/`Abertas`/`Fechadas`/`Pagas`) sobre as faturas do cartão em foco. Faturas futuras não entram na lista — um parcelamento de 12x criaria uma parede de linhas idênticas com o mesmo peso do mês corrente.
+  - **Deep-link** `?cartaoId=&faturaId=` mantém o formato, então links salvos continuam válidos. `faturaId` passa a significar qual fatura o painel exibe. Link para fatura inexistente **abre a fatura corrente do cartão e avisa**, em vez de exibir estado vazio — não há mais lista atrás para onde voltar.
 - **RF-FAT-04** — Marcar fatura como paga. Ação requer confirmação. Após paga, fatura não permite mais edição de parcelas nem recebe novas parcelas (inclusive cadastro retroativo — bloqueado com erro claro).
 - **RF-FAT-05** — Reabrir fatura paga (caso de erro): requer confirmação. A fatura reabre como `Aberta` se a data de fechamento ainda não passou, ou como `Fechada` caso contrário (RN-06).
 
