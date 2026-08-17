@@ -41,7 +41,7 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     await expect(page.getByText(/junho de 2026/).first()).toBeVisible()
 
     // --- Filtro Assinaturas: ver a assinatura ativa ---
-    await page.getByRole('radio', { name: 'Assinaturas', exact: true }).click()
+    await page.getByRole('radio', { name: /^Assinaturas/ }).click()
     const linha = page.getByRole('row').filter({ hasText: 'Spotify E2E' })
     // O sufixo "/mês" saiu da coluna de valor: agora ela mostra só o impacto do
     // mês, e quem diz a periodicidade é a coluna Parcela ("mensal").
@@ -68,7 +68,7 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
 
     // --- Cancelar assinatura pela tela Saídas ---
     await irPara(page, 'Saídas')
-    await page.getByRole('radio', { name: 'Assinaturas', exact: true }).click()
+    await page.getByRole('radio', { name: /^Assinaturas/ }).click()
     await acionarNoMenuDaLinha(
       page,
       page.getByRole('row').filter({ hasText: 'Spotify E2E' }),

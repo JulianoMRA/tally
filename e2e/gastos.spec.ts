@@ -32,7 +32,7 @@ test.describe('Gastos fora de cartão (RF-DES-01)', () => {
     await expect(page.getByRole('strong').filter({ hasText: 'Pix' })).toBeVisible()
 
     // --- Filtro "Fora do cartão" mostra a despesa ---
-    await page.getByRole('radio', { name: 'Fora do cartão', exact: true }).click()
+    await page.getByRole('radio', { name: /^Fora do cartão/ }).click()
     await expect(page.getByRole('cell', { name: 'Feira E2E' })).toBeVisible()
     await expect(
       page

@@ -51,7 +51,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await page.getByRole('button', { name: 'Registrar assinatura' }).click()
 
     // Filtra Assinaturas e exclui pela linha (ConfirmDialog escopado por role)
-    await page.getByRole('radio', { name: 'Assinaturas', exact: true }).click()
+    await page.getByRole('radio', { name: /^Assinaturas/ }).click()
     await expect(page.getByRole('cell', { name: 'Spotify Excluir E2E' })).toBeVisible()
     await acionarNoMenuDaLinha(
       page,

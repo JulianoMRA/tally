@@ -10,6 +10,34 @@
   flex-wrap: wrap;
 }
 
+/* Variante cartões: alvos grandes em grade, para escolha que troca o
+   formulário inteiro. Sem fundo afundado nem borda de grupo — cada opção é um
+   bloco autônomo. */
+.rootCartoes {
+  display: grid;
+  /* Duas colunas fixas: com auto-fit a largura do painel cabia 3 e sobrava um
+     órfão na segunda linha. 2x2 fica balanceado e o alvo cresce. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  width: 100%;
+}
+
+.cartao {
+  padding: 12px 10px;
+  font-size: 13px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  background: var(--bg-elev);
+  min-height: 46px;
+}
+
+.cartao:hover:not(.ativa) {
+  border-color: var(--rule-strong);
+}
+
 .opcao {
   background: transparent;
   border: none;

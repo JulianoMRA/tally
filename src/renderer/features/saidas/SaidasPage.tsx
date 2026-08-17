@@ -27,8 +27,7 @@ import {
   SortableHeader,
   Select,
   useToast,
-  type AcaoLinha,
-  type OpcaoSegmentada
+  type AcaoLinha
 } from '../../components/ui'
 import { alfabetico, porData, porNumero, type Comparador } from '../../lib/comparadores'
 import { formatBRL } from '../../lib/format-brl'
@@ -88,7 +87,7 @@ function pertenceAoFiltro(d: ClassificavelPorTipo, filtro: Filtro): boolean {
   }
 }
 
-const FILTROS: readonly OpcaoSegmentada<Filtro>[] = [
+const FILTROS: readonly { valor: Filtro; rotulo: string }[] = [
   { valor: 'todas', rotulo: 'Todas' },
   { valor: 'foraCartao', rotulo: 'Fora do cartão' },
   { valor: 'parcelada', rotulo: 'Parceladas' },
@@ -140,6 +139,18 @@ export default function SaidasPage() {
   }
 
   const despesaPorId = useMemo(() => new Map(despesas.map((d) => [d.id, d])), [despesas])
+
+  // A contagem entra no rótulo do próprio filtro: dizer "Parceladas 2" antes do
+  // clique poupa o clique quando a resposta é zero, e dá a composição do mês de
+  // relance.
+  const filtrosComContagem = useMemo(
+    () =>
+      FILTROS.map((f) => ({
+        valor: f.valor,
+        rotulo: `${f.rotulo} ${ocorrencias.filter((o) => pertenceAoFiltro(o, f.valor)).length}`
+      })),
+    [ocorrencias]
+  )
 
   const tagsDisponiveis = useMemo(() => {
     const set = new Set<string>()
@@ -461,7 +472,7 @@ export default function SaidasPage() {
             →
           </button>
           <SegmentedControl
-            opcoes={FILTROS}
+            opcoes={filtrosComContagem}
             valor={filtro}
             onChange={setFiltro}
             label="Filtrar lançamentos por tipo"

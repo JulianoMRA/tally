@@ -117,11 +117,11 @@ test.describe('Navegação por teclado', () => {
     const grupo = page.getByRole('radiogroup', { name: 'Filtrar lançamentos por tipo' })
     await expect(grupo).toBeVisible()
 
-    await grupo.getByRole('radio', { name: 'Todas' }).focus()
+    await grupo.getByRole('radio', { name: /^Todas/ }).focus()
     await page.keyboard.press('ArrowRight')
 
     // Roving tabindex: a opção escolhida acompanha a seta.
-    await expect(grupo.getByRole('radio', { name: 'Fora do cartão' })).toHaveAttribute(
+    await expect(grupo.getByRole('radio', { name: /^Fora do cartão/ })).toHaveAttribute(
       'aria-checked',
       'true'
     )

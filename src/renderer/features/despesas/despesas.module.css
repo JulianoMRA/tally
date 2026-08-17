@@ -1,21 +1,10 @@
+/* O formulário vive dentro do SidePanel, que já dá superfície, borda e título.
+   Antes era um card próprio à esquerda da lista; manter o cartão aqui criava
+   caixa dentro de caixa e repetia o cabeçalho. */
 .form {
-  background: var(--bg-elev);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-3);
-  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 560px;
-  box-shadow: var(--shadow-1);
-}
-
-.formTitle {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: -0.02em;
-  margin: 0 0 4px;
 }
 
 .fieldRow {
@@ -52,4 +41,36 @@
   font-size: 12px;
   color: var(--ink-3);
   margin: -8px 0 0;
+}
+
+/* Valor em corpo maior: é o campo que de fato se digita, e estava com o mesmo
+   peso de "Data da compra", que na maioria das vezes fica no default. */
+.valorDestaque {
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  height: 46px;
+}
+
+/* Prévia de destino (RN-01 aplicado na digitação). Fica entre os campos e o
+   botão: é a última coisa lida antes de salvar. */
+.previaDestino {
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.previaRotulo {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 3px;
 }
