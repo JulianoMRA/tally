@@ -1,7 +1,7 @@
 import type { Database } from '../database'
-import type { Despesa } from '../../domain/entities/despesa'
+import type { Despesa, FormaPagamento, TipoDespesa } from '../../domain/entities/despesa'
 import type { Fatura } from '../../domain/entities/fatura'
-import type { Parcela } from '../../domain/entities/parcela'
+import type { Parcela, StatusParcela } from '../../domain/entities/parcela'
 import type { Repository } from './types'
 import { CartaoRepository } from './cartao-repository'
 import { CategoriaRepository } from './categoria-repository'
@@ -22,6 +22,29 @@ import {
 import { recalcularParcelasPendentes } from '../../domain/services/recalcular-parcelas'
 
 const HORIZONTE_ASSINATURA_MESES = 12
+
+/** Linha crua do JOIN parcela × despesa de `listarOcorrenciasDoMes`. */
+export type OcorrenciaRow = {
+  parcela_id: number
+  numero: number
+  total: number | null
+  parcela_valor_centavos: number
+  data_referencia: string
+  mes_referencia: string
+  status: StatusParcela
+  despesa_id: number
+  descricao: string
+  categoria_id: number
+  tipo: TipoDespesa
+  forma_pagamento: FormaPagamento
+  cartao_id: number | null
+  despesa_valor_centavos: number
+  total_parcelas: number | null
+  data_compra: string
+  nota: string | null
+  ativa: 0 | 1
+  menor_numero: number
+}
 
 export type CriarDespesaUnicaCreditoInput = {
   descricao: string
@@ -484,6 +507,57 @@ export class DespesaRepository implements Repository {
    * opcionais. `tipo` mapeia as categorias da UI; `mesReferencia` só faz sentido
    * para gastos fora do cartão (data única) e é ignorado nos demais tipos.
    */
+  /**
+   * RF-DES-14 — ocorrências de um mês: uma linha por parcela, não por despesa.
+   *
+   * A lista de Saídas era o registro de tudo o que já foi cadastrado, sem
+   * recorte, e por isso não tinha total somável nem coluna comparável entre
+   * um parcelado, uma assinatura e um gasto único. Aqui cada linha é o que
+   * aquela despesa custa NAQUELE mês.
+   *
+   * O recorte usa `fatura.mes_referencia` quando a parcela está em fatura, e
+   * só cai em `parcela.data_referencia` para gasto fora do cartão, que não tem
+   * fatura. Não é preciosismo: `criarUnicaCredito` grava `data_referencia` com
+   * a DATA DA COMPRA, enquanto `criarParceladaCredito` grava o mês da fatura.
+   * Confiar na coluna colocaria uma compra de 28/06 num cartão que fecha dia 5
+   * em junho, quando o RN-01 já a mandou para a fatura de julho — e a mesma
+   * despesa apareceria num mês na lista e em outro na fatura.
+   *
+   * `menor_numero` acompanha a linha porque é o que separa uma parcelada
+   * criada do zero de uma criada em andamento — ver `descreverOcorrencia`.
+   */
+  listarOcorrenciasDoMes(mesReferencia: string): OcorrenciaRow[] {
+    return this.db
+      .prepare(
+        `SELECT
+           p.id                AS parcela_id,
+           p.numero            AS numero,
+           p.total             AS total,
+           p.valor_centavos    AS parcela_valor_centavos,
+           p.data_referencia   AS data_referencia,
+           p.status            AS status,
+           d.id                AS despesa_id,
+           d.descricao         AS descricao,
+           d.categoria_id      AS categoria_id,
+           d.tipo              AS tipo,
+           d.forma_pagamento   AS forma_pagamento,
+           d.cartao_id         AS cartao_id,
+           d.valor_centavos    AS despesa_valor_centavos,
+           d.total_parcelas    AS total_parcelas,
+           d.data_compra       AS data_compra,
+           d.nota              AS nota,
+           d.ativa             AS ativa,
+           COALESCE(f.mes_referencia, substr(p.data_referencia, 1, 7)) AS mes_referencia,
+           (SELECT MIN(numero) FROM parcela WHERE despesa_id = d.id) AS menor_numero
+         FROM parcela p
+         JOIN despesa d ON d.id = p.despesa_id
+         LEFT JOIN fatura f ON f.id = p.fatura_id
+         WHERE COALESCE(f.mes_referencia, substr(p.data_referencia, 1, 7)) = ?
+         ORDER BY d.data_compra DESC, p.id DESC`
+      )
+      .all(mesReferencia) as OcorrenciaRow[]
+  }
+
   listarDespesas(filtro?: {
     tipo?: 'foraCartao' | 'parcelada' | 'assinatura'
     apenasAtivas?: boolean

@@ -30,6 +30,7 @@ import type {
   DespesaUnicaForaCartaoInput,
   ListarGastosForaCartaoInput,
   ListarDespesasInput,
+  ListarOcorrenciasInput,
   ExcluirDespesaInput,
   AtualizarDespesaInput,
   DefinirNotaETagsInput
@@ -107,6 +108,8 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.listarDespesas, input ?? {}),
     listarComTags: (input?: ListarDespesasInput) =>
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.listarComTags, input ?? {}),
+    listarOcorrenciasDoMes: (input: ListarOcorrenciasInput) =>
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.listarOcorrenciasDoMes, input),
     listarTags: () => ipcRenderer.invoke(DESPESA_IPC_CHANNELS.listarTags),
     excluir: (input: ExcluirDespesaInput) =>
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.excluir, input),
