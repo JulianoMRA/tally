@@ -61,7 +61,11 @@ describe('DespesaRepository.criarUnicaCredito', () => {
     expect(resultado.parcela.numero).toBe(1)
     expect(resultado.parcela.total).toBe(1)
     expect(resultado.parcela.valorCentavos).toBe(8000)
-    expect(resultado.parcela.dataReferencia).toBe('2026-06-03')
+    // data_referencia é o MÊS DA FATURA, não a data da compra — mesmo contrato
+    // das parceladas, que gravam `mesReferenciaParaData` desde sempre. Guardar
+    // a data da compra aqui colocava a mesma despesa em meses diferentes
+    // conforme a consulta olhasse a parcela ou a fatura.
+    expect(resultado.parcela.dataReferencia).toBe('2026-06-01')
     expect(resultado.parcela.status).toBe('Pendente')
   })
 
@@ -1731,7 +1735,7 @@ describe('DespesaRepository — bloqueio de fatura Paga (RF-FAT-04)', () => {
 
     const parcelas = parcelaRepo.listarPorDespesa(r.despesa.id)
     expect(parcelas[0].faturaId).toBe(r.fatura.id)
-    expect(parcelas[0].dataReferencia).toBe('2026-06-03')
+    expect(parcelas[0].dataReferencia).toBe('2026-06-01')
   })
 
   it('estenderHorizonteAssinaturas mantém o comportamento atual em fatura Paga (system-generated)', () => {
