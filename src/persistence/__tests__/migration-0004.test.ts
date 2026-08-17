@@ -39,8 +39,13 @@ describe('migration 0004_normaliza_data_referencia', () => {
        VALUES (1, 1, 2, 3, 10000, '2026-06-15')`
     ).run()
 
-    // Aplica 0004
-    runMigrations(db, todas)
+    // Aplica só até a 0004. O bundle inteiro traria a 0010, que realinha
+    // data_referencia ao mês da fatura — apagando justamente o efeito que este
+    // teste mede.
+    runMigrations(
+      db,
+      todas.filter((m) => m.version <= '0004_normaliza_data_referencia')
+    )
 
     const rows = db
       .prepare('SELECT numero, data_referencia FROM parcela ORDER BY numero')
@@ -56,6 +61,6 @@ describe('migration 0004_normaliza_data_referencia', () => {
     runMigrations(db)
     const second = runMigrations(db)
     expect(second.applied).toEqual([])
-    expect(second.skipped).toHaveLength(9)
+    expect(second.skipped).toHaveLength(10)
   })
 })

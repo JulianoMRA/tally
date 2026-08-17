@@ -11,6 +11,7 @@ import { TagRepository } from './tag-repository'
 import { mapDespesa, mapParcela, type DespesaRow, type ParcelaRow } from './row-mappers'
 import { calcularExtensaoNecessaria } from '../../domain/services/calcular-extensao-horizonte'
 import { gerarParcelas } from '../../domain/services/gerar-parcelas'
+import { mesReferenciaParaData } from '../../domain/services/mes-referencia'
 import { gerarOcorrenciasAssinatura } from '../../domain/services/gerar-ocorrencias-assinatura'
 import { validarFaturaAceitaNovaParcela } from '../../domain/services/ciclo-fatura'
 import {
@@ -163,7 +164,11 @@ export class DespesaRepository implements Repository {
         numero: 1,
         total: 1,
         valorCentavos: input.valorCentavos,
-        dataReferencia: input.dataCompra
+        // Mês da fatura, não a data da compra. Parcelada e assinatura já
+        // gravavam assim (via `gerarParcelas`); só a única no crédito guardava
+        // a data da compra, e com isso uma compra feita depois do fechamento
+        // ficava num mês pela parcela e em outro pela fatura.
+        dataReferencia: mesReferenciaParaData(fatura.mesReferencia)
       })
 
       return { despesa, fatura, parcela }
@@ -517,11 +522,9 @@ export class DespesaRepository implements Repository {
    *
    * O recorte usa `fatura.mes_referencia` quando a parcela está em fatura, e
    * só cai em `parcela.data_referencia` para gasto fora do cartão, que não tem
-   * fatura. Não é preciosismo: `criarUnicaCredito` grava `data_referencia` com
-   * a DATA DA COMPRA, enquanto `criarParceladaCredito` grava o mês da fatura.
-   * Confiar na coluna colocaria uma compra de 28/06 num cartão que fecha dia 5
-   * em junho, quando o RN-01 já a mandou para a fatura de julho — e a mesma
-   * despesa apareceria num mês na lista e em outro na fatura.
+   * fatura. Desde a migration 0010 as duas colunas concordam para parcela em
+   * fatura; o `COALESCE` continua porque a fatura é a fonte de verdade do mês
+   * de referência (RF-VIS-01) e porque gasto fora do cartão não tem nenhuma.
    *
    * `menor_numero` acompanha a linha porque é o que separa uma parcelada
    * criada do zero de uma criada em andamento — ver `descreverOcorrencia`.
@@ -755,12 +758,13 @@ export class DespesaRepository implements Repository {
           const faturaRepo = new FaturaRepository(this.db)
           const novaFatura = faturaRepo.upsertParaCompra(cartao, input.dataCompra!)
           this.exigirFaturaAceitaNovaParcela(novaFatura)
-          // Move a unica parcela — data_referencia sempre YYYY-MM-DD (Slice 15)
+          // Move a única parcela para a fatura nova e realinha a referência ao
+          // mês DELA — mesmo contrato da criação.
           this.db
             .prepare(
               `UPDATE parcela SET fatura_id = ?, data_referencia = ?, updated_at = datetime('now') WHERE despesa_id = ?`
             )
-            .run(novaFatura.id, input.dataCompra!, despesaId)
+            .run(novaFatura.id, mesReferenciaParaData(novaFatura.mesReferencia), despesaId)
         } else {
           // Fora de cartão: mantém data_referencia da parcela alinhada à
           // data_compra (relatórios agrupam pela parcela, não pela despesa).
