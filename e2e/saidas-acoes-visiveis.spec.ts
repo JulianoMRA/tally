@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { irPara } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
 import type { ElectronApplication, Page } from '@playwright/test'
 
 /**
@@ -38,6 +38,7 @@ async function semear(app: ElectronApplication): Promise<Page> {
   await irPara(page, 'Saídas')
 
   // Descrição longa de propósito: é o pior caso para a largura da tabela.
+  await abrirCadastroDeSaida(page)
   await page.getByLabel('Descrição').fill('Compra grande do mes no supermercado do bairro')
   await page.getByLabel('Categoria').selectOption({ label: 'Mercado Acoes E2E' })
   await page.getByLabel('Cartão').selectOption({ label: 'Inter Acoes E2E' })
@@ -50,6 +51,7 @@ async function semear(app: ElectronApplication): Promise<Page> {
 
   // Assinatura ativa = 5 botões na linha (pior caso: Duplicar, Nota/Tags,
   // Editar, Cancelar, Excluir).
+  await abrirCadastroDeSaida(page)
   await page.getByRole('radio', { name: 'Assinatura', exact: true }).click()
   await page.getByLabel('Descrição').fill('Streaming de video mensal')
   await page.getByLabel('Categoria').selectOption({ label: 'Mercado Acoes E2E' })

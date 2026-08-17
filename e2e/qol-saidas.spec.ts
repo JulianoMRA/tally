@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { irPara } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
 // Fase 10 — QoL na tela Saídas: busca por descrição e duplicar despesa.
@@ -30,6 +30,7 @@ test.describe('Saídas — QoL (busca e duplicar)', () => {
       ['Notebook Dell', '3000,00', '2026-06-03'],
       ['Cafeteria', '18,00', '2026-06-04']
     ] as const) {
+      await abrirCadastroDeSaida(page)
       await page.getByLabel('Descrição').fill(descricao)
       await page.getByLabel('Categoria').selectOption({ label: 'Mercado QoL E2E' })
       await page.getByLabel('Cartão').selectOption({ label: 'Inter QoL E2E' })
@@ -84,6 +85,7 @@ test.describe('Saídas — QoL (busca e duplicar)', () => {
     await expect(page.getByText('Lazer QoL E2E')).toBeVisible()
 
     await irPara(page, 'Saídas')
+    await abrirCadastroDeSaida(page)
     await page.getByRole('radio', { name: 'Assinatura', exact: true }).click()
     await page.getByLabel('Descrição').fill('Streaming QoL')
     await page.getByLabel('Categoria').selectOption({ label: 'Lazer QoL E2E' })

@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { abrirCadastroDeSaida } from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Gastos fora de cartão (RF-DES-01)', () => {
@@ -16,9 +17,9 @@ test.describe('Gastos fora de cartão (RF-DES-01)', () => {
 
     // --- Cadastrar despesa Pix (form inline na tela Saídas) ---
     await page.getByRole('link', { name: 'Saídas' }).click()
-    await expect(page.getByLabel('Descrição')).toBeVisible()
 
     // Aba Única está selecionada por default; trocar forma para Pix
+    await abrirCadastroDeSaida(page)
     await page.getByRole('radio', { name: 'Pix', exact: true }).click()
 
     await page.getByLabel('Descrição').fill('Feira E2E')

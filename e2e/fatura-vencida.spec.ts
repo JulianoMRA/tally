@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { abrirCadastroDeSaida } from './fixtures/navegacao'
 import type { Page } from '@playwright/test'
 
 /**
@@ -41,6 +42,7 @@ test.describe('Fatura vencida', () => {
 
     // Compra retroativa: fatura de maio/2026, vencimento 2026-05-12 (passado).
     await ir(page, 'Saídas')
+    await abrirCadastroDeSaida(page)
     await page.getByLabel('Descrição').fill('Compra retroativa de maio')
     await page.getByLabel('Categoria').selectOption({ label: 'Mercado Vencida E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Vencida E2E' })

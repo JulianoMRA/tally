@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { irPara } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
 import type { ElectronApplication, Page } from '@playwright/test'
 
 /**
@@ -49,6 +49,7 @@ async function semear(app: ElectronApplication): Promise<Page> {
   const dataCompra = `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, '0')}-03`
 
   await irPara(page, 'Saídas')
+  await abrirCadastroDeSaida(page)
   await page.getByRole('radio', { name: 'Parcelada', exact: true }).click()
   // Descrição longa de propósito: é o pior caso para a largura da tabela.
   await page.getByLabel('Descrição').fill('Notebook Dell comprado em doze vezes sem juros')

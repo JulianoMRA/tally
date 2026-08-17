@@ -99,37 +99,45 @@ test.describe('Layout responsivo', () => {
     expect(await colunas(larga)).toBe(1)
   })
 
-  test('Saídas põe formulário e lista lado a lado em 1440px', async ({ app }) => {
-    const page = await abrir(app, 1440, 'Saídas')
+  // O breakpoint de 1400px existia só para decidir se o formulário cabia ao
+  // lado da tabela. Com o cadastro no `SidePanel` (ponto 08), a pergunta some:
+  // a tabela recebe a largura inteira em qualquer janela, e é isso que estes
+  // dois testes passam a travar.
+  for (const largura of [1280, 1440] as const) {
+    test(`Saídas dá a largura inteira à tabela em ${largura}px`, async ({ app }) => {
+      await semear(app)
+      const page = await abrir(app, largura, 'Saídas')
 
-    const form = await caixa(page, '[class*="colCadastro"]')
-    const lista = await caixa(page, '[class*="colLista"]')
-    expect(form, 'coluna de cadastro não encontrada').not.toBeNull()
-    expect(lista, 'coluna da lista não encontrada').not.toBeNull()
+      const conteudo = await caixa(page, '[data-width]')
+      const tabela = await caixa(page, 'table')
+      expect(conteudo, 'bloco de conteúdo não encontrado').not.toBeNull()
+      expect(tabela, 'tabela de lançamentos não encontrada').not.toBeNull()
 
-    // Lado a lado: o formulário termina antes de a lista começar.
-    expect(form!.x + form!.width).toBeLessThanOrEqual(lista!.x + 1)
-    // E a lista fica com a maior parte do espaço, que é o ponto da mudança:
-    // antes, esta largura ficava empilhada e sobravam ~600px mortos ao lado
-    // de um formulário de 560px.
-    expect(lista!.width).toBeGreaterThan(form!.width)
-  })
+      // Folga sobre os ~698px que a tabela precisa para não cortar colunas.
+      expect(tabela!.width).toBeGreaterThan(698)
 
-  // Guarda a razão do breakpoint ser 1400 e não 1280: a janela padrão do app
-  // entrega 1266px de viewport (o `width: 1280` do BrowserWindow é o tamanho
-  // EXTERNO), e nessa largura a coluna da lista ficaria com 606px contra os
-  // ~698px que a tabela precisa. Empilhado ela recebe a largura inteira.
-  test('Saídas empilha na janela padrão, onde a tabela precisa da largura inteira', async ({
-    app
-  }) => {
+      // Nenhuma coluna de formulário disputa espaço. A margem de 80px absorve
+      // o padding do PageContainer (32px de cada lado) e ainda reprova de longe
+      // se voltar uma coluna de 400px ao lado.
+      expect(tabela!.width).toBeGreaterThan(conteudo!.width - 80)
+    })
+  }
+
+  test('o cadastro de Saídas abre como painel sobreposto, não como coluna', async ({ app }) => {
     const page = await abrir(app, 1280, 'Saídas')
 
-    const form = await caixa(page, '[class*="colCadastro"]')
-    const lista = await caixa(page, '[class*="colLista"]')
-    expect(form).not.toBeNull()
-    expect(lista).not.toBeNull()
+    // Fechado, o formulário não ocupa espaço nenhum no layout.
+    await expect(page.getByLabel('Descrição')).toHaveCount(0)
 
-    // Empilhado: a lista começa depois de o formulário terminar.
-    expect(lista!.y).toBeGreaterThanOrEqual(form!.y + form!.height - 1)
+    await page.getByRole('button', { name: '+ Nova saída' }).click()
+    const painel = page.getByRole('dialog', { name: 'Nova saída' })
+    await expect(painel).toBeVisible()
+
+    // Sobreposto: o painel encosta na borda direita da janela, em vez de
+    // dividir a linha com a lista.
+    const caixaPainel = await painel.boundingBox()
+    const larguraViewport = await page.evaluate(() => window.innerWidth)
+    expect(caixaPainel).not.toBeNull()
+    expect(caixaPainel!.x + caixaPainel!.width).toBeGreaterThanOrEqual(larguraViewport - 1)
   })
 })

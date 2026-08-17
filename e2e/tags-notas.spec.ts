@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { abrirCadastroDeSaida } from './fixtures/navegacao'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
 // Fase 11 — nota livre e tags nas despesas, exibição e filtro na tela Saídas.
@@ -29,6 +30,7 @@ test.describe('Saídas — nota e tags', () => {
       ['Hotel viagem', '450,00'],
       ['Padaria', '12,00']
     ] as const) {
+      await abrirCadastroDeSaida(page)
       await page.getByLabel('Descrição').fill(descricao)
       await page.getByLabel('Categoria').selectOption({ label: 'Mercado Tag E2E' })
       await page.getByLabel('Cartão').selectOption({ label: 'Inter Tag E2E' })

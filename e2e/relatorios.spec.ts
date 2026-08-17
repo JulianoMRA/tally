@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirAba, irPara } from './fixtures/navegacao'
+import { abrirAba, abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
 
 // RF-VIS-05 + RF-VIS-06 — relatórios: ranking por categoria + evolução
 // TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
@@ -40,6 +40,7 @@ test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
     const dataLazer = `${yyyy}-${mm}-04`
 
     await irPara(page, 'Saídas')
+    await abrirCadastroDeSaida(page)
     await page.getByLabel('Descrição').fill('Compra mercado')
     await page.getByLabel('Categoria').selectOption({ label: 'Mercado E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Rel E2E' })
@@ -48,6 +49,7 @@ test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
     await page.getByRole('button', { name: 'Registrar despesa' }).click()
     await expect(page.getByRole('cell', { name: 'Compra mercado' })).toBeVisible()
 
+    await abrirCadastroDeSaida(page)
     await page.getByLabel('Descrição').fill('Cinema')
     await page.getByLabel('Categoria').selectOption({ label: 'Lazer E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Rel E2E' })

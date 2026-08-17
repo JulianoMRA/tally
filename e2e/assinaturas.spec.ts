@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { irPara } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
@@ -27,7 +27,7 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
 
     // --- Cadastrar assinatura (form inline em Saídas, tipo Assinatura) ---
     await page.getByRole('link', { name: 'Saídas' }).click()
-    await expect(page.getByLabel('Descrição')).toBeVisible()
+    await abrirCadastroDeSaida(page)
     await page.getByRole('radio', { name: 'Assinatura', exact: true }).click()
 
     await page.getByLabel('Descrição').fill('Spotify E2E')

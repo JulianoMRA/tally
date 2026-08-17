@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { irPara } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Deep-link de faturas (query string)', () => {
@@ -22,6 +22,7 @@ test.describe('Deep-link de faturas (query string)', () => {
     await expect(page.getByText('Alimentação Deep E2E')).toBeVisible()
 
     await irPara(page, 'Saídas')
+    await abrirCadastroDeSaida(page)
     await page.getByLabel('Descrição').fill('Mercado Deep E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Alimentação Deep E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Deep E2E' })

@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
+import { abrirCadastroDeSaida } from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Despesa única + Fatura', () => {
@@ -29,8 +30,8 @@ test.describe('Despesa única + Fatura', () => {
 
     // --- Criar despesa única (form inline na tela Saídas) ---
     await page.getByRole('link', { name: 'Saídas' }).click()
-    await expect(page.getByLabel('Descrição')).toBeVisible()
 
+    await abrirCadastroDeSaida(page)
     await page.getByLabel('Descrição').fill('Supermercado E2E')
     await page.getByLabel('Categoria').selectOption({ label: 'Alimentação E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter E2E' })
