@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, focarCartao, irPara } from './fixtures/navegacao'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
@@ -62,7 +62,7 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
 
     // --- Conferir na fatura junho/2026 ---
     await irPara(page, 'Faturas')
-    await page.getByLabel('Cartão').selectOption({ label: 'Inter Assinatura E2E' })
+    await focarCartao(page, 'Inter Assinatura E2E')
     await page.getByText('Junho de 2026').first().click()
     await expect(page.getByText(/R\$\s*24,90/).first()).toBeVisible()
 
@@ -90,7 +90,7 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     // A fatura de junho perdeu a parcela junto — é o efeito que o cancelamento
     // tem que produzir, e o que a tela de Faturas passa a mostrar.
     await irPara(page, 'Faturas')
-    await page.getByLabel('Cartão').selectOption({ label: 'Inter Assinatura E2E' })
+    await focarCartao(page, 'Inter Assinatura E2E')
     await expect(page.getByText(/R\$\s*24,90/)).toHaveCount(0)
   })
 })

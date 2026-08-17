@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, focarCartao, irPara } from './fixtures/navegacao'
 import type { Page } from '@playwright/test'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
@@ -108,7 +108,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
 
     // Abre o detalhe da fatura
     await irPara(page, 'Faturas')
-    await page.getByLabel('Cartão').selectOption({ label: 'Inter Paga E2E' })
+    await focarCartao(page, 'Inter Paga E2E')
     await page.getByText(labelMes, { exact: true }).click()
     await expect(page.getByText('1/1')).toBeVisible()
 
@@ -163,7 +163,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await expect(page.getByRole('cell', { name: 'Compra Vencida E2E' })).toBeVisible()
 
     await irPara(page, 'Faturas')
-    await page.getByLabel('Cartão').selectOption({ label: 'Inter Vencida E2E' })
+    await focarCartao(page, 'Inter Vencida E2E')
     await page.getByText('Junho de 2026', { exact: true }).click()
     await expect(page.getByText('1/1')).toBeVisible()
 

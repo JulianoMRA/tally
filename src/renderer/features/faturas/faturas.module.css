@@ -1,5 +1,87 @@
 .corpo {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Trilho de cartões: substitui o select mais o agrupamento por cartão da visão
+   geral, que diziam a mesma coisa em dois lugares (ponto 12). `auto-fit` com
+   mínimo de 200px cabe três cartões na janela padrão e degrada para dois e um
+   sem breakpoint. */
+.trilho {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.trilhoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-sans);
+}
+
+.trilhoItem:hover:not(.trilhoItemAtivo) {
+  border-color: var(--rule-strong);
+}
+
+/* O cartão em foco ganha borda escura, não fundo escuro: o painel abaixo já é
+   dele, e inverter o bloco inteiro competiria com o total da fatura. */
+.trilhoItemAtivo {
+  border-color: var(--forest);
+  box-shadow: inset 0 0 0 1px var(--forest);
+}
+
+.trilhoTopo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+.trilhoNome {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trilhoTotal {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.trilhoPrazo {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+}
+
+/* Link de fatura que não existe mais. Fica entre o trilho e o painel, que é
+   onde a discrepância seria notada. */
+.avisoLinkQuebrado {
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--pending-bg);
+  border: 1px solid var(--pending-border);
+  border-radius: var(--r-2);
+  font-size: 12px;
+  color: var(--pending);
 }
 
 .cartaoSelect {
@@ -128,9 +210,22 @@
   margin-bottom: 16px;
 }
 
+/* O total agregado fica à vista mesmo com as faturas colapsadas: é a
+   informação que fazia valer a pena expandir. */
 .anterioresBarra {
   padding: 6px 10px;
   border-top: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.anterioresTotal {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  padding-right: 6px;
 }
 
 .faturaInfo {
@@ -568,4 +663,13 @@
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.02em;
+}
+
+/* Navegação entre as faturas do cartão. Fica acima do painel porque é ele que
+   ela controla, e as duas pontas ficam nas bordas para o alvo ser previsível. */
+.navMes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }

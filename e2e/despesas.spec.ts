@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, focarCartao } from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Despesa única + Fatura', () => {
@@ -49,7 +49,7 @@ test.describe('Despesa única + Fatura', () => {
     await page.getByRole('link', { name: 'Faturas' }).click()
     await expect(page.getByRole('heading', { name: 'Faturas' })).toBeVisible()
 
-    await page.getByLabel('Cartão').selectOption({ label: 'Inter E2E' })
+    await focarCartao(page, 'Inter E2E')
 
     // Fatura 2026-06 deve aparecer na lista como "Junho de 2026"
     await expect(page.getByText('Junho de 2026', { exact: true })).toBeVisible()

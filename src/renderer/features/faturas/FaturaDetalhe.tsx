@@ -66,7 +66,6 @@ type Props = {
   detalhe: FaturaDetalhada
   cartaoNome: string
   cartaoCor?: string
-  onVoltar: () => void
   onFaturaAtualizada: (fatura: Fatura) => void
   onDetalheAtualizado: (detalhe: FaturaDetalhada) => void
 }
@@ -75,7 +74,6 @@ export function FaturaDetalhe({
   detalhe,
   cartaoNome,
   cartaoCor,
-  onVoltar,
   onFaturaAtualizada,
   onDetalheAtualizado
 }: Props) {
@@ -216,11 +214,6 @@ export function FaturaDetalhe({
           <h2 className={styles.detalheTitleText}>
             {cartaoNome} · {formatarMesReferencia(fatura.mesReferencia, { capitalizar: true })}
           </h2>
-        </div>
-        <div className={styles.detalheActions}>
-          <Button variant="ghost" size="sm" onClick={onVoltar}>
-            ← Voltar
-          </Button>
         </div>
       </div>
 

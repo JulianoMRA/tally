@@ -50,6 +50,30 @@ export async function abrirCadastroDeSaida(page: Page): Promise<void> {
   await expect(page.getByRole('dialog', { name: 'Nova saída' })).toBeVisible()
 }
 
+/**
+ * Põe um cartão em foco no trilho de Faturas.
+ *
+ * O `select` de cartão foi absorvido pelo trilho na fusão de lista e detalhe
+ * (ponto 12). Escolher o cartão já abre a fatura corrente dele — não há mais um
+ * segundo clique numa lista. Espera o painel refletir a troca antes de devolver.
+ */
+export async function focarCartao(page: Page, nome: string): Promise<void> {
+  const item = page.getByRole('button', { name: new RegExp(`^${nome}`) })
+  await item.click()
+  await expect(item).toHaveAttribute('aria-pressed', 'true')
+}
+
+/**
+ * Abre uma fatura passada específica pelo histórico do cartão em foco.
+ *
+ * Faturas futuras não estão no histórico — são alcançadas pela navegação de mês
+ * do painel. Use esta função só para meses já encerrados.
+ */
+export async function abrirFaturaNoHistorico(page: Page, mesPorExtenso: string): Promise<void> {
+  await page.getByRole('button', { name: /meses anteriores/ }).click()
+  await page.getByText(mesPorExtenso, { exact: true }).click()
+}
+
 /** Abas da Visão mensal (RF-VIS-02): operação em "Mês", histórico em "Análise". */
 export type AbaVisaoMensal = 'Mês' | 'Análise'
 
