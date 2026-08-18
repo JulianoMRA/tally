@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, focarCartao } from './fixtures/navegacao'
 import type { Page } from '@playwright/test'
 
 /**
@@ -64,10 +64,13 @@ test.describe('Fatura vencida', () => {
 
     // Detalhe da fatura: o aside de status também exibe o selo.
     await ir(page, 'Faturas')
-    await page.getByLabel('Cartão').selectOption({ label: 'Inter Vencida E2E' })
-    await page.locator('[class*="faturaMes"]').first().click()
+    await focarCartao(page, 'Inter Vencida E2E')
+    // O cartão em foco já abre a fatura dele: não há mais lista para clicar
+    // (ponto 12). Estes testes usam cartão com uma fatura só, então é ela.
     await expect(page.getByText('Inter Vencida E2E · maio de 2026')).toBeVisible()
-    await expect(page.getByText(/vencida há \d+ dias?/)).toBeVisible()
+    // `.first()`: o trilho passou a exibir o mesmo selo do painel, porque ele
+    // mostra a situação corrente de cada cartão.
+    await expect(page.getByText(/vencida há \d+ dias?/).first()).toBeVisible()
 
     // A fatura de maio já nasce Fechada (fechamento 05/05 passou). Pagá-la
     // remove o selo: fatura Paga nunca é vencida.

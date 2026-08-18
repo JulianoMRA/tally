@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, focarCartao, irPara } from './fixtures/navegacao'
 import type { ElectronApplication, Page } from '@playwright/test'
 
 /**
@@ -76,8 +76,9 @@ for (const largura of [1000, 1280, 1600] as const) {
     await expect.poll(async () => page.evaluate(() => window.innerWidth)).toBeLessThan(largura + 1)
 
     await irPara(page, 'Faturas')
-    await page.getByLabel('Cartão').selectOption({ label: 'Inter Geometria E2E' })
-    await page.locator('[class*="faturaMes"]').first().click()
+    await focarCartao(page, 'Inter Geometria E2E')
+    // O cartão em foco já abre a fatura dele: não há mais lista para clicar
+    // (ponto 12). Estes testes usam cartão com uma fatura só, então é ela.
 
     const linha = page
       .getByRole('row')

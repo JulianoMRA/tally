@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, focarCartao, irPara } from './fixtures/navegacao'
 import type { Page } from '@playwright/test'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
@@ -108,7 +108,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
 
     // Abre o detalhe da fatura
     await irPara(page, 'Faturas')
-    await page.getByLabel('Cartão').selectOption({ label: 'Inter Paga E2E' })
+    await focarCartao(page, 'Inter Paga E2E')
     await page.getByText(labelMes, { exact: true }).click()
     await expect(page.getByText('1/1')).toBeVisible()
 
@@ -163,8 +163,9 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await expect(page.getByRole('cell', { name: 'Compra Vencida E2E' })).toBeVisible()
 
     await irPara(page, 'Faturas')
-    await page.getByLabel('Cartão').selectOption({ label: 'Inter Vencida E2E' })
-    await page.getByText('Junho de 2026', { exact: true }).click()
+    await focarCartao(page, 'Inter Vencida E2E')
+    // O cartão em foco já abre a fatura dele: não há mais lista para clicar
+    // (ponto 12). Estes testes usam cartão com uma fatura só, então é ela.
     await expect(page.getByText('1/1')).toBeVisible()
 
     await page.getByRole('button', { name: 'Fechar fatura' }).click()
@@ -180,7 +181,10 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     // pela RN-06 — parcela em fatura Fechada preserva o histórico.
     await page.getByRole('button', { name: 'Reabrir fatura' }).click()
     await page.getByRole('button', { name: 'Reabrir', exact: true }).click()
-    await expect(page.getByText('Fechada', { exact: true })).toBeVisible()
+    // Escopado ao resumo do painel: o trilho também exibe o status do cartão,
+    // e um getByText solto passou a casar com os dois.
+    const resumo = page.getByText('Status', { exact: true }).locator('..')
+    await expect(resumo.getByText('Fechada', { exact: true })).toBeVisible()
 
     const excluir = await itemExcluirDaParcela(page)
     await expect(excluir).toBeEnabled()

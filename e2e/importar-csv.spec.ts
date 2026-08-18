@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { irPara } from './fixtures/navegacao'
+import { focarCartao, irPara } from './fixtures/navegacao'
 
 // Importador CSV (migração da planilha): templates fixos, preview com erros
 // por linha e importação atômica no main process.
@@ -48,7 +48,7 @@ test.describe('Importar dados (CSV)', () => {
 
     // Confere na fatura de junho do cartão
     await irPara(page, 'Faturas')
-    await page.getByLabel('Cartão').selectOption({ label: 'Inter Import E2E' })
+    await focarCartao(page, 'Inter Import E2E')
     await page.getByText('Junho de 2026', { exact: true }).click()
     await expect(page.getByText('Supermercado Import')).toBeVisible()
     await expect(page.getByText('Farmácia Import')).toBeVisible()
