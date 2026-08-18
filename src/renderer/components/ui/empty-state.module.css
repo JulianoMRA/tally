@@ -23,3 +23,16 @@
 .action {
   margin-top: 8px;
 }
+
+/* Variante compacta: nota alinhada à esquerda, sem o respiro vertical do
+   estado cheio. Ver o comentário da prop em EmptyState.tsx. */
+.compacto {
+  align-items: flex-start;
+  text-align: left;
+  gap: 4px;
+  padding: 14px 16px;
+}
+
+.compacto .description {
+  max-width: none;
+}

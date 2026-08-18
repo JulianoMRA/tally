@@ -82,6 +82,9 @@
   /* Shadows — soft, daylight */
   --shadow-1: 0 1px 0 rgba(15, 26, 20, 0.04), 0 1px 2px rgba(15, 26, 20, 0.04);
   --shadow-2: 0 1px 0 rgba(15, 26, 20, 0.04), 0 8px 24px -8px rgba(15, 26, 20, 0.12);
+  /* Sombra para cima, de barra fixa no rodapé: sem ela o conteúdo que passa
+     por baixo faz o painel parecer cortado, e não coberto. */
+  --shadow-up: 0 -8px 24px -10px rgba(15, 26, 20, 0.14);
 
   /* Anel de foco. Não existia: o app usava o outline default do Chromium
      (0,8px laranja) sobre fundo creme, e Input/Select ainda faziam

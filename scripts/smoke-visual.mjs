@@ -217,6 +217,11 @@ await page.evaluate(async () => {
     })
   }
 
+  // Uma cópia de segurança: sem ela a lista de Ajustes só aparece vazia na
+  // folha de contato, e o estado que a F9 mexeu — a linha com o menu de ações —
+  // fica fora da revisão. Mesmo motivo da semeadura de meses passados acima.
+  await api.config.criarBackupAgora()
+
   const despesas = await api.despesa.listarDespesas({})
   const alvo = despesas.find((d) => d.descricao === 'Notebook em doze vezes')
   if (alvo) {
@@ -246,7 +251,10 @@ await redimensionar(1280)
 await ir('#/saidas')
 
 try {
-  await page.getByRole('button', { name: /^Mais ações/ }).first().click({ timeout: 5000 })
+  await page
+    .getByRole('button', { name: /^Mais ações/ })
+    .first()
+    .click({ timeout: 5000 })
   await page.waitForTimeout(400)
   await capturar('estado-menu-de-acoes')
   await page.keyboard.press('Escape')

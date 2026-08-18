@@ -37,9 +37,25 @@
   height: 16px;
 }
 
+/* Gruda no fim da área que rola (`.scrollable` do App). Nenhum ancestral entre
+   ela e o scroller tem `overflow`, então o sticky pega. O fundo é opaco de
+   propósito: sem ele o conteúdo passaria por baixo da barra ao rolar. */
 .acoes {
+  position: sticky;
+  bottom: 0;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 0;
+  background: var(--bg);
+  border-top: 1px solid var(--rule);
+  box-shadow: var(--shadow-up);
+}
+
+.pendencia {
+  font-size: 12px;
+  color: var(--ink-3);
 }
 
 .copias {

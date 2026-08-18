@@ -136,6 +136,7 @@ export default function ImportarPage() {
         <Panel title="2. Confira e importe">
           {preview.kind === 'vazio' && !resultado && (
             <EmptyState
+              compacto
               title="Nenhum arquivo carregado."
               description="Escolha um CSV no passo 1 para ver a prévia."
             />
