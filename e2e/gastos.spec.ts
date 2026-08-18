@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, criarCategoria } from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Gastos fora de cartão (RF-DES-01)', () => {
@@ -8,12 +8,7 @@ test.describe('Gastos fora de cartão (RF-DES-01)', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // --- Categoria "Mercado E2E" ---
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Mercado E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Mercado E2E')).toBeVisible()
+    await criarCategoria(page, 'Mercado E2E')
 
     // --- Cadastrar despesa Pix (form inline na tela Saídas) ---
     await page.getByRole('link', { name: 'Saídas' }).click()

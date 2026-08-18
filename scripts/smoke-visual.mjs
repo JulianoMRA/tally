@@ -151,6 +151,39 @@ await page.evaluate(async () => {
     valorMensalCentavos: 3990,
     dataInicio: emDias(-40)
   })
+  // Histórico em meses encerrados: sem ele a sparkline e a média do cartão não
+  // têm o que mostrar, e a linha de Cartões volta a parecer cadastro morto.
+  // Dia 1 fica antes do fechamento dos dois cartões (3 e 25), então a fatura é
+  // sempre a do próprio mês escolhido.
+  const primeiroDiaDeMesesAtras = (n) =>
+    iso(new Date(Date.UTC(hoje.getFullYear(), hoje.getMonth() - n, 1)))
+
+  for (const [n, valorNubank, valorInter] of [
+    [1, 41000, 38000],
+    [2, 52000, 0],
+    [3, 33000, 61000],
+    [4, 47000, 25000]
+  ]) {
+    if (valorNubank > 0) {
+      await api.despesa.criarUnicaCredito({
+        descricao: `Compras de ${n} meses atras`,
+        categoriaId: cats.Mercado.id,
+        cartaoId: nubank.id,
+        valorCentavos: valorNubank,
+        dataCompra: primeiroDiaDeMesesAtras(n)
+      })
+    }
+    if (valorInter > 0) {
+      await api.despesa.criarUnicaCredito({
+        descricao: `Casa, ${n} meses atras`,
+        categoriaId: cats.Casa.id,
+        cartaoId: inter.id,
+        valorCentavos: valorInter,
+        dataCompra: primeiroDiaDeMesesAtras(n)
+      })
+    }
+  }
+
   await api.despesa.criarUnicaForaCartao({
     descricao: 'Feira no Pix',
     categoriaId: cats.Mercado.id,
@@ -241,8 +274,13 @@ try {
   await capturar('estado-painel-novo-avulso')
   await page.keyboard.press('Escape')
 
+  // O ColorPicker vive no formulário de cartão, que virou painel na F7: sem
+  // abrir, o swatch não existe na página.
   await page.getByRole('link', { name: 'Cartões' }).click()
   await page.waitForTimeout(600)
+  await page.getByRole('button', { name: '+ Novo cartão' }).click({ timeout: 5000 })
+  await page.waitForTimeout(400)
+  await capturar('estado-painel-novo-cartao')
   await page.getByRole('radio', { name: 'Bronze' }).focus()
   await capturar('estado-foco-de-teclado')
 } catch (e) {

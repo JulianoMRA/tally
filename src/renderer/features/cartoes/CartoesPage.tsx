@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Cartao } from '@domain/entities/cartao'
 import type { CartaoInput } from '@shared/ipc/cartao'
 import { useCartoes } from './hooks/use-cartoes'
@@ -6,11 +6,15 @@ import { CartaoForm } from './CartaoForm'
 import { CartaoList } from './CartaoList'
 import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
-import { useToast } from '../../components/ui'
+import { Button, ConfirmDialog, SidePanel, useToast } from '../../components/ui'
 import { mensagemErro } from '../../lib/mensagem-erro'
+import { mesAtualReferencia } from '../../lib/mes-atual'
+import { useCartoesAtivos } from '../despesas/hooks/use-cartoes-ativos'
+import { useFaturasDeTodosCartoes } from '../faturas/hooks/use-faturas'
+import { resumirCartao } from './resumir-cartao'
 import styles from './cartoes.module.css'
 
-type Modo = { kind: 'criar' } | { kind: 'editar'; cartao: Cartao }
+type Painel = { kind: 'fechado' } | { kind: 'criar' } | { kind: 'editar'; cartao: Cartao }
 
 export default function CartoesPage() {
   const {
@@ -24,29 +28,45 @@ export default function CartoesPage() {
     arquivar,
     desarquivar
   } = useCartoes()
-  const [modo, setModo] = useState<Modo>({ kind: 'criar' })
+  const [painel, setPainel] = useState<Painel>({ kind: 'fechado' })
+  const [confirmarArquivar, setConfirmarArquivar] = useState<Cartao | null>(null)
   const toast = useToast()
+
+  const { cartoes: cartoesAtivos } = useCartoesAtivos()
+  const { grupos } = useFaturasDeTodosCartoes(cartoesAtivos)
+  const mesAtual = mesAtualReferencia()
+
+  const resumos = useMemo(() => {
+    const mapa = new Map<number, ReturnType<typeof resumirCartao>>()
+    for (const g of grupos) mapa.set(g.cartao.id, resumirCartao(g.faturas, mesAtual))
+    return mapa
+  }, [grupos, mesAtual])
 
   async function handleSalvar(input: CartaoInput) {
     try {
-      if (modo.kind === 'criar') {
+      if (painel.kind === 'editar') {
+        await atualizar(painel.cartao.id, input)
+        toast.show('Cartão atualizado.', 'success')
+      } else {
         await criar(input)
         toast.show('Cartão criado.', 'success')
-      } else {
-        await atualizar(modo.cartao.id, input)
-        toast.show('Cartão atualizado.', 'success')
       }
-      setModo({ kind: 'criar' })
+      setPainel({ kind: 'fechado' })
     } catch (e) {
       toast.show(mensagemErro(e, 'Erro ao salvar cartão.'), 'error')
     }
   }
 
-  async function handleArquivar(id: number) {
+  // Arquivar tem consequência e saiu da linha para o menu ⋯, com confirmação
+  // (ponto 14). Antes dividia a linha com Editar, no mesmo peso.
+  async function handleArquivar(cartao: Cartao) {
     try {
-      await arquivar(id)
+      await arquivar(cartao.id)
+      toast.show(`"${cartao.nome}" arquivado.`, 'success')
     } catch (e) {
       toast.show(mensagemErro(e, 'Erro ao arquivar cartão.'), 'error')
+    } finally {
+      setConfirmarArquivar(null)
     }
   }
 
@@ -64,41 +84,65 @@ export default function CartoesPage() {
         title="Cartões"
         subtitle="Gerencie seus cartões de crédito."
         actions={
-          <label className={styles.toggleLabel}>
-            <input
-              type="checkbox"
-              checked={incluirArquivados}
-              onChange={(e) => setIncluirArquivados(e.target.checked)}
-            />
-            Mostrar arquivados
-          </label>
+          <>
+            <label className={styles.toggleLabel}>
+              <input
+                type="checkbox"
+                checked={incluirArquivados}
+                onChange={(e) => setIncluirArquivados(e.target.checked)}
+              />
+              Mostrar arquivados
+            </label>
+            <Button size="sm" onClick={() => setPainel({ kind: 'criar' })}>
+              + Novo cartão
+            </Button>
+          </>
         }
       />
 
+      {/* Lista em largura cheia e cadastro sob demanda: o mesmo padrão de
+          Saídas e Categorias (ponto 16). Antes eram layouts espelhados, com um
+          formulário vazio ocupando 380px em toda visita. */}
       <div className={styles.layout}>
-        <section className={styles.listSection}>
-          {loading && <p className={styles.empty}>Carregando…</p>}
-          {error && <p className={styles.errorMsg}>{error}</p>}
-          {!loading && !error && (
-            <CartaoList
-              cartoes={cartoes}
-              onEditar={(c) => setModo({ kind: 'editar', cartao: c })}
-              onArquivar={handleArquivar}
-              onDesarquivar={handleDesarquivar}
-            />
-          )}
-        </section>
-
-        <section className={styles.formSection}>
-          <CartaoForm
-            key={modo.kind === 'editar' ? modo.cartao.id : 'novo'}
-            mode={modo.kind}
-            cartaoInicial={modo.kind === 'editar' ? modo.cartao : undefined}
-            onSalvar={handleSalvar}
-            onCancelar={() => setModo({ kind: 'criar' })}
+        {loading && <p className={styles.empty}>Carregando…</p>}
+        {error && <p className={styles.errorMsg}>{error}</p>}
+        {!loading && !error && (
+          <CartaoList
+            cartoes={cartoes}
+            resumos={resumos}
+            onEditar={(c) => setPainel({ kind: 'editar', cartao: c })}
+            onArquivar={(c) => setConfirmarArquivar(c)}
+            onDesarquivar={handleDesarquivar}
           />
-        </section>
+        )}
       </div>
+
+      {painel.kind !== 'fechado' && (
+        <SidePanel
+          titulo={painel.kind === 'criar' ? 'Novo cartão' : 'Editar cartão'}
+          descricao="O dia de fechamento decide em qual fatura cada compra cai (RN-01)."
+          onFechar={() => setPainel({ kind: 'fechado' })}
+          fecharNoOverlay={false}
+        >
+          <CartaoForm
+            key={painel.kind === 'editar' ? painel.cartao.id : 'novo'}
+            cartaoInicial={painel.kind === 'editar' ? painel.cartao : undefined}
+            onSalvar={handleSalvar}
+            onCancelar={() => setPainel({ kind: 'fechado' })}
+          />
+        </SidePanel>
+      )}
+
+      {confirmarArquivar && (
+        <ConfirmDialog
+          title={`Arquivar "${confirmarArquivar.nome}"?`}
+          body="O cartão some dos formulários de despesa, mas o histórico de faturas permanece visível. Dá para desarquivar depois."
+          confirmText="Arquivar"
+          confirmVariant="danger"
+          onConfirm={() => handleArquivar(confirmarArquivar)}
+          onCancel={() => setConfirmarArquivar(null)}
+        />
+      )}
     </PageContainer>
   )
 }

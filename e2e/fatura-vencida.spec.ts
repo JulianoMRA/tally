@@ -1,5 +1,10 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida, focarCartao } from './fixtures/navegacao'
+import {
+  abrirCadastroDeSaida,
+  criarCartao,
+  criarCategoria,
+  focarCartao
+} from './fixtures/navegacao'
 import type { Page } from '@playwright/test'
 
 /**
@@ -25,20 +30,9 @@ test.describe('Fatura vencida', () => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
-    await ir(page, 'Cartões')
-    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Inter Vencida E2E')
-    await page.getByLabel('Dia de fechamento').fill('5')
-    await page.getByLabel('Dia de vencimento').fill('12')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Inter Vencida E2E')).toBeVisible()
+    await criarCartao(page, 'Inter Vencida E2E')
 
-    await ir(page, 'Categorias')
-    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Mercado Vencida E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Mercado Vencida E2E')).toBeVisible()
+    await criarCategoria(page, 'Mercado Vencida E2E')
 
     // Compra retroativa: fatura de maio/2026, vencimento 2026-05-12 (passado).
     await ir(page, 'Saídas')

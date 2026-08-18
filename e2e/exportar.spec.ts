@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, criarCategoria, irPara } from './fixtures/navegacao'
 
 // Fase 9 — a rota #/print/:mes alimenta o printToPDF da janela oculta do main.
 // Os fluxos de salvar CSV/PDF usam dialog nativo (nao automatizavel); a
@@ -10,12 +10,7 @@ test.describe('Exportação — rota de impressão', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // Seed via UI: categoria + gasto Pix em junho/2026
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Mercado Print E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Mercado Print E2E')).toBeVisible()
+    await criarCategoria(page, 'Mercado Print E2E')
 
     await irPara(page, 'Saídas')
     await abrirCadastroDeSaida(page)

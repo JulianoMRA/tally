@@ -7,15 +7,10 @@
   cursor: pointer;
 }
 
+/* Lista em largura cheia: o formulário saiu do layout permanente e virou
+   SidePanel (ponto 16). As duas colunas existiam para acomodar um form que na
+   maior parte das visitas estava vazio. */
 .layout {
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 24px;
-  align-items: start;
-}
-
-.listSection,
-.formSection {
   min-width: 0;
 }
 
@@ -29,10 +24,13 @@
   gap: 8px;
 }
 
+/* Grade em vez de flex: as colunas de fatura e de uso precisam alinhar entre
+   as linhas, senão a sparkline dança conforme o tamanho do nome. */
 .listItem {
-  display: flex;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) 140px 150px auto;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   background: var(--bg-elev);
   border: 1px solid var(--rule);
   border-radius: var(--r-3);
@@ -71,6 +69,76 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  justify-content: flex-end;
+}
+
+/* Arquivado desce para o fim da lista esmaecido, em vez de exigir a troca de
+   um estado que recarrega tudo: o contexto fica visível sem sair da tela. */
+.listItemArquivado {
+  opacity: 0.6;
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.arquivadoNota {
+  grid-column: 3 / 5;
+  font-size: 12px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+}
+
+.colunaFatura,
+.colunaUso {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.colunaLabel {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.colunaValor {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+/* Nota da coluna de uso: minúscula e sem tracking, ao contrário do rótulo de
+   cabeçalho. É valor, não título de coluna. */
+.usoNota {
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* Sparkline de 6 meses: dá a forma do uso sem ocupar uma coluna de números.
+   A altura e a largura máxima da barra são o que faz a série ler como
+   tendência: em 22px de altura com barras de 34px, a diferença entre 63% e
+   100% rendia sete pixels e a linha virava uma fileira de blocos iguais. */
+.sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 30px;
+}
+
+.sparkBarra {
+  flex: 1;
+  min-width: 4px;
+  /* Série curta não vira slab: um cartão com três meses de histórico mostra
+     três barras estreitas, não três barras gordas ocupando a coluna toda. */
+  max-width: 12px;
+  border-radius: 1px;
 }
 
 .empty {
@@ -86,23 +154,14 @@
 }
 
 /* Form */
+/* Sem chrome próprio: dentro do SidePanel o formulário é o conteúdo, não um
+   card. Manter borda, sombra e padding aqui produzia caixa dentro de caixa —
+   o mesmo defeito que a captura pegou em Saídas na F3. O título também sai:
+   quem nomeia o painel é o cabeçalho do SidePanel. */
 .form {
-  background: var(--bg-elev);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-3);
-  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  box-shadow: var(--shadow-1);
-}
-
-.formTitle {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: -0.02em;
-  margin: 0 0 4px;
 }
 
 .fieldRow {

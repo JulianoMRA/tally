@@ -1,5 +1,11 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida, focarCartao, irPara } from './fixtures/navegacao'
+import {
+  abrirCadastroDeSaida,
+  criarCartao,
+  criarCategoria,
+  focarCartao,
+  irPara
+} from './fixtures/navegacao'
 import type { ElectronApplication, Page } from '@playwright/test'
 
 /**
@@ -26,20 +32,9 @@ async function semear(app: ElectronApplication): Promise<Page> {
   const page = await app.firstWindow()
   await page.waitForLoadState('domcontentloaded')
 
-  await page.getByRole('link', { name: 'Cartões' }).click()
-  await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
-  await page.getByLabel('Nome').fill('Inter Geometria E2E')
-  await page.getByLabel('Dia de fechamento').fill('5')
-  await page.getByLabel('Dia de vencimento').fill('12')
-  await page.getByRole('button', { name: 'Salvar' }).click()
-  await expect(page.getByText('Inter Geometria E2E')).toBeVisible()
+  await criarCartao(page, 'Inter Geometria E2E')
 
-  await page.getByRole('link', { name: 'Categorias' }).click()
-  await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
-  await page.getByLabel('Nome').fill('Mercado Geometria E2E')
-  await page.getByRole('radio', { name: 'Despesa' }).check()
-  await page.getByRole('button', { name: 'Salvar' }).click()
-  await expect(page.getByText('Mercado Geometria E2E')).toBeVisible()
+  await criarCategoria(page, 'Mercado Geometria E2E')
 
   // Parcelada em mês futuro: a fatura nasce Aberta, então a linha exibe o
   // conjunto máximo de ações (Editar, Adiantar, Excluir) — o pior caso de

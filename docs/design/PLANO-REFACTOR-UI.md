@@ -308,13 +308,58 @@ Especificado em RF-REN-07 e RF-REN-08.
 
 ---
 
-## 7. Fases seguintes — a detalhar
+## 7. F7 — Cartões e Categorias — CONCLUÍDA
 
-| Fase | Escopo                                                         | Pontos     | Custo |
-| ---- | -------------------------------------------------------------- | ---------- | ----- |
-| F7   | Cartões e Categorias: padrão único, sparkline, arquivar no ⋯   | 13, 14, 16 | médio |
-| F8   | Sistema: 6 degraus de tipo, largura única, 3 densidades        | 17         | alto  |
-| F9   | Ajustes/Importar: herdam; "Restaurar backup" ganha confirmação | —          | baixo |
+Resolve os pontos 13, 14 e 16. Branch `feat/refactor-cartoes-categorias`.
+
+**O problema, confirmado no código:** duas telas espelhadas em que um formulário
+vazio ocupava 380px em toda visita, e a linha do cartão trazia nome, dias e um
+badge "Ativo" que nunca é falso na visão padrão — cadastro morto. Arquivar
+dividia a linha com Editar, no mesmo peso, e sem confirmação.
+
+**Entregue:** `resumirCartao` (função pura, 14 testes) apura a fatura aberta do
+mês corrente, a série dos até seis meses encerrados e a média do período;
+`alturasDaSparkline` escala as barras. As duas telas passaram ao padrão de
+Saídas — lista em largura cheia e cadastro em `SidePanel` sob demanda. Arquivar
+saiu para o menu ⋯ com `ConfirmDialog`, e arquivados descem esmaecidos para o
+fim em vez de dependerem de troca de estado. Especificado em RF-CAR-04;
+RF-CAR-02 e RF-CAT-02 ganharam a confirmação e a ordenação.
+
+**Decisões que foram além do plano, as três últimas achadas pela captura:**
+
+- **A sparkline olha só o passado encerrado.** Incluir o mês corrente misturaria
+  uma fatura em formação com meses fechados, e a última barra ficaria sempre
+  menor — o cartão pareceria em queda todo dia 2.
+- **A média some quando o histórico soma zero**, pelo mesmo motivo da F6.
+- **"últimos N meses" saiu do rótulo.** A sparkline já mostra quantos meses são;
+  repetir isso no texto estourava a coluna e truncava justamente o número da
+  média, que é a informação.
+- **A última barra usa a cor do cartão**, as anteriores ficam neutras: sem isso
+  é preciso contar barras para achar o mês mais recente.
+- **A proporção da sparkline é o que a faz ler como tendência.** Nasceu com
+  22px de altura e barras de 34px: a diferença entre 63% e 100% rendia sete
+  pixels e a série virava fileira de blocos. 30px de altura, 12px de largura
+  máxima por barra.
+- **O formulário entra no painel sem card próprio.** Os dois levaram junto
+  borda, sombra, padding e um `<h2>` repetindo o título do `SidePanel` — o
+  mesmo defeito que a F3 já corrigira em Saídas, reintroduzido por cópia.
+
+**Custo em teste:** o formulário atrás do painel invalidou o preâmbulo de seed
+que **dezenove specs** repetiam — seis linhas para criar um cartão e uma
+categoria. Em vez de corrigir cada cópia, o par `criarCartao` / `criarCategoria`
+entrou em `e2e/fixtures/navegacao.ts`, no mesmo movimento que
+`abrirCadastroDeSaida` fez na F3: 241 linhas saíram das specs. Os dois specs de
+CRUD foram reescritos à mão, porque neles o fluxo alterado **é** o objeto do
+teste.
+
+---
+
+## 8. Fases seguintes — a detalhar
+
+| Fase | Escopo                                                         | Pontos | Custo |
+| ---- | -------------------------------------------------------------- | ------ | ----- |
+| F8   | Sistema: 6 degraus de tipo, largura única, 3 densidades        | 17     | alto  |
+| F9   | Ajustes/Importar: herdam; "Restaurar backup" ganha confirmação | —      | baixo |
 
 Notas de risco já levantadas:
 
@@ -327,7 +372,7 @@ Notas de risco já levantadas:
 
 ---
 
-## 8. Gates por fase
+## 9. Gates por fase
 
 Regra 6 do `CLAUDE.md`: não há CI hospedada desde ago/2026. O pipeline local
 precisa estar verde antes de abrir o PR, e verificar é responsabilidade de quem
@@ -355,7 +400,7 @@ merge na `main` antes de iniciar a próxima.
 
 ---
 
-## 9. O que a proposta não muda
+## 10. O que a proposta não muda
 
 - Paleta Cream, tokens de cor, raios e sombras
 - Geist / Geist Mono como famílias

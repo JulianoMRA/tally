@@ -1,49 +1,68 @@
 import type { Categoria } from '@domain/entities/categoria'
-import { Badge, Button, EmptyState } from '../../components/ui'
+import { Badge, EmptyState, RowActions } from '../../components/ui'
 import styles from './categorias.module.css'
 
 type Props = {
   categorias: Categoria[]
   onEditar: (categoria: Categoria) => void
-  onArquivar: (id: number) => void
+  onArquivar: (categoria: Categoria) => void
   onDesarquivar: (id: number) => void
 }
 
 const TIPO_LABEL: Record<string, string> = { Despesa: 'Despesa', Renda: 'Renda', Ambos: 'Ambos' }
 
+/**
+ * Mesmo padrão da lista de cartões (ponto 16): largura cheia, editar visível,
+ * arquivar no menu ⋯ com confirmação, e arquivadas esmaecidas no fim em vez de
+ * escondidas atrás de um estado que recarrega a lista.
+ *
+ * Categoria não tem série histórica como o cartão — o que ela carrega de
+ * informação é o tipo, que decide onde ela aparece nos formulários.
+ */
 export function CategoriaList({ categorias, onEditar, onArquivar, onDesarquivar }: Props) {
   if (categorias.length === 0) {
     return (
       <EmptyState
         title="Nenhuma categoria encontrada."
-        description="Crie sua primeira categoria ao lado."
+        description="Crie uma categoria para poder classificar despesas e rendas."
       />
     )
   }
 
+  const ativas = categorias.filter((c) => c.ativo)
+  const arquivadas = categorias.filter((c) => !c.ativo)
+
   return (
     <ul className={styles.list}>
-      {categorias.map((categoria) => (
-        <li key={categoria.id} className={styles.listItem}>
+      {[...ativas, ...arquivadas].map((categoria) => (
+        <li
+          key={categoria.id}
+          className={`${styles.listItem} ${categoria.ativo ? '' : styles.listItemArquivado}`}
+        >
           <span className={styles.colorChip} style={{ background: categoria.cor }} />
+
           <div className={styles.listItemInfo}>
             <span className={styles.listItemNome}>{categoria.nome}</span>
             <span className={styles.listItemMeta}>{TIPO_LABEL[categoria.tipo]}</span>
           </div>
+
           <div className={styles.listItemActions}>
-            <Badge variant={categoria.ativo ? 'active' : 'archived'} />
-            <Button size="sm" variant="ghost" onClick={() => onEditar(categoria)}>
-              Editar
-            </Button>
-            {categoria.ativo ? (
-              <Button size="sm" variant="secondary" onClick={() => onArquivar(categoria.id)}>
-                Arquivar
-              </Button>
-            ) : (
-              <Button size="sm" variant="secondary" onClick={() => onDesarquivar(categoria.id)}>
-                Desarquivar
-              </Button>
-            )}
+            {!categoria.ativo && <Badge variant="archived" />}
+            <RowActions
+              acoes={
+                categoria.ativo
+                  ? [
+                      { label: 'Editar', onClick: () => onEditar(categoria) },
+                      {
+                        label: 'Arquivar',
+                        onClick: () => onArquivar(categoria),
+                        destrutiva: true
+                      }
+                    ]
+                  : [{ label: 'Desarquivar', onClick: () => onDesarquivar(categoria.id) }]
+              }
+              contexto={categoria.nome}
+            />
           </div>
         </li>
       ))}

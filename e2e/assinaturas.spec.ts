@@ -1,5 +1,11 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida, focarCartao, irPara } from './fixtures/navegacao'
+import {
+  abrirCadastroDeSaida,
+  criarCartao,
+  criarCategoria,
+  focarCartao,
+  irPara
+} from './fixtures/navegacao'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
@@ -9,21 +15,10 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // --- Cartão Inter F=5 V=12 ---
-    await page.getByRole('link', { name: 'Cartões' }).click()
-    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Inter Assinatura E2E')
-    await page.getByLabel('Dia de fechamento').fill('5')
-    await page.getByLabel('Dia de vencimento').fill('12')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Inter Assinatura E2E')).toBeVisible()
+    await criarCartao(page, 'Inter Assinatura E2E')
 
     // --- Categoria Streaming ---
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Streaming E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Streaming E2E')).toBeVisible()
+    await criarCategoria(page, 'Streaming E2E')
 
     // --- Cadastrar assinatura (form inline em Saídas, tipo Assinatura) ---
     await page.getByRole('link', { name: 'Saídas' }).click()

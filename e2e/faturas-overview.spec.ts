@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, criarCartao, criarCategoria } from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 // A visão geral sem cartão selecionado deixou de existir: a fusão de lista e
@@ -12,21 +12,10 @@ test.describe('Faturas — chegada sem escolher cartão', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // --- Cartão Inter F=5 V=12 ---
-    await page.getByRole('link', { name: 'Cartões' }).click()
-    await expect(page.getByRole('heading', { name: 'Cartões' })).toBeVisible()
-    await page.getByLabel('Nome').fill('Inter Overview E2E')
-    await page.getByLabel('Dia de fechamento').fill('5')
-    await page.getByLabel('Dia de vencimento').fill('12')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Inter Overview E2E')).toBeVisible()
+    await criarCartao(page, 'Inter Overview E2E')
 
     // --- Categoria ---
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias' })).toBeVisible()
-    await page.getByLabel('Nome').fill('Alimentação Overview E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Alimentação Overview E2E')).toBeVisible()
+    await criarCategoria(page, 'Alimentação Overview E2E')
 
     // --- Despesa no crédito → gera a fatura de junho/2026 ---
     await page.getByRole('link', { name: 'Saídas' }).click()

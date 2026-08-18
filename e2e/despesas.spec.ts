@@ -1,5 +1,10 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida, focarCartao } from './fixtures/navegacao'
+import {
+  abrirCadastroDeSaida,
+  criarCartao,
+  criarCategoria,
+  focarCartao
+} from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Despesa única + Fatura', () => {
@@ -8,25 +13,10 @@ test.describe('Despesa única + Fatura', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // --- Criar cartão Inter F=5 V=12 ---
-    await page.getByRole('link', { name: 'Cartões' }).click()
-    await expect(page.getByRole('heading', { name: 'Cartões' })).toBeVisible()
-
-    await page.getByLabel('Nome').fill('Inter E2E')
-    await page.getByLabel('Dia de fechamento').fill('5')
-    await page.getByLabel('Dia de vencimento').fill('12')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-
-    await expect(page.getByText('Inter E2E')).toBeVisible()
+    await criarCartao(page, 'Inter E2E')
 
     // --- Criar categoria Alimentação ---
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias' })).toBeVisible()
-
-    await page.getByLabel('Nome').fill('Alimentação E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-
-    await expect(page.getByText('Alimentação E2E')).toBeVisible()
+    await criarCategoria(page, 'Alimentação E2E')
 
     // --- Criar despesa única (form inline na tela Saídas) ---
     await page.getByRole('link', { name: 'Saídas' }).click()

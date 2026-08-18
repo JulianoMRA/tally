@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, criarCartao, criarCategoria, irPara } from './fixtures/navegacao'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
 // Fase 10 — QoL na tela Saídas: busca por descrição e duplicar despesa.
@@ -9,20 +9,9 @@ test.describe('Saídas — QoL (busca e duplicar)', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // Setup: cartão + categoria
-    await page.getByRole('link', { name: 'Cartões' }).click()
-    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Inter QoL E2E')
-    await page.getByLabel('Dia de fechamento').fill('5')
-    await page.getByLabel('Dia de vencimento').fill('12')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Inter QoL E2E')).toBeVisible()
+    await criarCartao(page, 'Inter QoL E2E')
 
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Mercado QoL E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Mercado QoL E2E')).toBeVisible()
+    await criarCategoria(page, 'Mercado QoL E2E')
 
     // Duas despesas de crédito com descrições distintas
     await page.getByRole('link', { name: 'Saídas' }).click()
@@ -69,20 +58,9 @@ test.describe('Saídas — QoL (busca e duplicar)', () => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
-    await page.getByRole('link', { name: 'Cartões' }).click()
-    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Nubank QoL E2E')
-    await page.getByLabel('Dia de fechamento').fill('15')
-    await page.getByLabel('Dia de vencimento').fill('22')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Nubank QoL E2E')).toBeVisible()
+    await criarCartao(page, 'Nubank QoL E2E', '15', '22')
 
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Lazer QoL E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Lazer QoL E2E')).toBeVisible()
+    await criarCategoria(page, 'Lazer QoL E2E')
 
     await irPara(page, 'Saídas')
     await abrirCadastroDeSaida(page)
