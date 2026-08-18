@@ -1,5 +1,11 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida, focarCartao, irPara } from './fixtures/navegacao'
+import {
+  abrirCadastroDeSaida,
+  criarCartao,
+  criarCategoria,
+  focarCartao,
+  irPara
+} from './fixtures/navegacao'
 import type { Page } from '@playwright/test'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
@@ -22,20 +28,9 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // Setup: cartão e categoria
-    await page.getByRole('link', { name: 'Cartões' }).click()
-    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Inter Excluir E2E')
-    await page.getByLabel('Dia de fechamento').fill('5')
-    await page.getByLabel('Dia de vencimento').fill('12')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Inter Excluir E2E')).toBeVisible()
+    await criarCartao(page, 'Inter Excluir E2E')
 
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Streaming Excluir E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Streaming Excluir E2E')).toBeVisible()
+    await criarCategoria(page, 'Streaming Excluir E2E')
 
     // Cria assinatura na tela Saídas
     const hoje = new Date()
@@ -71,20 +66,9 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // Setup: cartão e categoria
-    await page.getByRole('link', { name: 'Cartões' }).click()
-    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Inter Paga E2E')
-    await page.getByLabel('Dia de fechamento').fill('5')
-    await page.getByLabel('Dia de vencimento').fill('12')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Inter Paga E2E')).toBeVisible()
+    await criarCartao(page, 'Inter Paga E2E')
 
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Mercado Paga E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Mercado Paga E2E')).toBeVisible()
+    await criarCategoria(page, 'Mercado Paga E2E')
 
     // Despesa única com data dinâmica 2 meses no futuro (dia 03 < F=05 → fatura
     // do próprio mês, ainda não vencida) — assim reabrir devolve Aberta e a
@@ -136,20 +120,9 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
-    await page.getByRole('link', { name: 'Cartões' }).click()
-    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Inter Vencida E2E')
-    await page.getByLabel('Dia de fechamento').fill('5')
-    await page.getByLabel('Dia de vencimento').fill('12')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Inter Vencida E2E')).toBeVisible()
+    await criarCartao(page, 'Inter Vencida E2E')
 
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Mercado Vencida E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Mercado Vencida E2E')).toBeVisible()
+    await criarCategoria(page, 'Mercado Vencida E2E')
 
     // Compra retroativa: fatura de junho/2026 já passou do fechamento (2026-06-05)
     await irPara(page, 'Saídas')

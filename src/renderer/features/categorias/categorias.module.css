@@ -7,16 +7,17 @@
   cursor: pointer;
 }
 
+/* Lista em largura cheia; o formulário virou SidePanel (ponto 16). */
 .layout {
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 24px;
-  align-items: start;
+  min-width: 0;
 }
 
-.listSection,
-.formSection {
-  min-width: 0;
+/* Arquivada desce esmaecida para o fim da lista, em vez de exigir a troca de
+   um estado que recarrega tudo. */
+.listItemArquivado {
+  opacity: 0.6;
+  border-style: dashed;
+  box-shadow: none;
 }
 
 /* List */
@@ -96,23 +97,12 @@
 }
 
 /* Form */
+/* Sem chrome próprio: dentro do SidePanel o formulário é o conteúdo, não um
+   card. Ver o comentário equivalente em cartoes.module.css. */
 .form {
-  background: var(--bg-elev);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-3);
-  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  box-shadow: var(--shadow-1);
-}
-
-.formTitle {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: -0.02em;
-  margin: 0 0 4px;
 }
 
 .fieldRow {

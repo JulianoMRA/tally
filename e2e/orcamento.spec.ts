@@ -1,5 +1,11 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirAba, abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
+import {
+  abrirAba,
+  abrirCadastroDeSaida,
+  criarCartao,
+  criarCategoria,
+  irPara
+} from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 // Bloco D — Orçamento por categoria: definir limite e ver o status (RN ok/alerta/estourado).
@@ -9,21 +15,10 @@ test.describe('Orçamento por categoria (Bloco D)', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // --- Cartão Inter F=5 V=12 ---
-    await page.getByRole('link', { name: 'Cartões' }).click()
-    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Inter Orc E2E')
-    await page.getByLabel('Dia de fechamento').fill('5')
-    await page.getByLabel('Dia de vencimento').fill('12')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Inter Orc E2E')).toBeVisible()
+    await criarCartao(page, 'Inter Orc E2E')
 
     // --- Categoria Mercado (Despesa) ---
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Mercado Orc E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Mercado Orc E2E')).toBeVisible()
+    await criarCategoria(page, 'Mercado Orc E2E')
 
     // --- Despesa única R$ 80,00 em 2026-06-03 → realizado de junho/2026 ---
     await irPara(page, 'Saídas')

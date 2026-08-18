@@ -1,4 +1,6 @@
 import { test, expect } from './fixtures/electron-app'
+import { criarCategoria } from './fixtures/navegacao'
+import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Categorias CRUD', () => {
@@ -6,34 +8,27 @@ test.describe('Categorias CRUD', () => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
-    // Navega para /categorias
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias' })).toBeVisible()
-
     // --- Criar categoria Mercado ---
-    await page.getByLabel('Nome').fill('Mercado')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
+    // Mesmo movimento de Cartões: o formulário virou SidePanel sob demanda.
+    await criarCategoria(page, 'Mercado')
 
-    // Aparece na lista com badge de tipo
-    await expect(page.getByText('Mercado')).toBeVisible()
-    await expect(
-      page
-        .getByRole('listitem')
-        .filter({ hasText: 'Mercado' })
-        .getByText('Despesa', { exact: true })
-    ).toBeVisible()
+    const linha = page.getByRole('listitem').filter({ hasText: 'Mercado' })
+    await expect(linha.getByText('Despesa', { exact: true })).toBeVisible()
 
     // --- Editar: renomear para Supermercado ---
-    await page.getByRole('button', { name: 'Editar' }).first().click()
-    await page.getByLabel('Nome').clear()
-    await page.getByLabel('Nome').fill('Supermercado')
-    await page.getByRole('button', { name: 'Salvar' }).click()
+    await linha.getByRole('button', { name: 'Editar' }).click()
+    const painel = page.getByRole('dialog', { name: 'Editar categoria' })
+    await expect(painel).toBeVisible()
+    await painel.getByLabel('Nome').fill('Supermercado')
+    await painel.getByRole('button', { name: 'Salvar' }).click()
 
     await expect(page.getByText('Supermercado')).toBeVisible()
 
-    // --- Arquivar ---
-    await page.getByRole('button', { name: 'Arquivar' }).first().click()
+    // --- Arquivar: no menu ⋯ e com confirmação (ponto 14) ---
+    await acionarNoMenuDaLinha(page, linha, 'Arquivar')
+    const confirmacao = page.getByRole('dialog', { name: 'Arquivar "Supermercado"?' })
+    await expect(confirmacao).toBeVisible()
+    await confirmacao.getByRole('button', { name: 'Arquivar' }).click()
 
     // Some da lista padrão
     await expect(page.getByText('Supermercado')).not.toBeVisible()

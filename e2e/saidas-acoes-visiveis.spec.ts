@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, criarCartao, criarCategoria, irPara } from './fixtures/navegacao'
 import type { ElectronApplication, Page } from '@playwright/test'
 
 /**
@@ -22,18 +22,9 @@ async function semear(app: ElectronApplication): Promise<Page> {
   const page = await app.firstWindow()
   await page.waitForLoadState('domcontentloaded')
 
-  await irPara(page, 'Cartões')
-  await page.getByLabel('Nome').fill('Inter Acoes E2E')
-  await page.getByLabel('Dia de fechamento').fill('5')
-  await page.getByLabel('Dia de vencimento').fill('12')
-  await page.getByRole('button', { name: 'Salvar' }).click()
-  await expect(page.getByText('Inter Acoes E2E')).toBeVisible()
+  await criarCartao(page, 'Inter Acoes E2E')
 
-  await irPara(page, 'Categorias')
-  await page.getByLabel('Nome').fill('Mercado Acoes E2E')
-  await page.getByRole('radio', { name: 'Despesa' }).check()
-  await page.getByRole('button', { name: 'Salvar' }).click()
-  await expect(page.getByText('Mercado Acoes E2E')).toBeVisible()
+  await criarCategoria(page, 'Mercado Acoes E2E')
 
   await irPara(page, 'Saídas')
 

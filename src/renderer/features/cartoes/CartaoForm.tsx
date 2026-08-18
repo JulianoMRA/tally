@@ -7,13 +7,12 @@ import { Button, ColorPicker, Field, Input } from '../../components/ui'
 import styles from './cartoes.module.css'
 
 type Props = {
-  mode: 'criar' | 'editar'
   cartaoInicial?: Cartao
   onSalvar: (input: CartaoInput) => Promise<void>
   onCancelar: () => void
 }
 
-export function CartaoForm({ mode, cartaoInicial, onSalvar, onCancelar }: Props) {
+export function CartaoForm({ cartaoInicial, onSalvar, onCancelar }: Props) {
   const {
     register,
     watch,
@@ -34,8 +33,6 @@ export function CartaoForm({ mode, cartaoInicial, onSalvar, onCancelar }: Props)
 
   return (
     <form onSubmit={handleSubmit(onSalvar)} className={styles.form}>
-      <h2 className={styles.formTitle}>{mode === 'criar' ? 'Novo cartão' : 'Editar cartão'}</h2>
-
       <Field label="Nome" error={errors.nome?.message} required>
         <Input type="text" {...register('nome')} placeholder="Ex: Nubank" error={!!errors.nome} />
       </Field>

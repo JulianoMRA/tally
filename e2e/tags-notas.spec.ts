@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida } from './fixtures/navegacao'
+import { abrirCadastroDeSaida, criarCartao, criarCategoria } from './fixtures/navegacao'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
 // Fase 11 — nota livre e tags nas despesas, exibição e filtro na tela Saídas.
@@ -9,20 +9,9 @@ test.describe('Saídas — nota e tags', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // Setup: cartão + categoria
-    await page.getByRole('link', { name: 'Cartões' }).click()
-    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Inter Tag E2E')
-    await page.getByLabel('Dia de fechamento').fill('5')
-    await page.getByLabel('Dia de vencimento').fill('12')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Inter Tag E2E')).toBeVisible()
+    await criarCartao(page, 'Inter Tag E2E')
 
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Mercado Tag E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Mercado Tag E2E')).toBeVisible()
+    await criarCategoria(page, 'Mercado Tag E2E')
 
     // Duas despesas
     await page.getByRole('link', { name: 'Saídas' }).click()

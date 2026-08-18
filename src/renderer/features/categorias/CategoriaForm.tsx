@@ -7,13 +7,12 @@ import { Button, ColorPicker, Field, Input } from '../../components/ui'
 import styles from './categorias.module.css'
 
 type Props = {
-  mode: 'criar' | 'editar'
   categoriaInicial?: Categoria
   onSalvar: (input: CategoriaInput) => Promise<void>
   onCancelar: () => void
 }
 
-export function CategoriaForm({ mode, categoriaInicial, onSalvar, onCancelar }: Props) {
+export function CategoriaForm({ categoriaInicial, onSalvar, onCancelar }: Props) {
   const {
     register,
     watch,
@@ -33,10 +32,6 @@ export function CategoriaForm({ mode, categoriaInicial, onSalvar, onCancelar }: 
 
   return (
     <form onSubmit={handleSubmit(onSalvar)} className={styles.form}>
-      <h2 className={styles.formTitle}>
-        {mode === 'criar' ? 'Nova categoria' : 'Editar categoria'}
-      </h2>
-
       <Field label="Nome" error={errors.nome?.message} required>
         <Input type="text" {...register('nome')} placeholder="Ex: Mercado" error={!!errors.nome} />
       </Field>

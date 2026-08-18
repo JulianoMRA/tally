@@ -1,5 +1,11 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirAba, abrirCadastroDeSaida, irPara } from './fixtures/navegacao'
+import {
+  abrirAba,
+  abrirCadastroDeSaida,
+  criarCartao,
+  criarCategoria,
+  irPara
+} from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 // TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
@@ -12,21 +18,10 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     await expect(page.getByRole('heading', { name: 'Visão mensal' })).toBeVisible()
 
     // --- Setup: cartão Inter F=5 V=12 ---
-    await page.getByRole('link', { name: 'Cartões' }).click()
-    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Inter Mensal E2E')
-    await page.getByLabel('Dia de fechamento').fill('5')
-    await page.getByLabel('Dia de vencimento').fill('12')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Inter Mensal E2E')).toBeVisible()
+    await criarCartao(page, 'Inter Mensal E2E')
 
     // Categoria
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Geral Mensal E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Geral Mensal E2E')).toBeVisible()
+    await criarCategoria(page, 'Geral Mensal E2E')
 
     // Despesa única R$ 100 em 2026-06-03 → fatura junho/2026
     await irPara(page, 'Saídas')
@@ -75,24 +70,10 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // Setup: cartão e categoria
-    await page.getByRole('link', { name: 'Cartões' }).click()
-    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Inter Projecao E2E')
-    await page.getByLabel('Dia de fechamento').fill('5')
-    await page.getByLabel('Dia de vencimento').fill('12')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Inter Projecao E2E')).toBeVisible()
+    await criarCartao(page, 'Inter Projecao E2E')
 
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Streaming Projecao E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-
-    await page.getByLabel('Nome').fill('Bolsa Projecao E2E')
-    await page.getByRole('radio', { name: 'Renda' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Bolsa Projecao E2E')).toBeVisible()
+    await criarCategoria(page, 'Streaming Projecao E2E')
+    await criarCategoria(page, 'Bolsa Projecao E2E', 'Renda')
 
     // Assinatura mensal de R$ 30,00 começando hoje (form inline em Despesas, tipo Assinatura)
     const hoje = new Date()

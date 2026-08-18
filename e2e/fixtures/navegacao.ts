@@ -89,3 +89,51 @@ export async function abrirAba(page: Page, aba: AbaVisaoMensal): Promise<void> {
   await tab.click()
   await expect(tab).toHaveAttribute('aria-selected', 'true')
 }
+
+/**
+ * Cria um cartão do zero, navegando até a tela.
+ *
+ * O formulário de Cartões virou `SidePanel` sob demanda (ponto 16), o mesmo
+ * movimento que Saídas fez na F3. Dezenove specs abriam com este mesmo
+ * preâmbulo de seis linhas só para ter um cartão em base; concentrá-lo aqui é o
+ * que evita que a próxima mudança de layout quebre todas elas de novo.
+ *
+ * Os campos são procurados dentro do diálogo: `Nome` é rótulo repetido entre
+ * Cartões e Categorias, e a página por baixo continua montada.
+ */
+export async function criarCartao(
+  page: Page,
+  nome: string,
+  diaFechamento = '5',
+  diaVencimento = '12'
+): Promise<void> {
+  await irPara(page, 'Cartões')
+  await page.getByRole('button', { name: '+ Novo cartão' }).click()
+
+  const painel = page.getByRole('dialog', { name: 'Novo cartão' })
+  await expect(painel).toBeVisible()
+  await painel.getByLabel('Nome').fill(nome)
+  await painel.getByLabel('Dia de fechamento').fill(diaFechamento)
+  await painel.getByLabel('Dia de vencimento').fill(diaVencimento)
+  await painel.getByRole('button', { name: 'Salvar' }).click()
+
+  await expect(page.getByText(nome)).toBeVisible()
+}
+
+/** Mesma história de `criarCartao`, para Categorias. */
+export async function criarCategoria(
+  page: Page,
+  nome: string,
+  tipo: 'Despesa' | 'Renda' = 'Despesa'
+): Promise<void> {
+  await irPara(page, 'Categorias')
+  await page.getByRole('button', { name: '+ Nova categoria' }).click()
+
+  const painel = page.getByRole('dialog', { name: 'Nova categoria' })
+  await expect(painel).toBeVisible()
+  await painel.getByLabel('Nome').fill(nome)
+  await painel.getByRole('radio', { name: tipo }).check()
+  await painel.getByRole('button', { name: 'Salvar' }).click()
+
+  await expect(page.getByText(nome)).toBeVisible()
+}

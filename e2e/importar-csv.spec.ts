@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/electron-app'
-import { focarCartao, irPara } from './fixtures/navegacao'
+import { criarCartao, criarCategoria, focarCartao, irPara } from './fixtures/navegacao'
 
 // Importador CSV (migração da planilha): templates fixos, preview com erros
 // por linha e importação atômica no main process.
@@ -9,20 +9,9 @@ test.describe('Importar dados (CSV)', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // Setup: cartão e categoria referenciados pelo nome no CSV
-    await page.getByRole('link', { name: 'Cartões' }).click()
-    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Inter Import E2E')
-    await page.getByLabel('Dia de fechamento').fill('5')
-    await page.getByLabel('Dia de vencimento').fill('12')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Inter Import E2E')).toBeVisible()
+    await criarCartao(page, 'Inter Import E2E')
 
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Mercado Import E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Mercado Import E2E')).toBeVisible()
+    await criarCategoria(page, 'Mercado Import E2E')
 
     // Importa 2 compras de crédito
     await page.getByRole('link', { name: 'Importar dados' }).click()

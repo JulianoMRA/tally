@@ -76,13 +76,14 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 ### 4.1 Cartões (RF-CAR)
 
 - **RF-CAR-01** — Cadastrar cartão com nome, dia de fechamento (1–31), dia de vencimento (1–31), cor de identificação e flag ativo.
-- **RF-CAR-02** — Editar e arquivar (soft delete) cartões. Cartão arquivado não aparece em formulários de despesa, mas seu histórico permanece visível.
+- **RF-CAR-02** — Editar e arquivar (soft delete) cartões. Cartão arquivado não aparece em formulários de despesa, mas seu histórico permanece visível. Arquivar **pede confirmação explícita** e não fica como botão solto na linha: é ação com consequência e vive no menu de ações, ao lado de Editar. Cartões arquivados aparecem esmaecidos ao fim da lista quando "Mostrar arquivados" está ativo, em vez de trocarem a lista inteira.
 - **RF-CAR-03** — Listar cartões ativos com indicadores: total da fatura aberta, próximo vencimento.
+- **RF-CAR-04** — A linha do cartão carrega o uso recente, não só o cadastro: total da fatura **aberta do mês corrente**, série dos até **seis meses encerrados** em sparkline e a **média** desse período. A média é omitida quando o histórico soma zero — "média R$ 0,00" não é referência de nada. Cartão sem nenhum mês encerrado exibe "sem histórico"; cartão com meses encerrados e nenhum gasto exibe "sem uso há N meses". Meses futuros ficam de fora: só o passado encerrado é comparável.
 
 ### 4.2 Categorias (RF-CAT)
 
 - **RF-CAT-01** — Cadastrar categoria com nome, tipo (Despesa, Renda ou Ambos) e cor.
-- **RF-CAT-02** — Editar e arquivar categorias. Despesas vinculadas a categoria arquivada continuam exibindo a categoria com indicador de inativa.
+- **RF-CAT-02** — Editar e arquivar categorias. Despesas vinculadas a categoria arquivada continuam exibindo a categoria com indicador de inativa. Como em RF-CAR-02, arquivar pede confirmação explícita e vive no menu de ações; arquivadas aparecem esmaecidas ao fim da lista.
 
 ### 4.3 Despesas (RF-DES)
 

@@ -1,5 +1,11 @@
 import { test, expect } from './fixtures/electron-app'
-import { abrirCadastroDeSaida, focarCartao, irPara } from './fixtures/navegacao'
+import {
+  abrirCadastroDeSaida,
+  criarCartao,
+  criarCategoria,
+  focarCartao,
+  irPara
+} from './fixtures/navegacao'
 
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Deep-link de faturas (query string)', () => {
@@ -8,18 +14,9 @@ test.describe('Deep-link de faturas (query string)', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // --- Pré-condição: cartão, categoria e despesa para gerar uma fatura ---
-    await irPara(page, 'Cartões')
-    await page.getByLabel('Nome').fill('Inter Deep E2E')
-    await page.getByLabel('Dia de fechamento').fill('5')
-    await page.getByLabel('Dia de vencimento').fill('12')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Inter Deep E2E')).toBeVisible()
+    await criarCartao(page, 'Inter Deep E2E')
 
-    await irPara(page, 'Categorias')
-    await page.getByLabel('Nome').fill('Alimentação Deep E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Alimentação Deep E2E')).toBeVisible()
+    await criarCategoria(page, 'Alimentação Deep E2E')
 
     await irPara(page, 'Saídas')
     await abrirCadastroDeSaida(page)
@@ -60,20 +57,9 @@ test.describe('Deep-link de faturas (query string)', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // --- Cartão e uma compra, para haver fatura corrente onde cair ---
-    await page.getByRole('link', { name: 'Cartões' }).click()
-    await expect(page.getByRole('heading', { name: 'Cartões', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Inter Morto E2E')
-    await page.getByLabel('Dia de fechamento').fill('5')
-    await page.getByLabel('Dia de vencimento').fill('12')
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Inter Morto E2E')).toBeVisible()
+    await criarCartao(page, 'Inter Morto E2E')
 
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    await expect(page.getByRole('heading', { name: 'Categorias', exact: true })).toBeVisible()
-    await page.getByLabel('Nome').fill('Mercado Morto E2E')
-    await page.getByRole('radio', { name: 'Despesa' }).check()
-    await page.getByRole('button', { name: 'Salvar' }).click()
-    await expect(page.getByText('Mercado Morto E2E')).toBeVisible()
+    await criarCategoria(page, 'Mercado Morto E2E')
 
     await irPara(page, 'Saídas')
     await abrirCadastroDeSaida(page)

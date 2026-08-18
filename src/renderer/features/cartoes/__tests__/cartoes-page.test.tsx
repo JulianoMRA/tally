@@ -10,6 +10,9 @@ type ApiMock = {
     list: ReturnType<typeof vi.fn>
     create: ReturnType<typeof vi.fn>
   }
+  fatura: {
+    listarResumoPorCartao: ReturnType<typeof vi.fn>
+  }
 }
 
 function instalarApiMock(): ApiMock {
@@ -17,14 +20,21 @@ function instalarApiMock(): ApiMock {
     cartao: {
       list: vi.fn().mockResolvedValue([]),
       create: vi.fn()
+    },
+    // A linha do cartão passou a mostrar fatura aberta e série de 6 meses.
+    fatura: {
+      listarResumoPorCartao: vi.fn().mockResolvedValue([])
     }
   }
   vi.stubGlobal('window', Object.assign(window, { api }))
   return api
 }
 
+// O formulário saiu do layout permanente e virou SidePanel (ponto 16): abrir o
+// painel passou a fazer parte do fluxo de cadastro.
 async function preencherESalvar(): Promise<void> {
   const user = userEvent.setup()
+  await user.click(screen.getByRole('button', { name: '+ Novo cartão' }))
   await user.type(screen.getByLabelText(/Nome/), 'Inter')
   await user.type(screen.getByLabelText(/Dia de fechamento/), '5')
   await user.type(screen.getByLabelText(/Dia de vencimento/), '12')
