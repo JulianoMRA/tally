@@ -91,6 +91,35 @@ describe('AjustesPage', () => {
     expect(api.config.set).not.toHaveBeenCalled()
   })
 
+  // A tela rola e o botão de salvar confirma TODAS as seções: sem sinal de
+  // pendência, quem mexia em "Avisos de fatura" não tinha como saber que a
+  // mudança ainda não estava gravada.
+  it('nao avisa pendencia enquanto nada foi editado', async () => {
+    instalarApiMock()
+    renderPagina()
+
+    await screen.findByLabelText('Quantidade de backups mantidos')
+
+    expect(screen.queryByText('Alterações não salvas')).toBeNull()
+  })
+
+  it('avisa que ha alteracoes nao salvas ao editar, e o aviso some ao salvar', async () => {
+    instalarApiMock()
+    const user = userEvent.setup()
+    renderPagina()
+
+    const retencao = await screen.findByLabelText('Quantidade de backups mantidos')
+    await user.clear(retencao)
+    await user.type(retencao, '30')
+
+    expect(await screen.findByText('Alterações não salvas')).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Salvar ajustes' }))
+    await screen.findByText('Ajustes salvos.')
+
+    expect(screen.queryByText('Alterações não salvas')).toBeNull()
+  })
+
   it('escolher pasta atualiza o campo com o caminho retornado', async () => {
     const api = instalarApiMock()
     api.config.escolherPastaBackup.mockResolvedValue('D:\\MeusBackups')

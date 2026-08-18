@@ -1,5 +1,6 @@
 import { test, expect } from './fixtures/electron-app'
 import { abrirCadastroDeSaida, focarCartao } from './fixtures/navegacao'
+import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 import { semear } from './fixtures/seed'
 
 /**
@@ -116,7 +117,14 @@ test.describe('Ajustes — cópias de segurança', () => {
 
     await painel.getByRole('button', { name: 'Fazer cópia agora' }).click()
 
-    await expect(painel.getByRole('button', { name: 'Restaurar' })).toHaveCount(1)
+    // Restaurar substitui a base inteira: pelo padrão da F7 ela saiu da linha
+    // para o menu de ações, mesmo sendo a única ação da cópia.
+    const linha = painel.getByRole('listitem')
+    await expect(linha).toHaveCount(1)
+    await linha.getByRole('button', { name: /^Mais ações/ }).click()
+    await expect(page.getByRole('menuitem', { name: 'Restaurar' })).toBeVisible()
+    await page.keyboard.press('Escape')
+
     await expect(painel.getByRole('button', { name: 'Abrir pasta' })).toBeVisible()
   })
 
@@ -125,7 +133,7 @@ test.describe('Ajustes — cópias de segurança', () => {
     await page.getByRole('link', { name: 'Ajustes' }).click()
 
     await page.getByRole('button', { name: 'Fazer cópia agora' }).click()
-    await page.getByRole('button', { name: 'Restaurar' }).first().click()
+    await acionarNoMenuDaLinha(page, page.getByRole('listitem').first(), 'Restaurar')
 
     const dialogo = page.getByRole('dialog')
     await expect(dialogo).toContainText('Os dados atuais serão substituídos')

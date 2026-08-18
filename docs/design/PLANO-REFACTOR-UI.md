@@ -354,12 +354,46 @@ teste.
 
 ---
 
-## 8. Fases seguintes — a detalhar
+## 8. F9 — Ajustes e Importar — CONCLUÍDA
 
-| Fase | Escopo                                                         | Pontos | Custo |
-| ---- | -------------------------------------------------------------- | ------ | ----- |
-| F8   | Sistema: 6 degraus de tipo, largura única, 3 densidades        | 17     | alto  |
-| F9   | Ajustes/Importar: herdam; "Restaurar backup" ganha confirmação | —      | baixo |
+Branch `feat/refactor-ajustes-importar`. Executada antes da F8, que precisa ser
+a última.
+
+**A premissa desta fase estava errada.** O plano dizia "Restaurar backup ganha
+confirmação"; ela já existia — `AjustesPage` monta um `ConfirmDialog` com
+`confirmVariant="danger"`, e o corpo já explica que uma cópia do estado atual é
+feita antes. Não havia ação destrutiva sem confirmação nas duas telas: importar
+é aditivo e atômico. O escopo foi rederivado da captura.
+
+**O que as telas tinham, de fato:**
+
+- **O `EmptyState` cheio dentro de um painel.** Ele existe para lista vazia que
+  ocupa a tela, onde os 48px de respiro impedem a página de parecer quebrada.
+  Dentro de um painel que é só uma parte da tela, dizer "ainda não há nada aqui"
+  custava ~250px de altura — em Ajustes **e** em Importar. Nova prop `compacto`.
+- **"Salvar ajustes" abaixo da dobra.** O botão confirma TODAS as seções, mas em
+  1266px ficava fora da vista: quem mexia em "Avisos de fatura" não via que
+  ainda precisava salvar, e a tela não tinha como avisar que havia pendência.
+  Virou barra fixa no rodapé, com o aviso "Alterações não salvas".
+- **"Restaurar" era botão solto na linha.** É a única ação da cópia, mas
+  substitui a base inteira. Pelo padrão da F7 foi para o `RowActions` marcada
+  como destrutiva — que é exatamente o caso previsto no componente: ação
+  destrutiva não vira botão solto nem quando é a única.
+
+**Token novo:** `--shadow-up`. Sem sombra para cima, o conteúdo passando por
+baixo da barra fixa fazia o painel parecer **cortado**, não coberto.
+
+**O que ficou de fora de propósito:** largura. `width="narrow"` e os três tiers
+de `PageContainer` são território da F8, travados por
+`e2e/alinhamento-paginas.spec.ts`.
+
+---
+
+## 9. Fase seguinte — a detalhar
+
+| Fase | Escopo                                                  | Pontos | Custo |
+| ---- | ------------------------------------------------------- | ------ | ----- |
+| F8   | Sistema: 6 degraus de tipo, largura única, 3 densidades | 17     | alto  |
 
 Notas de risco já levantadas:
 
@@ -372,7 +406,7 @@ Notas de risco já levantadas:
 
 ---
 
-## 9. Gates por fase
+## 10. Gates por fase
 
 Regra 6 do `CLAUDE.md`: não há CI hospedada desde ago/2026. O pipeline local
 precisa estar verde antes de abrir o PR, e verificar é responsabilidade de quem
@@ -400,7 +434,7 @@ merge na `main` antes de iniciar a próxima.
 
 ---
 
-## 10. O que a proposta não muda
+## 11. O que a proposta não muda
 
 - Paleta Cream, tokens de cor, raios e sombras
 - Geist / Geist Mono como famílias

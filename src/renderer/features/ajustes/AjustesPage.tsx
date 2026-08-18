@@ -11,6 +11,7 @@ import {
   Field,
   Input,
   Panel,
+  RowActions,
   useToast
 } from '../../components/ui'
 import { mensagemErro } from '../../lib/mensagem-erro'
@@ -24,7 +25,7 @@ export default function AjustesPage() {
     reset,
     setValue,
     watch,
-    formState: { errors, isSubmitting, isLoading }
+    formState: { errors, isSubmitting, isLoading, isDirty }
   } = useForm<Config>({
     resolver: zodResolver(configSchema),
     defaultValues: () => window.api.config.get()
@@ -155,6 +156,7 @@ export default function AjustesPage() {
               vê-las nem restaurá-las pela interface — só mexendo em arquivo. */}
           {copias.length === 0 ? (
             <EmptyState
+              compacto
               title="Nenhuma cópia ainda."
               description="Uma cópia é criada no boot do app e, se ativado acima, ao sair."
             />
@@ -166,14 +168,19 @@ export default function AjustesPage() {
                     <span className={styles.copiaData}>{formatarDataHora(c.criadoEm)}</span>
                     <span className={styles.copiaTamanho}>{formatarTamanho(c.tamanhoBytes)}</span>
                   </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setAlvoRestaurar(c)}
-                  >
-                    Restaurar
-                  </Button>
+                  {/* Restaurar substitui a base inteira: pelo padrão da F7,
+                      acao com consequencia nao fica como botao solto na linha.
+                      O RowActions garante isso mesmo sendo a unica acao. */}
+                  <RowActions
+                    acoes={[
+                      {
+                        label: 'Restaurar',
+                        onClick: () => setAlvoRestaurar(c),
+                        destrutiva: true
+                      }
+                    ]}
+                    contexto={`cópia de ${formatarDataHora(c.criadoEm)}`}
+                  />
                 </li>
               ))}
             </ul>
@@ -202,7 +209,12 @@ export default function AjustesPage() {
           </div>
         </Panel>
 
+        {/* Barra fixa: a tela rola, e o botão que confirma TODAS as seções
+            ficava abaixo da dobra em 1266px — quem mexia em "Avisos de fatura"
+            não via que ainda precisava salvar. Fixa também dá lugar ao aviso de
+            pendência, que a tela não tinha como dar. */}
         <div className={styles.acoes}>
+          {isDirty && <span className={styles.pendencia}>Alterações não salvas</span>}
           <Button type="submit" variant="primary" disabled={isSubmitting || isLoading}>
             {isSubmitting ? 'Salvando…' : 'Salvar ajustes'}
           </Button>
