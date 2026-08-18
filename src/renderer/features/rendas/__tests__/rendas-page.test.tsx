@@ -29,6 +29,10 @@ function instalarApiMock(recebimentos: RecebimentoComContexto[]) {
       marcarRecebido: vi.fn(),
       criarAvulso: vi.fn(),
       excluir: vi.fn()
+    },
+    // A barra de progresso compara o mês com a média dos anteriores.
+    relatorio: {
+      evolucaoSaldo: vi.fn().mockResolvedValue([])
     }
   }
   vi.stubGlobal('window', Object.assign(window, { api }))
@@ -41,7 +45,10 @@ describe('RendasPage — status do recebimento', () => {
   })
   afterEach(cleanup)
 
-  it('usa "Esperado" para recebimento não recebido, alinhado ao domínio e ao filtro', async () => {
+  // As duas colunas de data viraram uma frase só (ponto 15). O que estes testes
+  // travam segue sendo o mesmo: a linha não pode usar rótulo divergente do
+  // domínio, e recebimento que entrou tem que dizer quando.
+  it('descreve recebimento não recebido como previsto, nunca como "Pendente"', async () => {
     instalarApiMock([recebimento()])
 
     render(
@@ -54,11 +61,12 @@ describe('RendasPage — status do recebimento', () => {
     // "Pendente" era o rótulo antigo: divergia de StatusRecebimento, da Visão
     // mensal e do próprio filtro desta tela.
     expect(screen.queryByText('Pendente')).toBeNull()
-    // Dois "Esperado": o botão do filtro e o status da linha.
-    expect(screen.getAllByText('Esperado').length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByText(/^previsto para 05\/08/)).toBeTruthy()
+    // O filtro continua usando o vocabulário do domínio.
+    expect(screen.getByRole('radio', { name: 'Esperado' })).toBeTruthy()
   })
 
-  it('mantém "Recebido" com a data quando o recebimento já entrou', async () => {
+  it('diz quando o dinheiro caiu, sem repetir a data esperada', async () => {
     instalarApiMock([recebimento({ status: 'Recebido', dataRecebida: '2026-08-06' })])
 
     render(
@@ -67,6 +75,8 @@ describe('RendasPage — status do recebimento', () => {
       </ToastProvider>
     )
 
-    expect(await screen.findByText(/Recebido 06\/08\/2026/)).toBeTruthy()
+    expect(await screen.findByText('na conta em 06/08')).toBeTruthy()
+    // A data esperada não aparece mais numa coluna própria.
+    expect(screen.queryByText(/esperada/)).toBeNull()
   })
 })

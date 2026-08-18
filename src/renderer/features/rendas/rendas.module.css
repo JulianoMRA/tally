@@ -175,7 +175,7 @@
 
 .item {
   display: grid;
-  grid-template-columns: 1fr auto 120px 100px 180px;
+  grid-template-columns: 10px 1fr 120px minmax(180px, auto) 180px;
   align-items: center;
   gap: 14px;
   background: var(--bg-elev);
@@ -205,10 +205,13 @@
   font-family: var(--font-mono);
 }
 
+/* Verde só para o que já está na conta. Previsto fica em tinta neutra: pintar
+   de entrada algo que ainda não entrou é o que fazia a lista parecer mais
+   favorável do que é. */
 .valor {
   font-size: 15px;
   font-weight: 700;
-  color: var(--income);
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
@@ -232,6 +235,126 @@
   font-size: 11px;
   color: var(--income);
   font-family: var(--font-mono);
+}
+
+/* Ponto de estado: cheio = dinheiro na conta, anel vazado = previsão. Dá para
+   varrer a coluna sem ler o status linha a linha.
+
+   O anel é SÓLIDO, não tracejado como no mockup: num círculo de 10px o traço de
+   2px rende três segmentos e lê como artefato de renderização, não como
+   intenção. O que carrega a informação é cheio vs. vazado. */
+.valorRealizado {
+  color: var(--income);
+}
+
+.ponto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.pontoRealizado {
+  background: var(--income);
+}
+
+.pontoPrevisto {
+  border: 2px solid var(--bronze);
+}
+
+.dataAtrasada {
+  color: var(--expense);
+  font-weight: 600;
+}
+
+/* Progresso do mês — substitui os três cards de peso igual (ponto 15). */
+.progresso {
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-1);
+  padding: 18px 20px;
+  margin: 0 0 16px;
+  max-width: 1280px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.progressoTopo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.progressoLabel {
+  margin: 0 0 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.progressoTotal {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.progressoTotal strong {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--income);
+}
+
+.progressoDe {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+/* A média só faz sentido como referência ao lado do número — sozinha ela
+   viraria mais um KPI concorrente, que é o defeito que estamos removendo. */
+.progressoMedia {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.progressoMedia strong {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.progressoTrilho {
+  height: 10px;
+  border-radius: var(--r-pill);
+  background: var(--bg-sunk);
+  overflow: hidden;
+}
+
+.progressoBarra {
+  display: block;
+  height: 100%;
+  background: var(--income);
+  border-radius: var(--r-pill);
+}
+
+.progressoFalta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.progressoFalta strong {
+  color: var(--ink);
+  font-weight: 600;
 }
 
 .totaisRow {

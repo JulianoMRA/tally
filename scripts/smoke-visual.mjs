@@ -233,6 +233,14 @@ try {
   await capturar('estado-painel-parcelada')
   await page.keyboard.press('Escape')
 
+  // O cadastro de avulso virou painel na F6; sem este estado ele fica fora da
+  // folha de contato, como o de Saídas ficava antes.
+  await ir('#/rendas')
+  await page.getByRole('button', { name: '+ Novo avulso' }).click({ timeout: 5000 })
+  await page.waitForTimeout(400)
+  await capturar('estado-painel-novo-avulso')
+  await page.keyboard.press('Escape')
+
   await page.getByRole('link', { name: 'Cartões' }).click()
   await page.waitForTimeout(600)
   await page.getByRole('radio', { name: 'Bronze' }).focus()

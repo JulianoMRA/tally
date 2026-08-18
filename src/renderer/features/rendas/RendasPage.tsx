@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { StatusRecebimento } from '@domain/entities/recebimento'
 import type { Renda } from '@domain/entities/renda'
 import type { CriarRendaAvulsaInput, CriarRendaRecorrenteInput } from '@shared/ipc/renda'
@@ -18,7 +18,8 @@ import {
   type OpcaoSegmentada
 } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
-import { formatarDataIso } from '../../lib/formatar-data'
+import { formatarMesReferencia } from '../../lib/formatar-data'
+import { pluralizar } from '../../lib/pluralizar'
 import { mensagemErro } from '../../lib/mensagem-erro'
 import { mesAtualReferencia } from '../../lib/mes-atual'
 import { useRendas } from './hooks/use-rendas'
@@ -27,7 +28,14 @@ import { RendaForm } from './RendaForm'
 import { RendaList } from './RendaList'
 import { EditarRendaModal } from './EditarRendaModal'
 import { MarcarRecebidoModal } from './MarcarRecebidoModal'
-import { NovoAvulsoModal } from './NovoAvulsoModal'
+import {
+  descreverRecebimento,
+  mediaDeEntradas,
+  montarProgressoDoMes
+} from './descrever-recebimento'
+import { useEvolucaoSaldo } from '../relatorios/hooks/use-evolucao-saldo'
+import { hojeIsoLocal } from '@shared/datas-locais'
+import { NovoAvulsoPanel } from './NovoAvulsoPanel'
 import styles from './rendas.module.css'
 
 type Aba = 'recebimentos' | 'fontes'
@@ -140,13 +148,19 @@ function AbaRecebimentos({
     }
   }
 
-  const totalEsperado = recebimentos
-    .filter((r) => r.status === 'Esperado')
-    .reduce((s, r) => s + r.valorCentavos, 0)
-  const totalRecebido = recebimentos
-    .filter((r) => r.status === 'Recebido')
-    .reduce((s, r) => s + r.valorCentavos, 0)
-  const total = totalEsperado + totalRecebido
+  const { dados: serie } = useEvolucaoSaldo(mes, 6)
+
+  const progresso = montarProgressoDoMes(recebimentos)
+  const media = mediaDeEntradas(serie, mes)
+
+  // Uma descrição por recebimento, indexada por id: a linha consulta em vez de
+  // recalcular, e `hoje` fica fixo durante o render.
+  const descricoes = useMemo(() => {
+    const hoje = hojeIsoLocal()
+    return Object.fromEntries(
+      recebimentos.map((r) => [r.id, descreverRecebimento(r, hoje)])
+    ) as Record<number, ReturnType<typeof descreverRecebimento>>
+  }, [recebimentos])
 
   return (
     <>
@@ -166,23 +180,42 @@ function AbaRecebimentos({
       {erro && <p className={styles.erro}>{erro}</p>}
       {acaoErro && <p className={styles.erro}>{acaoErro}</p>}
 
+      {/* Uma barra no lugar de três cards de peso igual (ponto 15): o que já
+          caiu é a parte sólida, o que falta é a clara, e a soma fecha à vista.
+          "Esperado" deixa de ser um card isolado e vira a nota abaixo. */}
       {recebimentos.length > 0 && (
-        <div className={styles.totaisRow}>
-          <div className={styles.totalCard}>
-            <div className={styles.totalLabel}>Esperado</div>
-            <div className={styles.totalValor}>{formatBRL(totalEsperado)}</div>
-          </div>
-          <div className={styles.totalCard}>
-            <div className={styles.totalLabel}>Recebido</div>
-            <div className={`${styles.totalValor} ${styles.totalValorIncome}`}>
-              {formatBRL(totalRecebido)}
+        <section className={styles.progresso} aria-labelledby="progressoLabel">
+          <div className={styles.progressoTopo}>
+            <div>
+              <h2 id="progressoLabel" className={styles.progressoLabel}>
+                Entradas de {formatarMesReferencia(mes)}
+              </h2>
+              <p className={styles.progressoTotal}>
+                <strong className="tnum">{formatBRL(progresso.recebidoCentavos)}</strong>
+                <span className={styles.progressoDe}>de {formatBRL(progresso.totalCentavos)}</span>
+              </p>
             </div>
+            {media !== null && (
+              <p className={styles.progressoMedia}>
+                média dos meses anteriores <strong className="tnum">{formatBRL(media)}</strong>
+              </p>
+            )}
           </div>
-          <div className={styles.totalCard}>
-            <div className={styles.totalLabel}>Total do mês</div>
-            <div className={styles.totalValor}>{formatBRL(total)}</div>
+
+          <div className={styles.progressoTrilho} aria-hidden="true">
+            <span
+              className={styles.progressoBarra}
+              style={{ width: `${progresso.recebidoPct}%` }}
+            />
           </div>
-        </div>
+
+          {progresso.entradasPendentes > 0 && (
+            <p className={styles.progressoFalta}>
+              falta <strong className="tnum">{formatBRL(progresso.previstoCentavos)}</strong> ·{' '}
+              {progresso.entradasPendentes} {pluralizar('entrada', progresso.entradasPendentes)}
+            </p>
+          )}
+        </section>
       )}
 
       {loading ? (
@@ -193,22 +226,33 @@ function AbaRecebimentos({
         <ul className={styles.lista}>
           {recebimentos.map((r) => (
             <li key={r.id} className={styles.item}>
+              {/* Ponto cheio = dinheiro na conta; contorno tracejado = previsão.
+                  Dá para varrer a lista sem ler o status de cada linha. */}
+              <span
+                className={`${styles.ponto} ${
+                  descricoes[r.id]?.realizado ? styles.pontoRealizado : styles.pontoPrevisto
+                }`}
+                aria-hidden="true"
+              />
               <div className={styles.info}>
                 <span className={styles.nome}>{r.rendaNome ?? '—'}</span>
                 <span className={styles.meta}>
                   {r.rendaId === null ? 'sem fonte' : 'fonte cadastrada'}
                 </span>
               </div>
-              <span className={styles.data}>esperada {formatarDataIso(r.dataEsperada)}</span>
-              <span className={styles.valor}>{formatBRL(r.valorCentavos)}</span>
-              <span className={styles.data}>
-                {r.status === 'Recebido' ? (
-                  <span className={styles.recebidaInfo}>
-                    Recebido {formatarDataIso(r.dataRecebida)}
-                  </span>
-                ) : (
-                  <span>Esperado</span>
-                )}
+              <span
+                className={`${styles.valor} ${
+                  descricoes[r.id]?.realizado ? styles.valorRealizado : ''
+                }`}
+              >
+                {formatBRL(r.valorCentavos)}
+              </span>
+              <span
+                className={`${styles.data} ${
+                  descricoes[r.id]?.atrasado ? styles.dataAtrasada : ''
+                }`}
+              >
+                {descricoes[r.id]?.frase}
               </span>
               <div className={styles.acoes}>
                 {r.status === 'Esperado' && (
@@ -243,7 +287,7 @@ function AbaRecebimentos({
       )}
 
       {novoAvulsoAberto && (
-        <NovoAvulsoModal
+        <NovoAvulsoPanel
           fontes={fontesAvulsas}
           onConfirmar={handleCriarAvulso}
           onCancelar={onFecharNovoAvulso}
