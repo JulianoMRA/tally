@@ -42,6 +42,22 @@ vista técnico.
 
 ---
 
+## v1.4.0 (ago/2026)
+
+Segunda parte do refactor visual: a tela de Faturas virou uma só. Nenhuma migration — esta atualização não toca nos seus dados.
+
+**Minor, e não patch:** a navegação da tela mudou de forma. Não é correção de comportamento, é outro caminho até a mesma informação. Rendas, Cartões e Categorias seguem com o visual anterior; elas entram nas fases seguintes.
+
+- **A fatura atual abre sozinha** — antes eram três passos: escolher o cartão, achar o mês na lista, clicar. Agora a tela abre com um cartão em foco e a fatura dele já aberta. Se o cartão não teve compra no mês, abre a próxima a vencer.
+- **Trilho de cartões no topo** — um bloco por cartão com o total da fatura corrente, o status e o prazo. Ele mostra sempre a situação de hoje, mesmo enquanto você navega por meses antigos.
+- **Setas para andar entre os meses** do cartão, no lugar da lista de faturas futuras. Uma compra em doze vezes criava doze linhas idênticas competindo com o mês atual.
+- **Histórico num bloco só**, fechado por padrão, com o total dos meses anteriores à vista mesmo sem abrir. O filtro por status (todas, abertas, fechadas, pagas) continua ali, agora aplicado ao cartão em foco.
+- **Links salvos continuam funcionando.** Se o link apontar para uma fatura que não existe mais, a tela abre a fatura atual do cartão e avisa, em vez de ficar num beco.
+
+Cobertura: **945 testes unitários** (era 934) e **86 specs E2E** (inalterados).
+
+---
+
 ## v1.3.0 (ago/2026)
 
 Primeira parte do refactor visual: a Visão mensal e as Saídas foram reorganizadas. Junto vai uma correção de dado que exige migration.
