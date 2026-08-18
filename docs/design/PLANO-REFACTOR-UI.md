@@ -276,11 +276,42 @@ virou a cobertura de "chegar à fatura sem escolher nada", que é a prova do pon
 
 ---
 
-## 6. Fases seguintes — a detalhar
+## 6. F6 — Rendas — CONCLUÍDA
+
+Resolve o ponto 15. Branch `feat/refactor-rendas`.
+
+**O problema, confirmado no código:** três cards de peso igual (Esperado /
+Recebido / Total do mês) que não se liam como soma, e cada linha com duas
+colunas de data — "esperada 05/08/2026" e "Recebido 05/08/2026" — dizendo quase
+a mesma coisa.
+
+**Entregue:** `descreverRecebimento` funde as duas colunas numa frase;
+`montarProgressoDoMes` alimenta a barra e a nota de pendências;
+`mediaDeEntradas` traz a referência histórica. 18 testes. O cadastro de avulso
+virou `SidePanel` — primeira consumidora do componente fora de Saídas.
+Especificado em RF-REN-07 e RF-REN-08.
+
+**Decisões que foram além do mockup:**
+
+- **Atraso ganhou frase própria.** O mockup previa só "na conta em 05/08" e
+  "previsto para 25/08 · em 10 dias". Um previsto cuja data já passou cairia em
+  "em -5 dias"; agora diz `atrasado 5 dias`, destacado. É o caso que pede ação.
+- **O anel do ponto é sólido, não tracejado.** Num círculo de 10px o traço de
+  2px rende três segmentos e lê como artefato. O que carrega a informação é
+  cheio vs. vazado.
+- **A média exclui o mês corrente e some quando é zero.** Incluir o mês em curso
+  puxaria a média para baixo todo mês; e "média R$ 0,00" numa base sem histórico
+  faria qualquer mês parecer excepcional.
+- **`EditarRendaModal` e `MarcarRecebidoModal` continuam modais.** O `SidePanel`
+  é para cadastro sob demanda; confirmação de dois campos não ganha nada
+  virando painel.
+
+---
+
+## 7. Fases seguintes — a detalhar
 
 | Fase | Escopo                                                         | Pontos     | Custo |
 | ---- | -------------------------------------------------------------- | ---------- | ----- |
-| F6   | Rendas: barra recebido/previsto, ponto colorido, média 6 meses | 15         | médio |
 | F7   | Cartões e Categorias: padrão único, sparkline, arquivar no ⋯   | 13, 14, 16 | médio |
 | F8   | Sistema: 6 degraus de tipo, largura única, 3 densidades        | 17         | alto  |
 | F9   | Ajustes/Importar: herdam; "Restaurar backup" ganha confirmação | —          | baixo |
@@ -296,7 +327,7 @@ Notas de risco já levantadas:
 
 ---
 
-## 7. Gates por fase
+## 8. Gates por fase
 
 Regra 6 do `CLAUDE.md`: não há CI hospedada desde ago/2026. O pipeline local
 precisa estar verde antes de abrir o PR, e verificar é responsabilidade de quem
@@ -324,7 +355,7 @@ merge na `main` antes de iniciar a próxima.
 
 ---
 
-## 8. O que a proposta não muda
+## 9. O que a proposta não muda
 
 - Paleta Cream, tokens de cor, raios e sombras
 - Geist / Geist Mono como famílias
