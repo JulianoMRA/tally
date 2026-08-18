@@ -35,7 +35,7 @@ import {
 } from './descrever-recebimento'
 import { useEvolucaoSaldo } from '../relatorios/hooks/use-evolucao-saldo'
 import { hojeIsoLocal } from '@shared/datas-locais'
-import { NovoAvulsoModal } from './NovoAvulsoModal'
+import { NovoAvulsoPanel } from './NovoAvulsoPanel'
 import styles from './rendas.module.css'
 
 type Aba = 'recebimentos' | 'fontes'
@@ -287,7 +287,7 @@ function AbaRecebimentos({
       )}
 
       {novoAvulsoAberto && (
-        <NovoAvulsoModal
+        <NovoAvulsoPanel
           fontes={fontesAvulsas}
           onConfirmar={handleCriarAvulso}
           onCancelar={onFecharNovoAvulso}
