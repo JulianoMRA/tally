@@ -454,6 +454,13 @@ release. O que veio depois:
 | v1.0.0  | Auditoria completa do app fechada em 6 PRs (jun/2026): RN-06 passa a valer de fato, proteção de fatura Fechada, datas no fuso local, feedback de erro em todas as telas                               |
 | v1.1.0  | As 11 fases do plano de melhorias (jul/2026). **Fecha todo o V2 do PRD** — orçamento, exportação, backup e tags/notas —, mais auto-update, importador CSV, notificações de fatura e página de Ajustes |
 | v1.1.1  | Release de correção (jul/2026): ações da tabela de Saídas inalcançáveis por `overflow: hidden`                                                                                                        |
+| v1.2.0  | Plano de UI/UX (ago/2026): Topbar, controles segmentados unificados, ações de linha em menu overflow, largura de página centralizada no `PageContainer`, varredura a11y com dados e gate de teclado   |
+| v1.2.1  | Release de correção (ago/2026): falhas do auto-updater ficavam invisíveis e o nome do artefato divergia do `latest.yml`                                                                               |
+| v1.2.2  | Release de correção (ago/2026): vencimento calculado no mês seguinte quando o dia de vencimento é anterior ao de fechamento                                                                           |
+| v1.2.3  | Release de correção (ago/2026): fatura residual de cartão arquivado seguia visível; datas das faturas passam a se realinhar ao editar o cartão                                                        |
+| v1.3.0  | Refactor visual, lote 1 (ago/2026): hero de saldo e agenda na visão mensal, `SidePanel`, Saídas com a lista assumindo a tela e impacto mensal por ocorrência                                          |
+| v1.4.0  | Refactor visual, F5 (ago/2026): Faturas em tela única, com trilho de cartões e a fatura corrente sem nenhum clique                                                                                    |
+| v1.5.0  | **Fecha o refactor visual** (ago/2026): Rendas, Cartões, Categorias, Ajustes e Importar, mais o sistema — uma largura de página, seis degraus de tipo e três densidades. Nove fases, 17 pontos        |
 
 O V2 da seção 3.2 está integralmente entregue.
 
