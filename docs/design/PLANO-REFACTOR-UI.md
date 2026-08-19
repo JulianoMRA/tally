@@ -43,6 +43,13 @@ Em 17/08/2026, já com a F3 em andamento:
 | Lista de Saídas | **Recortada por mês, uma linha por ocorrência**, abrindo no mês corrente |
 | Specs E2E       | Ajustar os specs ao recorte, em vez de abrir no mês do último lançamento |
 
+Em 19/08/2026, ao abrir a F8:
+
+| Decisão       | Escolha                                                                                                                  |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Largura única | **1560px**, o valor da proposta. Em 1266 as opções empatam; é a única que não estreita as telas densas em monitor grande |
+| Escopo da F9  | **Rederivado da captura** — a confirmação de "Restaurar backup" que o plano previa já existia                            |
+
 ## 3. Restrições que condicionam todas as fases
 
 ### 3.1 O mockup é 1906px; o app abre com 1266px
@@ -67,13 +74,16 @@ sintetiza o negrito e a tipografia da proposta não se reproduz.
 Isto é pré-requisito da F1, não da F8. Fontes são locais, sem CDN — a proposta
 usa Google Fonts, mas isso vale só para renderizar o `.dc.html` no navegador.
 
-### 3.3 Dois guards de CSS bloqueiam hex solto
+### 3.3 Guards de CSS bloqueiam valor solto
 
 `src/renderer/styles/__tests__/` tem um guard que falha se aparecer hex
 hardcoded no CSS de uma feature, e outro que falha se um `var(--x)` sem fallback
 não existir em `tokens.css`. As cores novas da proposta — a barra de composição
 (`#7fb389`, `#c98a7c`, `#d9b06a`) e a marca de limite do ranking — precisam
 virar token antes de serem usadas.
+
+A F8 acrescentou um terceiro, `tipo-tokenizado`, na mesma forma: nenhum
+`font-size` em px fora de `tokens.css`, e a escala com exatamente seis degraus.
 
 ### 3.4 Dois componentes já existentes cobrem parte da proposta
 
@@ -389,20 +399,57 @@ de `PageContainer` são território da F8, travados por
 
 ---
 
-## 9. Fase seguinte — a detalhar
+## 9. F8 — Sistema — CONCLUÍDA
 
-| Fase | Escopo                                                  | Pontos | Custo |
-| ---- | ------------------------------------------------------- | ------ | ----- |
-| F8   | Sistema: 6 degraus de tipo, largura única, 3 densidades | 17     | alto  |
+Resolve o ponto 17. Branch `feat/refactor-sistema`. Última do plano, como
+previsto: só dá para fixar o sistema quando os layouts param de mudar.
 
-Notas de risco já levantadas:
+**A medição mudou a premissa da fase.** Na janela real do app dois dos três
+tiers já eram a mesma coisa: com 1266px de viewport a área de conteúdo é 1058px,
+então `default` (1200) e `wide` (1760) clipam no mesmo lugar. Só o `narrow`
+(760) se distinguia — e era ele que deixava Ajustes e Importar com ~330px de
+espaço morto. Um tier que só existe acima de 1230px de viewport não é
+hierarquia, é inconsistência entre telas.
 
-- **F8 colapsa três tiers de `PageContainer` em um.** `--page-max-narrow`,
-  `--page-max` e `--page-max-wide` viram uma largura só. Isso invalida
-  `e2e/alinhamento-paginas.spec.ts`, que é justamente o guard que trava o
-  alinhamento entre rotas. A largura de 1560px da proposta precisa ser
-  reavaliada contra os 1266px reais. Por isso vai por último — quando os
-  layouts pararem de mudar.
+**Largura única: 1560px** (decisão de Juliano, 19/08/2026). Em 1266 as três
+opções davam o mesmo resultado para 6 das 8 telas; a diferença só aparece em
+monitor grande, e 1560 é o único valor que não estreita as telas mais densas.
+O `PageContainer` perdeu a prop `width` e o par trilho/bloco — este existia só
+para impedir que tiers diferentes desalinhassem as rotas, e some junto com eles.
+Formulário de configuração não estica: quem limita é `--form-max` na linha do
+campo, não a página.
+
+**Seis degraus de tipo.** Eram **onze** tamanhos em 189 declarações — 10, 11,
+12, 13, 14, 15, 16, 18, 20, 22, 26 —, nenhum tokenizado. Doze e onze pixels lado
+a lado não se distinguem; treze e quatorze, menos ainda. Não era escala, era
+gradiente, e é essa a mecânica do "tudo tem o mesmo peso" da tese. Mapeamento:
+11→2, 14→4, 16→4, 20→5, 26→6. O número do hero segue fluido (`clamp`) porque
+escala com a janela e não pertence a degrau nenhum.
+
+**Três densidades.** Já existiam de fato — 8px em cabeçalho de tabela, 10px em
+célula, 12px em linha de lista —, só não tinham nome. O único fora do padrão era
+o ranking, com 9px: um degrau que existia porque ninguém tinha nomeado os
+outros.
+
+**Guard novo, `tipo-tokenizado`**, na forma do de cores: nenhum `font-size` em
+px fora de `tokens.css`, e a escala tem exatamente seis degraus. Densidade
+**não** ganha guard, e isso é decisão: `padding` serve a muito mais que altura
+de linha, e proibir px em padding proibiria o legítimo junto com o acidental.
+
+**Dois defeitos que a fase encontrou, e um que ela não causou:**
+
+- **A coluna de uso do ranking era 84px fixos**, medidos para o 11px de antes.
+  Em 12px "133% do limite" vazava para fora do painel. Virou `auto`: numa grade
+  a largura é a mesma em todas as linhas, então o texto define a medida sem
+  número mágico.
+- **O detalhe da fatura virava duas colunas em 1200px**, e o aside de 340px
+  derrubava a tabela para 629px — **alargar a janela deixava a tabela mais
+  estreita**. A folga era de poucos pixels e a escala de tipo a consumiu;
+  `faturas-acoes-visiveis` denunciou. Subiu para 1360px, que é onde as duas
+  colunas de fato cabem. De quebra some o defeito **pré-existente** (conferido
+  contra a `main`) de a descrição quebrar em três linhas. A ordem do DOM passou
+  a `header → main → aside`, que é a ordem visual dos dois layouts: empilhado,
+  o que se veio ver são as parcelas, não o resumo.
 
 ---
 

@@ -108,7 +108,7 @@ test.describe('Layout responsivo', () => {
       await semear(app)
       const page = await abrir(app, largura, 'Saídas')
 
-      const conteudo = await caixa(page, '[data-width]')
+      const conteudo = await caixa(page, '[data-page]')
       const tabela = await caixa(page, 'table')
       expect(conteudo, 'bloco de conteúdo não encontrado').not.toBeNull()
       expect(tabela, 'tabela de lançamentos não encontrada').not.toBeNull()

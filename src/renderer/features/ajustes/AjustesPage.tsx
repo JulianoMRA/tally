@@ -90,7 +90,7 @@ export default function AjustesPage() {
   }
 
   return (
-    <PageContainer width="narrow">
+    <PageContainer>
       <PageHead
         title="Ajustes"
         subtitle="Backups automáticos e avisos de fatura. As mudanças valem a partir do próximo evento (boot, saída ou checagem de avisos)."

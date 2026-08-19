@@ -23,7 +23,7 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   line-height: 1.5;
-  font-size: 14px;
+  font-size: var(--text-4);
 }
 
 a {

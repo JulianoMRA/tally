@@ -163,7 +163,7 @@ export default function VisaoMensalPage() {
     detalhe?.gastosForaCartao.reduce((s, g) => s + g.valorCentavos, 0) ?? 0
 
   return (
-    <PageContainer width="wide">
+    <PageContainer>
       {/* O h1 continua sendo o nome da rota: `irPara` (e o leitor de tela) usam
           o par link-de-nav ↔ h1 para confirmar onde a navegação parou. O mês
           quem diz é o seletor ao lado — era ele que estava duplicado, com um

@@ -52,7 +52,7 @@
 }
 
 .trilhoNome {
-  font-size: 13px;
+  font-size: var(--text-3);
   font-weight: 600;
   color: var(--ink);
   letter-spacing: -0.01em;
@@ -62,7 +62,7 @@
 }
 
 .trilhoTotal {
-  font-size: 20px;
+  font-size: var(--text-5);
   font-weight: 700;
   color: var(--ink);
   letter-spacing: -0.02em;
@@ -70,7 +70,7 @@
 }
 
 .trilhoPrazo {
-  font-size: 11px;
+  font-size: var(--text-2);
   color: var(--ink-3);
   font-family: var(--font-mono);
 }
@@ -83,7 +83,7 @@
   background: var(--pending-bg);
   border: 1px solid var(--pending-border);
   border-radius: var(--r-2);
-  font-size: 12px;
+  font-size: var(--text-2);
   color: var(--pending);
 }
 
@@ -95,7 +95,7 @@
 }
 
 .cartaoLabel {
-  font-size: 12px;
+  font-size: var(--text-2);
   font-weight: 500;
   color: var(--ink-2);
   white-space: nowrap;
@@ -149,7 +149,7 @@
      meio da linha depois da conversão de <li role="button"> para <li><button>. */
   text-align: left;
   gap: 12px;
-  padding: 10px 16px;
+  padding: var(--dens-2) 16px;
   border-bottom: 1px solid var(--rule);
   cursor: pointer;
 }
@@ -179,7 +179,7 @@
   background: var(--bg-elev);
   border: 1px solid var(--rule);
   border-radius: var(--r-3);
-  padding: 12px 16px;
+  padding: var(--dens-3) 16px;
   cursor: pointer;
   box-shadow: var(--shadow-1);
   transition:
@@ -201,7 +201,7 @@
 
 /* Valor da fatura: era a informação que faltava na lista inteira. */
 .faturaTotal {
-  font-size: 14px;
+  font-size: var(--text-4);
   font-weight: 700;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
@@ -225,7 +225,7 @@
 }
 
 .anterioresTotal {
-  font-size: 12px;
+  font-size: var(--text-2);
   font-weight: 600;
   color: var(--ink-2);
   padding-right: 6px;
@@ -240,28 +240,28 @@
 }
 
 .faturaMes {
-  font-size: 14px;
+  font-size: var(--text-4);
   font-weight: 600;
   color: var(--ink);
   letter-spacing: -0.01em;
 }
 
 .faturaSub {
-  font-size: 11px;
+  font-size: var(--text-2);
   color: var(--ink-3);
   font-family: var(--font-mono);
 }
 
 .empty {
   color: var(--ink-3);
-  font-size: 14px;
+  font-size: var(--text-4);
   padding: 16px 0;
   margin: 0;
 }
 
 /* Detalhe — empilhado por padrão; em telas largas, tabela à esquerda e
-   painel de resumo à direita. DOM: header → aside → main; o grid recoloca
-   main à esquerda e aside à direita. */
+   painel de resumo à direita. DOM: header → main → aside, que é a ordem visual
+   dos DOIS layouts — o grid nomeia as áreas e não depende da ordem. */
 .detalhe {
   display: flex;
   flex-direction: column;
@@ -269,7 +269,14 @@
   max-width: 880px;
 }
 
-@media (min-width: 1200px) {
+/* 1360px, e não 1200: o aside custa 340px + 24px de gap, e a tabela de parcelas
+   precisa de ~700px para não transbordar o painel — que usa overflow hidden, de
+   modo que transbordo vira corte permanente. Em 1200px de viewport a área
+   principal caía para 629px, e ALARGAR a janela deixava a tabela mais estreita
+   do que na coluna única. `faturas-acoes-visiveis` é o guard disso, e foi ele
+   que denunciou quando a escala de tipo da F8 consumiu a folga que restava.
+   1360 - 208 (sidebar) - 64 (padding) - 364 (aside) = 724px para a tabela. */
+@media (min-width: 1360px) {
   .detalhe {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 340px;
@@ -314,7 +321,7 @@
 }
 
 .resumoLabel {
-  font-size: 11px;
+  font-size: var(--text-2);
   color: var(--ink-3);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -322,7 +329,7 @@
 }
 
 .resumoValor {
-  font-size: 13px;
+  font-size: var(--text-3);
   font-weight: 600;
   color: var(--ink);
 }
@@ -336,7 +343,7 @@
 }
 
 .avisoVencida {
-  font-size: 12px;
+  font-size: var(--text-2);
   font-weight: 700;
   color: var(--expense);
 }
@@ -348,7 +355,7 @@
 }
 
 .resumoTotalValor {
-  font-size: 18px;
+  font-size: var(--text-5);
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.02em;
@@ -369,7 +376,7 @@
 }
 
 .detalheTitleText {
-  font-size: 18px;
+  font-size: var(--text-5);
   font-weight: 700;
   color: var(--ink);
   letter-spacing: -0.02em;
@@ -402,7 +409,7 @@
 }
 
 .erroAcao {
-  font-size: 12px;
+  font-size: var(--text-2);
   color: var(--expense);
   margin: 0;
   width: 100%;
@@ -412,13 +419,13 @@
 .tabela {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--text-3);
 }
 
 .tabela th {
   text-align: left;
-  padding: 8px 16px;
-  font-size: 11px;
+  padding: var(--dens-1) 16px;
+  font-size: var(--text-2);
   font-weight: 600;
   color: var(--ink-3);
   border-bottom: 1px solid var(--rule);
@@ -429,7 +436,7 @@
 }
 
 .tabela td {
-  padding: 10px 16px;
+  padding: var(--dens-2) 16px;
   border-bottom: 1px solid var(--rule);
   color: var(--ink);
 }
@@ -441,7 +448,7 @@
 .colId {
   color: var(--ink-4);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-2);
 }
 
 .colValor {
@@ -461,7 +468,7 @@
   display: inline-block;
   margin-left: 6px;
   padding: 1px 6px;
-  font-size: 10px;
+  font-size: var(--text-1);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -490,13 +497,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: var(--dens-3) 16px;
   border-top: 1px solid var(--rule);
   background: var(--bg-sunk);
 }
 
 .totalLabel {
-  font-size: 12px;
+  font-size: var(--text-2);
   font-weight: 600;
   color: var(--ink-2);
   text-transform: uppercase;
@@ -505,7 +512,7 @@
 }
 
 .totalValor {
-  font-size: 16px;
+  font-size: var(--text-4);
   font-weight: 700;
   color: var(--ink);
 }
@@ -534,14 +541,14 @@
 }
 
 .modalTitle {
-  font-size: 14px;
+  font-size: var(--text-4);
   font-weight: 700;
   color: var(--ink);
   margin: 0;
 }
 
 .modalDesc {
-  font-size: 13px;
+  font-size: var(--text-3);
   color: var(--ink-3);
   margin: 0;
 }
@@ -563,7 +570,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: var(--text-2);
   color: var(--ink-2);
   cursor: pointer;
 }
@@ -584,7 +591,7 @@
   border-radius: 999px;
   background: var(--bg-sunk);
   border: 1px solid var(--rule);
-  font-size: 11px;
+  font-size: var(--text-2);
   color: var(--ink);
   font-family: var(--font-mono);
 }
@@ -607,7 +614,7 @@
   background: transparent;
   border: none;
   color: var(--ink-3);
-  font-size: 14px;
+  font-size: var(--text-4);
   line-height: 1;
   padding: 0 4px;
   cursor: pointer;
@@ -626,7 +633,7 @@
   background: var(--bg-elev);
   border: 1px dashed var(--rule-strong);
   color: var(--ink-3);
-  font-size: 13px;
+  font-size: var(--text-3);
   line-height: 1;
   cursor: pointer;
   display: inline-flex;
@@ -641,7 +648,7 @@
 
 /* Rodapé de totais bruto / ajudas / líquido */
 .totaisFooter {
-  padding: 12px 16px;
+  padding: var(--dens-3) 16px;
   border-top: 1px solid var(--rule);
   background: var(--bg-sunk);
   display: flex;
@@ -662,7 +669,7 @@
 }
 
 .totalLiquidoValor {
-  font-size: 18px;
+  font-size: var(--text-5);
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.02em;

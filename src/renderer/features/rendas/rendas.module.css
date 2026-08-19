@@ -2,7 +2,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--text-3);
   color: var(--ink-2);
   cursor: pointer;
 }
@@ -35,7 +35,7 @@
   background: var(--bg-elev);
   border: 1px solid var(--rule);
   border-radius: var(--r-3);
-  padding: 12px 16px;
+  padding: var(--dens-3) 16px;
   box-shadow: var(--shadow-1);
 }
 
@@ -50,7 +50,7 @@
   justify-content: center;
   font-weight: 700;
   color: var(--ink-2);
-  font-size: 13px;
+  font-size: var(--text-3);
   flex-shrink: 0;
 }
 
@@ -63,19 +63,19 @@
 }
 
 .listItemNome {
-  font-size: 14px;
+  font-size: var(--text-4);
   font-weight: 600;
   color: var(--ink);
 }
 
 .listItemMeta {
-  font-size: 12px;
+  font-size: var(--text-2);
   color: var(--ink-3);
   font-family: var(--font-mono);
 }
 
 .listItemValor {
-  font-size: 15px;
+  font-size: var(--text-4);
   font-weight: 700;
   color: var(--income);
   font-variant-numeric: tabular-nums;
@@ -90,13 +90,13 @@
 
 .empty {
   color: var(--ink-3);
-  font-size: 14px;
+  font-size: var(--text-4);
   margin: 0;
 }
 
 .errorMsg {
   color: var(--expense);
-  font-size: 14px;
+  font-size: var(--text-4);
   margin: 0;
 }
 
@@ -116,7 +116,7 @@
 }
 
 .formTitle {
-  font-size: 15px;
+  font-size: var(--text-4);
   font-weight: 700;
   color: var(--ink);
   letter-spacing: -0.02em;
@@ -181,7 +181,7 @@
   background: var(--bg-elev);
   border: 1px solid var(--rule);
   border-radius: var(--r-3);
-  padding: 12px 16px;
+  padding: var(--dens-3) 16px;
   box-shadow: var(--shadow-1);
 }
 
@@ -193,14 +193,14 @@
 }
 
 .nome {
-  font-size: 14px;
+  font-size: var(--text-4);
   font-weight: 600;
   color: var(--ink);
   letter-spacing: -0.01em;
 }
 
 .meta {
-  font-size: 11px;
+  font-size: var(--text-2);
   color: var(--ink-3);
   font-family: var(--font-mono);
 }
@@ -209,7 +209,7 @@
    de entrada algo que ainda não entrou é o que fazia a lista parecer mais
    favorável do que é. */
 .valor {
-  font-size: 15px;
+  font-size: var(--text-4);
   font-weight: 700;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
@@ -218,7 +218,7 @@
 }
 
 .data {
-  font-size: 11px;
+  font-size: var(--text-2);
   color: var(--ink-3);
   font-family: var(--font-mono);
   text-align: right;
@@ -232,7 +232,7 @@
 }
 
 .recebidaInfo {
-  font-size: 11px;
+  font-size: var(--text-2);
   color: var(--income);
   font-family: var(--font-mono);
 }
@@ -293,7 +293,7 @@
 .progressoLabel {
   margin: 0 0 4px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-2);
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -308,14 +308,14 @@
 }
 
 .progressoTotal strong {
-  font-size: 26px;
+  font-size: var(--text-6);
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--income);
 }
 
 .progressoDe {
-  font-size: 13px;
+  font-size: var(--text-3);
   color: var(--ink-3);
 }
 
@@ -323,7 +323,7 @@
    viraria mais um KPI concorrente, que é o defeito que estamos removendo. */
 .progressoMedia {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-2);
   color: var(--ink-3);
 }
 
@@ -348,7 +348,7 @@
 
 .progressoFalta {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-2);
   color: var(--ink-3);
 }
 
@@ -377,7 +377,7 @@
 }
 
 .totalLabel {
-  font-size: 11px;
+  font-size: var(--text-2);
   color: var(--ink-3);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -385,7 +385,7 @@
 }
 
 .totalValor {
-  font-size: 22px;
+  font-size: var(--text-6);
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.02em;
@@ -397,7 +397,7 @@
 }
 
 .erro {
-  font-size: 12px;
+  font-size: var(--text-2);
   color: var(--expense);
   margin: 8px 0;
 }
@@ -426,14 +426,14 @@
 }
 
 .modalTitle {
-  font-size: 14px;
+  font-size: var(--text-4);
   font-weight: 700;
   color: var(--ink);
   margin: 0;
 }
 
 .modalDesc {
-  font-size: 13px;
+  font-size: var(--text-3);
   color: var(--ink-3);
   margin: 0;
 }
@@ -448,7 +448,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--text-3);
   color: var(--ink-2);
   cursor: pointer;
 }

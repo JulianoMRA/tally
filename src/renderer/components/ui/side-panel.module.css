@@ -39,7 +39,7 @@
 }
 
 .titulo {
-  font-size: 16px;
+  font-size: var(--text-4);
   font-weight: 700;
   color: var(--ink);
   letter-spacing: -0.02em;
@@ -47,7 +47,7 @@
 }
 
 .descricao {
-  font-size: 12px;
+  font-size: var(--text-2);
   color: var(--ink-3);
   line-height: 1.45;
   margin: 0;

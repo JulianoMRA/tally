@@ -33,7 +33,7 @@
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--text-2);
   color: var(--ink-3);
 }
 

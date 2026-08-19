@@ -61,9 +61,14 @@ async function semear(app: ElectronApplication): Promise<Page> {
   return page
 }
 
-// 1000 e 1280 cobrem a inversão de breakpoint do detalhe: acima de 1200px o
-// aside de 340px derruba a área principal de 698px para 629px, ou seja,
-// alargar a janela deixa a tabela mais estreita.
+// 1000, 1280 e 1600 cercam o breakpoint do detalhe pelos dois lados: abaixo
+// dele a tabela tem a largura toda, acima dela divide com o aside de 340px.
+//
+// O breakpoint era 1200px, e nessa largura o aside derrubava a área principal
+// de 698px para 629px — ALARGAR a janela deixava a tabela mais estreita. A
+// folga que restava era de poucos pixels, e a escala de tipo da F8 a consumiu:
+// foi este spec que denunciou. Subiu para 1360px, que é onde as duas colunas
+// de fato cabem.
 for (const largura of [1000, 1280, 1600] as const) {
   test(`ações da fatura continuam dentro do painel em ${largura}px`, async ({ app }) => {
     const page = await semear(app)

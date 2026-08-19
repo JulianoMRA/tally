@@ -403,7 +403,7 @@ export default function SaidasPage() {
   }
 
   return (
-    <PageContainer width="wide">
+    <PageContainer>
       <PageHead
         title="Saídas"
         subtitle="Cadastre e gerencie despesas, gastos e assinaturas em um só lugar."

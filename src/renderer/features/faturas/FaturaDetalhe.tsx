@@ -217,6 +217,122 @@ export function FaturaDetalhe({
         </div>
       </div>
 
+      {/* Ordem do DOM: header -> main -> aside. Em duas colunas quem posiciona
+          é o grid-template-areas, que ignora a ordem; empilhado, ela decide o
+          que vem primeiro — e o que se veio ver são as parcelas, não o resumo.
+          Nesta ordem a sequência de foco bate com a visual nos DOIS layouts. */}
+      <div className={styles.areaMain}>
+        <Panel
+          title="Parcelas"
+          meta={`${parcelas.length} lançamento${parcelas.length !== 1 ? 's' : ''}`}
+          flush
+        >
+          {parcelas.length === 0 ? (
+            <EmptyState title="Nenhuma parcela nesta fatura." />
+          ) : (
+            <>
+              <table className={styles.tabela}>
+                <thead>
+                  <tr>
+                    <SortableHeader
+                      rotulo="Descrição"
+                      ativo={sortBy === 'descricao'}
+                      direcao={sortDir}
+                      onSort={() => handleSort('descricao')}
+                    />
+                    <SortableHeader
+                      rotulo="Parcela"
+                      ativo={sortBy === 'parcela'}
+                      direcao={sortDir}
+                      onSort={() => handleSort('parcela')}
+                    />
+                    <SortableHeader
+                      rotulo="Data"
+                      ativo={sortBy === 'data'}
+                      direcao={sortDir}
+                      onSort={() => handleSort('data')}
+                    />
+                    <SortableHeader
+                      rotulo="Valor"
+                      ativo={sortBy === 'valor'}
+                      direcao={sortDir}
+                      onSort={() => handleSort('valor')}
+                      className={styles.colValor}
+                    />
+                    <SortableHeader
+                      rotulo="Status"
+                      ativo={sortBy === 'status'}
+                      direcao={sortDir}
+                      onSort={() => handleSort('status')}
+                    />
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {parcelasOrdenadas.map((p) => (
+                    <tr key={p.id}>
+                      <td>
+                        {detalhe.despesasPorParcela?.[p.id]?.descricao ?? `#${p.despesaId}`}
+                        {detalhe.despesasPorParcela?.[p.id]?.tipo === 'Assinatura' && (
+                          <span className={styles.tagAssinatura}>Assinatura</span>
+                        )}
+                      </td>
+                      <td className="mono">
+                        {p.total === null ? 'Mensal' : `${p.numero}/${p.total}`}
+                      </td>
+                      <td>
+                        {formatarDataIso(dataParcelaExibida(p, detalhe.despesasPorParcela?.[p.id]))}
+                      </td>
+                      <td className={`${styles.colValor} tnum`}>{formatBRL(p.valorCentavos)}</td>
+                      <td>
+                        <Badge variant={p.status === 'Paga' ? 'paid' : 'pending'} />
+                      </td>
+                      <td>
+                        <RowActions
+                          acoes={acoesDaParcela(p)}
+                          contexto={detalhe.despesasPorParcela?.[p.id]?.descricao}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className={styles.totaisFooter}>
+                <div className={`${styles.totalLinha} ${styles.totalLiquidoLinha}`}>
+                  <span className={styles.totalLabel}>Total</span>
+                  <span className={`${styles.totalLiquidoValor} tnum`}>
+                    {formatBRL(totalCentavos)}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
+        </Panel>
+      </div>
+
+      {despesaEditar && (
+        <EditarDespesaModal
+          despesa={despesaEditar}
+          categorias={categorias}
+          onConfirmar={handleConfirmarEditarDespesa}
+          onCancelar={() => setDespesaEditar(null)}
+        />
+      )}
+
+      {parcelaAdiantar && (
+        <AdiantarParcelasModal
+          despesaId={parcelaAdiantar.despesaId}
+          descricao={
+            detalhe.despesasPorParcela?.[parcelaAdiantar.id]?.descricao ??
+            `#${parcelaAdiantar.despesaId}`
+          }
+          cartaoId={fatura.cartaoId}
+          faturaAtualId={fatura.id}
+          onConfirmar={handleAdiantar}
+          onCancelar={() => setParcelaAdiantar(null)}
+        />
+      )}
+
       <aside className={styles.areaAside}>
         <div className={styles.resumoCard}>
           <div className={styles.resumoLinha}>
@@ -307,118 +423,6 @@ export function FaturaDetalhe({
           </div>
         </div>
       </aside>
-
-      {despesaEditar && (
-        <EditarDespesaModal
-          despesa={despesaEditar}
-          categorias={categorias}
-          onConfirmar={handleConfirmarEditarDespesa}
-          onCancelar={() => setDespesaEditar(null)}
-        />
-      )}
-
-      {parcelaAdiantar && (
-        <AdiantarParcelasModal
-          despesaId={parcelaAdiantar.despesaId}
-          descricao={
-            detalhe.despesasPorParcela?.[parcelaAdiantar.id]?.descricao ??
-            `#${parcelaAdiantar.despesaId}`
-          }
-          cartaoId={fatura.cartaoId}
-          faturaAtualId={fatura.id}
-          onConfirmar={handleAdiantar}
-          onCancelar={() => setParcelaAdiantar(null)}
-        />
-      )}
-
-      <div className={styles.areaMain}>
-        <Panel
-          title="Parcelas"
-          meta={`${parcelas.length} lançamento${parcelas.length !== 1 ? 's' : ''}`}
-          flush
-        >
-          {parcelas.length === 0 ? (
-            <EmptyState title="Nenhuma parcela nesta fatura." />
-          ) : (
-            <>
-              <table className={styles.tabela}>
-                <thead>
-                  <tr>
-                    <SortableHeader
-                      rotulo="Descrição"
-                      ativo={sortBy === 'descricao'}
-                      direcao={sortDir}
-                      onSort={() => handleSort('descricao')}
-                    />
-                    <SortableHeader
-                      rotulo="Parcela"
-                      ativo={sortBy === 'parcela'}
-                      direcao={sortDir}
-                      onSort={() => handleSort('parcela')}
-                    />
-                    <SortableHeader
-                      rotulo="Data"
-                      ativo={sortBy === 'data'}
-                      direcao={sortDir}
-                      onSort={() => handleSort('data')}
-                    />
-                    <SortableHeader
-                      rotulo="Valor"
-                      ativo={sortBy === 'valor'}
-                      direcao={sortDir}
-                      onSort={() => handleSort('valor')}
-                      className={styles.colValor}
-                    />
-                    <SortableHeader
-                      rotulo="Status"
-                      ativo={sortBy === 'status'}
-                      direcao={sortDir}
-                      onSort={() => handleSort('status')}
-                    />
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {parcelasOrdenadas.map((p) => (
-                    <tr key={p.id}>
-                      <td>
-                        {detalhe.despesasPorParcela?.[p.id]?.descricao ?? `#${p.despesaId}`}
-                        {detalhe.despesasPorParcela?.[p.id]?.tipo === 'Assinatura' && (
-                          <span className={styles.tagAssinatura}>Assinatura</span>
-                        )}
-                      </td>
-                      <td className="mono">
-                        {p.total === null ? 'Mensal' : `${p.numero}/${p.total}`}
-                      </td>
-                      <td>
-                        {formatarDataIso(dataParcelaExibida(p, detalhe.despesasPorParcela?.[p.id]))}
-                      </td>
-                      <td className={`${styles.colValor} tnum`}>{formatBRL(p.valorCentavos)}</td>
-                      <td>
-                        <Badge variant={p.status === 'Paga' ? 'paid' : 'pending'} />
-                      </td>
-                      <td>
-                        <RowActions
-                          acoes={acoesDaParcela(p)}
-                          contexto={detalhe.despesasPorParcela?.[p.id]?.descricao}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className={styles.totaisFooter}>
-                <div className={`${styles.totalLinha} ${styles.totalLiquidoLinha}`}>
-                  <span className={styles.totalLabel}>Total</span>
-                  <span className={`${styles.totalLiquidoValor} tnum`}>
-                    {formatBRL(totalCentavos)}
-                  </span>
-                </div>
-              </div>
-            </>
-          )}
-        </Panel>
-      </div>
 
       {dialogo?.tipo === 'fechar' && (
         <ConfirmDialog

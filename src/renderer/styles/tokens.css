@@ -68,9 +68,39 @@
   /* Marca do limite de orçamento sobre a barra do ranking (RF-ORC-02). */
   --limite-marca: #0f1a14;
 
+  /* Escala de tipo — seis degraus (ponto 17).
+     Eram ONZE tamanhos soltos no CSS de feature: 10, 11, 12, 13, 14, 15, 16,
+     18, 20, 22 e 26, em 189 declarações. Doze e onze pixels lado a lado não se
+     distinguem; treze e quatorze, menos ainda. Não era escala, era gradiente —
+     e é essa a mecânica do "tudo tem o mesmo peso" que a tese acusa.
+
+     O mapeamento aplicado: 11→2, 14→4, 16→4, 20→5, 26→6. O degrau 6 é o maior
+     tamanho FIXO; o número do hero da visão mensal continua fluido, porque ele
+     escala com a janela e não pertence a nenhum degrau. */
+  --text-1: 10px; /* rótulo micro, caixa alta, mono */
+  --text-2: 12px; /* nota de apoio */
+  --text-3: 13px; /* corpo denso — lista, tabela, subtítulo */
+  --text-4: 15px; /* corpo forte e título de painel */
+  --text-5: 18px; /* título de seção e número de linha */
+  --text-6: 22px; /* título de página e valor de destaque */
+
   /* Typography */
   --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Densidade vertical — três degraus (ponto 17).
+     Já existiam de fato, só não tinham nome: 8px em cabeçalho e rodapé de
+     tabela, 10px em célula e item de agenda, 12px em linha de lista com duas
+     linhas de texto. O único fora do padrão era o ranking, com 9px — um degrau
+     que existia porque ninguém tinha nomeado os outros.
+
+     A horizontal continua 16px em toda linha e não vira token: um valor só não
+     é escala. E, ao contrário do tipo, densidade NÃO ganha guard — `padding`
+     serve a muito mais que altura de linha, e proibir px em padding proibiria
+     o legítimo junto com o acidental. */
+  --dens-1: 8px; /* compacta — cabeçalho e rodapé de tabela */
+  --dens-2: 10px; /* padrão — célula de tabela, item de agenda */
+  --dens-3: 12px; /* confortável — linha de lista, banner, toast */
 
   /* Border radii */
   --r-1: 4px;
@@ -91,12 +121,17 @@
      `outline: none`. Navegar por teclado era praticamente invisível. */
   --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--forest);
 
-  /* Larguras de página — consumidas SÓ pelo PageContainer, que é o único lugar
-     que limita a largura de uma página. Antes cada feature escolhia a sua
-     (1080 na visão mensal, 760 em importar, nenhuma em cartões), e as telas não
-     alinhavam entre si. */
+  /* Largura de página — UMA, consumida só pelo PageContainer. Eram três tiers
+     (narrow 760, default 1200, wide 1760), e a medição mostrou que na janela
+     real do app dois deles são a mesma coisa: com 1266px de viewport a área de
+     conteúdo é 1058px, então default e wide clipam no mesmo lugar e só o narrow
+     se distingue — deixando Ajustes e Importar com ~330px de espaço morto.
+     Um tier que só existe acima de 1230px de viewport não é hierarquia, é
+     inconsistência entre telas. */
   --page-pad: 32px;
-  --page-max-narrow: 760px;
-  --page-max: 1200px;
-  --page-max-wide: 1760px;
+  --page-max: 1560px;
+
+  /* Medida de leitura para formulário de configuração. A página inteira não
+     precisa estreitar por causa dele: quem limita é a linha do campo. */
+  --form-max: 720px;
 }
