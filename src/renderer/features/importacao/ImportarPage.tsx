@@ -88,7 +88,7 @@ export default function ImportarPage() {
   }
 
   return (
-    <PageContainer width="narrow">
+    <PageContainer>
       <PageHead
         title="Importar dados"
         subtitle="Migre sua planilha em lote: baixe o modelo do tipo desejado, preencha e importe. Categorias e cartões são referenciados pelo nome e precisam existir antes."

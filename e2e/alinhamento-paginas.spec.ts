@@ -11,7 +11,9 @@ import { test, expect } from './fixtures/electron-app'
  * maximizada de 1534px de viewport a Visão mensal (wide) abria em 32px e Rendas
  * (default) em 95px; Ajustes e Importar (narrow) em 315px.
  *
- * A regra que este spec protege: **onde a página começa não depende do tier**.
+ * A F8 colapsou os três tiers numa largura só, o que torna o desalinhamento
+ * impossível por construção. O spec **continua valendo**: ele é o que denuncia
+ * a reintrodução de largura por página, que é a forma como o defeito voltaria.
  */
 
 const ROTAS = [
@@ -44,7 +46,7 @@ async function prepararJanela(app: ElectronApplication, largura: number): Promis
 
 /**
  * Navega até a rota e devolve o x do título e o x do bloco de página. O título é
- * a medida que o usuário enxerga; o `[data-width]` é o invariante estrutural.
+ * a medida que o usuário enxerga; o `[data-page]` é o invariante estrutural.
  */
 async function bordas(page: Page, rota: string): Promise<{ titulo: number; bloco: number }> {
   await page.getByRole('link', { name: rota }).click()
@@ -55,7 +57,7 @@ async function bordas(page: Page, rota: string): Promise<{ titulo: number; bloco
   await expect(titulo).toHaveText(rota)
 
   const caixaTitulo = await titulo.boundingBox()
-  const caixaBloco = await page.locator('[data-width]').first().boundingBox()
+  const caixaBloco = await page.locator('[data-page]').first().boundingBox()
   expect(caixaTitulo, `título de ${rota} sem caixa`).not.toBeNull()
   expect(caixaBloco, `bloco de página de ${rota} não encontrado`).not.toBeNull()
 
@@ -86,16 +88,16 @@ test.describe('Alinhamento horizontal entre páginas', () => {
   }
 
   /**
-   * O caso em que o trilho realmente centraliza só acontece quando a área
-   * disponível supera `--page-max-wide` — precisaria de ~1970px de viewport, mais
-   * do que a janela do runner alcança. Encolher o token exercita o mesmo ramo de
-   * layout de forma determinística: com o trilho menor que todos os tiers, os
-   * três passam a ser limitados por ele e devem continuar partindo do mesmo x.
+   * O caso em que a página realmente centraliza só acontece quando a área
+   * disponível supera `--page-max` — precisaria de ~1770px de viewport, mais do
+   * que a janela do runner alcança. Encolher o token exercita o mesmo ramo de
+   * layout de forma determinística, e continua provando o que interessa: quando
+   * a centralização entra, todas as rotas deslocam **juntas**.
    */
-  test('páginas deslocam juntas quando o trilho centraliza', async ({ app }) => {
+  test('páginas deslocam juntas quando a largura centraliza', async ({ app }) => {
     const page = await prepararJanela(app, 1280)
     await page.evaluate(() => {
-      document.documentElement.style.setProperty('--page-max-wide', '600px')
+      document.documentElement.style.setProperty('--page-max', '600px')
     })
 
     const medidas: Record<string, number> = {}
@@ -108,8 +110,8 @@ test.describe('Alinhamento horizontal entre páginas', () => {
       amplitude(valores),
       `blocos desalinhados: ${JSON.stringify(medidas)}`
     ).toBeLessThanOrEqual(1)
-    // E de fato centralizou: com trilho de 600px numa área de ~1058px, a sobra
-    // empurra o bloco bem para além do padding de 32px.
+    // E de fato centralizou: com 600px numa área de ~1058px, a sobra empurra a
+    // página bem para além do padding de 32px.
     expect(valores[0]).toBeGreaterThan(100)
   })
 })

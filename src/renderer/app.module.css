@@ -25,6 +25,6 @@
 
 .pageLoading {
   padding: 24px;
-  font-size: 13px;
+  font-size: var(--text-3);
   color: var(--ink-3);
 }

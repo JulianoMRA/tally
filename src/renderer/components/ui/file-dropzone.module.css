@@ -33,7 +33,7 @@
 }
 
 .texto {
-  font-size: 13px;
+  font-size: var(--text-3);
   color: var(--ink-3);
   pointer-events: none;
 }

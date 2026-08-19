@@ -27,7 +27,7 @@
 
 .cartao {
   padding: 12px 10px;
-  font-size: 13px;
+  font-size: var(--text-3);
   border: 1px solid var(--rule);
   border-radius: var(--r-2);
   background: var(--bg-elev);
@@ -65,10 +65,10 @@
    sm cobre filtros e status, md cobre os seletores de tipo do formulário. */
 .sm {
   padding: 4px 12px;
-  font-size: 12px;
+  font-size: var(--text-2);
 }
 
 .md {
   padding: 5px 14px;
-  font-size: 13px;
+  font-size: var(--text-3);
 }

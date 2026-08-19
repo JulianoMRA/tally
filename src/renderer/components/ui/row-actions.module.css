@@ -58,7 +58,7 @@
   border: none;
   border-radius: var(--r-1);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-3);
   color: var(--ink);
   text-align: left;
   cursor: pointer;

@@ -1,7 +1,13 @@
+/* A página tem uma largura só (F8), mas um formulário de configuração não
+   ganha nada com 1552px: label e campo esticados por 1,5k pixels são pior de
+   ler que a coluna estreita que existia antes. Quem limita é a linha do campo,
+   não a página — foi por isso que o tier `narrow` deixou de existir em vez de
+   ser preservado. */
 .form {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  max-width: var(--form-max);
 }
 
 .campos {
@@ -26,7 +32,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: var(--text-4);
   color: var(--ink-2);
   cursor: pointer;
 }
@@ -54,7 +60,7 @@
 }
 
 .pendencia {
-  font-size: 12px;
+  font-size: var(--text-2);
   color: var(--ink-3);
 }
 
@@ -79,13 +85,13 @@
 }
 
 .copiaData {
-  font-size: 13px;
+  font-size: var(--text-3);
   font-weight: 600;
   color: var(--ink);
 }
 
 .copiaTamanho {
-  font-size: 11px;
+  font-size: var(--text-2);
   color: var(--ink-3);
   font-family: var(--font-mono);
   margin-left: 8px;
