@@ -39,6 +39,7 @@ import { useOrdenacao } from '../../lib/use-ordenacao'
 import { DespesaForm } from '../despesas/DespesaForm'
 import { EditarDespesaModal } from '../faturas/EditarDespesaModal'
 import { EditarAssinaturaModal } from '../assinaturas/EditarAssinaturaModal'
+import { agruparSeAplicavel, descreverDataDaOcorrencia } from './descrever-data-da-ocorrencia'
 import { agruparOcorrencias } from './agrupar-ocorrencias'
 import { filtrarPorDescricao } from './filtrar-saidas'
 import { montarPreenchimentoDespesa, type PreenchimentoDespesa } from './montar-preenchimento'
@@ -61,17 +62,19 @@ type Confirmacao = { tipo: 'cancelar'; despesa: Despesa } | { tipo: 'excluir'; d
 
 const COMPARADORES: Record<string, Comparador<OcorrenciaDoMes>> = {
   descricao: alfabetico((o) => o.descricao),
-  data: porData((o) => o.dataCompra),
+  compra: porData((o) => o.dataCompra),
   valor: porNumero((o) => o.impactoCentavos)
 }
 
 type ClassificavelPorTipo = Pick<Despesa, 'tipo' | 'formaPagamento'>
 
-function rotuloTipo(d: ClassificavelPorTipo): string {
-  if (d.tipo === 'Assinatura') return 'Assinatura'
-  if (d.tipo === 'Parcelada') return 'Parcelada'
-  if (d.formaPagamento === 'Credito') return 'Única'
-  return 'Fora do cartão'
+/**
+ * Célula da coluna Compra. O tom de apoio separa "aconteceu neste dia" de
+ * "corre desde", que é a diferença entre uma compra e uma assinatura.
+ */
+function CelulaDeCompra({ ocorrencia }: { ocorrencia: OcorrenciaDoMes }) {
+  const { texto, apoio } = descreverDataDaOcorrencia(ocorrencia)
+  return <span className={apoio ? styles.compraApoio : 'tnum'}>{texto}</span>
 }
 
 function pertenceAoFiltro(d: ClassificavelPorTipo, filtro: Filtro): boolean {
@@ -238,16 +241,36 @@ export default function SaidasPage() {
   const { itensOrdenados, sortBy, sortDir, handleSort } = useOrdenacao(
     filtradas,
     COMPARADORES,
-    'data',
+    'compra',
     'desc'
   )
 
+  // Ordenar por Compra achata os grupos. Enquanto o agrupamento por cartão
+  // vale, a ordenação age só DENTRO de cada grupo, e "o mês inteiro em ordem
+  // cronológica" não existe. Sair de Compra devolve o agrupamento e os
+  // subtotais — sem a volta, o subtotal por cartão seria de mão única.
+  const agrupado = agruparSeAplicavel(sortBy)
+
   const grupos = useMemo(
-    () => agruparOcorrencias(itensOrdenados, nomeCartao),
+    () =>
+      agrupado
+        ? agruparOcorrencias(itensOrdenados, nomeCartao)
+        : // Bloco único e sem rótulo: a lista cronológica não tem cabeçalho de
+          // seção nem subtotal, porque somar "o mês inteiro" já é o meta do
+          // painel logo acima.
+          [
+            {
+              chave: 'cronologico',
+              rotulo: '',
+              cartaoId: null,
+              itens: [...itensOrdenados],
+              totalCentavos: 0
+            }
+          ],
     // `nomeCartao` fecha sobre `cartoes`; recriar o índice a cada render seria
     // pior que depender da lista.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [itensOrdenados, cartoes]
+    [itensOrdenados, cartoes, agrupado]
   )
 
   // Soma IMPACTO, não valor de compra: é o que torna o número somável e o que
@@ -447,6 +470,10 @@ export default function SaidasPage() {
           </div>
         )}
 
+        {/* Barra de cima: só navegação de mês e a ação primária. Os filtros
+            desceram para dentro do painel, encostados no cabeçalho da tabela —
+            eles agem sobre a tabela, e flutuando aqui não tinham vínculo
+            nenhum com as colunas. */}
         <div className={styles.toolbar}>
           <button
             type="button"
@@ -471,37 +498,7 @@ export default function SaidasPage() {
           >
             →
           </button>
-          <SegmentedControl
-            opcoes={filtrosComContagem}
-            valor={filtro}
-            onChange={setFiltro}
-            label="Filtrar lançamentos por tipo"
-          />
-          {tagsDisponiveis.length > 0 && (
-            <Select
-              value={tagFiltro}
-              onChange={(e) => setTagFiltro(e.target.value)}
-              aria-label="Filtrar por tag"
-              className={styles.filtroTag}
-            >
-              <option value="">Todas as tags</option>
-              {tagsDisponiveis.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </Select>
-          )}
-          <div className={styles.buscaWrap}>
-            <Input
-              type="search"
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar por descrição…"
-              aria-label="Buscar saídas"
-            />
-          </div>
-          <Button size="sm" onClick={abrirCadastro}>
+          <Button size="sm" className={styles.acaoPrimaria} onClick={abrirCadastro}>
             + Nova saída
           </Button>
         </div>
@@ -515,6 +512,39 @@ export default function SaidasPage() {
           meta={`${itensOrdenados.length} · ${formatBRL(totalDoMesCentavos)}`}
           flush
         >
+          <div className={styles.filtros}>
+            <SegmentedControl
+              opcoes={filtrosComContagem}
+              valor={filtro}
+              onChange={setFiltro}
+              label="Filtrar lançamentos por tipo"
+            />
+            {tagsDisponiveis.length > 0 && (
+              <Select
+                value={tagFiltro}
+                onChange={(e) => setTagFiltro(e.target.value)}
+                aria-label="Filtrar por tag"
+                className={styles.filtroTag}
+              >
+                <option value="">Todas as tags</option>
+                {tagsDisponiveis.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </Select>
+            )}
+            <div className={styles.buscaWrap}>
+              <Input
+                type="search"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar por descrição…"
+                aria-label="Buscar saídas"
+              />
+            </div>
+          </div>
+
           {loading ? (
             <EmptyState title="Carregando…" />
           ) : itensOrdenados.length === 0 ? (
@@ -529,9 +559,16 @@ export default function SaidasPage() {
                       ativo={sortBy === 'descricao'}
                       direcao={sortDir}
                       onSort={() => handleSort('descricao')}
+                      className={styles.colDescricao}
                     />
-                    <th>Tipo</th>
                     <th>Categoria</th>
+                    <SortableHeader
+                      rotulo="Compra"
+                      ativo={sortBy === 'compra'}
+                      direcao={sortDir}
+                      onSort={() => handleSort('compra')}
+                      className={styles.colCompra}
+                    />
                     <th className={styles.colParcela}>Parcela</th>
                     <SortableHeader
                       rotulo="Neste mês"
@@ -546,24 +583,28 @@ export default function SaidasPage() {
                 <tbody>
                   {grupos.map((grupo) => (
                     <Fragment key={grupo.chave}>
-                      <tr className={styles.grupoDia}>
-                        <td colSpan={6}>
-                          <div className={styles.grupoDiaConteudo}>
-                            <span className={styles.grupoDiaData}>
-                              {grupo.cartaoId !== null && (
-                                <span
-                                  className={styles.chip}
-                                  style={{ background: corCartao(grupo.cartaoId) }}
-                                />
-                              )}
-                              {grupo.rotulo}
-                            </span>
-                            <span className={styles.grupoDiaTotal}>
-                              {formatBRL(grupo.totalCentavos)}
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
+                      {/* Rótulo vazio é o bloco cronológico: sem cabeçalho de
+                          seção, porque não há seção. */}
+                      {grupo.rotulo !== '' && (
+                        <tr className={styles.grupoDia}>
+                          <td colSpan={6}>
+                            <div className={styles.grupoDiaConteudo}>
+                              <span className={styles.grupoDiaData}>
+                                {grupo.cartaoId !== null && (
+                                  <span
+                                    className={styles.chip}
+                                    style={{ background: corCartao(grupo.cartaoId) }}
+                                  />
+                                )}
+                                {grupo.rotulo}
+                              </span>
+                              <span className={styles.grupoDiaTotal}>
+                                {formatBRL(grupo.totalCentavos)}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
                       {grupo.itens.map((o) => {
                         const despesa = despesaPorId.get(o.despesaId)
                         return (
@@ -586,34 +627,31 @@ export default function SaidasPage() {
                                 </div>
                               )}
                             </td>
-                            <td>
-                              <span className={styles.tagTipo}>{rotuloTipo(o)}</span>
-                            </td>
                             <td>{nomeCategoria(o.categoriaId)}</td>
+                            <td className={styles.colCompra}>
+                              <CelulaDeCompra ocorrencia={o} />
+                            </td>
                             <td className={styles.colParcela}>
                               <span className={`${styles.parcelaRotulo} mono`}>
                                 {o.rotuloParcela}
                               </span>
-                              {o.progressoPct !== null && (
-                                <span className={styles.parcelaTrilho} aria-hidden="true">
-                                  <span
-                                    className={styles.parcelaBarra}
-                                    style={{ width: `${o.progressoPct}%` }}
-                                  />
-                                </span>
-                              )}
                             </td>
                             {/* Duas colunas de dinheiro numa só célula: o impacto
                                 do mês é o número somável, e o valor da compra
                                 desce para contexto. Antes os dois disputavam a
                                 mesma linha como se fossem comparáveis. */}
                             <td className={`${styles.colValor} tnum`}>
-                              <span className={styles.impacto}>{formatBRL(o.impactoCentavos)}</span>
+                              {/* A origem vem ANTES do impacto: depois dele, ela
+                                  empurrava o número principal para a esquerda e
+                                  os impactos deixavam de alinhar entre linhas —
+                                  que é exatamente o que uma coluna de dinheiro
+                                  alinhada à direita existe para permitir. */}
                               {o.origemCentavos !== null && (
                                 <span className={styles.origem}>
                                   de {formatBRL(o.origemCentavos)}
                                 </span>
                               )}
+                              <span className={styles.impacto}>{formatBRL(o.impactoCentavos)}</span>
                             </td>
                             <td className={styles.colAcoes}>
                               {despesa && (

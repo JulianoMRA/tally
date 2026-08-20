@@ -45,10 +45,11 @@ test.describe('Navegação por teclado', () => {
     // substituir — a ordenação não registrava.
     await expect(page.getByRole('cell', { name: 'Feira no Pix' })).toBeVisible()
 
-    // "Neste mês" é a coluna ordenável que sobrou: com a lista recortada por
-    // mês e agrupada por origem, ordenar por descrição ou data brigaria com o
-    // agrupamento. A ordenação por valor continua útil dentro de cada grupo.
-    const cabecalho = page.getByRole('columnheader', { name: /Neste mês/ })
+    // "Compra" é a coluna que a tela abre ordenada, e por isso a que mais
+    // importa alcançar pelo teclado. O comentário antigo aqui dizia que ela
+    // "brigaria com o agrupamento" — brigava mesmo, e a saída foi a errada:
+    // tirar a coluna. Agora ordenar por Compra achata os grupos de propósito.
+    const cabecalho = page.getByRole('columnheader', { name: /Compra/ })
     const botao = cabecalho.getByRole('button')
 
     // Antes era um <th onClick>: sem role, sem tabIndex, sem teclado.
