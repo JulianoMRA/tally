@@ -463,6 +463,7 @@ release. O que veio depois:
 | v1.3.0  | Refactor visual, lote 1 (ago/2026): hero de saldo e agenda na visão mensal, `SidePanel`, Saídas com a lista assumindo a tela e impacto mensal por ocorrência                                          |
 | v1.4.0  | Refactor visual, F5 (ago/2026): Faturas em tela única, com trilho de cartões e a fatura corrente sem nenhum clique                                                                                    |
 | v1.5.0  | **Fecha o refactor visual** (ago/2026): Rendas, Cartões, Categorias, Ajustes e Importar, mais o sistema — uma largura de página, seis degraus de tipo e três densidades. Nove fases, 17 pontos        |
+| v1.5.1  | Release de correção (ago/2026): a data da compra volta à lista de Saídas, e a ordenação por ela deixa de ser inalcançável depois do primeiro clique em outra coluna                                   |
 
 O V2 da seção 3.2 está integralmente entregue.
 
