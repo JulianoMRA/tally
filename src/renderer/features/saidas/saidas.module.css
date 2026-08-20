@@ -30,6 +30,25 @@
   flex-wrap: wrap;
 }
 
+/* A ação primária fecha a linha, sozinha à direita. Antes ela dividia a barra
+   com quatro chips, um select e a busca, e o conjunto quebrava em duas linhas
+   sem hierarquia nenhuma. */
+.acaoPrimaria {
+  margin-left: auto;
+}
+
+/* Régua da tabela: os filtros agem sobre as linhas logo abaixo, então moram no
+   mesmo painel e compartilham o padding horizontal das células (16px). A borda
+   inferior é a mesma do cabeçalho — os dois se leem como um bloco só. */
+.filtros {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: var(--dens-3) 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
 /* O Select não tem largura própria e, com a lista agora em largura inteira,
    esticava sozinho até o fim da linha — empurrando busca e "+ Nova saída" para
    uma terceira linha. */
@@ -38,11 +57,11 @@
   width: 170px;
 }
 
-/* Busca por descrição encostada à direita da toolbar, com "+ Nova saída"
-   depois dela — a ação primária fecha a linha. */
+/* Fecha a régua de filtros à direita: filtrar por tipo, por tag e por texto
+   são a mesma família de ação, e a busca é a mais aberta das três. */
 .buscaWrap {
   margin-left: auto;
-  min-width: 200px;
+  min-width: 220px;
 }
 
 .navBtn {
@@ -74,6 +93,26 @@
 
 /* Coluna de parcela: rótulo X/Y com a barra de progresso embaixo. A barra dá a
    leitura que o texto sozinho não dá — quanto falta para acabar. */
+/* Piso da descrição. Pôr o valor de origem na mesma linha do impacto ganhou
+   altura mas custou largura, e "Neste mês" tem nowrap — quem cede é sempre a
+   descrição. Sem piso, em 1024px "Notebook em doze vezes" quebrava em três
+   linhas, devolvendo em altura o que a densidade tinha ganhado. */
+.colDescricao {
+  min-width: 168px;
+}
+
+/* Data cabe em 92px com o formato DD/MM/AAAA; "desde 03/2024" cabe no mesmo. */
+.colCompra {
+  width: 92px;
+  white-space: nowrap;
+}
+
+.compraApoio {
+  font-size: var(--text-2);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
 .colParcela {
   width: 96px;
   white-space: nowrap;
@@ -84,35 +123,26 @@
   color: var(--ink-2);
 }
 
-.parcelaTrilho {
-  display: block;
-  height: 3px;
-  margin-top: 4px;
-  background: var(--bg-sunk);
-  border-radius: var(--r-pill);
-  overflow: hidden;
-}
-
-.parcelaBarra {
-  display: block;
-  height: 100%;
-  background: var(--sage);
-  border-radius: var(--r-pill);
-}
+/* O trilho de progresso saiu da tabela. Ele nasceu em bloco, somando 7px de
+   altura a toda linha parcelada; inline, em 28px, 8% preenchido e 100% ficam
+   indistinguíveis — vira artefato, como o ponto tracejado da F6. O rótulo
+   "1/12" já diz o progresso, e diz melhor. `progressoPct` continua no contrato
+   e testado: o que mudou é a representação, não a informação. */
 
 /* O impacto do mês é o número da linha; o valor da compra desce a um degrau de
    apoio, em cinza, para as duas grandezas pararem de competir (ponto 10). */
 .impacto {
-  display: block;
   font-weight: 600;
   color: var(--ink);
 }
 
+/* Mesma linha do impacto, não abaixo dele: a segunda altura custava uma linha
+   inteira em toda parcelada. O peso continua separando os dois — o impacto é
+   600 e escuro, a origem é apoio. */
 .origem {
-  display: block;
   font-size: var(--text-2);
   color: var(--ink-3);
-  margin-top: 1px;
+  margin-right: 8px;
 }
 
 /* Cabeçalho de grupo. É `<tr>` dentro da mesma tabela, não uma lista separada,
@@ -183,8 +213,11 @@
   white-space: nowrap;
 }
 
+/* Degrau compacto, e não o padrão: Saídas é a tabela mais densa do app — um
+   mês real tem 30+ ocorrências, e aqui cada 2px valem uma linha a mais na
+   tela. */
 .tabela td {
-  padding: var(--dens-2) 16px;
+  padding: var(--dens-1) 16px;
   border-bottom: 1px solid var(--rule);
   color: var(--ink);
   vertical-align: middle;
