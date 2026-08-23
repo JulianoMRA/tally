@@ -114,9 +114,20 @@ function AbaRecebimentos({
   // Só as avulsas ativas: um recebimento avulso não se pendura em fonte
   // recorrente, e o repositório recusa esse vínculo.
   useEffect(() => {
+    let ativo = true
     window.api.renda
       .list()
-      .then((todas) => setFontesAvulsas(todas.filter((r) => r.tipo === 'Avulsa' && r.ativa)))
+      .then((todas) => {
+        if (ativo) setFontesAvulsas(todas.filter((r) => r.tipo === 'Avulsa' && r.ativa))
+      })
+      // Não usa `useCargaAuxiliar` porque não é carga de montagem: recarrega a
+      // cada abertura do painel de avulso.
+      .catch((e: unknown) => {
+        if (ativo) setAcaoErro(mensagemErro(e, 'Erro ao listar fontes de renda.'))
+      })
+    return () => {
+      ativo = false
+    }
   }, [novoAvulsoAberto])
 
   async function handleMarcarRecebido(dataRecebida: string) {

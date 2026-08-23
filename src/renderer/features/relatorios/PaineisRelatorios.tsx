@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Categoria } from '@domain/entities/categoria'
 import {
   EmptyState,
@@ -14,6 +14,7 @@ import { OrcamentoPanel } from './components/OrcamentoPanel'
 import { useEvolucaoCategoria } from './hooks/use-evolucao-categoria'
 import { useEvolucaoSaldo } from './hooks/use-evolucao-saldo'
 import styles from './relatorios.module.css'
+import { useCargaAuxiliar } from '../../hooks/use-carga-auxiliar'
 
 type Periodo = 6 | 12
 
@@ -35,12 +36,14 @@ export default function PaineisRelatorios({ mes }: Props) {
   const { dados: evolucao, loading: loadingEvolucao } = useEvolucaoSaldo(mes, periodoEvolucao)
   const { dados: evolucaoCat } = useEvolucaoCategoria(categoriaIdSelecionada, mes, periodoCategoria)
 
-  useEffect(() => {
-    window.api.categoria.list({ tipo: 'Despesa' }).then((cs) => {
+  useCargaAuxiliar(
+    () => window.api.categoria.list({ tipo: 'Despesa' }),
+    (cs) => {
       setCategorias(cs)
       setCategoriaIdSelecionada((atual) => atual ?? cs[0]?.id ?? null)
-    })
-  }, [])
+    },
+    'Erro ao listar categorias.'
+  )
 
   const categoriaSelecionada = useMemo(
     () => categorias.find((c) => c.id === categoriaIdSelecionada) ?? null,
