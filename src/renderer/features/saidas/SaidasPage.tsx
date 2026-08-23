@@ -23,6 +23,7 @@ import {
   Panel,
   RowActions,
   SegmentedControl,
+  SeletorMes,
   SidePanel,
   SortableHeader,
   Select,
@@ -34,7 +35,6 @@ import { formatBRL } from '../../lib/format-brl'
 import { formatarMesReferencia } from '../../lib/formatar-data'
 import { mensagemErro } from '../../lib/mensagem-erro'
 import { mesAtualReferencia } from '../../lib/mes-atual'
-import { mesReferenciaAnterior, proxMesReferencia } from '@domain/services/mes-referencia'
 import { useOrdenacao } from '../../lib/use-ordenacao'
 import { DespesaForm } from '../despesas/DespesaForm'
 import { EditarDespesaModal } from '../faturas/EditarDespesaModal'
@@ -475,29 +475,7 @@ export default function SaidasPage() {
             eles agem sobre a tabela, e flutuando aqui não tinham vínculo
             nenhum com as colunas. */}
         <div className={styles.toolbar}>
-          <button
-            type="button"
-            className={styles.navBtn}
-            onClick={() => setMes(mesReferenciaAnterior(mes))}
-            aria-label="Mês anterior"
-          >
-            ←
-          </button>
-          <Input
-            type="month"
-            value={mes}
-            onChange={(e) => e.target.value && setMes(e.target.value)}
-            className={styles.mesInput}
-            aria-label="Mês"
-          />
-          <button
-            type="button"
-            className={styles.navBtn}
-            onClick={() => setMes(proxMesReferencia(mes))}
-            aria-label="Próximo mês"
-          >
-            →
-          </button>
+          <SeletorMes valor={mes} onChange={setMes} label="Mês" />
           <Button size="sm" className={styles.acaoPrimaria} onClick={abrirCadastro}>
             + Nova saída
           </Button>
