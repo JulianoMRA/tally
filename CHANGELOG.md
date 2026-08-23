@@ -6,6 +6,14 @@ vista técnico.
 
 ---
 
+## v1.6.0 — Passador de mês em Rendas (ago/2026)
+
+---
+
+**Rendas ganha o passador de mês, e o bloco copiado três vezes vira componente (ago/2026)** — Pedido de Juliano a partir de duas capturas lado a lado: o seletor de mês de Rendas era um campo solto, enquanto o de Visão mensal tinha as setas de anterior e próximo. Trocar de mês em Rendas exigia abrir o calendário nativo do `input[type=month]` — três interações para andar um mês, contra uma. **O achado veio antes do código:** o bloco de Visão mensal não era um; era **dois**, com Saídas carregando uma cópia própria, markup idêntico e o mesmo CSS `.navBtn`/`.mesInput` duplicado nos dois módulos de feature. Rendas seria a terceira. **Entregue:** `SeletorMes` em `components/ui/`, com as setas em volta do campo e os mesmos `aria-label` que os specs já usavam. Aceita `id`, que é o que permite ao `Field` associar o rótulo visível ao campo por `htmlFor` — em Rendas o rótulo "Mês" fica, porque ali a barra é dividida com o filtro de status e sem ele os dois controles se confundem; nas outras duas telas o nome acessível continua vindo de `aria-label`, via prop `label`. **Duas divergências que a unificação resolveu**, ambas invisíveis enquanto o código era copiado: (a) **campo esvaziado** — Saídas guardava contra valor vazio, Visão mensal não, e apagar o campo lá propagava `''`, fazendo a tela consultar um mês inexistente; a guarda passou a valer para as três, com teste; (b) **largura do campo** — 170px em Visão mensal, 150px em Saídas. Padronizada em 170px, que é o piso para o mês por extenso do locale pt-BR ("setembro de 2026") junto do ícone de calendário; Saídas ganhou 20px. **Saldo de código:** 115 linhas removidas contra 11 adicionadas nas três telas, mais o componente. **Custo em teste:** `seletor-mes.test.tsx` novo com 7 casos escritos antes da implementação — cada seta, a virada de ano nas duas pontas (janeiro volta para dezembro, dezembro avança para janeiro), a escolha feita direto no campo, o campo esvaziado ignorado e o `id` do `Field` chegando ao input. Em E2E, `rendas.spec.ts` quebrou no primeiro run: `getByLabel('Mês')` virou strict mode violation assim que as setas entraram em cena, porque "Mês anterior" e "Próximo mês" também casam com o rótulo parcial. Passou a `{ exact: true }` — o mesmo remendo que `gastos.spec.ts` e `fatura-vencida.spec.ts` já carregavam desde que suas telas ganharam navegação de mês, o que torna a troca previsível e não um sintoma. Melhoria de navegação sobre RF-REN-01..05, com o mesmo controle já presente em RF-VIS-01 e RF-DES-14. **993 testes unitários** (+7), **90 specs E2E** (inalterados).
+
+---
+
 ## v1.5.1 — Correção na lista de Saídas (ago/2026)
 
 ---

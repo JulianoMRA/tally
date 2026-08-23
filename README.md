@@ -62,7 +62,7 @@ Bug reports during development follow a structured template (preconditions, step
 
 ## Status
 
-Tally has been in daily real use since **v1.0.0** and is currently at **v1.2.1**. The MVP and the whole V2 scope in [`PRD.md`](./PRD.md) are delivered; development continues in releases. The implementation was built in vertical slices — each one a thin end-to-end feature with UI, logic, persistence, and tests.
+Tally has been in daily real use since **v1.0.0** and is currently at **v1.6.0**. The MVP and the whole V2 scope in [`PRD.md`](./PRD.md) are delivered; development continues in releases. The implementation was built in vertical slices — each one a thin end-to-end feature with UI, logic, persistence, and tests.
 
 ### Roadmap
 
@@ -98,6 +98,13 @@ From here the project stopped delivering in slices and started delivering in rel
 - [x] **Post-1.1.1 (ago/2026)** — repository cleanup: color tokens for status surfaces, removal of the dark theme that never shipped a switcher, design reference material moved under `docs/`, and removal of the hosted CI (the pipeline now runs locally — see [`CONTRIBUTING.md`](./CONTRIBUTING.md))
 - [x] **v1.2.0** (ago/2026) — the 8-phase UI/UX plan derived from a full interface audit (the app run against an isolated database, 8 screens captured in 3 states and 3 widths). Ships statement totals in the invoice list, income-source reuse for one-off entries, a first-run onboarding panel, and backup restore from the UI. Row actions collapsed from 5 buttons into a menu; modals gained focus traps; table sorting became keyboard-reachable. The accessibility scan had been running against an **empty** database — with data on screen it immediately found two serious WCAG violations. Coverage went from 706 to 771 unit tests and from 42 to 78 E2E specs
 - [x] **v1.2.1** (ago/2026) — fix release: every screen opened at a different left edge, because the page container derived _where a page starts_ from the same `max-width` that capped _how wide it gets_. Also closes a race in the E2E suite where a locator could resolve against the previous route, still mounted mid-navigation
+- [x] **v1.2.2** (ago/2026) — fix release: the due date was computed a month ahead whenever the card's due day fell before its closing day
+- [x] **v1.2.3** (ago/2026) — fix release: a leftover statement from an archived card stayed visible, and statement dates now realign when the card is edited
+- [x] **v1.3.0** (ago/2026) — visual refactor, batch 1: the balance hero and the agenda on the monthly view, the `SidePanel`, and Saídas with the list taking over the screen and per-occurrence monthly impact
+- [x] **v1.4.0** (ago/2026) — visual refactor, F5: Faturas on a single screen, with a card rail and the current statement reachable without a click
+- [x] **v1.5.0** (ago/2026) — **closes the visual refactor**: Rendas, Cartões, Categorias, Ajustes and Importar, plus the system itself — one page width, six type steps, three densities. Nine phases, 17 audit findings
+- [x] **v1.5.1** (ago/2026) — fix release: the purchase date returns to the Saídas list, and sorting by it stops being unreachable after the first click on another column
+- [x] **v1.6.0** (ago/2026) — a month stepper on Rendas: the previous/next arrows moved out of Visão mensal and Saídas into a shared `SeletorMes`, now used by all three screens. Unifying the three copies also settled two divergences they had been hiding — the guard against an emptied field, and the field width
 
 Detalhes técnicos de cada slice em [`CHANGELOG.md`](./CHANGELOG.md).
 
