@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Cartao } from '@domain/entities/cartao'
 import type { Categoria } from '@domain/entities/categoria'
@@ -47,6 +47,7 @@ import { NotaETagsModal } from './NotaETagsModal'
 import { useOcorrencias } from './hooks/use-ocorrencias'
 import { useSaidas } from './hooks/use-saidas'
 import styles from './saidas.module.css'
+import { useCargaAuxiliar } from '../../hooks/use-carga-auxiliar'
 
 type Filtro = 'todas' | 'foraCartao' | 'parcelada' | 'assinatura'
 
@@ -120,10 +121,16 @@ export default function SaidasPage() {
   const toast = useToast()
   const navigate = useNavigate()
 
-  useEffect(() => {
-    window.api.cartao.list({ incluirArquivados: true }).then(setCartoes)
-    window.api.categoria.list({ tipo: 'Despesa' }).then(setCategorias)
-  }, [])
+  useCargaAuxiliar(
+    () => window.api.cartao.list({ incluirArquivados: true }),
+    setCartoes,
+    'Erro ao listar cartões.'
+  )
+  useCargaAuxiliar(
+    () => window.api.categoria.list({ tipo: 'Despesa' }),
+    setCategorias,
+    'Erro ao listar categorias.'
+  )
 
   const cartoesAtivos = useMemo(() => cartoes.filter((c) => c.ativo), [cartoes])
 

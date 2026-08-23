@@ -3,6 +3,7 @@ import type { Fatura } from '@domain/entities/fatura'
 import { Button, Field, Input, Modal, Select } from '../../components/ui'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import styles from './faturas.module.css'
+import { mensagemErro } from '../../lib/mensagem-erro'
 
 type Props = {
   despesaId: number
@@ -40,7 +41,7 @@ export function AdiantarParcelasModal({
       })
       .catch((e) => {
         if (!ativo) return
-        setErro(e instanceof Error ? e.message : 'Erro ao carregar faturas destino.')
+        setErro(mensagemErro(e, 'Erro ao carregar faturas destino.'))
       })
       .finally(() => {
         if (ativo) setLoadingFaturas(false)

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
 import type { Fatura } from '@domain/entities/fatura'
@@ -28,6 +28,7 @@ import { mensagemErro } from '../../lib/mensagem-erro'
 import { rotuloVencida } from './aviso-fechamento'
 import { statusVariant } from './status-variant'
 import styles from './faturas.module.css'
+import { useCargaAuxiliar } from '../../hooks/use-carga-auxiliar'
 
 type DialogoConfirma =
   | { tipo: 'fechar' }
@@ -91,9 +92,11 @@ export function FaturaDetalhe({
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const toast = useToast()
 
-  useEffect(() => {
-    window.api.categoria.list({ tipo: 'Despesa' }).then(setCategorias)
-  }, [])
+  useCargaAuxiliar(
+    () => window.api.categoria.list({ tipo: 'Despesa' }),
+    setCategorias,
+    'Erro ao listar categorias.'
+  )
 
   const parcelasOrdenadas = useMemo(() => {
     const copia = [...parcelas]

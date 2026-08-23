@@ -19,6 +19,7 @@ import styles from './ajustes.module.css'
 
 export default function AjustesPage() {
   const toast = useToast()
+  const { show } = toast
   const {
     register,
     handleSubmit,
@@ -51,9 +52,16 @@ export default function AjustesPage() {
   const [copias, setCopias] = useState<CopiaDeBackupDTO[]>([])
   const [alvoRestaurar, setAlvoRestaurar] = useState<CopiaDeBackupDTO | null>(null)
 
+  // `carregarCopias` continua exposta porque o restauro a chama para atualizar
+  // a lista depois de sobrescrever a base.
   const carregarCopias = useCallback(() => {
-    window.api.config.listarBackups().then(setCopias)
-  }, [])
+    window.api.config
+      .listarBackups()
+      .then(setCopias)
+      .catch((e: unknown) => show(mensagemErro(e, 'Erro ao listar as cópias.'), 'error'))
+    // `show` vem de `useCallback` no provider; `toast` é objeto novo a cada
+    // render e aqui viraria recarregamento em laço.
+  }, [show])
 
   useEffect(carregarCopias, [carregarCopias])
 
