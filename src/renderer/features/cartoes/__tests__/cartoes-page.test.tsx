@@ -41,7 +41,7 @@ async function preencherESalvar(): Promise<void> {
   await user.click(screen.getByRole('button', { name: 'Salvar' }))
 }
 
-describe('CartoesPage — feedback de erro nas mutações', () => {
+describe('CartoesPage — feedback de erro', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -76,5 +76,24 @@ describe('CartoesPage — feedback de erro nas mutações', () => {
 
     expect(await screen.findByText('Cartão criado.')).toBeTruthy()
     expect(api.cartao.create).toHaveBeenCalledOnce()
+  })
+
+  // A tela tratava as duas metades em línguas diferentes: a mutação acima já
+  // passava por `mensagemErro`, e a listagem usava `String(err)` — que despeja
+  // na página o texto embrulhado pelo Electron, prefixo e tudo.
+  it('mostra a mensagem limpa, sem o prefixo do IPC, quando listar cartões falha', async () => {
+    const api = instalarApiMock()
+    api.cartao.list.mockRejectedValue(
+      new Error("Error invoking remote method 'cartao:list': Error: Banco indisponível")
+    )
+
+    render(
+      <ToastProvider>
+        <CartoesPage />
+      </ToastProvider>
+    )
+
+    expect(await screen.findByText('Banco indisponível')).toBeTruthy()
+    expect(screen.queryByText(/Error invoking remote method/)).toBeNull()
   })
 })
