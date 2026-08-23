@@ -1,30 +1,14 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback } from 'react'
 import type { Categoria } from '@domain/entities/categoria'
 import type { CategoriaInput } from '@shared/ipc/categoria'
-
-type State = {
-  categorias: Categoria[]
-  loading: boolean
-  error: string | null
-}
+import { useListaArquivavel } from '../../../hooks/use-lista-arquivavel'
 
 export function useCategorias() {
-  const [state, setState] = useState<State>({ categorias: [], loading: true, error: null })
-  const [incluirArquivados, setIncluirArquivados] = useState(false)
-
-  const refetch = useCallback(async () => {
-    setState((s) => ({ ...s, loading: true, error: null }))
-    try {
-      const categorias = await window.api.categoria.list({ incluirArquivados })
-      setState({ categorias, loading: false, error: null })
-    } catch (err) {
-      setState({ categorias: [], loading: false, error: String(err) })
-    }
-  }, [incluirArquivados])
-
-  useEffect(() => {
-    refetch()
-  }, [refetch])
+  const { itens, loading, error, incluirArquivados, setIncluirArquivados, refetch } =
+    useListaArquivavel<Categoria>(
+      (incluirArquivados) => window.api.categoria.list({ incluirArquivados }),
+      'Erro ao listar categorias.'
+    )
 
   const criar = useCallback(
     async (input: CategoriaInput) => {
@@ -59,9 +43,9 @@ export function useCategorias() {
   )
 
   return {
-    categorias: state.categorias,
-    loading: state.loading,
-    error: state.error,
+    categorias: itens,
+    loading,
+    error,
     incluirArquivados,
     setIncluirArquivados,
     criar,

@@ -1,30 +1,14 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback } from 'react'
 import type { Cartao } from '@domain/entities/cartao'
 import type { CartaoInput } from '@shared/ipc/cartao'
-
-type State = {
-  cartoes: Cartao[]
-  loading: boolean
-  error: string | null
-}
+import { useListaArquivavel } from '../../../hooks/use-lista-arquivavel'
 
 export function useCartoes() {
-  const [state, setState] = useState<State>({ cartoes: [], loading: true, error: null })
-  const [incluirArquivados, setIncluirArquivados] = useState(false)
-
-  const refetch = useCallback(async () => {
-    setState((s) => ({ ...s, loading: true, error: null }))
-    try {
-      const cartoes = await window.api.cartao.list({ incluirArquivados })
-      setState({ cartoes, loading: false, error: null })
-    } catch (err) {
-      setState({ cartoes: [], loading: false, error: String(err) })
-    }
-  }, [incluirArquivados])
-
-  useEffect(() => {
-    refetch()
-  }, [refetch])
+  const { itens, loading, error, incluirArquivados, setIncluirArquivados, refetch } =
+    useListaArquivavel<Cartao>(
+      (incluirArquivados) => window.api.cartao.list({ incluirArquivados }),
+      'Erro ao listar cartões.'
+    )
 
   const criar = useCallback(
     async (input: CartaoInput) => {
@@ -59,9 +43,9 @@ export function useCartoes() {
   )
 
   return {
-    cartoes: state.cartoes,
-    loading: state.loading,
-    error: state.error,
+    cartoes: itens,
+    loading,
+    error,
     incluirArquivados,
     setIncluirArquivados,
     criar,
