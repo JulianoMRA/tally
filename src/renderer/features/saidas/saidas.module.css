@@ -166,40 +166,9 @@
   overscroll-behavior-x: contain;
 }
 
-.tabela {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--text-3);
-}
-
-.tabela th {
-  text-align: left;
-  padding: var(--dens-1) 16px;
-  font-size: var(--text-2);
-  font-weight: 600;
-  color: var(--ink-3);
-  border-bottom: 1px solid var(--rule);
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  background: var(--bg-sunk);
-  white-space: nowrap;
-}
-
 /* Degrau compacto, e não o padrão: Saídas é a tabela mais densa do app — um
    mês real tem 30+ ocorrências, e aqui cada 2px valem uma linha a mais na
    tela. */
-.tabela td {
-  padding: var(--dens-1) 16px;
-  border-bottom: 1px solid var(--rule);
-  color: var(--ink);
-  vertical-align: middle;
-}
-
-.tabela tr:last-child td {
-  border-bottom: none;
-}
-
 .thSortavel {
   cursor: pointer;
   user-select: none;
