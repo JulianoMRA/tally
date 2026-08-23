@@ -23,10 +23,11 @@ import {
   Panel,
   RowActions,
   SegmentedControl,
+  Select,
   SeletorMes,
   SidePanel,
   SortableHeader,
-  Select,
+  Table,
   useToast,
   type AcaoLinha
 } from '../../components/ui'
@@ -536,7 +537,7 @@ export default function SaidasPage() {
             <EmptyState title="Nenhuma saída para este filtro." />
           ) : (
             <div className={styles.tabelaWrap}>
-              <table className={styles.tabela}>
+              <Table densidade="compacta">
                 <thead>
                   <tr>
                     <SortableHeader
@@ -649,7 +650,7 @@ export default function SaidasPage() {
                     </Fragment>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
           )}
         </Panel>

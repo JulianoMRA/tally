@@ -14,6 +14,7 @@ import {
   SegmentedControl,
   SeletorMes,
   SortableHeader,
+  Table,
   useToast,
   type AcaoLinha,
   type OpcaoSegmentada
@@ -217,7 +218,7 @@ export default function VisaoMensalPage() {
                   {detalhe.gastosForaCartao.length === 0 ? (
                     <EmptyState title="Nenhum gasto fora de cartão neste mês." />
                   ) : (
-                    <table className={styles.tabela}>
+                    <Table>
                       <thead>
                         <tr>
                           <SortableHeader
@@ -259,7 +260,7 @@ export default function VisaoMensalPage() {
                           </tr>
                         ))}
                       </tbody>
-                    </table>
+                    </Table>
                   )}
                 </Panel>
               </div>
@@ -279,7 +280,7 @@ export default function VisaoMensalPage() {
                 {detalhe.recebimentos.length === 0 ? (
                   <EmptyState title="Nenhum recebimento neste mês." />
                 ) : (
-                  <table className={styles.tabela}>
+                  <Table>
                     <thead>
                       <tr>
                         <SortableHeader
@@ -332,7 +333,7 @@ export default function VisaoMensalPage() {
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                  </Table>
                 )}
               </Panel>
 

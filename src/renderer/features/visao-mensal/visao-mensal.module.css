@@ -386,25 +386,6 @@
 }
 
 /* Tabelas internas dos panels */
-.tabela {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--text-3);
-}
-
-.tabela th {
-  text-align: left;
-  padding: var(--dens-1) 16px;
-  font-size: var(--text-2);
-  font-weight: 600;
-  color: var(--ink-3);
-  border-bottom: 1px solid var(--rule);
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  background: var(--bg-sunk);
-}
-
 .thSortavel {
   cursor: pointer;
   user-select: none;
@@ -412,16 +393,6 @@
 
 .thSortavel:hover {
   color: var(--ink);
-}
-
-.tabela td {
-  padding: var(--dens-2) 16px;
-  border-bottom: 1px solid var(--rule);
-  color: var(--ink);
-}
-
-.tabela tr:last-child td {
-  border-bottom: none;
 }
 
 .colValor {

@@ -13,12 +13,13 @@ import {
   Badge,
   Button,
   ConfirmDialog,
-  Panel,
   EmptyState,
   Field,
   Input,
+  Panel,
   RowActions,
   SortableHeader,
+  Table,
   useToast,
   type AcaoLinha
 } from '../../components/ui'
@@ -234,7 +235,7 @@ export function FaturaDetalhe({
             <EmptyState title="Nenhuma parcela nesta fatura." />
           ) : (
             <>
-              <table className={styles.tabela}>
+              <Table>
                 <thead>
                   <tr>
                     <SortableHeader
@@ -299,7 +300,7 @@ export function FaturaDetalhe({
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
               <div className={styles.totaisFooter}>
                 <div className={`${styles.totalLinha} ${styles.totalLiquidoLinha}`}>
                   <span className={styles.totalLabel}>Total</span>

@@ -170,16 +170,6 @@
   gap: 12px;
 }
 
-.colorInput {
-  width: 48px;
-  height: 34px;
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--r-2);
-  padding: 2px;
-  cursor: pointer;
-  background: var(--bg-elev);
-}
-
 .formActions {
   display: flex;
   justify-content: flex-end;
