@@ -1,10 +1,6 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
 import type { Despesa } from '@domain/entities/despesa'
-import {
-  diferencaEmMeses,
-  mesReferenciaAnterior,
-  proxMesReferencia
-} from '@domain/services/mes-referencia'
+import { diferencaEmMeses } from '@domain/services/mes-referencia'
 import { montarAgendaDoMes } from '@domain/services/montar-agenda-do-mes'
 import { hojeIsoLocal } from '@shared/datas-locais'
 import type { RecebimentoComContexto } from '@shared/ipc/recebimento'
@@ -13,10 +9,10 @@ import { PageHead } from '../../components/layout/PageHead'
 import {
   Badge,
   EmptyState,
-  Input,
   Panel,
   RowActions,
   SegmentedControl,
+  SeletorMes,
   SortableHeader,
   useToast,
   type AcaoLinha,
@@ -133,13 +129,6 @@ export default function VisaoMensalPage() {
 
   const gastoTotalCategorias = totaisCategoria.reduce((s, t) => s + t.totalCentavos, 0)
 
-  function irAnterior() {
-    setMes(mesReferenciaAnterior(mes))
-  }
-  function irProximo() {
-    setMes(proxMesReferencia(mes))
-  }
-
   // Base ainda sem nada: sem isso a tela era R$ 0,00 em tudo, sem dizer por
   // onde começar.
   const baseVazia =
@@ -171,29 +160,7 @@ export default function VisaoMensalPage() {
       <PageHead title="Visão mensal" subtitle="Faturas, gastos, recebimentos e saldo do mês." />
 
       <div className={styles.header}>
-        <button
-          type="button"
-          className={styles.navBtn}
-          onClick={irAnterior}
-          aria-label="Mês anterior"
-        >
-          ←
-        </button>
-        <Input
-          type="month"
-          value={mes}
-          onChange={(e) => setMes(e.target.value)}
-          className={styles.mesInput}
-          aria-label="Mês"
-        />
-        <button
-          type="button"
-          className={styles.navBtn}
-          onClick={irProximo}
-          aria-label="Próximo mês"
-        >
-          →
-        </button>
+        <SeletorMes valor={mes} onChange={setMes} label="Mês" />
         {ehProjecao && (
           <span className={styles.headerBadges}>
             <Badge variant="projection" />

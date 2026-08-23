@@ -10,10 +10,10 @@ import {
   ConfirmDialog,
   EmptyState,
   Field,
-  Input,
   Panel,
   RowActions,
   SegmentedControl,
+  SeletorMes,
   useToast,
   type OpcaoSegmentada
 } from '../../components/ui'
@@ -166,7 +166,7 @@ function AbaRecebimentos({
     <>
       <div className={styles.toolbar}>
         <Field label="Mês">
-          <Input type="month" value={mes} onChange={(e) => setMes(e.target.value)} />
+          <SeletorMes valor={mes} onChange={setMes} />
         </Field>
 
         <SegmentedControl

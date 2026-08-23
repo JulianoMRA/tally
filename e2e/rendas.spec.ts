@@ -25,7 +25,9 @@ test.describe('Rendas (RF-REN-01..05) — tela unificada Recebimentos + Fontes',
 
     // --- Aba "Recebimentos do mês": mês 2026-06 mostra a Bolsa ---
     await page.getByRole('tab', { name: 'Recebimentos do mês' }).click()
-    await page.getByLabel('Mês').fill('2026-06')
+    // `exact: true` porque "Mês anterior" e "Próximo mês" também casam com o
+    // rótulo parcial, agora que a tela tem passador de mês.
+    await page.getByLabel('Mês', { exact: true }).fill('2026-06')
     await expect(page.getByText('Bolsa PET E2E').first()).toBeVisible()
     await expect(page.getByText(/R\$\s*1\.200,00/).first()).toBeVisible()
 

@@ -55,31 +55,6 @@
   }
 }
 
-.navBtn {
-  background: var(--bg-elev);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-2);
-  width: 34px;
-  height: 34px;
-  font-size: var(--text-4);
-  font-weight: 600;
-  color: var(--ink);
-  cursor: pointer;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
-.navBtn:hover {
-  border-color: var(--forest);
-}
-
-.mesInput {
-  width: 170px;
-}
-
 /* .mesLabel saiu no refactor visual: era o rótulo "Agosto de 2026" ao lado do
    campo de mês, repetindo o que o próprio campo já mostra (ponto 06). */
 

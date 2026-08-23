@@ -64,33 +64,6 @@
   min-width: 220px;
 }
 
-.navBtn {
-  background: var(--bg-elev);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-2);
-  width: 34px;
-  height: 34px;
-  font-size: var(--text-4);
-  font-weight: 600;
-  color: var(--ink);
-  cursor: pointer;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.navBtn:hover {
-  border-color: var(--forest);
-}
-
-.mesInput {
-  width: 150px;
-  flex-shrink: 0;
-}
-
 /* Coluna de parcela: rótulo X/Y com a barra de progresso embaixo. A barra dá a
    leitura que o texto sozinho não dá — quanto falta para acabar. */
 /* Piso da descrição. Pôr o valor de origem na mesma linha do impacto ganhou
