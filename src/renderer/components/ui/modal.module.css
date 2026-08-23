@@ -1,0 +1,50 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+/* `max-width` existia só no módulo de Saídas: os outros três estouravam a
+   janela estreita em vez de encolher. */
+.dialogo {
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  padding: 24px;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: var(--shadow-2);
+}
+
+.ampla {
+  width: 420px;
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--text-4);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.descricao {
+  margin: 0;
+  font-size: var(--text-3);
+  color: var(--ink-3);
+}
+
+.acoes {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
