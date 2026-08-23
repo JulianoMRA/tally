@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Renda } from '@domain/entities/renda'
-import { Button, Field, Input } from '../../components/ui'
-import { useEscapeKey } from '../../hooks/use-escape-key'
-import { useFocusTrap } from '../../hooks/use-focus-trap'
+import { Button, Field, Input, Modal } from '../../components/ui'
 import styles from './rendas.module.css'
 
 type Props = {
@@ -31,8 +29,6 @@ export function EditarRendaModal({ renda, onConfirmar, onCancelar }: Props) {
   )
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
-  const modalRef = useFocusTrap<HTMLDivElement>()
-  useEscapeKey(onCancelar)
 
   useEffect(() => {
     setNome(renda.nome)
@@ -80,65 +76,56 @@ export function EditarRendaModal({ renda, onConfirmar, onCancelar }: Props) {
   }
 
   return (
-    <div className={styles.modalOverlay}>
-      <div
-        ref={modalRef}
-        className={styles.modal}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Editar renda"
-      >
-        <h3 className={styles.modalTitle}>Editar renda</h3>
-        <p className={styles.modalDesc}>
+    <Modal
+      titulo="Editar renda"
+      descricao={
+        <>
           Tipo: <strong>{renda.tipo}</strong>.{' '}
           {ehRecorrente
             ? 'Mudar valor ou dia ajusta recebimentos futuros (Esperado). Recebidos preservam.'
             : 'Edição direta.'}
-        </p>
-
-        <Field label="Nome">
-          <Input
-            type="text"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            maxLength={80}
-          />
-        </Field>
-
-        <div className={styles.modalRow}>
-          <Field label="Valor (R$)">
-            <Input
-              type="text"
-              inputMode="decimal"
-              value={valorReais}
-              onChange={(e) => setValorReais(e.target.value)}
-            />
-          </Field>
-
-          {ehRecorrente && (
-            <Field label="Dia esperado">
-              <Input
-                type="number"
-                min={1}
-                max={31}
-                value={diaEsperado}
-                onChange={(e) => setDiaEsperado(e.target.value)}
-              />
-            </Field>
-          )}
-        </div>
-
-        {erro && <p className={styles.erro}>{erro}</p>}
-
-        <div className={styles.modalActions}>
+        </>
+      }
+      onFechar={onCancelar}
+      rodape={
+        <>
           <Button variant="ghost" size="sm" onClick={onCancelar} disabled={loading}>
             Cancelar
           </Button>
           <Button variant="primary" size="sm" onClick={handleConfirmar} disabled={loading}>
             {loading ? 'Salvando…' : 'Salvar'}
           </Button>
-        </div>
+        </>
+      }
+    >
+      <Field label="Nome">
+        <Input type="text" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={80} />
+      </Field>
+
+      <div className={styles.modalRow}>
+        <Field label="Valor (R$)">
+          <Input
+            type="text"
+            inputMode="decimal"
+            value={valorReais}
+            onChange={(e) => setValorReais(e.target.value)}
+          />
+        </Field>
+
+        {ehRecorrente && (
+          <Field label="Dia esperado">
+            <Input
+              type="number"
+              min={1}
+              max={31}
+              value={diaEsperado}
+              onChange={(e) => setDiaEsperado(e.target.value)}
+            />
+          </Field>
+        )}
       </div>
-    </div>
+
+      {erro && <p className={styles.erro}>{erro}</p>}
+    </Modal>
   )
 }

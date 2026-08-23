@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { hojeIsoLocal } from '@shared/datas-locais'
-import { Button, Field, Input } from '../../components/ui'
-import { useEscapeKey } from '../../hooks/use-escape-key'
-import { useFocusTrap } from '../../hooks/use-focus-trap'
+import { Button, Field, Input, Modal } from '../../components/ui'
 import styles from './rendas.module.css'
 
 type Props = {
@@ -16,8 +14,6 @@ export function MarcarRecebidoModal({ descricao, valorReais, onConfirmar, onCanc
   const [data, setData] = useState(hojeIsoLocal)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
-  const modalRef = useFocusTrap<HTMLDivElement>()
-  useEscapeKey(onCancelar)
 
   async function handleConfirmar() {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) {
@@ -36,34 +32,30 @@ export function MarcarRecebidoModal({ descricao, valorReais, onConfirmar, onCanc
   }
 
   return (
-    <div className={styles.modalOverlay}>
-      <div
-        ref={modalRef}
-        className={styles.modal}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Marcar recebimento"
-      >
-        <h3 className={styles.modalTitle}>Marcar recebimento</h3>
-        <p className={styles.modalDesc}>
+    <Modal
+      titulo="Marcar recebimento"
+      descricao={
+        <>
           <strong>{descricao}</strong> — {valorReais}
-        </p>
-
-        <Field label="Data de recebimento">
-          <Input type="date" value={data} onChange={(e) => setData(e.target.value)} autoFocus />
-        </Field>
-
-        {erro && <p className={styles.erro}>{erro}</p>}
-
-        <div className={styles.modalActions}>
+        </>
+      }
+      onFechar={onCancelar}
+      rodape={
+        <>
           <Button variant="ghost" size="sm" onClick={onCancelar} disabled={loading}>
             Cancelar
           </Button>
           <Button variant="primary" size="sm" onClick={handleConfirmar} disabled={loading}>
             {loading ? 'Confirmando…' : 'Marcar recebido'}
           </Button>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <Field label="Data de recebimento">
+        <Input type="date" value={data} onChange={(e) => setData(e.target.value)} autoFocus />
+      </Field>
+
+      {erro && <p className={styles.erro}>{erro}</p>}
+    </Modal>
   )
 }

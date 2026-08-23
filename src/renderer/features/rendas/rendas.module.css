@@ -403,41 +403,6 @@
 }
 
 /* Modal compartilhado (MarcarRecebido + NovoAvulso) */
-.modalOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-.modal {
-  background: var(--bg-elev);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-3);
-  padding: 24px;
-  width: 380px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  box-shadow: var(--shadow-2);
-}
-
-.modalTitle {
-  font-size: var(--text-4);
-  font-weight: 700;
-  color: var(--ink);
-  margin: 0;
-}
-
-.modalDesc {
-  font-size: var(--text-3);
-  color: var(--ink-3);
-  margin: 0;
-}
-
 .modalRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -451,11 +416,4 @@
   font-size: var(--text-3);
   color: var(--ink-2);
   cursor: pointer;
-}
-
-.modalActions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  margin-top: 4px;
 }

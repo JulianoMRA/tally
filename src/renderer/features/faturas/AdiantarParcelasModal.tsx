@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Fatura } from '@domain/entities/fatura'
-import { Button, Field, Input, Select } from '../../components/ui'
-import { useEscapeKey } from '../../hooks/use-escape-key'
-import { useFocusTrap } from '../../hooks/use-focus-trap'
+import { Button, Field, Input, Modal, Select } from '../../components/ui'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import styles from './faturas.module.css'
 
@@ -29,8 +27,6 @@ export function AdiantarParcelasModal({
   const [loadingFaturas, setLoadingFaturas] = useState(true)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
-  const modalRef = useFocusTrap<HTMLDivElement>()
-  useEscapeKey(onCancelar)
 
   useEffect(() => {
     let ativo = true
@@ -77,55 +73,17 @@ export function AdiantarParcelasModal({
   }
 
   return (
-    <div className={styles.modalOverlay}>
-      <div
-        ref={modalRef}
-        className={styles.modal}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Adiantar parcelas"
-      >
-        <h3 className={styles.modalTitle}>Adiantar parcelas</h3>
-        <p className={styles.modalDesc}>
+    <Modal
+      titulo="Adiantar parcelas"
+      descricao={
+        <>
           Despesa: <strong>{descricao}</strong>. As parcelas mais futuras serão movidas para a
           fatura destino.
-        </p>
-
-        <div className={styles.modalFields}>
-          <Field label="Fatura destino">
-            <Select
-              value={faturaDestinoId}
-              onChange={(e) => setFaturaDestinoId(e.target.value)}
-              disabled={loadingFaturas || faturasDestino.length === 0}
-            >
-              {loadingFaturas ? (
-                <option value="">Carregando…</option>
-              ) : faturasDestino.length === 0 ? (
-                <option value="">Nenhuma fatura Aberta disponível</option>
-              ) : (
-                faturasDestino.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {formatarMesReferencia(f.mesReferencia, { capitalizar: true })} (vence{' '}
-                    {formatarDataIso(f.dataVencimento)})
-                  </option>
-                ))
-              )}
-            </Select>
-          </Field>
-
-          <Field label="Quantidade de parcelas">
-            <Input
-              type="number"
-              min={1}
-              value={quantidade}
-              onChange={(e) => setQuantidade(e.target.value)}
-            />
-          </Field>
-        </div>
-
-        {erro && <p className={styles.erroAcao}>{erro}</p>}
-
-        <div className={styles.modalActions}>
+        </>
+      }
+      onFechar={onCancelar}
+      rodape={
+        <>
           <Button variant="ghost" size="sm" onClick={onCancelar} disabled={loading}>
             Cancelar
           </Button>
@@ -137,8 +95,42 @@ export function AdiantarParcelasModal({
           >
             {loading ? 'Adiantando…' : 'Confirmar'}
           </Button>
-        </div>
+        </>
+      }
+    >
+      <div className={styles.modalFields}>
+        <Field label="Fatura destino">
+          <Select
+            value={faturaDestinoId}
+            onChange={(e) => setFaturaDestinoId(e.target.value)}
+            disabled={loadingFaturas || faturasDestino.length === 0}
+          >
+            {loadingFaturas ? (
+              <option value="">Carregando…</option>
+            ) : faturasDestino.length === 0 ? (
+              <option value="">Nenhuma fatura Aberta disponível</option>
+            ) : (
+              faturasDestino.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {formatarMesReferencia(f.mesReferencia, { capitalizar: true })} (vence{' '}
+                  {formatarDataIso(f.dataVencimento)})
+                </option>
+              ))
+            )}
+          </Select>
+        </Field>
+
+        <Field label="Quantidade de parcelas">
+          <Input
+            type="number"
+            min={1}
+            value={quantidade}
+            onChange={(e) => setQuantidade(e.target.value)}
+          />
+        </Field>
       </div>
-    </div>
+
+      {erro && <p className={styles.erroAcao}>{erro}</p>}
+    </Modal>
   )
 }

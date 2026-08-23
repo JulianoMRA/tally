@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
-import { Button, Field, Input, Select } from '../../components/ui'
-import { useEscapeKey } from '../../hooks/use-escape-key'
-import { useFocusTrap } from '../../hooks/use-focus-trap'
+import { Button, Field, Input, Modal, Select } from '../../components/ui'
 import styles from './faturas.module.css'
 
 type Props = {
@@ -33,8 +31,6 @@ export function EditarDespesaModal({ despesa, categorias, onConfirmar, onCancela
   const [dataCompra, setDataCompra] = useState(despesa.dataCompra)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
-  const modalRef = useFocusTrap<HTMLDivElement>()
-  useEscapeKey(onCancelar)
 
   useEffect(() => {
     setDescricao(despesa.descricao)
@@ -76,82 +72,74 @@ export function EditarDespesaModal({ despesa, categorias, onConfirmar, onCancela
   }
 
   return (
-    <div className={styles.modalOverlay}>
-      <div
-        ref={modalRef}
-        className={styles.modal}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Editar despesa"
-      >
-        <h3 className={styles.modalTitle}>Editar despesa</h3>
-        <p className={styles.modalDesc}>
+    <Modal
+      titulo="Editar despesa"
+      descricao={
+        <>
           Tipo: <strong>{despesa.tipo}</strong>.{' '}
           {despesa.tipo === 'Parcelada'
             ? 'Mudar o valor recalcula as parcelas pendentes (paga preserva).'
             : 'Edição direta.'}
-        </p>
-
-        <Field label="Descrição">
-          <Input
-            type="text"
-            value={descricao}
-            onChange={(e) => setDescricao(e.target.value)}
-            maxLength={80}
-          />
-        </Field>
-
-        <Field label="Categoria">
-          <Select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
-            {categorias.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome}
-              </option>
-            ))}
-          </Select>
-        </Field>
-
-        <div className={styles.modalFields}>
-          <Field label={despesa.tipo === 'Parcelada' ? 'Valor total (R$)' : 'Valor (R$)'}>
-            <Input
-              type="text"
-              inputMode="decimal"
-              value={valorReais}
-              onChange={(e) => setValorReais(e.target.value)}
-            />
-          </Field>
-
-          {podeEditarData ? (
-            <Field label="Data da compra">
-              <Input
-                type="date"
-                value={dataCompra}
-                onChange={(e) => setDataCompra(e.target.value)}
-              />
-            </Field>
-          ) : (
-            <Field label="Data da compra">
-              <Input
-                type="date"
-                value={dataCompra}
-                disabled
-                title="Data não editável para Parcelada"
-              />
-            </Field>
-          )}
-        </div>
-
-        {erro && <p className={styles.erroAcao}>{erro}</p>}
-
-        <div className={styles.modalActions}>
+        </>
+      }
+      onFechar={onCancelar}
+      rodape={
+        <>
           <Button variant="ghost" size="sm" onClick={onCancelar} disabled={loading}>
             Cancelar
           </Button>
           <Button variant="primary" size="sm" onClick={handleConfirmar} disabled={loading}>
             {loading ? 'Salvando…' : 'Salvar'}
           </Button>
-        </div>
+        </>
+      }
+    >
+      <Field label="Descrição">
+        <Input
+          type="text"
+          value={descricao}
+          onChange={(e) => setDescricao(e.target.value)}
+          maxLength={80}
+        />
+      </Field>
+
+      <Field label="Categoria">
+        <Select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
+          {categorias.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nome}
+            </option>
+          ))}
+        </Select>
+      </Field>
+
+      <div className={styles.modalFields}>
+        <Field label={despesa.tipo === 'Parcelada' ? 'Valor total (R$)' : 'Valor (R$)'}>
+          <Input
+            type="text"
+            inputMode="decimal"
+            value={valorReais}
+            onChange={(e) => setValorReais(e.target.value)}
+          />
+        </Field>
+
+        {podeEditarData ? (
+          <Field label="Data da compra">
+            <Input type="date" value={dataCompra} onChange={(e) => setDataCompra(e.target.value)} />
+          </Field>
+        ) : (
+          <Field label="Data da compra">
+            <Input
+              type="date"
+              value={dataCompra}
+              disabled
+              title="Data não editável para Parcelada"
+            />
+          </Field>
+        )}
       </div>
-    </div>
+
+      {erro && <p className={styles.erroAcao}>{erro}</p>}
+    </Modal>
   )
 }

@@ -1,8 +1,6 @@
 import { useState, type KeyboardEvent } from 'react'
 import type { DespesaComTags } from '@shared/ipc/despesa'
-import { Button } from '../../components/ui'
-import { useEscapeKey } from '../../hooks/use-escape-key'
-import { useFocusTrap } from '../../hooks/use-focus-trap'
+import { Button, Modal } from '../../components/ui'
 import styles from './saidas.module.css'
 
 type Props = {
@@ -17,8 +15,6 @@ export function NotaETagsModal({ despesa, onConfirmar, onCancelar }: Props) {
   const [entradaTag, setEntradaTag] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
-  const modalRef = useFocusTrap<HTMLDivElement>()
-  useEscapeKey(onCancelar)
 
   function adicionarTag() {
     const limpo = entradaTag.trim()
@@ -52,77 +48,71 @@ export function NotaETagsModal({ despesa, onConfirmar, onCancelar }: Props) {
   }
 
   return (
-    // Clicar no overlay não fecha: a nota é texto livre e as tags recém-digitadas
-    // ainda não foram salvas, então o clique fora descartava tudo sem aviso. É a
-    // mesma política que o `SidePanel` aplica a painel com formulário e que o
-    // `ConfirmDialog` aplica a ação destrutiva. Esc e Cancelar continuam fechando.
-    <div className={styles.modalOverlay}>
-      <div
-        ref={modalRef}
-        className={styles.modal}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Nota e tags"
-      >
-        <h3 className={styles.modalTitle}>Nota e tags</h3>
-        <p className={styles.modalDesc}>{despesa.descricao}</p>
-
-        <label className={styles.modalLabel} htmlFor="nota-despesa">
-          Nota
-        </label>
-        <textarea
-          id="nota-despesa"
-          className={styles.notaTextarea}
-          value={nota}
-          onChange={(e) => setNota(e.target.value)}
-          placeholder="Anotação livre (ex: reembolsável pelo trabalho)"
-          rows={3}
-        />
-
-        <label className={styles.modalLabel} htmlFor="entrada-tag">
-          Tags
-        </label>
-        <div className={styles.tagChips}>
-          {tags.map((t) => (
-            <span key={t} className={styles.tagChip}>
-              {t}
-              <button
-                type="button"
-                className={styles.tagChipX}
-                aria-label={`Remover tag ${t}`}
-                onClick={() => removerTag(t)}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-        <div className={styles.tagEntrada}>
-          <input
-            id="entrada-tag"
-            className={styles.tagInput}
-            value={entradaTag}
-            onChange={(e) => setEntradaTag(e.target.value)}
-            onKeyDown={aoTeclar}
-            placeholder="Digite e pressione Enter"
-            aria-label="Nova tag"
-          />
-          <Button type="button" variant="secondary" size="sm" onClick={adicionarTag}>
-            Adicionar
-          </Button>
-        </div>
-
-        {erro && <p className={styles.erro}>{erro}</p>}
-
-        <div className={styles.modalActions}>
+    // Sem `fecharNoOverlay`: a nota é texto livre e as tags recém-digitadas ainda
+    // não foram salvas, então o clique fora descartaria tudo sem aviso. Era o
+    // comportamento antigo deste modal, e o único dos seis que divergia.
+    <Modal
+      titulo="Nota e tags"
+      descricao={despesa.descricao}
+      onFechar={onCancelar}
+      largura="ampla"
+      rodape={
+        <>
           <Button variant="ghost" size="sm" onClick={onCancelar} disabled={salvando}>
             Cancelar
           </Button>
           <Button variant="primary" size="sm" onClick={confirmar} disabled={salvando}>
             {salvando ? 'Salvando…' : 'Salvar'}
           </Button>
-        </div>
+        </>
+      }
+    >
+      <label className={styles.modalLabel} htmlFor="nota-despesa">
+        Nota
+      </label>
+      <textarea
+        id="nota-despesa"
+        className={styles.notaTextarea}
+        value={nota}
+        onChange={(e) => setNota(e.target.value)}
+        placeholder="Anotação livre (ex: reembolsável pelo trabalho)"
+        rows={3}
+      />
+
+      <label className={styles.modalLabel} htmlFor="entrada-tag">
+        Tags
+      </label>
+      <div className={styles.tagChips}>
+        {tags.map((t) => (
+          <span key={t} className={styles.tagChip}>
+            {t}
+            <button
+              type="button"
+              className={styles.tagChipX}
+              aria-label={`Remover tag ${t}`}
+              onClick={() => removerTag(t)}
+            >
+              ×
+            </button>
+          </span>
+        ))}
       </div>
-    </div>
+      <div className={styles.tagEntrada}>
+        <input
+          id="entrada-tag"
+          className={styles.tagInput}
+          value={entradaTag}
+          onChange={(e) => setEntradaTag(e.target.value)}
+          onKeyDown={aoTeclar}
+          placeholder="Digite e pressione Enter"
+          aria-label="Nova tag"
+        />
+        <Button type="button" variant="secondary" size="sm" onClick={adicionarTag}>
+          Adicionar
+        </Button>
+      </div>
+
+      {erro && <p className={styles.erro}>{erro}</p>}
+    </Modal>
   )
 }
