@@ -52,14 +52,17 @@ export function NotaETagsModal({ despesa, onConfirmar, onCancelar }: Props) {
   }
 
   return (
-    <div className={styles.modalOverlay} onClick={onCancelar}>
+    // Clicar no overlay não fecha: a nota é texto livre e as tags recém-digitadas
+    // ainda não foram salvas, então o clique fora descartava tudo sem aviso. É a
+    // mesma política que o `SidePanel` aplica a painel com formulário e que o
+    // `ConfirmDialog` aplica a ação destrutiva. Esc e Cancelar continuam fechando.
+    <div className={styles.modalOverlay}>
       <div
         ref={modalRef}
         className={styles.modal}
         role="dialog"
         aria-modal="true"
         aria-label="Nota e tags"
-        onClick={(e) => e.stopPropagation()}
       >
         <h3 className={styles.modalTitle}>Nota e tags</h3>
         <p className={styles.modalDesc}>{despesa.descricao}</p>
