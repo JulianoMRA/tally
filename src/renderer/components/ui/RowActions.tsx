@@ -19,9 +19,22 @@ interface RowActionsProps {
   visiveis?: number
   /** Descreve a linha para leitores de tela: "Mais ações de Netflix". */
   contexto?: string
+  /**
+   * Nome acessível do gatilho. O padrão serve à origem do componente — ações de
+   * uma linha —, mas fora de uma tabela ele não diz nada: a barra de título usa
+   * este menu e ali não há linha alguma.
+   */
+  rotuloGatilho?: string
+  /**
+   * Por qual borda do gatilho o menu é ancorado. `direita` é o padrão porque o
+   * componente nasceu na coluna de ações, encostada na borda direita da tabela.
+   * Use `esquerda` quando o gatilho ficar no começo da linha — na barra de
+   * título, ancorar pela direita jogava o menu para fora da janela.
+   */
+  alinhamento?: 'direita' | 'esquerda'
 }
 
-type Ancora = { topo: number; base: number; direita: number }
+type Ancora = { topo: number; base: number; direita: number; esquerda: number }
 
 function IconeTresPontos() {
   return (
@@ -39,7 +52,13 @@ function IconeTresPontos() {
  * dois terços da largura da tabela de Saídas e desalinhava as colunas (linhas de
  * assinatura tinham 5 botões; as demais, 4).
  */
-export function RowActions({ acoes, visiveis = 1, contexto }: RowActionsProps) {
+export function RowActions({
+  acoes,
+  visiveis = 1,
+  contexto,
+  rotuloGatilho = 'Mais ações',
+  alinhamento = 'direita'
+}: RowActionsProps) {
   const [aberto, setAberto] = useState(false)
   const [ancora, setAncora] = useState<Ancora | null>(null)
   const [alturaMenu, setAlturaMenu] = useState(0)
@@ -67,7 +86,13 @@ export function RowActions({ acoes, visiveis = 1, contexto }: RowActionsProps) {
   // efeito de foco roda — e o foco nunca chegava ao primeiro item.
   function abrir() {
     const r = triggerRef.current?.getBoundingClientRect()
-    if (r) setAncora({ topo: r.top, base: r.bottom, direita: window.innerWidth - r.right })
+    if (r)
+      setAncora({
+        topo: r.top,
+        base: r.bottom,
+        direita: window.innerWidth - r.right,
+        esquerda: r.left
+      })
     setAlturaMenu(0)
     setAberto(true)
   }
@@ -86,7 +111,7 @@ export function RowActions({ acoes, visiveis = 1, contexto }: RowActionsProps) {
           ancora.base + 4 + alturaMenu <= window.innerHeight - 8
             ? ancora.base + 4
             : Math.max(8, ancora.topo - 4 - alturaMenu),
-        right: ancora.direita
+        ...(alinhamento === 'esquerda' ? { left: ancora.esquerda } : { right: ancora.direita })
       }
     : null
 
@@ -103,7 +128,12 @@ export function RowActions({ acoes, visiveis = 1, contexto }: RowActionsProps) {
         fechar(false)
         return
       }
-      setAncora({ topo: r.top, base: r.bottom, direita: window.innerWidth - r.right })
+      setAncora({
+        topo: r.top,
+        base: r.bottom,
+        direita: window.innerWidth - r.right,
+        esquerda: r.left
+      })
     }
     function aoClicarFora(e: MouseEvent) {
       const alvo = e.target as Node
@@ -175,7 +205,7 @@ export function RowActions({ acoes, visiveis = 1, contexto }: RowActionsProps) {
           // O contexto vai no menu, não aqui: como `aria-label` de descendente
           // entra no nome acessível da célula, pôr a descrição da linha no
           // gatilho fazia a célula de ações colidir com a da descrição.
-          aria-label="Mais ações"
+          aria-label={rotuloGatilho}
           onClick={() => (aberto ? fechar() : abrir())}
         >
           <IconeTresPontos />
@@ -190,7 +220,7 @@ export function RowActions({ acoes, visiveis = 1, contexto }: RowActionsProps) {
             role="menu"
             aria-label={contexto ? `Ações de ${contexto}` : 'Ações da linha'}
             className={styles.menu}
-            style={{ top: posicao.top, right: posicao.right }}
+            style={posicao}
             onKeyDown={navegarComTeclado}
           >
             {noMenu.map((acao, i) => {

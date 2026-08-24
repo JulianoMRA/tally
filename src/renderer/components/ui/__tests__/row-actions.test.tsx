@@ -117,4 +117,42 @@ describe('RowActions', () => {
     const rotulos = screen.getAllByRole('menuitem').map((i) => i.textContent)
     expect(rotulos).toEqual(['Duplicar', 'Excluir'])
   })
+
+  // O gatilho nasceu para célula de tabela, onde "Mais ações" basta. Reusado na
+  // barra de título, o mesmo rótulo não diz nada — não há linha alguma ali.
+  it('aceita um rótulo próprio para o gatilho, mantendo o padrão', async () => {
+    render(<RowActions acoes={[{ label: 'Sair', onClick: vi.fn() }]} visiveis={0} />)
+    expect(screen.getByRole('button', { name: 'Mais ações' })).toBeTruthy()
+    cleanup()
+
+    render(
+      <RowActions
+        acoes={[{ label: 'Sair', onClick: vi.fn() }]}
+        visiveis={0}
+        rotuloGatilho="Menu do aplicativo"
+      />
+    )
+    expect(screen.getByRole('button', { name: 'Menu do aplicativo' })).toBeTruthy()
+  })
+
+  // O componente nasceu na coluna de ações, encostado na borda direita da
+  // tabela, e ancorava o menu por ela. Na barra de título o gatilho fica à
+  // esquerda: ancorar pela direita jogava o menu para fora da janela.
+  it('ancora o menu pelo lado pedido', async () => {
+    const user = userEvent.setup()
+    const acoes = [{ label: 'Sair', onClick: vi.fn() }]
+
+    render(<RowActions acoes={acoes} visiveis={0} />)
+    await user.click(screen.getByRole('button', { name: 'Mais ações' }))
+    const porDireita = screen.getByRole('menu') as HTMLElement
+    expect(porDireita.style.right).not.toBe('')
+    expect(porDireita.style.left).toBe('')
+    cleanup()
+
+    render(<RowActions acoes={acoes} visiveis={0} alinhamento="esquerda" />)
+    await user.click(screen.getByRole('button', { name: 'Mais ações' }))
+    const porEsquerda = screen.getByRole('menu') as HTMLElement
+    expect(porEsquerda.style.left).not.toBe('')
+    expect(porEsquerda.style.right).toBe('')
+  })
 })

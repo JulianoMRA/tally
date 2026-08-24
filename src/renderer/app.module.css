@@ -1,7 +1,9 @@
+/* `100vh` menos a barra de título: sem descontar, a sidebar e o conteúdo
+   passariam do fim da janela e a rolagem interna nunca alcançaria o rodapé. */
 .shell {
   display: grid;
   grid-template-columns: 208px 1fr;
-  height: 100vh;
+  height: calc(100vh - 40px);
   width: 100%;
   overflow: hidden;
 }

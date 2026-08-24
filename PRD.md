@@ -76,42 +76,10 @@ Usuário único: o próprio dono do projeto. Estudante de Computação com recei
 Anotadas para não se perderem. Não são compromisso de entrega nem têm release
 prevista; entram no escopo quando forem priorizadas.
 
-- **Fundir a moldura do Electron na aplicação (ago/2026).** Hoje a janela usa a
-  moldura nativa padrão — `createWindow` não passa `frame` nem `titleBarStyle` —,
-  então há **duas faixas de cromo do sistema** antes do conteúdo: a barra de
-  título ("Tally" + minimizar/maximizar/fechar) e a barra de menu
-  ("Arquivo | Editar"). Somadas à `Sidebar`, que já exibe a marca "Tally" e a
-  versão, **o nome do app aparece duas vezes na mesma tela** e a área útil começa
-  ~60px abaixo do topo.
-
-  A ideia é uma barra de título própria, no material do app, absorvendo os menus.
-
-  O que precisa ser resolvido antes de virar escopo:
-  1. **Onde vão os itens de menu.** `Arquivo` tem Exportar dados, Importar dados,
-     **Verificar atualizações…** e Sair; `Editar` são apenas `role`s nativos
-     (desfazer, copiar, colar, selecionar tudo). O "Verificar atualizações" está
-     **documentado no README** como o caminho manual de atualização, então não
-     pode simplesmente sumir. Os `role`s de Editar continuam funcionando por
-     atalho de teclado mesmo sem menu visível, mas isso precisa ser confirmado,
-     não presumido.
-  2. **Windows e Linux divergem.** No Windows dá para usar
-     `titleBarStyle: 'hidden'` com `titleBarOverlay`, mantendo os controles
-     nativos sobre a barra custom. No Linux (alvo secundário) normalmente é
-     `frame: false` com controles desenhados à mão — ou seja, duas
-     implementações, não uma.
-  3. **Região de arrasto.** `-webkit-app-region: drag` na barra e `no-drag` em
-     todo elemento interativo dentro dela. É a origem clássica de "o botão não
-     clica", e a `Topbar` atual é `sticky` — as duas precisam conviver sem
-     empilhar dois cabeçalhos.
-  4. **Acessibilidade e hábito.** Controles de janela desenhados à mão precisam
-     de nome acessível e de foco por teclado; duplo-clique para maximizar e
-     arrastar-para-encostar são comportamentos que o usuário espera e que passam
-     a ser responsabilidade do app.
-  5. **Hardening.** Conferir contra o `SECURITY.md` que nada disso afrouxa a
-     postura atual (`contextIsolation`, `sandbox`, CSP).
-
-  Ganho esperado: uma faixa de cromo em vez de duas, a marca aparecendo uma vez
-  só, e a janela deixando de parecer um site dentro de um navegador.
+- ~~**Fundir a moldura do Electron na aplicação**~~ (entregue em ago/2026 — ver
+  RF-APP-01). Escopo cumprido: Windows, com os controles de janela seguindo
+  nativos via `titleBarOverlay`. **Linux ficou de fora** e mantém a moldura
+  padrão, porque exigiria `frame: false` e controles desenhados à mão.
 
 ---
 
@@ -223,6 +191,24 @@ prevista; entram no escopo quando forem priorizadas.
 
 - **RF-EXP-01** — Exportar o mês em CSV (botão na visão mensal): tabela achatada com uma linha por parcela de fatura (com numeração X/Y), gasto fora de cartão e recebimento; valores no formato `1234,56` (compatível com o parser dos templates de importação) e BOM UTF-8 (Excel pt-BR). Destino via diálogo de salvar.
 - **RF-EXP-02** — Exportar o mês em PDF: rota de impressão `#/print/:mes` (sem shell do app) renderizada em janela oculta pelo main e convertida com `printToPDF` (A4). O main aguarda o marcador `data-print-pronto` da página — sem sleep arbitrário.
+
+### 4.12 Janela e ações do aplicativo (RF-APP)
+
+- **RF-APP-01** — **Barra de título própria.** A janela não usa mais a moldura
+  nativa completa: havia **duas faixas de cromo do sistema** acima do conteúdo
+  (barra de título e barra de menu), e como a `Sidebar` já exibe a marca, o nome
+  "Tally" aparecia duas vezes. A barra própria é deliberadamente muda — só a
+  região de arrasto, o menu do aplicativo e o espaço reservado aos controles de
+  janela. **Os controles continuam nativos**: no Windows o `titleBarOverlay` os
+  desenha sobre a barra, e o app não reimplementa minimizar, maximizar, fechar
+  nem a acessibilidade deles. Em Linux (alvo secundário, RNF-02) o Electron
+  ignora o overlay e a moldura padrão permanece.
+- **RF-APP-02** — **Menu do aplicativo.** As ações do antigo menu "Arquivo" vivem
+  num menu na barra de título: **Exportar dados…** e **Importar dados…** (JSON do
+  banco inteiro — distintos do CSV de RF-IMP e do relatório mensal de RF-EXP, e
+  sem outro lugar no app), **Verificar atualizações…** e **Sair**. O menu nativo
+  sobrevive escondido (`autoHideMenuBar`) contendo apenas "Editar": é ele que
+  registra os aceleradores de desfazer, copiar, colar e selecionar tudo.
 
 ---
 

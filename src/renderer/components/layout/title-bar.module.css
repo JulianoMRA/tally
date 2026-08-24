@@ -1,0 +1,25 @@
+/* A altura casa com `ALTURA_BARRA_TITULO` do main, que é o que o
+   `titleBarOverlay` reserva para os controles nativos. Divergir aqui
+   desalinharia o botão do menu em relação a eles. */
+.barra {
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 8px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--rule);
+  /* Arrastar a janela pela barra, como na moldura nativa. */
+  -webkit-app-region: drag;
+  /* Em Linux o `titleBarOverlay` é ignorado e a moldura nativa fica; as
+     variáveis não existem e o fallback zera a reserva, sem sobra à toa. */
+  padding-right: calc(100% - env(titlebar-area-width, 100%));
+}
+
+/* Sem isto, o clique no botão é engolido pelo gesto de mover a janela. */
+.acoes {
+  -webkit-app-region: no-drag;
+  display: flex;
+  align-items: center;
+}
