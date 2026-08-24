@@ -77,9 +77,10 @@ Anotadas para não se perderem. Não são compromisso de entrega nem têm releas
 prevista; entram no escopo quando forem priorizadas.
 
 - ~~**Fundir a moldura do Electron na aplicação**~~ (entregue em ago/2026 — ver
-  RF-APP-01). Escopo cumprido: Windows, com os controles de janela seguindo
-  nativos via `titleBarOverlay`. **Linux ficou de fora** e mantém a moldura
-  padrão, porque exigiria `frame: false` e controles desenhados à mão.
+  RF-APP-01 a RF-APP-04). Saiu em duas etapas: a v1.7.0 removeu a barra de menu
+  mantendo os controles nativos via `titleBarOverlay`; a seguinte fundiu a barra
+  com o cabeçalho da página e passou a desenhar os próprios controles. **Linux
+  ficou de fora** e mantém a moldura padrão.
 
 ---
 
@@ -194,21 +195,33 @@ prevista; entram no escopo quando forem priorizadas.
 
 ### 4.12 Janela e ações do aplicativo (RF-APP)
 
-- **RF-APP-01** — **Barra de título própria.** A janela não usa mais a moldura
-  nativa completa: havia **duas faixas de cromo do sistema** acima do conteúdo
-  (barra de título e barra de menu), e como a `Sidebar` já exibe a marca, o nome
-  "Tally" aparecia duas vezes. A barra própria é deliberadamente muda — só a
-  região de arrasto, o menu do aplicativo e o espaço reservado aos controles de
-  janela. **Os controles continuam nativos**: no Windows o `titleBarOverlay` os
-  desenha sobre a barra, e o app não reimplementa minimizar, maximizar, fechar
-  nem a acessibilidade deles. Em Linux (alvo secundário, RNF-02) o Electron
-  ignora o overlay e a moldura padrão permanece.
-- **RF-APP-02** — **Menu do aplicativo.** As ações do antigo menu "Arquivo" vivem
-  num menu na barra de título: **Exportar dados…** e **Importar dados…** (JSON do
-  banco inteiro — distintos do CSV de RF-IMP e do relatório mensal de RF-EXP, e
-  sem outro lugar no app), **Verificar atualizações…** e **Sair**. O menu nativo
-  sobrevive escondido (`autoHideMenuBar`) contendo apenas "Editar": é ele que
-  registra os aceleradores de desfazer, copiar, colar e selecionar tudo.
+- **RF-APP-01** — **Uma faixa de cromo, não duas.** A janela tem barra de título
+  própria de **32px**, no material do app (`--bg-sunk`, a mesma areia da
+  sidebar), contendo: o menu do aplicativo saindo da própria marca, o nome da
+  tela e os controles de janela. Ela **absorveu o cabeçalho de página**: antes
+  havia esta faixa (40px) mais uma `Topbar` (56px) com o `h1`, somando 88px de
+  cromo antes de qualquer conteúdo, e o nome "Tally" aparecia duas vezes porque
+  a `Sidebar` também o exibe. A fusão devolve ~56px de altura útil a todas as
+  telas.
+- **RF-APP-02** — **O nome da tela é o `h1`, e vive na barra.** Continua sendo o
+  único `h1` da árvore e mantém o texto do item de navegação correspondente: o
+  par link-de-nav ↔ `h1` é o que identifica a rota para o leitor de tela. A
+  fonte é `handle.titulo` no `router.tsx`, e `titulos-de-rota.test.ts` trava a
+  igualdade entre rota, navegação e o `title` que a página declara.
+- **RF-APP-03** — **Controles de janela próprios.** Minimizar, maximizar e
+  fechar são do app (46×32, a métrica de caption button do Windows 11), com
+  rótulo acessível, foco por teclado e o botão do meio alternando entre
+  Maximizar e Restaurar conforme o estado real da janela — que o main informa,
+  para maximizar por duplo-clique ou por atalho não dessincronizar o glifo. **Em
+  Linux eles não são renderizados**: lá a moldura nativa permanece (RNF-02) e
+  desenhar os nossos deixaria dois conjuntos na mesma janela.
+- **RF-APP-04** — **Menu do aplicativo.** Sai da marca (o T, o wordmark e um
+  chevron que dá a pista de que abre algo) e reúne o antigo menu "Arquivo":
+  **Exportar dados…** e **Importar dados…** (JSON do banco inteiro — distintos
+  do CSV de RF-IMP e do relatório mensal de RF-EXP, e sem outro lugar no app),
+  **Verificar atualizações…** e **Sair**. O menu nativo sobrevive escondido
+  (`autoHideMenuBar`) contendo apenas "Editar": é ele que registra os
+  aceleradores de desfazer, copiar, colar e selecionar tudo.
 
 ---
 
