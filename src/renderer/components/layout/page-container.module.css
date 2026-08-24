@@ -2,11 +2,16 @@
    ~1620px de viewport; abaixo disso o max-width não morde e a página começa na
    borda da área de conteúdo, igual em qualquer rota.
 
-   O PageHead entra aqui dentro, por isso ele não tem padding horizontal: título
-   e conteúdo alinham na mesma margem. */
+   O PageHead entra aqui dentro, por isso ele não tem padding horizontal:
+   subtítulo, ações e conteúdo alinham na mesma margem.
+
+   O topo era 0 porque o `Topbar` fixo trazia o próprio respiro. Com o título na
+   barra da janela e o `Topbar` removido, a primeira linha da página encostava
+   na régua da barra. Os 24px são medida do mock: barra terminando em y=33 e a
+   linha do mês começando em y=57. */
 .page {
   max-width: var(--page-max);
   margin: 0 auto;
-  padding: 0 var(--page-pad) var(--page-pad);
+  padding: 24px var(--page-pad) var(--page-pad);
   min-width: 0;
 }

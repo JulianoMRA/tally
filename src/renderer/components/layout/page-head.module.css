@@ -1,6 +1,24 @@
-/* Título e ações vivem no Topbar (fixo). Aqui sobra só o subtítulo, que rola. */
+/* Linha não-fixa: o título saiu para a barra de título e, com ele, a régua e o
+   `position: sticky` que o `Topbar` trazia. */
+.linha {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 0 0 20px;
+}
+
 .subtitle {
   font-size: var(--text-3);
   color: var(--ink-3);
-  margin: 12px 0 20px;
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
 }

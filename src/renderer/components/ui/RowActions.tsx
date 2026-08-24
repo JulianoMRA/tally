@@ -1,4 +1,12 @@
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode
+} from 'react'
 import { createPortal } from 'react-dom'
 import { Button } from './Button'
 import { useEscapeKey } from '../../hooks/use-escape-key'
@@ -32,6 +40,10 @@ interface RowActionsProps {
    * título, ancorar pela direita jogava o menu para fora da janela.
    */
   alinhamento?: 'direita' | 'esquerda'
+  /** Substitui o ⋯ do gatilho. A barra de título passa a própria marca. */
+  conteudoGatilho?: ReactNode
+  /** Classe extra no gatilho, para variar padding e altura fora de uma linha. */
+  classeGatilho?: string
 }
 
 type Ancora = { topo: number; base: number; direita: number; esquerda: number }
@@ -57,7 +69,9 @@ export function RowActions({
   visiveis = 1,
   contexto,
   rotuloGatilho = 'Mais ações',
-  alinhamento = 'direita'
+  alinhamento = 'direita',
+  conteudoGatilho,
+  classeGatilho
 }: RowActionsProps) {
   const [aberto, setAberto] = useState(false)
   const [ancora, setAncora] = useState<Ancora | null>(null)
@@ -199,7 +213,7 @@ export function RowActions({
         <button
           ref={triggerRef}
           type="button"
-          className={styles.trigger}
+          className={[styles.trigger, classeGatilho].filter(Boolean).join(' ')}
           aria-haspopup="menu"
           aria-expanded={aberto}
           // O contexto vai no menu, não aqui: como `aria-label` de descendente
@@ -208,7 +222,7 @@ export function RowActions({
           aria-label={rotuloGatilho}
           onClick={() => (aberto ? fechar() : abrir())}
         >
-          <IconeTresPontos />
+          {conteudoGatilho ?? <IconeTresPontos />}
         </button>
       )}
 

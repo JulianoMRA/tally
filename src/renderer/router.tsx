@@ -31,16 +31,20 @@ export const router = createHashRouter([
     path: '/',
     element: <App />,
     errorElement: <RouteErrorBoundary />,
+    // `handle.titulo` alimenta o `h1` da barra de título. Os rótulos são
+    // exatamente os do `NAV` da `Sidebar`: o par link-de-nav ↔ `h1` é o que o
+    // leitor de tela e o helper `irPara` dos E2E usam para confirmar onde a
+    // navegação parou, e depende de os dois nomes serem idênticos.
     children: [
       { index: true, element: <Navigate to="/mensal" replace /> },
-      { path: 'mensal', element: <VisaoMensalPage /> },
-      { path: 'cartoes', element: <CartoesPage /> },
-      { path: 'categorias', element: <CategoriasPage /> },
-      { path: 'saidas', element: <SaidasPage /> },
-      { path: 'faturas', element: <FaturasPage /> },
-      { path: 'rendas', element: <RendasPage /> },
-      { path: 'ajustes', element: <AjustesPage /> },
-      { path: 'importar', element: <ImportarPage /> },
+      { path: 'mensal', element: <VisaoMensalPage />, handle: { titulo: 'Visão mensal' } },
+      { path: 'cartoes', element: <CartoesPage />, handle: { titulo: 'Cartões' } },
+      { path: 'categorias', element: <CategoriasPage />, handle: { titulo: 'Categorias' } },
+      { path: 'saidas', element: <SaidasPage />, handle: { titulo: 'Saídas' } },
+      { path: 'faturas', element: <FaturasPage />, handle: { titulo: 'Faturas' } },
+      { path: 'rendas', element: <RendasPage />, handle: { titulo: 'Rendas' } },
+      { path: 'ajustes', element: <AjustesPage />, handle: { titulo: 'Ajustes' } },
+      { path: 'importar', element: <ImportarPage />, handle: { titulo: 'Importar dados' } },
       { path: 'despesas', element: <Navigate to="/saidas" replace /> },
       { path: 'gastos', element: <Navigate to="/saidas" replace /> },
       { path: 'assinaturas', element: <Navigate to="/saidas" replace /> },

@@ -1,25 +1,110 @@
-/* A altura casa com `ALTURA_BARRA_TITULO` do main, que é o que o
-   `titleBarOverlay` reserva para os controles nativos. Divergir aqui
-   desalinharia o botão do menu em relação a eles. */
+/* 32px é constante casada com o `calc(100vh - 32px)` do `.shell` em
+   `app.module.css`. Divergir desalinha a janela inteira: o conteúdo passa do
+   fim e a rolagem nunca alcança o rodapé.
+
+   O fundo é `--bg-sunk`, a mesma areia da sidebar, para a faixa ler como cromo
+   da janela e não como conteúdo — era o que o creme antigo não fazia. */
 .barra {
-  height: 40px;
+  height: 32px;
   flex-shrink: 0;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-left: 8px;
-  background: var(--bg);
+  align-items: stretch;
+  background: var(--bg-sunk);
   border-bottom: 1px solid var(--rule);
-  /* Arrastar a janela pela barra, como na moldura nativa. */
   -webkit-app-region: drag;
-  /* Em Linux o `titleBarOverlay` é ignorado e a moldura nativa fica; as
-     variáveis não existem e o fallback zera a reserva, sem sobra à toa. */
-  padding-right: calc(100% - env(titlebar-area-width, 100%));
 }
 
-/* Sem isto, o clique no botão é engolido pelo gesto de mover a janela. */
-.acoes {
-  -webkit-app-region: no-drag;
+.gatilhoBloco,
+.controles {
   display: flex;
+  -webkit-app-region: no-drag;
+}
+
+/* O gatilho do menu é a própria marca. O chevron é o que dá a pista de que ela
+   abre algo: sem ele, ninguém descobre que o T é clicável.
+
+   Seletor descendente de propósito: o `.trigger` do `RowActions` é caixa de
+   ícone (28x28, `padding: 0`) e tem a mesma especificidade que uma classe
+   solta, então quem venceria dependeria da ordem dos módulos no bundle. Com
+   `width: 28px` valendo, os três filhos transbordavam para fora da janela e o T
+   sumia à esquerda. `.barra .gatilho` ganha sempre.
+
+   O hover também precisa vir daqui: `.trigger:hover` pinta `--bg-sunk`, que é o
+   próprio fundo desta barra — seria um hover invisível. */
+.barra .gatilho {
+  width: auto;
+  height: 32px;
+  padding: 0 8px 0 9px;
+  display: inline-flex;
   align-items: center;
+  gap: 7px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.barra .gatilho:hover,
+.barra .gatilho[aria-expanded='true'] {
+  background: var(--rule);
+  color: var(--ink);
+}
+
+.chevron {
+  opacity: 0.55;
+}
+
+.separador {
+  width: 1px;
+  height: 14px;
+  background: var(--rule-strong);
+  align-self: center;
+  margin: 0 10px 0 4px;
+}
+
+/* Continua sendo o `h1` da página e o único da árvore — só mudou de lugar e de
+   tamanho. O texto é idêntico ao do item de navegação, e é desse par que o
+   leitor de tela e o `irPara` dos E2E dependem. */
+.titulo {
+  align-self: center;
+  margin: 0;
+  font-size: var(--text-3);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A região de arrasto de fato: é por aqui que a janela se move. */
+.espacador {
+  flex: 1;
+  min-width: 16px;
+}
+
+/* 46×32 é a métrica do próprio Windows 11 para caption button — é o que faz a
+   barra parecer nativa. O mínimo de 44px de alvo não se aplica: é cromo de
+   desktop, para mouse, não para toque. */
+.controle {
+  width: 46px;
+  border: none;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--ink-2);
+}
+
+.controle:hover {
+  background: var(--rule);
+}
+
+/* O Fechar é o único destrutivo, e o glifo vira creme sobre o vermelho via
+   `currentColor`. */
+.fechar:hover {
+  background: var(--expense);
+  color: var(--bg);
 }

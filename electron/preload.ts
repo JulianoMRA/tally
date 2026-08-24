@@ -14,7 +14,8 @@ import {
   ORCAMENTO_IPC_CHANNELS,
   CONFIG_IPC_CHANNELS,
   DADOS_IPC_CHANNELS,
-  APP_IPC_CHANNELS
+  APP_IPC_CHANNELS,
+  JANELA_IPC_CHANNELS
 } from '@shared/ipc/channels'
 import type { CartaoInput, ListCartaoOptions } from '@shared/ipc/cartao'
 import type { CategoriaInput, ListCategoriaOptions } from '@shared/ipc/categoria'
@@ -182,6 +183,22 @@ contextBridge.exposeInMainWorld('api', {
     restaurarBackup: (input: RestaurarBackupInput) =>
       ipcRenderer.invoke(CONFIG_IPC_CHANNELS.restaurarBackup, input),
     abrirPastaBackups: () => ipcRenderer.invoke(CONFIG_IPC_CHANNELS.abrirPastaBackups)
+  },
+  janela: {
+    minimizar: () => ipcRenderer.invoke(JANELA_IPC_CHANNELS.minimizar),
+    alternarMaximizada: () => ipcRenderer.invoke(JANELA_IPC_CHANNELS.alternarMaximizada),
+    fechar: () => ipcRenderer.invoke(JANELA_IPC_CHANNELS.fechar),
+    estaMaximizada: () => ipcRenderer.invoke(JANELA_IPC_CHANNELS.estaMaximizada),
+    // Devolve o cancelamento em vez de expor o `ipcRenderer`: o renderer nunca
+    // recebe o objeto, só a assinatura e o jeito de desfazê-la.
+    aoMudarEstado: (ouvinte: (maximizada: boolean) => void) => {
+      const handler = (_evento: unknown, maximizada: boolean) => ouvinte(maximizada)
+      ipcRenderer.on(JANELA_IPC_CHANNELS.mudouEstado, handler)
+      return () => {
+        ipcRenderer.removeListener(JANELA_IPC_CHANNELS.mudouEstado, handler)
+      }
+    },
+    controlesProprios: process.platform === 'win32'
   },
   app: {
     exportarDados: () => ipcRenderer.invoke(APP_IPC_CHANNELS.exportarDados),

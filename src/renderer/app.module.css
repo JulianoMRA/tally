@@ -1,9 +1,11 @@
 /* `100vh` menos a barra de título: sem descontar, a sidebar e o conteúdo
-   passariam do fim da janela e a rolagem interna nunca alcançaria o rodapé. */
+   passariam do fim da janela e a rolagem interna nunca alcançaria o rodapé.
+   O valor é casado com `.barra` (title-bar.module.css) e com
+   `ALTURA_BARRA_TITULO` no main. */
 .shell {
   display: grid;
   grid-template-columns: 208px 1fr;
-  height: calc(100vh - 40px);
+  height: calc(100vh - 32px);
   width: 100%;
   overflow: hidden;
 }

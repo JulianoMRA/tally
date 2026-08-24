@@ -155,4 +155,24 @@ describe('RowActions', () => {
     expect(porEsquerda.style.left).not.toBe('')
     expect(porEsquerda.style.right).toBe('')
   })
+
+  // A barra de título usa a própria marca como gatilho do menu. Sem isto, ela
+  // precisaria de um segundo menu — a sétima cópia do padrão que as últimas
+  // versões passaram consolidando.
+  it('aceita conteúdo próprio no gatilho, no lugar do ⋯', async () => {
+    render(
+      <RowActions
+        acoes={[{ label: 'Sair', onClick: vi.fn() }]}
+        visiveis={0}
+        rotuloGatilho="Menu do aplicativo"
+        conteudoGatilho={<span>Tally</span>}
+        classeGatilho="meuGatilho"
+      />
+    )
+
+    const gatilho = screen.getByRole('button', { name: 'Menu do aplicativo' })
+    expect(gatilho.textContent).toBe('Tally')
+    expect(gatilho.querySelector('svg')).toBeNull()
+    expect(gatilho.className).toContain('meuGatilho')
+  })
 })
