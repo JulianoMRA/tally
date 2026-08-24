@@ -1,3 +1,5 @@
+export { APP_IPC_CHANNELS, type AppApi } from './app'
+
 export {
   cartaoInputSchema,
   corHexSchema,
@@ -102,6 +104,7 @@ import type { RelatorioApi } from './relatorio'
 import type { OrcamentoApi } from './orcamento'
 import type { ConfigApi } from './config'
 import type { DadosApi } from './importacao'
+import type { AppApi } from './app'
 
 export type Api = {
   cartao: CartaoApi
@@ -115,4 +118,5 @@ export type Api = {
   orcamento: OrcamentoApi
   config: ConfigApi
   dados: DadosApi
+  app: AppApi
 }

@@ -101,3 +101,15 @@ export const DADOS_IPC_CHANNELS = {
   exportarMesCsv: 'dados:exportar-mes-csv',
   exportarMesPdf: 'dados:exportar-mes-pdf'
 } as const
+
+/**
+ * Ações de nível de aplicação que viviam no menu nativo "Arquivo". Com a barra
+ * de título própria, a faixa de menu deixou de existir e o gatilho passou a ser
+ * o renderer; os handlers continuam no main.
+ */
+export const APP_IPC_CHANNELS = {
+  exportarDados: 'app:exportar-dados',
+  importarDados: 'app:importar-dados',
+  verificarAtualizacoes: 'app:verificar-atualizacoes',
+  sair: 'app:sair'
+} as const

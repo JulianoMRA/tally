@@ -13,7 +13,8 @@ import {
   RELATORIO_IPC_CHANNELS,
   ORCAMENTO_IPC_CHANNELS,
   CONFIG_IPC_CHANNELS,
-  DADOS_IPC_CHANNELS
+  DADOS_IPC_CHANNELS,
+  APP_IPC_CHANNELS
 } from '@shared/ipc/channels'
 import type { CartaoInput, ListCartaoOptions } from '@shared/ipc/cartao'
 import type { CategoriaInput, ListCategoriaOptions } from '@shared/ipc/categoria'
@@ -181,6 +182,12 @@ contextBridge.exposeInMainWorld('api', {
     restaurarBackup: (input: RestaurarBackupInput) =>
       ipcRenderer.invoke(CONFIG_IPC_CHANNELS.restaurarBackup, input),
     abrirPastaBackups: () => ipcRenderer.invoke(CONFIG_IPC_CHANNELS.abrirPastaBackups)
+  },
+  app: {
+    exportarDados: () => ipcRenderer.invoke(APP_IPC_CHANNELS.exportarDados),
+    importarDados: () => ipcRenderer.invoke(APP_IPC_CHANNELS.importarDados),
+    verificarAtualizacoes: () => ipcRenderer.invoke(APP_IPC_CHANNELS.verificarAtualizacoes),
+    sair: () => ipcRenderer.invoke(APP_IPC_CHANNELS.sair)
   },
   dados: {
     importarCsv: (input: ImportarCsvInput) =>

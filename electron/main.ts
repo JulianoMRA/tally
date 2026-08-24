@@ -34,6 +34,7 @@ import { registerVisaoMensalHandlers } from './ipc/visao-mensal-handlers'
 import { registerRelatorioHandlers } from './ipc/relatorio-handlers'
 import { registerOrcamentoHandlers } from './ipc/orcamento-handlers'
 import { registerConfigHandlers } from './ipc/config-handlers'
+import { registerAppHandlers } from './ipc/app-handlers'
 import { registerDadosHandlers } from './ipc/dados-handlers'
 import { verificarAvisos } from './avisos'
 import {
@@ -441,17 +442,11 @@ async function importarDados(): Promise<void> {
 
 function construirMenuApp(): void {
   const template: MenuItemConstructorOptions[] = [
-    {
-      label: 'Arquivo',
-      submenu: [
-        { label: 'Exportar dados…', click: () => void exportarDados() },
-        { label: 'Importar dados…', click: () => void importarDados() },
-        { type: 'separator' },
-        { label: 'Verificar atualizações…', click: () => void verificarAtualizacoesManual() },
-        { type: 'separator' },
-        { role: 'quit', label: 'Sair' }
-      ]
-    },
+    // "Arquivo" saiu: suas ações agora vivem no menu da barra de título, via
+    // IPC (`APP_IPC_CHANNELS`). "Editar" fica, e é o motivo de ainda existir um
+    // menu — sem ele os aceleradores de desfazer, copiar e colar deixam de ser
+    // registrados. Como a barra está com `autoHideMenuBar`, ele não ocupa
+    // espaço: aparece só sob Alt.
     {
       label: 'Editar',
       submenu: [
@@ -474,11 +469,36 @@ function construirMenuApp(): void {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
 
+/**
+ * Espelham `--bg` e `--ink` de `tokens.css`. Ficam duplicados aqui porque o main
+ * não carrega o CSS do renderer, e o `titleBarOverlay` precisa das cores antes
+ * de a página existir. Se os tokens mudarem, estes vêm junto.
+ */
+const COR_BARRA_TITULO = '#f1ebdd'
+const COR_SIMBOLO_BARRA_TITULO = '#0f1a14'
+const ALTURA_BARRA_TITULO = 40
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
     title: 'Tally',
+    // Barra de título própria. `hidden` + `titleBarOverlay` é o arranjo do
+    // Windows em que os controles de janela continuam sendo desenhados pelo
+    // sistema, sobrepostos à barra do app — não reimplementamos minimizar,
+    // maximizar e fechar, nem a acessibilidade deles. Em Linux o Electron
+    // ignora `titleBarOverlay` e mantém a moldura nativa, que é o alvo
+    // secundário e fica como estava.
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: COR_BARRA_TITULO,
+      symbolColor: COR_SIMBOLO_BARRA_TITULO,
+      height: ALTURA_BARRA_TITULO
+    },
+    // O menu nativo sobreviveu só pelos aceleradores de edição (ver
+    // `construirMenuApp`); escondê-lo evita a segunda faixa de cromo, que é
+    // justamente o que esta mudança veio remover.
+    autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/preload.cjs'),
       contextIsolation: true,
@@ -544,6 +564,12 @@ if (!obteveLock) {
         caminhoDoBanco: () => dbPathAtual,
         fechar: fecharBanco,
         reabrir: reabrirBanco
+      })
+      registerAppHandlers(ipcMain, {
+        exportarDados,
+        importarDados,
+        verificarAtualizacoes: verificarAtualizacoesManual,
+        sair: () => app.quit()
       })
       construirMenuApp()
       createWindow()
