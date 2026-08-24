@@ -6,6 +6,33 @@ vista técnico.
 
 ---
 
+## v1.6.2 — Varredura de consistência: erros que ninguém via (ago/2026)
+
+Três PRs saídos de uma varredura por casos parecidos com os do `SeletorMes` e do
+`Modal`: código copiado entre telas, com divergências escondidas dentro das
+cópias. Dois defeitos de tratamento de erro apareceram no caminho, um deles sem
+ser procurado.
+
+---
+
+**Correção e refactor — a listagem falava uma língua e a mutação, outra (ago/2026)** — `use-cartoes.ts` e `use-categorias.ts` eram **o mesmo arquivo**: 72 linhas cada, idênticas exceto o nome da entidade — mesmo tipo `State`, mesmo `refetch` com try/catch, mesmo `useEffect`, mesmos quatro mutadores. `use-rendas.ts` era o mesmo começo, sem os mutadores. O estado compartilhado virou `useListaArquivavel`, com a API pública dos três preservada — nenhuma tela mudou, e `use-rendas` inclusive mantém `incluirArquivadas` no feminino, que é como o IPC de renda nomeia o parâmetro. **O defeito que a duplicação escondia:** os três faziam `error: String(err)`, que entrega à tela o texto embrulhado pelo Electron — `Error: Error invoking remote method 'cartao:list': Error: …` — exibido direto em Cartões, Categorias e Rendas>Fontes. O helper `mensagemErro` existe desde o hardening da v1.0.0 exatamente para descascar esse prefixo, e **as mutações dessas mesmas telas já passavam por ele**: a tela tratava as duas metades em línguas diferentes. **Armadilha evitada no desenho:** `carregar` e `erroPadrao` vivem em `useRef`, e não nas dependências do `useCallback`. O jeito natural de chamar o hook é com arrow inline, recriado a cada render; nas dependências isso mudaria `refetch`, que dispararia o efeito, que recarregaria — **laço infinito**. Não é hipótese: a primeira versão derrubou o runner de teste com `JavaScript heap out of memory`, e há teste travando o comportamento. **Custo em teste:** `use-lista-arquivavel.test.tsx` (6 casos) e um caso novo em `cartoes-page.test.tsx` provando na tela que a mensagem sai limpa — **verificado que o guard é real**, porque com `String(err)` de volta ele falha.
+
+---
+
+**Correção — a tela que travava em "Carregando…" para sempre (ago/2026)** — Não estava sendo procurado. O teste de tela do PR anterior fez a suíte acusar **uma rejeição não tratada**, e o hook de pre-push barrou o push por isso — não por teste vermelho, mas por erro solto na suíte. A causa não estava no código tocado: `CartoesPage` também usa `useCartoesAtivos`, que fazia `.then()` **sem `.catch`**. Numa falha do IPC a rejeição ficava sem tratamento **e** `loading` nunca virava `false` — a tela parava em "Carregando…" indefinidamente, sem dizer o que houve; o hook só tinha caminho de sucesso. Investigado o resto do renderer, o mesmo formato aparecia em **sete pontos**, todos cargas auxiliares (a lista que alimenta um select ou traduz um id em nome): numa falha, a lista ficava vazia **em silêncio**, o select abria sem opções e os nomes caíam no fallback `#id`. **Entregue:** os cinco casos de carga de montagem viraram `useCargaAuxiliar`, que avisa pelo canal do app — o toast — e traz guarda de desmontagem; os dois que não são de montagem (`RendasPage`, que recarrega a cada abertura do painel de avulso, e `AjustesPage`, cuja função é reaproveitada após o restauro) ganharam `.catch` próprio. `AdiantarParcelasModal` já tinha `.catch`, mas expunha `e.message` cru — passou a `mensagemErro`. **Correção de levantamento:** o relatório inicial dizia "cinco `.then()` sem `.catch`", número vindo de um grep que só pegava chamadas em uma linha; duas chains multilinha tinham escapado, e um dos cinco (`FaturaDetalhe:209`) na verdade já estava correto, porque o `executar` de `useCicloFatura` envolve tudo em try/catch. **A armadilha do laço infinito voltou:** em `AjustesPage` a primeira versão dependia de `[toast]`, e `toast` é objeto recriado a cada render (o provider usa `value={{ show }}` inline) — quem é estável é `toast.show`. **Custo em teste:** `use-carga-auxiliar.test.tsx` (4 casos) e `use-cartoes-ativos.test.tsx` (2 casos).
+
+---
+
+**Refactor — a tabela duplicada byte a byte, e a folha de contato virando prova (ago/2026)** — `.tabela`, `.tabela th`, `.tabela td` e `.tabela tr:last-child td` eram **idênticos byte a byte** entre `faturas` e `visao-mensal` — dez declarações só no `th` —, com `saidas` carregando uma terceira variante. Viraram o primitivo `Table`, usado em quatro pontos: **158 linhas removidas contra 12 adicionadas**. A variante de Saídas virou `densidade="compacta"` em vez de ser normalizada: ela é deliberada, veio da v1.5.1, e junto vão `white-space: nowrap` no `th` e `vertical-align: middle` no `td` — transformá-los em padrão mudaria o visual de telas que o PR não deveria tocar. Fora de propósito: `print-mensal.module.css` (folha de impressão, medidas em px) e a `.tabelaErros` de Importar (diagnóstico, não dado da aplicação). **CSS morto no caminho:** `.colorInput`, 7 declarações idênticas em `cartoes` e `categorias`, **sem nenhum uso** — os dois formulários migraram para o `ColorPicker` e a regra ficou órfã. **Medido e recusado:** o bloco `.listItem`, que a varredura apontava como duplicado entre três telas, tem sobreposição só parcial — `categorias` e `rendas` são idênticos, mas `cartoes` usa `display: grid` com colunas próprias contra `flex` nos outros, e só as 5 declarações de superfície coincidem. Extrair exigiria `composes:` entre módulos, padrão que o projeto não usa, ou um componente que não imponha `display`; o ganho não paga a novidade. Fica registrado para não ser reanalisado do zero. **"Zero mudança visual" foi medido, não suposto:** `scripts/smoke-visual.mjs` aceita `SMOKE_OUT`, então a folha de contato foi gerada nas duas pontas (39 capturas cada) e comparada por SHA-256 — **36 de 39 idênticas byte a byte**, e as 3 divergentes eram de Ajustes, tela não tocada, diferindo apenas no horário da cópia de segurança porque as execuções caíram em minutos distintos. **1021 testes unitários** (+16 na release), **90 specs E2E** (inalterados).
+
+> **Nota de processo.** A partir desta release o E2E deixou de rodar
+> automaticamente: passou a exigir confirmação explícita (regra 10 do
+> `CLAUDE.md`). Os três PRs acima foram mergeados sem ele, cada um com isso
+> anotado na descrição. O risco visual do último foi coberto pela comparação de
+> folhas de contato descrita acima.
+
+---
+
 ## v1.6.1 — Modais: a nota deixa de sumir, e o esqueleto vira primitivo (ago/2026)
 
 ---

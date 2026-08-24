@@ -510,6 +510,7 @@ release. O que veio depois:
 | v1.5.1  | Release de correção (ago/2026): a data da compra volta à lista de Saídas, e a ordenação por ela deixa de ser inalcançável depois do primeiro clique em outra coluna                                   |
 | v1.6.0  | Passador de mês em Rendas (ago/2026): as setas de mês anterior e próximo saem de Visão mensal e Saídas e viram o componente `SeletorMes`, usado pelas três telas                                      |
 | v1.6.1  | Release de correção (ago/2026): clicar fora do modal de nota descartava o texto digitado; o esqueleto repetido em seis modais vira o primitivo `Modal`                                                |
+| v1.6.2  | Varredura de consistência (ago/2026): mensagens de erro cruas em três telas, tela travando em "Carregando…" por rejeição sem `.catch`, e o CSS de tabela duplicado vira o primitivo `Table`           |
 
 O V2 da seção 3.2 está integralmente entregue.
 

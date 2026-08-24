@@ -62,7 +62,7 @@ Bug reports during development follow a structured template (preconditions, step
 
 ## Status
 
-Tally has been in daily real use since **v1.0.0** and is currently at **v1.6.1**. The MVP and the whole V2 scope in [`PRD.md`](./PRD.md) are delivered; development continues in releases. The implementation was built in vertical slices — each one a thin end-to-end feature with UI, logic, persistence, and tests.
+Tally has been in daily real use since **v1.0.0** and is currently at **v1.6.2**. The MVP and the whole V2 scope in [`PRD.md`](./PRD.md) are delivered; development continues in releases. The implementation was built in vertical slices — each one a thin end-to-end feature with UI, logic, persistence, and tests.
 
 ### Roadmap
 
@@ -100,6 +100,7 @@ From here the project stopped delivering in slices and started delivering in rel
 - [x] **v1.2.1** (ago/2026) — fix release: every screen opened at a different left edge, because the page container derived _where a page starts_ from the same `max-width` that capped _how wide it gets_. Also closes a race in the E2E suite where a locator could resolve against the previous route, still mounted mid-navigation
 - [x] **v1.6.0** (ago/2026) — a month stepper on Rendas: the previous/next arrows moved out of Visão mensal and Saídas into a shared `SeletorMes`, now used by all three screens. Unifying the three copies also settled two divergences they had been hiding — the guard against an emptied field, and the field width
 - [x] **v1.6.1** (ago/2026) — fix release: clicking outside the note-and-tags modal discarded the typed text, in the one modal of six that closed on overlay click and the only one carrying free text. The scaffolding those six had been copying became a shared `Modal` primitive, which settled three more divergences — the accessible name, the dialog width, and overflow on a narrow window
+- [x] **v1.6.2** (ago/2026) — fix release from a consistency sweep: three screens showed the raw Electron-wrapped IPC text instead of the actual error message, and a screen could hang on "Carregando…" forever because an auxiliary load had no `.catch`. Seven such unguarded loads were found; the duplicated table CSS became a shared `Table` primitive
 
 Detalhes técnicos de cada slice em [`CHANGELOG.md`](./CHANGELOG.md).
 
