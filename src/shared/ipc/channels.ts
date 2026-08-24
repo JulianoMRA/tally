@@ -113,3 +113,18 @@ export const APP_IPC_CHANNELS = {
   verificarAtualizacoes: 'app:verificar-atualizacoes',
   sair: 'app:sair'
 } as const
+
+/**
+ * Controles de janela. Deixaram de ser nativos quando a barra de título passou a
+ * ser do app, então minimizar, maximizar e fechar viram IPC.
+ *
+ * `mudouEstado` é o primeiro canal main → renderer do projeto: sem ele, maximizar
+ * por duplo-clique na barra ou por Win+Seta dessincronizaria o glifo do botão.
+ */
+export const JANELA_IPC_CHANNELS = {
+  minimizar: 'janela:minimizar',
+  alternarMaximizada: 'janela:alternar-maximizada',
+  fechar: 'janela:fechar',
+  estaMaximizada: 'janela:esta-maximizada',
+  mudouEstado: 'janela:mudou-estado'
+} as const

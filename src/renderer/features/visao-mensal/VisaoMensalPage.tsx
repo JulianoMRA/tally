@@ -158,10 +158,16 @@ export default function VisaoMensalPage() {
           o par link-de-nav ↔ h1 para confirmar onde a navegação parou. O mês
           quem diz é o seletor ao lado — era ele que estava duplicado, com um
           rótulo "Agosto de 2026" repetindo o que o campo já mostra. */}
-      <PageHead title="Visão mensal" subtitle="Faturas, gastos, recebimentos e saldo do mês." />
+      <PageHead title="Visão mensal" />
 
+      {/* O subtítulo entra na linha do mês em vez de ocupar uma altura própria:
+          com o título já na barra da janela, uma linha só resolve o cabeçalho
+          inteiro desta tela. */}
       <div className={styles.header}>
         <SeletorMes valor={mes} onChange={setMes} label="Mês" />
+        <span className={styles.headerSubtitulo}>
+          Faturas, gastos, recebimentos e saldo do mês.
+        </span>
         {ehProjecao && (
           <span className={styles.headerBadges}>
             <Badge variant="projection" />

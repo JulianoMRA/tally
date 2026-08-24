@@ -1,4 +1,5 @@
 export { APP_IPC_CHANNELS, type AppApi } from './app'
+export { JANELA_IPC_CHANNELS, type JanelaApi } from './janela'
 
 export {
   cartaoInputSchema,
@@ -105,6 +106,7 @@ import type { OrcamentoApi } from './orcamento'
 import type { ConfigApi } from './config'
 import type { DadosApi } from './importacao'
 import type { AppApi } from './app'
+import type { JanelaApi } from './janela'
 
 export type Api = {
   cartao: CartaoApi
@@ -119,4 +121,5 @@ export type Api = {
   config: ConfigApi
   dados: DadosApi
   app: AppApi
+  janela: JanelaApi
 }

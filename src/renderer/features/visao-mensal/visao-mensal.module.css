@@ -6,6 +6,14 @@
   flex-wrap: wrap;
 }
 
+/* Texto de apoio ao lado do seletor, não abaixo dele: é a linha única de
+   cabeçalho desta tela desde que o título subiu para a barra da janela. */
+.headerSubtitulo {
+  font-size: var(--text-3);
+  color: var(--ink-3);
+  margin-left: 6px;
+}
+
 .layout {
   display: flex;
   flex-direction: column;

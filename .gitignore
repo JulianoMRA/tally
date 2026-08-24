@@ -75,3 +75,8 @@ smoke-visual/
 # que vieram junto.
 refactor/
 refactor.zip
+
+# Pacote de handoff de design da barra de titulo (ago/2026): protótipos .dc.html
+# mais o runtime deles. É referência de trabalho, não código nem doc do projeto
+# — o que a implementação decidiu está em RF-APP-01/02 no PRD e no CHANGELOG.
+design_handoff_barra_titulo/

@@ -35,6 +35,7 @@ import { registerRelatorioHandlers } from './ipc/relatorio-handlers'
 import { registerOrcamentoHandlers } from './ipc/orcamento-handlers'
 import { registerConfigHandlers } from './ipc/config-handlers'
 import { registerAppHandlers } from './ipc/app-handlers'
+import { registerJanelaHandlers, observarEstadoDaJanela } from './ipc/janela-handlers'
 import { registerDadosHandlers } from './ipc/dados-handlers'
 import { verificarAvisos } from './avisos'
 import {
@@ -469,32 +470,22 @@ function construirMenuApp(): void {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
 
-/**
- * Espelham `--bg` e `--ink` de `tokens.css`. Ficam duplicados aqui porque o main
- * não carrega o CSS do renderer, e o `titleBarOverlay` precisa das cores antes
- * de a página existir. Se os tokens mudarem, estes vêm junto.
- */
-const COR_BARRA_TITULO = '#f1ebdd'
-const COR_SIMBOLO_BARRA_TITULO = '#0f1a14'
-const ALTURA_BARRA_TITULO = 40
-
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
     title: 'Tally',
-    // Barra de título própria. `hidden` + `titleBarOverlay` é o arranjo do
-    // Windows em que os controles de janela continuam sendo desenhados pelo
-    // sistema, sobrepostos à barra do app — não reimplementamos minimizar,
-    // maximizar e fechar, nem a acessibilidade deles. Em Linux o Electron
-    // ignora `titleBarOverlay` e mantém a moldura nativa, que é o alvo
-    // secundário e fica como estava.
-    titleBarStyle: 'hidden',
-    titleBarOverlay: {
-      color: COR_BARRA_TITULO,
-      symbolColor: COR_SIMBOLO_BARRA_TITULO,
-      height: ALTURA_BARRA_TITULO
-    },
+    // Sem `titleBarOverlay`: os controles agora são do app, no material dele.
+    // A altura da barra (32px) vive só no CSS — `.barra` em
+    // `title-bar.module.css` e o `calc(100vh - 32px)` do `.shell` em
+    // `app.module.css`, que precisam concordar entre si. Aqui não há mais
+    // constante: sem overlay, o main não tem o que fazer com esse número, e
+    // guardá-la só para documentar deixaria código morto.
+    // As cores que existiam aqui saíram pelo mesmo motivo — elas alimentavam o
+    // overlay, que o main precisava configurar antes de a página existir.
+    // `hidden` só no Windows — em Linux (alvo secundário) a moldura nativa
+    // permanece, e é ela que continua desenhando minimizar, maximizar e fechar.
+    ...(process.platform === 'win32' ? { titleBarStyle: 'hidden' as const } : {}),
     // O menu nativo sobreviveu só pelos aceleradores de edição (ver
     // `construirMenuApp`); escondê-lo evita a segunda faixa de cromo, que é
     // justamente o que esta mudança veio remover.
@@ -514,6 +505,7 @@ function createWindow(): void {
   })
 
   mainWindow = win
+  observarEstadoDaJanela(win)
   win.on('closed', () => {
     mainWindow = null
   })
@@ -565,6 +557,7 @@ if (!obteveLock) {
         fechar: fecharBanco,
         reabrir: reabrirBanco
       })
+      registerJanelaHandlers(ipcMain, janelaAtual)
       registerAppHandlers(ipcMain, {
         exportarDados,
         importarDados,
