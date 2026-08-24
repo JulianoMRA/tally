@@ -6,6 +6,20 @@ vista técnico.
 
 ---
 
+## v1.7.0 — A janela deixa de ter duas molduras (ago/2026)
+
+---
+
+**Barra de título própria, com o menu do aplicativo dentro (ago/2026)** — Ideia levantada por Juliano a partir de uma captura da janela e registrada no PRD §3.4 poucas horas antes; saiu da lista de ideias direto para o código. **O problema:** havia **duas faixas de cromo do sistema** acima do conteúdo — a barra de título nativa e a barra de menu ("Arquivo | Editar") — e, como a `Sidebar` já exibe a marca, **o nome "Tally" aparecia duas vezes** na mesma tela, com a área útil começando ~60px abaixo do topo. **Entregue:** `titleBarStyle: 'hidden'` mais `titleBarOverlay`, e uma `TitleBar` no renderer — faixa de 40px com região de arrasto, o menu do aplicativo à esquerda e o espaço dos controles de janela reservado por `env(titlebar-area-width)`. **Os controles continuam nativos:** no Windows o overlay os desenha por cima da barra, então o app não reimplementa minimizar, maximizar e fechar, nem a acessibilidade deles. A barra é deliberadamente muda — sem marca, sem título —, e a `Sidebar` volta a ser o único lugar onde o nome aparece. **Linux ficou de fora de propósito** (alvo secundário por RNF-02): lá o Electron ignora o overlay e a moldura padrão permanece, sem regressão. **O achado que definiu o desenho:** "Exportar dados…" e "Importar dados…" **só existiam no menu nativo**. São export/import do banco inteiro em JSON — distintos do CSV de RF-IMP e do relatório mensal de RF-EXP —, e `AjustesPage` também não os tinha; remover a barra de menu sem rehospedá-las **apagaria funcionalidade**. As quatro ações do antigo "Arquivo" foram para o menu da barra via IPC novo (`APP_IPC_CHANNELS`), com os handlers do main intactos — muda só o gatilho. **O menu nativo sobrevive escondido** (`autoHideMenuBar`) contendo apenas "Editar", e existe por um motivo concreto: é ele que registra os aceleradores de desfazer, copiar, colar e selecionar tudo. **Dois defeitos do `RowActions` vieram à tona** por reusá-lo em vez de escrever um terceiro menu, ambos corrigidos no próprio componente com o comportamento antigo preservado como padrão: (a) o **nome acessível do gatilho era fixo** em "Mais ações", que numa barra de título não diz nada, porque ali não há linha alguma — nova prop `rotuloGatilho`; (b) o **menu abria fora da tela**, porque o painel era ancorado pela borda **direita** do gatilho, correto na coluna de ações encostada na direita da tabela e errado com o gatilho à esquerda — nova prop `alinhamento`. O segundo **só apareceu ao abrir o app e olhar**: os testes de componente passavam, porque em jsdom não há geometria de verdade. **Custo em teste:** `title-bar.test.tsx` novo (7 casos) — as quatro ações no menu, cada uma acionando seu canal IPC, a ausência da marca (para a duplicação não voltar sem alarme) e a região clicável fora da área de arrasto, sem a qual o clique vira gesto de mover a janela; mais dois casos em `row-actions.test.tsx`, cada um afirmando o padrão **e** o valor customizado. **Verificação no app real, em duas frentes**, porque captura de página não serve aqui — ela fotografa o conteúdo web, não a moldura: `PrintWindow` sobre a janela confirmou que as duas faixas sumiram e que os controles aparecem sobre o creme do app; `smoke:visual` e um script dirigindo o app confirmaram a barra renderizando e o menu abrindo no lugar certo com os quatro itens. Cobre **RF-APP-01** e **RF-APP-02** (novos). **1030 testes unitários** (+9), **90 specs E2E** (inalterados).
+
+> **E2E não executado.** Proposto e recusado por Juliano, aqui e nos três PRs da
+> v1.6.2. Esta é a primeira mudança da série que mexe no **shell da janela**, e
+> não só em conteúdo de tela — o risco não coberto é uma âncora de layout
+> quebrada pela barra, que a fixture do Playwright pegaria por abrir a janela
+> real. As verificações manuais acima o substituem apenas em parte.
+
+---
+
 ## v1.6.2 — Varredura de consistência: erros que ninguém via (ago/2026)
 
 Três PRs saídos de uma varredura por casos parecidos com os do `SeletorMes` e do
