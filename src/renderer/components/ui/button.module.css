@@ -35,14 +35,14 @@
 
 /* Variants */
 .primary {
-  background: var(--forest);
-  color: var(--bg);
-  border-color: var(--forest);
+  background: var(--brand);
+  color: var(--on-brand);
+  border-color: var(--brand);
 }
 
 .primary:hover:not(:disabled) {
-  background: var(--forest-2);
-  border-color: var(--forest-2);
+  background: var(--brand-2);
+  border-color: var(--brand-2);
 }
 
 .secondary {

@@ -23,7 +23,7 @@
 }
 
 .navBtn:hover {
-  border-color: var(--forest);
+  border-color: var(--brand);
 }
 
 /* 170px é o piso para o mês por extenso do locale pt-BR ("setembro de 2026")

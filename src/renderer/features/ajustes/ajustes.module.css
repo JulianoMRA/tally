@@ -38,7 +38,7 @@
 }
 
 .checkboxRow input {
-  accent-color: var(--forest);
+  accent-color: var(--brand);
   width: 16px;
   height: 16px;
 }

@@ -1,7 +1,11 @@
 /* Tally — Design tokens
-   Tema único: Cream. (Um tema escuro chegou a ser esboçado como
-   [data-theme="forest"], mas o switcher nunca foi implementado; os overrides
-   mortos foram removidos. Reintroduzir junto com o switcher quando priorizado.)
+   Dois temas: Cream (:root, padrão) e Papel noturno
+   ([data-theme="escuro"], no fim do arquivo).
+
+   Regra da casa: componente nenhum declara cor dentro de um seletor de tema.
+   O :root define a paleta clara inteira, o bloco do escuro redefine APENAS
+   valores, e todo CSS de feature consome var(). Cor cuja única definição
+   estivesse atrás de [data-theme] simplesmente não existiria no tema claro.
    ============================================================== */
 
 :root {
@@ -18,15 +22,32 @@
   --rule: #d9d2bf;
   --rule-strong: #b8b19d;
 
-  /* Brand greens */
+  /* Marca — superfície e sinal de interação.
+     Era papel de --forest, que valia o mesmo hex de --ink e por isso servia
+     a três coisas ao mesmo tempo sem que a ambiguidade aparecesse: fundo de
+     controle (botão primário, item ativo da sidebar, opção ativa do
+     segmented), borda de afordância (foco de input, cartão selecionado) e
+     tinta forte de texto. No tema claro os três colidem em #0f1a14; no
+     escuro apontam para lados opostos. Quem é texto virou var(--ink); quem
+     é marca vive aqui. */
+  --brand: #0f1a14;
+  --brand-2: #1b2c22;
+  /* Texto sobre --brand. Antes era `color: var(--bg)`, que só funcionava
+     porque o fundo da página é o oposto da marca — coincidência, não
+     projeto. */
+  --on-brand: #f1ebdd;
+
+  /* Verde do hero da visão mensal — o único bloco de superfície própria da
+     interface, e o único consumidor deste token. Não é o mesmo papel de
+     --brand: o que define o hero é a separação contra --bg, e no escuro
+     manter isso exige um valor que --brand não serviria.
+     (--forest-2 saiu junto com --sage, --sage-2 e --bronze-2: os quatro
+     ficaram sem consumidor depois da divisão, e token de cor sem consumidor
+     é valor que alguém teria de inventar de novo a cada tema.) */
   --forest: #0f1a14;
-  --forest-2: #1b2c22;
-  --sage: #5b7a5e;
-  --sage-2: #91a992;
 
   /* Bronze — income / positive accent */
   --bronze: #a88454;
-  --bronze-2: #c9a76b;
 
   /* Semantic */
   --income: #3f6e47;
@@ -118,8 +139,28 @@
 
   /* Anel de foco. Não existia: o app usava o outline default do Chromium
      (0,8px laranja) sobre fundo creme, e Input/Select ainda faziam
-     `outline: none`. Navegar por teclado era praticamente invisível. */
-  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--forest);
+     `outline: none`. Navegar por teclado era praticamente invisível.
+
+     O halo interno usa --bg, mas boa parte do que recebe foco está sobre
+     --bg-elev ou --bg-sunk: nesses casos ele não some no fundo, apenas não
+     o acompanha. Trocar por `outline` + `outline-offset` resolveria de vez
+     (o outline pinta sobre o que estiver atrás, sem supor cor), mas muda
+     pixel, e este passe existe justamente para não mudar nenhum. Fica
+     anotado para depois. */
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--brand);
+
+  /* Véu dos modais (Modal, ConfirmDialog, SidePanel). Era rgba(0,0,0,0.4)
+     repetido nos três. O guard de cores só varre hex, então rgba passava
+     batido — mas um véu preto sobre fundo escuro quase não separa o modal
+     do que está atrás, e é no escuro que ele precisa de outro valor. O valor
+     aqui é o literal que já estava nos três, sem um dígito de diferença:
+     este passe move o valor de lugar, não muda o que ele é. */
+  --overlay: rgba(0, 0, 0, 0.4);
+
+  /* Halos de 3px de Input e Select. Mesma história: literais repetidos que
+     precisam de valor próprio por tema. */
+  --focus-halo: 0 0 0 3px rgba(15, 26, 20, 0.08);
+  --error-halo: 0 0 0 3px rgba(140, 59, 46, 0.1);
 
   /* Largura de página — UMA, consumida só pelo PageContainer. Eram três tiers
      (narrow 760, default 1200, wide 1760), e a medição mostrou que na janela

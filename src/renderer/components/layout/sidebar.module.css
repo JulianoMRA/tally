@@ -63,14 +63,14 @@
 }
 
 .active {
-  background: var(--forest);
-  color: var(--bg);
+  background: var(--brand);
+  color: var(--on-brand);
   font-weight: 500;
 }
 
 .active:hover {
-  background: var(--forest-2);
-  color: var(--bg);
+  background: var(--brand-2);
+  color: var(--on-brand);
 }
 
 .icon {

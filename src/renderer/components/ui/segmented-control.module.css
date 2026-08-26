@@ -57,8 +57,8 @@
 }
 
 .ativa {
-  background: var(--forest);
-  color: var(--bg);
+  background: var(--brand);
+  color: var(--on-brand);
 }
 
 /* Tamanhos herdados das seis implementações que este primitivo substituiu:
