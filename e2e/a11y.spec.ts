@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import type { Page } from '@playwright/test'
 import { test, expect } from './fixtures/electron-app'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
+import { levarFaturasAoFimDoCiclo } from './fixtures/ciclo-de-vida'
 import { semear } from './fixtures/seed'
 
 // Varredura de acessibilidade (axe-core) nas telas principais.
@@ -143,4 +144,34 @@ test.describe('Acessibilidade (axe-core) — modais abertos', () => {
 
     await varrer(page, 'RowActions (menu aberto)')
   })
+})
+
+/**
+ * Os estados finais do ciclo de vida da fatura — Fechada e Paga — nunca tinham
+ * sido varridos. O `semear` cria faturas mas não fecha nem paga nenhuma, então
+ * os badges desses dois estados (e o de Projeção, que depende de fatura
+ * fechada) não existiam na tela durante o gate.
+ *
+ * Foi o que escondeu o contraste de 4,28:1 do badge "Paga" — `--paid` sobre
+ * `--income-bg`, abaixo dos 4,5 do WCAG AA para texto pequeno. Mesma mecânica
+ * do `--pending`, que só apareceu quando a varredura passou a rodar com dados.
+ *
+ * Só as duas telas onde os badges de fatura aparecem: Faturas, que lista o
+ * ciclo por cartão, e Visão mensal, que resume as faturas do mês.
+ */
+test.describe('Acessibilidade (axe-core) — ciclo de vida da fatura', () => {
+  for (const pagina of [
+    { link: 'Faturas', heading: 'Faturas' },
+    { link: 'Visão mensal', heading: 'Visão mensal' }
+  ] as const) {
+    test(`${pagina.link}: badges Fechada e Paga sem violações`, async ({ app }) => {
+      const { page } = await semear(app)
+      await levarFaturasAoFimDoCiclo(page)
+
+      await page.getByRole('link', { name: pagina.link }).click()
+      await expect(page.getByRole('heading', { name: pagina.heading, exact: true })).toBeVisible()
+
+      await varrer(page, `${pagina.link} (ciclo de vida)`)
+    })
+  }
 })

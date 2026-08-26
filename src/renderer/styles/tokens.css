@@ -58,7 +58,13 @@
      varredura axe passou a rodar com dados na tela: badge nenhum renderiza na
      base vazia. */
   --pending: #8a6a1f;
-  --paid: #5b7a5e;
+  /* paid: #4e6b51 (era #5b7a5e) — 4,28:1 sobre --income-bg reprovava no WCAG
+     AA para texto pequeno no badge "Paga"; agora 5,30:1, o mesmo patamar de
+     --income sobre a mesma superfície. Terceira vez que este defeito aparece,
+     e sempre pelo mesmo motivo: o badge não existe na tela sem o dado que o
+     produz. --pending precisou de dados; este precisou de uma fatura fechada
+     E paga, que o seed nunca criava. Ver e2e/fixtures/ciclo-de-vida.ts. */
+  --paid: #4e6b51;
 
   /* Superfícies semânticas — fundo + borda dos badges e banners de status.
      Pareadas com os semânticos acima. --closed é o roxo de Fechada/Projeção,
