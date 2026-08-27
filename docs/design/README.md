@@ -121,33 +121,46 @@ badge "Paga" exige uma fatura fechada **e** paga, que o seed nunca criava. Ver
 
 - `Sidebar` — nav lateral 208px com grupos, avatar no rodapé; a versão exibida vem do
   `package.json` via `define` do Vite (`__APP_VERSION__`), não hardcoded
-- `Topbar` — barra fixa no topo da área rolável com o título da página e slot de ações.
-  Consumido pelo `PageHead`, que segue sendo a API das páginas
-- `PageHead` — compõe o `Topbar` (título + ações, fixos) e o subtítulo, que rola junto com o
-  conteúdo: grudar as três linhas custaria ~90px fixos numa janela de 800px
-- `PageContainer` — **único lugar que limita a largura de uma página**. Envolve o `PageHead` e o
-  conteúdo. São dois níveis com propósitos distintos: um **trilho** externo, idêntico em todas as
-  telas, que centraliza no tier mais largo e define **onde a página começa**; e um **bloco** interno,
-  alinhado à esquerda do trilho, que carrega o `max-width` do tier e define **até onde ela vai**.
-  Larguras: `narrow` (760px, formulário único — Ajustes e Importar), `default` (1200px, o caso
-  comum) e `wide` (1760px, telas densas — Visão mensal e Saídas), dos tokens `--page-max-*`. Expõe
-  `data-width` no bloco para asserção em teste e E2E. Nenhum CSS de feature deve declarar
-  `max-width` de página.
-  - **Por que dois níveis:** com um só, o `margin: auto` transformava a sobra de largura em margem
-    esquerda, e como cada tela tem um tier diferente a borda esquerda mudava de rota para rota.
-    Numa janela maximizada: 32px na Visão mensal, 95px em Rendas, 315px em Ajustes. Travado por
-    `e2e/alinhamento-paginas.spec.ts`.
-  - **Ao adicionar um tier maior que `wide`**, o `max-width` do trilho precisa acompanhar — senão o
-    tier novo nunca alcança a largura declarada.
+- `TitleBar` — **a única faixa de cromo acima do conteúdo**, 32px em `--bg-sunk`. Carrega o menu do
+  aplicativo (que abre da própria marca), o `h1` da página, o alternador de tema e os controles de
+  janela. Fica acima do shell inteiro, sidebar inclusive: é moldura da janela, não conteúdo.
+  - **O `h1` da página vive aqui**, alimentado por `handle.titulo` da rota em `router.tsx`. Quem
+    impede rota e página de divergirem é `titulos-de-rota.test.ts`, e não um aviso em runtime: ler a
+    rota do `PageHead` obrigaria toda página a ser testada dentro de um roteador.
+  - **Os controles de janela são do app**, não do Windows — daí o rótulo acessível, o foco por
+    teclado e o estado de maximizada ouvido do main. Em Linux não são renderizados: lá a moldura
+    nativa permanece, e desenhar os nossos deixaria dois conjuntos.
+  - **A altura vive em dois lugares** que precisam concordar: `.barra` em `title-bar.module.css` e o
+    `calc(100vh - 32px)` do `.shell` em `app.module.css`.
+- `PageHead` — linha de apoio da página: **subtítulo à esquerda, ações à direita**. Não renderiza
+  heading; se não receber subtítulo nem ações, não renderiza nada. A prop `title` continua na API
+  porque as oito telas a passam e ela documenta, no arquivo da própria página, de quem é aquele
+  cabeçalho.
+  - **Consequência assumida:** as ações da página não acompanham mais a rolagem. O título, sim —
+    está na janela agora, sempre visível.
+- `PageContainer` — **único lugar que limita a largura de uma página**, e é **uma largura para todas
+  as telas** (`--page-max`). Expõe `data-page` para asserção em teste e E2E — o vitest roda com
+  `css: false`, então classe de CSS Module vira string vazia e não serve de asserção. Nenhum CSS de
+  feature deve declarar `max-width` de página.
+  - **Eram três tiers** (`narrow` 760, `default` 1200, `wide` 1760) e um par trilho/bloco cuja única
+    razão de existir era impedir que tiers diferentes fizessem cada rota começar num x diferente. A
+    medição mostrou que na janela real dois dos três clipavam no mesmo lugar. Com uma largura só o
+    problema some por construção e o par vira cerimônia. A borda esquerda comum segue travada por
+    `e2e/alinhamento-paginas.spec.ts`, agora medindo `[data-page]`.
+  - **O `padding-top` de 24px não é decorativo:** o `Topbar` fixo trazia o próprio respiro, e sem ele
+    a primeira linha da página encostava na régua da barra de título.
 - A área rolável do `App` usa `scrollbar-gutter: stable`. Sem isso, telas que rolam ficam ~8px mais
   estreitas que as que não rolam e o conteúdo desloca metade disso.
+
+> **O `Topbar` não existe mais.** Era uma segunda faixa de 56px logo abaixo da barra de título,
+> com o `h1` e as ações. Removido na v1.8.0: as duas faixas viraram uma, devolvendo ~56px de altura
+> útil a todas as telas.
 
 **Breakpoints — atenção ao número real.** A janela padrão do app (`width: 1280` em
 `createWindow`) é o tamanho **externo**: a viewport resultante é **1266px**. Um
 `@media (min-width: 1280px)` não dispara para quem não maximiza. Larguras medidas:
-`setSize(1024) → 1010`, `(1280) → 1266`, `(1440) → 1426`, `(1760) → 1746`. Em uso hoje:
-1180 na Visão mensal (duas colunas já na janela padrão) e 1400 em Saídas (abaixo disso a
-tabela fica mais estreita ao lado do formulário do que ocupando a largura inteira).
+`setSize(1024) → 1010`, `(1280) → 1266`, `(1440) → 1426`, `(1760) → 1746`. Em uso hoje, três:
+**1180** na Visão mensal (duas colunas já na janela padrão), **1360** e **1440** em Faturas.
 
 ### UI Primitives (`src/renderer/components/ui/`)
 
