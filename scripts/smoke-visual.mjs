@@ -13,9 +13,18 @@
  *   npm run build && npm run smoke:visual
  *
  * As imagens vão para `smoke-visual/` (gitignored).
+ *
+ * Duas variáveis de ambiente:
+ *
+ *   SMOKE_OUT    pasta de saída, para comparar duas execuções por SHA-256.
+ *   SMOKE_TEMA   `claro` (padrão) ou `escuro`.
+ *
+ * O tema é gravado no settings.json da base isolada ANTES de o app subir: o
+ * preload lê de lá de forma síncrona, e carimbar depois pela UI capturaria a
+ * primeira tela ainda no tema anterior.
  */
 import { _electron as electron } from '@playwright/test'
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -24,6 +33,12 @@ const AQUI = dirname(fileURLToPath(import.meta.url))
 const RAIZ = join(AQUI, '..')
 const SAIDA = process.env.SMOKE_OUT ?? join(RAIZ, 'smoke-visual')
 const ENTRADA = join(RAIZ, 'out', 'main', 'index.cjs')
+const TEMA = process.env.SMOKE_TEMA ?? 'claro'
+
+if (TEMA !== 'claro' && TEMA !== 'escuro') {
+  console.error(`SMOKE_TEMA inválido: "${TEMA}". Use "claro" ou "escuro".`)
+  process.exit(1)
+}
 
 const ROTAS = [
   ['visao-mensal', '#/mensal'],
@@ -44,6 +59,13 @@ rmSync(SAIDA, { recursive: true, force: true })
 mkdirSync(SAIDA, { recursive: true })
 
 const userData = mkdtempSync(join(tmpdir(), 'tally-smoke-'))
+
+// Grava o tema antes do launch. O app lê settings.json no boot — pelo main,
+// para o backgroundColor da janela, e pelo preload, para carimbar o atributo
+// antes do primeiro paint. Trocar pela UI depois de subir deixaria a primeira
+// captura no tema anterior.
+writeFileSync(join(userData, 'settings.json'), JSON.stringify({ tema: TEMA }, null, 2), 'utf8')
+
 const app = await electron.launch({
   args: [ENTRADA],
   env: { ...process.env, TALLY_USER_DATA: userData },
@@ -52,6 +74,17 @@ const app = await electron.launch({
 
 const page = await app.firstWindow()
 await page.waitForLoadState('domcontentloaded')
+
+// Sem esta conferência, um tema que não pegou geraria 39 capturas claras
+// rotuladas como escuras — e a folha de contato passaria a mentir em silêncio,
+// que é o pior defeito possível num material de revisão.
+const temaAplicado = await page.evaluate(() => document.documentElement.dataset.theme)
+if (temaAplicado !== TEMA) {
+  console.error(`Tema pedido "${TEMA}" mas o app abriu em "${temaAplicado ?? '(nenhum)'}".`)
+  await app.close()
+  process.exit(1)
+}
+console.log(`tema: ${TEMA}`)
 
 const problemas = []
 page.on('pageerror', (e) => problemas.push(`[pageerror] ${e.message}`))

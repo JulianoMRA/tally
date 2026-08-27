@@ -37,10 +37,22 @@ as fontes localmente via `@fontsource`, sem CDN.
 
 ## Tokens (`src/renderer/styles/tokens.css`)
 
-Tema único: **Cream** (`:root`), tom papel quente. Um tema escuro chegou a ser
-esboçado como `[data-theme="forest"]`, mas o switcher nunca foi implementado e
-os overrides mortos foram removidos; se o dark mode for priorizado, volta junto
-com o switcher.
+Dois temas: **Cream** (`:root`, padrão, tom papel quente) e **Papel noturno**
+(`[data-theme="escuro"]`, marrom escuro com tinta creme e marca em bronze).
+
+O escuro foi escolhido entre três paletas medidas — Forest (verde-quase-preto,
+retomando o `[data-theme="forest"]` esboçado no Slice 4.5 e removido em
+`3e2e133`), Papel noturno e Grafite neutro. Venceu a única que mantém o calor do
+creme na outra ponta da escala.
+
+**Regra da casa:** componente nenhum declara cor dentro de um seletor de tema. O
+`:root` define a paleta clara inteira, o bloco do escuro redefine **apenas
+valores**, e todo CSS de feature consome `var()`. Cor cuja única definição
+estivesse atrás de `[data-theme]` não existiria no tema claro.
+
+A paleta clara responde a `:root` **e** a `[data-theme="claro"]`. O segundo
+seletor não é redundante: ele permite fixar o tema claro numa subárvore, e é o
+que torna a folha de impressão imune ao tema (ver `PrintMensalPage`).
 
 ```css
 --bg          /* fundo base */
@@ -50,22 +62,53 @@ com o switcher.
 --ink-2/3/4   /* texto secundário/terciário/mudo */
 --rule        /* hairlines */
 --rule-strong /* divisor de maior contraste */
---forest      /* brand verde escuro (também fundo de item ativo) */
---sage        /* verde secundário */
+--brand       /* superfície e sinal de interação: botão primário, item ativo
+                 da sidebar, opção ativa do segmented, borda de foco,
+                 accent-color. No escuro é bronze */
+--brand-2     /* hover de --brand */
+--on-brand    /* texto sobre --brand */
+--forest      /* fundo do hero da visão mensal, e nada mais */
 --bronze      /* destaque quente, positivo */
 --income / --expense / --pending / --paid   /* texto e ícone semânticos */
 --income-bg / --income-border               /* superfície de badge e banner */
 --pending-bg / --pending-border
 --expense-bg / --expense-border
 --closed / --closed-bg / --closed-border    /* roxo de Fechada e Projeção */
+--overlay     /* véu dos modais */
+--focus-halo / --error-halo   /* halos de 3px de Input e Select */
 --font-sans / --font-mono
 --r-1..4 / --r-pill  /* border-radius */
 --shadow-1/2
 ```
 
-Dois guards em `src/renderer/styles/__tests__/` protegem a paleta: um falha se
-algum `var(--x)` sem fallback não estiver definido em `tokens.css`, o outro se
-voltar hex hardcoded no CSS de alguma feature.
+**`--forest` já fez três trabalhos e foi dividido.** Valia `#0f1a14`, o mesmo
+hex de `--ink`, e servia a superfície de controle, ao bloco do hero e a tinta
+forte de texto — três papéis que colidem no mesmo valor no claro e divergem no
+escuro. Hoje: superfície é `--brand`, texto é `--ink`, e `--forest` ficou só com
+o hero. Se você for usar `--forest` para outra coisa, provavelmente quer
+`--brand`.
+
+**O hero inverte de papel entre os temas.** No claro é o bloco mais escuro da
+tela (15:1 contra o creme); no escuro é o mais **claro** (1,42:1 contra o
+fundo — mais separação do que qualquer card tem em qualquer tema). Escuro sobre
+escuro não reproduz o contraste do claro, e foi por isso que `--forest` teve de
+sair de `--brand`: assim as três fatias da barra de composição, calibradas para
+fundo escuro, valem nos dois temas sem mudar de valor.
+
+Quatro guards em `src/renderer/styles/__tests__/` protegem a paleta:
+
+| Guard               | Falha quando                                                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `tokens-definidos`  | algum `var(--x)` sem fallback não está em `tokens.css`                                                                      |
+| `cores-tokenizadas` | volta hex hardcoded no CSS de alguma feature                                                                                |
+| `tipo-tokenizado`   | volta tamanho de fonte solto                                                                                                |
+| `contraste`         | um par texto/superfície reprova no WCAG AA **em qualquer tema**, ou um token de cor do claro fica sem contraparte no escuro |
+
+O guard de contraste cobre um buraco que o axe tem por construção: o axe só vê o
+que está montado na tela, e três defeitos de contraste já passaram por ali —
+`--ink-3`, `--pending` e `--paid`. O último ficou escondido mais tempo porque o
+badge "Paga" exige uma fatura fechada **e** paga, que o seed nunca criava. Ver
+`e2e/fixtures/ciclo-de-vida.ts`.
 
 ## Componentes
 
