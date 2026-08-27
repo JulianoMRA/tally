@@ -171,8 +171,38 @@ badge "Paga" exige uma fatura fechada **e** paga, que o seed nunca criava. Ver
 - `Input` — input estilizado com estado de erro e focus ring
 - `Select` — select com chevron SVG customizado
 - `Field` — wrapper label + children + hint/erro
+- `SeletorMes` — campo de mês (`type="month"`) com as setas de mês anterior e próximo. Era o mesmo
+  bloco repetido em Visão mensal e Saídas; hoje serve as três telas que navegam por mês. **Faturas
+  fica de fora de propósito:** lá a navegação é por trilho de cartão, não por mês.
+  - **Passe `label` só fora de um `Field`.** Dentro dele quem nomeia é o rótulo visível, e um
+    `aria-label` aqui o sobrescreveria.
+  - **Campo esvaziado devolve `''`**, e a tela consultaria um mês inexistente. A guarda está no
+    `onChange` — só uma das duas cópias originais a tinha.
 - `EmptyState` — estado vazio centralizado com título, descrição e ação opcional
-- `ConfirmDialog` — confirmação modal de ação destrutiva (Slice 14)
+- `Modal` — diálogo centrado para **interação curta e focada**: confirmar uma data, ajustar um
+  valor, editar metadado. Absorveu o esqueleto que estava copiado em seis modais de feature —
+  overlay, armadilha de foco, Esc, `role`/`aria` e a linha de ações — mais o CSS duplicado em quatro
+  módulos. Quem controla a abertura é o pai, renderizando ou não o componente: **não há prop
+  `aberto`**, e montar só quando visível garante formulário limpo e foco entrando de fato.
+  - **O padrão é NÃO fechar no clique do overlay**, ao contrário do `SidePanel`. Todo modal do app
+    carrega dado digitado, e descartá-lo por um clique fora foi defeito real (#103). Ligue
+    `fecharNoOverlay` só onde não houver o que perder.
+  - **Os botões vão na prop `rodape`**, não no `children`. É a pegadinha de quem migra um modal
+    antigo.
+  - **`descricao` é `ReactNode`**, não `string` como no `SidePanel`: parte dos modais destaca um
+    trecho dentro da linha de apoio.
+  - **Divisão de trabalho:** `SidePanel` é a casa do cadastro, que é episódio longo e ocupa a
+    lateral inteira. `Modal` é o episódio curto.
+- `ConfirmDialog` — confirmação modal de ação destrutiva (Slice 14). **Não é construído sobre o
+  `Modal`**, por decisão tomada quando o primitivo nasceu; vale reavaliar agora que o `Modal` roda
+  em seis telas
+- `Table` — tabela do design system; densidades `padrao | compacta`. O estilo estava duplicado
+  **byte a byte** entre `faturas` e `visao-mensal` — dez declarações idênticas só no `th`.
+  `compacta` é o degrau que Saídas adotou na v1.5.1: num mês com 15 parceladas recupera mais de uma
+  tela de rolagem.
+  - **Duas tabelas ficam fora de propósito:** `print-mensal.module.css`, que é folha de impressão
+    com medidas em px e escala própria, e a `.tabelaErros` de Importar, que é diagnóstico e não
+    dado da aplicação.
 - `SortableHeader` — cabeçalho de coluna ordenável: `<button>` interno (Enter e Espaço de
   graça) e `aria-sort` na célula. Antes era `<th onClick>` sem role, tabIndex nem teclado —
   ordenar era exclusivo de mouse, e o axe não pegava porque `<th>` clicável não viola regra
