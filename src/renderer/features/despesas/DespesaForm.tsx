@@ -7,7 +7,6 @@ import {
   type UseFormRegister
 } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import {
   despesaUnicaCreditoInputSchema,
   despesaParceladaCreditoInputSchema,
@@ -32,9 +31,10 @@ import {
   Select,
   type OpcaoSegmentada
 } from '../../components/ui'
-import { parseCentavos, valorTotalCentavosParcelada, type ModoValorParcela } from './parcela-valor'
+import { valorTotalCentavosParcelada, type ModoValorParcela } from './parcela-valor'
 import { PreviaDestino } from './PreviaDestino'
 import styles from './despesas.module.css'
+import { parseCentavos, valorReaisSchema } from '../../lib/dinheiro'
 
 type TipoDespesa = 'unica' | 'parcelada' | 'em-andamento' | 'assinatura'
 
@@ -48,7 +48,7 @@ type UniqueValues = Omit<DespesaUnicaCreditoInput, 'valorCentavos'> & { valorRea
 
 const uniqueSchema = despesaUnicaCreditoInputSchema
   .omit({ valorCentavos: true })
-  .extend({ valorReais: z.string().regex(/^\d+([.,]\d{1,2})?$/, 'Valor inválido') })
+  .extend({ valorReais: valorReaisSchema })
 
 // ──── Parcelada ─────────────────────────────────────────────────
 type ParceladaValues = Omit<DespesaParceladaCreditoInput, 'valorTotalCentavos'> & {
@@ -57,7 +57,7 @@ type ParceladaValues = Omit<DespesaParceladaCreditoInput, 'valorTotalCentavos'> 
 
 const parceladaSchema = despesaParceladaCreditoInputSchema
   .omit({ valorTotalCentavos: true })
-  .extend({ valorReais: z.string().regex(/^\d+([.,]\d{1,2})?$/, 'Valor inválido') })
+  .extend({ valorReais: valorReaisSchema })
 
 // ──── Em andamento ──────────────────────────────────────────────
 type EmAndamentoValues = Omit<DespesaEmAndamentoInput, 'valorRestanteCentavos'> & {
@@ -66,7 +66,7 @@ type EmAndamentoValues = Omit<DespesaEmAndamentoInput, 'valorRestanteCentavos'> 
 
 const emAndamentoSchema = despesaEmAndamentoInputBaseSchema
   .omit({ valorRestanteCentavos: true })
-  .extend({ valorReais: z.string().regex(/^\d+([.,]\d{1,2})?$/, 'Valor inválido') })
+  .extend({ valorReais: valorReaisSchema })
   .refine(parcelaAtualNaoExcedeTotal.predicate, parcelaAtualNaoExcedeTotal.params)
 
 // ──── Assinatura ────────────────────────────────────────────────
@@ -76,7 +76,7 @@ type AssinaturaValues = Omit<DespesaAssinaturaCreditoInput, 'valorMensalCentavos
 
 const assinaturaSchema = despesaAssinaturaCreditoInputSchema
   .omit({ valorMensalCentavos: true })
-  .extend({ valorReais: z.string().regex(/^\d+([.,]\d{1,2})?$/, 'Valor inválido') })
+  .extend({ valorReais: valorReaisSchema })
 
 // ──── Única fora de cartão ──────────────────────────────────────
 type UnicaForaCartaoValues = Omit<DespesaUnicaForaCartaoInput, 'valorCentavos'> & {
@@ -85,7 +85,7 @@ type UnicaForaCartaoValues = Omit<DespesaUnicaForaCartaoInput, 'valorCentavos'> 
 
 const unicaForaCartaoSchema = despesaUnicaForaCartaoInputSchema
   .omit({ valorCentavos: true })
-  .extend({ valorReais: z.string().regex(/^\d+([.,]\d{1,2})?$/, 'Valor inválido') })
+  .extend({ valorReais: valorReaisSchema })
 
 type Props = {
   cartoes: Cartao[]

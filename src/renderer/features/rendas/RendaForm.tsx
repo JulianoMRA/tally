@@ -1,9 +1,9 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { criarRendaRecorrenteInputSchema, type CriarRendaRecorrenteInput } from '@shared/ipc/renda'
 import { Button, Field, Input } from '../../components/ui'
 import styles from './rendas.module.css'
+import { parseCentavos, valorReaisSchema } from '../../lib/dinheiro'
 
 type RecorrenteValues = Omit<CriarRendaRecorrenteInput, 'valorPadraoCentavos'> & {
   valorReais: string
@@ -11,11 +11,7 @@ type RecorrenteValues = Omit<CriarRendaRecorrenteInput, 'valorPadraoCentavos'> &
 
 const recorrenteSchema = criarRendaRecorrenteInputSchema
   .omit({ valorPadraoCentavos: true })
-  .extend({ valorReais: z.string().regex(/^\d+([.,]\d{1,2})?$/, 'Valor inválido') })
-
-function parseCentavos(reais: string): number {
-  return Math.round(parseFloat(reais.replace(',', '.')) * 100)
-}
+  .extend({ valorReais: valorReaisSchema })
 
 type Props = {
   onSalvarRecorrente: (input: CriarRendaRecorrenteInput) => Promise<void>
