@@ -6,6 +6,18 @@ vista técnico.
 
 ---
 
+## v1.10.1 — Motor de renderização em dia (ago/2026)
+
+---
+
+**Bump do Electron de 42.3.3 para 42.10.1 (ago/2026)** — Último item de segurança em aberto da auditoria, e **o único que atinge o binário instalado**. Same-major, sete patches de Chromium atrás. Fecha a `GHSA-r4w5-6pfg-jxp5` (`ProtocolResponse.url` reusa o cache da sessão default em vez da que registra), cujo range no canal 42 vai até a 42.5.0. **A advisory nominal não atinge o Tally**, que não registra protocolo próprio; o argumento é outro — `electron` é devDependency mas **é o runtime que embarca no instalador**, então patch de Chromium não aplicado é patch que falta no binário do usuário. O piso declarado subiu de `^42.0.1` para `^42.10.1`: o range antigo já permitia a versão nova (quem prendia era o lockfile), mas com o piso baixo uma instalação limpa podia voltar a resolver abaixo da correção. No `npm audit`, o `electron` sai da lista **e leva o `extract-zip` junto** — de 19 para 17 advisories, todas agora em toolchain de dev que não embarca. **A verificação é o ponto:** teste unitário não valida troca de runtime, porque os 1075 mockam `window.api` — foi essa exata cegueira que deixou passar, na v1.9.0, um preload que derrubava o app inteiro. Além do pipeline, `smoke:visual` nos dois temas (o app sobe e renderiza, sem erro de console ou de página; o escuro exercita o caminho do preload com `sandbox: true`, onde uma troca de versão poderia mexer no timing entre preload e parser) e **o E2E inteiro, 108 specs verdes**.
+
+---
+
+**Correções que a verificação expôs (ago/2026)** — Nenhuma das duas é o bump; as duas apareceram por rodar a verificação. **(a) O `smoke:visual` estava quebrado desde a v1.10.0.** O script tem seeding próprio e chamava `recebimento.criarAvulso({ nome })`; o campo virou `descricao` quando entrada avulsa deixou de exigir fonte de renda, e a fixture do E2E foi atualizada junto — esta não. Escapou porque `.mjs` fica fora do typecheck e nenhum teste exercita o script, então chegou à `main` e à tag v1.10.0 com a ferramenta inutilizável. Sem impacto no app, que não embarca `scripts/`. **Lição que generaliza: ao mudar um contrato de IPC, grepe `scripts/` também**, não só `src`, `electron` e `e2e`. **(b) O `.gitignore` não cobria o próprio procedimento documentado** — só `smoke-visual/` estava lá, mas a verificação por tema usa `SMOKE_OUT="$PWD/smoke-claro"` e `smoke-escuro`, então segui-la deixava 39 PNGs por tema a um `git add -A` de entrar num commit. Passou a `smoke-*/`.
+
+---
+
 ## v1.10.0 — Entrada avulsa sem fonte de renda (ago/2026)
 
 ---

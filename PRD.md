@@ -549,6 +549,7 @@ release. O que veio depois:
 | v1.8.0  | Barra funde com o cabeçalho (ago/2026): 88px de cromo viram 32px, o nome da tela sobe para a barra, o menu sai da marca e os controles de janela passam a ser do app                                  |
 | v1.9.0  | Tema escuro (ago/2026): paleta Papel noturno alternável pelo menu do app, com a divisão de `--forest` que ela exigiu, o PDF mensal blindado contra o tema e três defeitos anteriores corrigidos       |
 | v1.10.0 | Entrada avulsa sem fonte de renda (ago/2026): registrar um freela deixa de exigir o cadastro de uma fonte; mais a neutralização de fórmula no export CSV e a remoção do código morto acumulado        |
+| v1.10.1 | Motor de renderização em dia (ago/2026): Electron 42.3.3 para 42.10.1, fechando a última advisory que atingia o binário instalado; mais o `smoke:visual`, quebrado desde a v1.10.0                    |
 
 O V2 da seção 3.2 está integralmente entregue.
 
