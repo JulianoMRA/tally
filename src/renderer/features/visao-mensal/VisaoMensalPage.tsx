@@ -215,12 +215,7 @@ export default function VisaoMensalPage() {
                   <RankingCategorias linhas={ranking} totalCentavos={gastoTotalCategorias} />
                 </div>
 
-                <Panel
-                  title="Fora do cartão"
-                  meta={formatBRL(totalForaCartaoCentavos)}
-                  flush
-                  className={styles.painelForaCartao}
-                >
+                <Panel title="Fora do cartão" meta={formatBRL(totalForaCartaoCentavos)} flush>
                   {detalhe.gastosForaCartao.length === 0 ? (
                     <EmptyState title="Nenhum gasto fora de cartão neste mês." />
                   ) : (
