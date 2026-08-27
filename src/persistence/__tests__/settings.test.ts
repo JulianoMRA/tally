@@ -61,6 +61,41 @@ describe('settings (config em JSON no userData)', () => {
     expect(config.notificacoesAtivas).toBe(CONFIG_DEFAULTS.notificacoesAtivas)
   })
 
+  // `tema` chegou depois de o app ja estar instalado: todo settings.json em
+  // disco hoje e um "arquivo de versao antiga" para este campo. Se ele nao
+  // caisse no default, o preload carimbaria undefined no <html> e o app abriria
+  // sem paleta nenhuma resolvida.
+  it('arquivo gravado antes do tema existir abre no claro', () => {
+    writeFileSync(
+      caminho,
+      JSON.stringify({
+        backupsDir: null,
+        backupAoSair: true,
+        retencaoBackups: 10,
+        notificacoesAtivas: true,
+        diasAntecedenciaAviso: 3
+      }),
+      'utf8'
+    )
+
+    expect(lerConfig(caminho).tema).toBe('claro')
+  })
+
+  it('preserva o tema gravado no round-trip', () => {
+    gravarConfig(caminho, { ...CONFIG_DEFAULTS, tema: 'escuro' })
+
+    expect(lerConfig(caminho).tema).toBe('escuro')
+  })
+
+  // O valor vai cru para o atributo `data-theme`, que e o seletor do bloco de
+  // paleta: um valor fora do enum viraria um seletor que nao casa com nada.
+  it('rejeita tema fora do enum sem tocar o arquivo', () => {
+    gravarConfig(caminho, CONFIG_DEFAULTS)
+
+    expect(() => gravarConfig(caminho, { ...CONFIG_DEFAULTS, tema: 'forest' as never })).toThrow()
+    expect(lerConfig(caminho).tema).toBe('claro')
+  })
+
   it('gravarConfig rejeita configuracao invalida sem tocar o arquivo', () => {
     gravarConfig(caminho, CONFIG_DEFAULTS)
     const antes = readFileSync(caminho, 'utf8')

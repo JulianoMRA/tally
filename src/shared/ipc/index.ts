@@ -80,7 +80,9 @@ export {
   configSchema,
   CONFIG_DEFAULTS,
   type Config,
-  type ConfigApi
+  type ConfigApi,
+  type TemaApi,
+  type Tema
 } from './config'
 
 export {
@@ -103,7 +105,7 @@ import type { RecebimentoApi } from './recebimento'
 import type { VisaoMensalApi } from './visao-mensal'
 import type { RelatorioApi } from './relatorio'
 import type { OrcamentoApi } from './orcamento'
-import type { ConfigApi } from './config'
+import type { ConfigApi, TemaApi } from './config'
 import type { DadosApi } from './importacao'
 import type { AppApi } from './app'
 import type { JanelaApi } from './janela'
@@ -119,6 +121,7 @@ export type Api = {
   relatorio: RelatorioApi
   orcamento: OrcamentoApi
   config: ConfigApi
+  tema: TemaApi
   dados: DadosApi
   app: AppApi
   janela: JanelaApi

@@ -8,7 +8,12 @@
    estivesse atrás de [data-theme] simplesmente não existiria no tema claro.
    ============================================================== */
 
-:root {
+/* O seletor de atributo ao lado do :root nao e redundante: ele permite fixar a
+   paleta clara num SUBCONJUNTO da arvore, independentemente do tema do
+   documento. E o que torna a folha de impressao imune ao tema — ver
+   PrintMensalPage e o comentario do bloco escuro. */
+:root,
+[data-theme='claro'] {
   /* Primary palette — Cream theme */
   --bg: #f1ebdd;
   --bg-elev: #f7f3e8;

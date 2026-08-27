@@ -15,7 +15,8 @@ import {
   CONFIG_IPC_CHANNELS,
   DADOS_IPC_CHANNELS,
   APP_IPC_CHANNELS,
-  JANELA_IPC_CHANNELS
+  JANELA_IPC_CHANNELS,
+  TEMA_IPC_CHANNELS
 } from '@shared/ipc/channels'
 import type { CartaoInput, ListCartaoOptions } from '@shared/ipc/cartao'
 import type { CategoriaInput, ListCategoriaOptions } from '@shared/ipc/categoria'
@@ -60,10 +61,55 @@ import type {
   RemoverLimiteInput,
   ListarProgressoInput
 } from '@shared/ipc/orcamento'
-import type { Config, RestaurarBackupInput } from '@shared/ipc/config'
+import type { Config, RestaurarBackupInput, Tema } from '@shared/ipc/config'
 import type { ImportarCsvInput, ExportarMesInput } from '@shared/ipc/importacao'
 
+/**
+ * Carimba o tema no <html> ANTES de a pagina ter scripts proprios.
+ *
+ * E aqui, e nao no `main.tsx`, porque o preload roda antes de qualquer coisa
+ * do renderer: quando o React monta, a folha de estilo ja pintou o fundo.
+ * Aplicar o atributo depois disso produziria uma janela creme que vira escura
+ * — o segundo dos dois flashes de abertura (o primeiro, da propria janela,
+ * morre no `backgroundColor` do main).
+ *
+ * Sincrono pelo mesmo motivo: `invoke` devolve promessa, e a promessa resolve
+ * tarde demais. Um `sendSync` no boot custa um round-trip e paga por si.
+ *
+ * O tema claro mora no `:root`, entao so o escuro precisa do atributo — mas
+ * carimbar os dois deixa o estado legivel no DOM, o que o E2E usa para
+ * asserir sem depender de cor computada.
+ */
+function carimbarTemaInicial(): Tema {
+  // A rota de impressao roda numa BrowserWindow oculta que carrega ESTE mesmo
+  // bundle, e o resultado dela e um PDF em papel A4. Papel nao tem tema: se o
+  // documento herdasse o escuro, a folha sairia branca com tinta quase branca,
+  // e o guard de cores nao avisaria — ele permite explicitamente o hex do
+  // print-mensal. Primeira das duas camadas; a outra e o `data-theme="claro"`
+  // no proprio elemento da folha, que sobrevive a alguem mexer aqui.
+  if (location.hash.startsWith('#/print/')) {
+    document.documentElement.setAttribute('data-theme', 'claro')
+    return 'claro'
+  }
+
+  let tema: Tema = 'claro'
+  try {
+    tema = ipcRenderer.sendSync(TEMA_IPC_CHANNELS.inicialSync) as Tema
+  } catch {
+    // Config ilegivel nunca impede o boot — mesma postura do `lerConfig`.
+    // O app abre no claro, que e o padrao.
+  }
+  document.documentElement.setAttribute('data-theme', tema)
+  return tema
+}
+
+const temaInicial = carimbarTemaInicial()
+
 contextBridge.exposeInMainWorld('api', {
+  tema: {
+    inicial: () => temaInicial,
+    definir: (tema: Tema) => ipcRenderer.invoke(TEMA_IPC_CHANNELS.definir, tema)
+  },
   cartao: {
     list: (options?: ListCartaoOptions) => ipcRenderer.invoke(CARTAO_IPC_CHANNELS.list, options),
     findById: (id: number) => ipcRenderer.invoke(CARTAO_IPC_CHANNELS.findById, id),

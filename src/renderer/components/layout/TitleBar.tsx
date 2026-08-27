@@ -3,6 +3,7 @@ import { useMatches } from 'react-router-dom'
 import { Mark } from '../brand/Mark'
 import { Wordmark } from '../brand/Wordmark'
 import { RowActions, type AcaoLinha } from '../ui'
+import type { Tema } from '@shared/ipc'
 import styles from './title-bar.module.css'
 
 function Chevron() {
@@ -109,7 +110,23 @@ export function TitleBar() {
   const titulo = (matches.at(-1)?.handle as { titulo?: string } | undefined)?.titulo ?? 'Tally'
 
   const { controlesProprios } = window.api.janela
+
+  // O preload ja carimbou o atributo no <html> antes de a pagina pintar; aqui
+  // so espelhamos esse estado para rotular o menu. Ler dele, e nao de um
+  // estado proprio, evita as duas fontes de verdade divergirem.
+  const [tema, setTema] = useState<Tema>(() => window.api.tema.inicial())
   const [maximizada, setMaximizada] = useState(false)
+
+  // Troca visual primeiro, gravacao depois: o atributo e o que pinta a tela, e
+  // esperar o disco para trocar de tema deixaria o clique com latencia de I/O.
+  // Se a gravacao falhar, a sessao segue no tema escolhido e o proximo boot
+  // volta ao gravado — degrada para o estado antigo, nunca para tela quebrada.
+  function alternarTema(): void {
+    const proximo: Tema = tema === 'claro' ? 'escuro' : 'claro'
+    document.documentElement.setAttribute('data-theme', proximo)
+    setTema(proximo)
+    void window.api.tema.definir(proximo).catch(() => {})
+  }
 
   useEffect(() => {
     let ativo = true
@@ -130,6 +147,9 @@ export function TitleBar() {
   }, [])
 
   const acoes: AcaoLinha[] = [
+    // O rotulo diz para onde o clique leva, nao onde se esta: um item escrito
+    // "Tema claro" enquanto o app esta claro nao diz o que o clique faz.
+    { label: tema === 'claro' ? 'Tema escuro' : 'Tema claro', onClick: alternarTema },
     { label: 'Exportar dados…', onClick: () => void window.api.app.exportarDados() },
     { label: 'Importar dados…', onClick: () => void window.api.app.importarDados() },
     {

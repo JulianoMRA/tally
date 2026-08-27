@@ -7,9 +7,15 @@ import { TitleBar } from '../TitleBar'
 
 type Ouvinte = (maximizada: boolean) => void
 
-function instalarApi(opcoes: { controlesProprios?: boolean; maximizada?: boolean } = {}) {
+function instalarApi(
+  opcoes: { controlesProprios?: boolean; maximizada?: boolean; tema?: 'claro' | 'escuro' } = {}
+) {
   const ouvintes: Ouvinte[] = []
   const api = {
+    tema: {
+      inicial: () => opcoes.tema ?? 'claro',
+      definir: vi.fn().mockImplementation((t: string) => Promise.resolve(t))
+    },
     app: {
       exportarDados: vi.fn().mockResolvedValue(undefined),
       importarDados: vi.fn().mockResolvedValue(undefined),
@@ -29,6 +35,7 @@ function instalarApi(opcoes: { controlesProprios?: boolean; maximizada?: boolean
     }
   }
   vi.stubGlobal('window', Object.assign(window, { api }))
+  document.documentElement.setAttribute('data-theme', opcoes.tema ?? 'claro')
   return { api, emitir: (m: boolean) => ouvintes.forEach((o) => o(m)) }
 }
 
@@ -122,5 +129,66 @@ describe('TitleBar', () => {
     expect(api.janela.aoMudarEstado).toHaveBeenCalledOnce()
     expect(typeof cancelar).toBe('function')
     expect(espia).toBeDefined()
+  })
+})
+
+/**
+ * O tema mora no menu do aplicativo, e não num botão próprio: a barra tem 32px
+ * e já carrega marca, título, subtítulo, ações e os controles de janela.
+ */
+describe('TitleBar — alternador de tema', () => {
+  beforeEach(() => vi.clearAllMocks())
+  afterEach(() => {
+    cleanup()
+    document.documentElement.removeAttribute('data-theme')
+  })
+
+  // O rótulo nomeia o destino, não o estado atual. Um item escrito "Tema claro"
+  // enquanto o app está claro não diz o que o clique faz.
+  it('rotula o item com o tema de destino, não com o atual', async () => {
+    instalarApi({ tema: 'claro' })
+    renderizar()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Menu do aplicativo' }))
+
+    expect(screen.getByRole('menuitem', { name: 'Tema escuro' })).toBeTruthy()
+    expect(screen.queryByRole('menuitem', { name: 'Tema claro' })).toBeNull()
+  })
+
+  it('rotula para o claro quando já está no escuro', async () => {
+    instalarApi({ tema: 'escuro' })
+    renderizar()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Menu do aplicativo' }))
+
+    expect(screen.getByRole('menuitem', { name: 'Tema claro' })).toBeTruthy()
+  })
+
+  // O atributo é o que pinta a tela: é ele o seletor do bloco de paleta.
+  it('carimba o atributo no <html> e persiste a escolha', async () => {
+    const { api } = instalarApi({ tema: 'claro' })
+    renderizar()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Menu do aplicativo' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Tema escuro' }))
+
+    expect(document.documentElement.getAttribute('data-theme')).toBe('escuro')
+    await waitFor(() => expect(api.tema.definir).toHaveBeenCalledWith('escuro'))
+  })
+
+  // A troca visual não pode esperar o disco, e falha de gravação não pode
+  // deixar a tela num estado que o CSS não pinta.
+  it('mantém o tema da sessão mesmo se a gravação falhar', async () => {
+    const { api } = instalarApi({ tema: 'claro' })
+    api.tema.definir.mockRejectedValueOnce(new Error('disco cheio'))
+    renderizar()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Menu do aplicativo' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Tema escuro' }))
+
+    expect(document.documentElement.getAttribute('data-theme')).toBe('escuro')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Menu do aplicativo' }))
+    expect(screen.getByRole('menuitem', { name: 'Tema claro' })).toBeTruthy()
   })
 })
