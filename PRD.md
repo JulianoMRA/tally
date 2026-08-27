@@ -190,7 +190,7 @@ prevista; entram no escopo quando forem priorizadas.
 
 ### 4.11 Exportação (RF-EXP)
 
-- **RF-EXP-01** — Exportar o mês em CSV (botão na visão mensal): tabela achatada com uma linha por parcela de fatura (com numeração X/Y), gasto fora de cartão e recebimento; valores no formato `1234,56` (compatível com o parser dos templates de importação) e BOM UTF-8 (Excel pt-BR). Destino via diálogo de salvar.
+- **RF-EXP-01** — Exportar o mês em CSV (botão na visão mensal): tabela achatada com uma linha por parcela de fatura (com numeração X/Y), gasto fora de cartão e recebimento; valores no formato `1234,56` (compatível com o parser dos templates de importação) e BOM UTF-8 (Excel pt-BR). Destino via diálogo de salvar. Campo de texto que a planilha avaliaria como fórmula (começa com `=`, `+`, `-`, `@`, tab ou CR) sai prefixado com apóstrofo, que o Excel consome como "tratar como texto" e não exibe; números bem-formados ficam intactos, para a coluna de valor continuar somável. O dado no banco não é alterado — a neutralização é só da serialização.
 - **RF-EXP-02** — Exportar o mês em PDF: rota de impressão `#/print/:mes` (sem shell do app) renderizada em janela oculta pelo main e convertida com `printToPDF` (A4). O main aguarda o marcador `data-print-pronto` da página — sem sleep arbitrário.
 
 ### 4.12 Janela e ações do aplicativo (RF-APP)

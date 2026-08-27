@@ -3,6 +3,7 @@ import type { Database } from '../database'
 import { openInMemoryDatabase } from '../database'
 import { runMigrations } from '../migrations/runner'
 import { montarLinhasDoMes } from '../exportacao'
+import { serializarCsv } from '../../shared/csv/gerar-csv'
 import { DespesaRepository } from '../repositories/despesa-repository'
 import { RecebimentoRepository } from '../repositories/recebimento-repository'
 
@@ -59,6 +60,29 @@ describe('montarLinhasDoMes (exportação CSV do mês)', () => {
       ['Gasto fora de cartão', 'Almoço Pix', 'Pix', 'Mercado', '', '2026-06-10', '25,90', ''],
       ['Recebimento', 'Freela', '', '', '', '2026-06-15', '500,00', 'Recebido']
     ])
+  })
+
+  it('descricao que a planilha executaria sai neutralizada do serializador', () => {
+    // Caminho completo do vetor: a descricao chega ao banco como texto (digitada
+    // ou vinda de um CSV de terceiro pela importacao), atravessa o export e so
+    // e' neutralizada na serializacao. A linha crua segue com o texto original —
+    // o dado do usuario nao e' alterado no banco nem na leitura.
+    new DespesaRepository(db).criarUnicaForaCartao({
+      descricao: "=cmd|'/c calc'!A1",
+      categoriaId: 1,
+      formaPagamento: 'Pix',
+      valorCentavos: 1000,
+      dataCompra: '2026-06-10'
+    })
+
+    const { header, linhas } = montarLinhasDoMes(db, '2026-06')
+    expect(linhas[0][1]).toBe("=cmd|'/c calc'!A1")
+
+    const csv = serializarCsv(header, linhas)
+    expect(csv).toContain("'=cmd|")
+    expect(csv).not.toContain(';=cmd|')
+    // e a coluna de valor sobrevive numerica
+    expect(csv).toContain(';10,00;')
   })
 
   it('mês sem movimento devolve linhas vazias com o header', () => {

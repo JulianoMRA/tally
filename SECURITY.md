@@ -42,6 +42,10 @@ de rede e sem código remoto:
   http(s) são abertas via `shell.openExternal` no navegador do SO
 - IPC tem schemas Zod em todos os canais (defense in depth)
 - SQL sempre via statements parametrizados — nenhuma string concatenada
+- Export CSV neutraliza injeção de fórmula: célula de texto começando com `=`,
+  `+`, `-`, `@`, tab ou CR sai prefixada com apóstrofo. O vetor não exige que o
+  usuário digite contra si mesmo — a importação de CSV aceita arquivo de
+  terceiro, e o texto volta para o Excel no export do mês
 - `npm audit --omit=dev --audit-level=high` roda localmente no pipeline pré-PR
   (o gate de CI que o executava saiu com os workflows em ago/2026)
 - Single-instance lock via `app.requestSingleInstanceLock()`
