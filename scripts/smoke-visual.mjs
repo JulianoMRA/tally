@@ -232,7 +232,7 @@ await page.evaluate(async () => {
     dataInicio: emDias(-60)
   })
   await api.recebimento.criarAvulso({
-    nome: 'Freela de design',
+    descricao: 'Freela de design',
     valorCentavos: 150000,
     dataEsperada: emDias(0)
   })

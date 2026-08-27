@@ -67,8 +67,12 @@ BUGS-INVESTIGADOS.md
 .stryker-tmp/
 reports/
 
-# Folha de contato do npm run smoke:visual (material de revisao, nao artefato)
-smoke-visual/
+# Folha de contato do npm run smoke:visual (material de revisao, nao artefato).
+# O glob cobre os destinos que o SMOKE_OUT usa na verificacao por tema
+# (smoke-claro/, smoke-escuro/) — antes so `smoke-visual/` era ignorado, e
+# seguir o procedimento documentado deixava 39 PNGs por tema a um `git add -A`
+# de entrar num commit.
+smoke-*/
 
 # Entrega bruta da proposta de UI de ago/2026. O material versionado dela esta
 # em docs/design/referencia/proposta-2026-08/; isto aqui e o zip e a thumbnail
