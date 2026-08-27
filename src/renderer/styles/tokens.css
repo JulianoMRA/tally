@@ -181,4 +181,117 @@
   /* Medida de leitura para formulário de configuração. A página inteira não
      precisa estreitar por causa dele: quem limita é a linha do campo. */
   --form-max: 720px;
+
+  /* Par do `color-scheme: dark` do tema escuro. Declarar explicitamente nos
+     dois evita que o app herde a preferência do SO em um deles: sem isto, o
+     tema claro num Windows configurado no escuro ganharia calendário e popup
+     de select pretos sobre a interface creme. */
+  color-scheme: light;
+}
+
+/* ==============================================================
+   Papel noturno — tema escuro ([data-theme="escuro"])
+   ==============================================================
+
+   Redefine APENAS valores: nenhuma propriedade nova nasce aqui, e nenhum
+   componente sabe que este bloco existe. Token esquecido aqui herda o valor
+   claro — o que é bom, porque erro herdado aparece na hora (cor clara sobre
+   fundo escuro) em vez de sumir sem deixar rastro. O guard de contraste em
+   __tests__/contraste.test.ts confere os 22 pares de texto e superfície nos
+   dois temas.
+
+   A escolha de temperatura foi entre três paletas medidas. Esta mantém o calor
+   do creme na outra ponta da escala: fundo marrom escuro em vez de cinza ou
+   verde-preto, tinta creme amarelada, e o bronze — que no claro é só um
+   acento — assumindo o papel de marca. É a única das três em que o app
+   continua parecendo o mesmo app à noite.
+
+   Escala de superfície (contraste entre blocos, não de texto):
+     hero vs fundo    1,42:1   — mais separado que card vs fundo no claro
+     card vs fundo    1,10:1   — o claro faz 1,07:1
+     sidebar vs fundo 1,05:1
+   ============================================================== */
+
+[data-theme='escuro'] {
+  /* Superfícies. Mesma direção do claro: elevado clareia, afundado escurece. */
+  --bg: #17140e;
+  --bg-elev: #211d15;
+  --bg-sunk: #100e09;
+
+  --ink: #efe7d4;
+  --ink-2: #d2c9b3;
+  --ink-3: #99917e;
+  --ink-4: #665f4e;
+  --rule: #2b2619;
+  --rule-strong: #3d3626;
+
+  /* Marca em bronze. No claro ela é quase preta e ninguém a lê como cor —
+     aqui ela finalmente aparece. --on-brand fica escuro: sobre bronze, tinta
+     clara reprovaria. */
+  --brand: #c9a76b;
+  --brand-2: #dcc08c;
+  --on-brand: #17140e;
+
+  /* O hero é o único bloco de superfície própria, e no claro ele grita a
+     15:1 contra o creme. Escuro sobre escuro não reproduz isso: o #241d12 que
+     a proposta trazia dava 1,10:1 contra o fundo, praticamente invisível como
+     bloco. Aqui ele inverte de papel dentro do tema — deixa de ser o mais
+     escuro e passa a ser o mais claro da tela, sem virar uma laje de luz. A
+     1,42:1 ele separa mais do que qualquer card, e o texto segue creme. */
+  --forest: #3a3020;
+  --on-forest: #efe7d4;
+  --on-forest-2: #b5ab95;
+
+  /* Mais fechado que --brand de propósito: o avatar da sidebar e o item ativo
+     do menu ficariam da mesma cor, lado a lado, na mesma coluna. */
+  --bronze: #b8935a;
+
+  /* Semânticos clareados. Os do claro foram calibrados para texto sobre creme
+     e fecham demais o contraste aqui. */
+  --income: #86b98d;
+  --expense: #dd9583;
+  --pending: #e0b66d;
+  --paid: #9aae95;
+  --closed: #b0a2da;
+
+  /* Superfícies de badge: no claro são tintas pálidas do matiz, aqui são
+     tintas escuras dele. O par com o semântico acima é o que o guard mede. */
+  --income-bg: #182317;
+  --income-border: #2f452f;
+  --pending-bg: #2b2313;
+  --pending-border: #4c3f1f;
+  --expense-bg: #2d1d17;
+  --expense-border: #4f2f26;
+  --closed-bg: #221d2c;
+  --closed-border: #3b3352;
+
+  /* As três fatias do hero NÃO mudam de valor. Elas já tinham sido calibradas
+     para ler sobre fundo escuro, e o hero continua escuro nos dois temas —
+     esse foi o motivo de separar --forest de --brand em vez de inverter os
+     dois juntos. Sobre o --forest daqui elas fazem 4,56:1 a 6,39:1. */
+
+  /* Marca do limite sobre o trilho do ranking, que aqui é --bg-sunk. */
+  --limite-marca: #efe7d4;
+
+  /* Elevação no escuro se comunica por superfície e borda, não por sombra:
+     uma sombra creme não existe, e preto sobre preto não aparece. Estas ficam
+     discretas de propósito, o suficiente para descolar o que flutua. */
+  --shadow-1: 0 1px 0 rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-2: 0 1px 0 rgba(0, 0, 0, 0.2), 0 8px 24px -8px rgba(0, 0, 0, 0.44);
+  --shadow-up: 0 -8px 24px -10px rgba(0, 0, 0, 0.48);
+
+  /* O véu a 40% quase não separava: o que está atrás já é escuro. */
+  --overlay: rgba(0, 0, 0, 0.62);
+
+  /* Halos claros. Os do tema claro são tinta escura a 8% — invisíveis aqui. */
+  --focus-halo: 0 0 0 3px rgba(201, 167, 107, 0.16);
+  --error-halo: 0 0 0 3px rgba(221, 149, 131, 0.18);
+
+  /* --focus-ring não aparece aqui: ele é composto de var(--bg) e var(--brand),
+     então acompanha o tema sozinho. */
+
+  /* Faz o Chromium desenhar no tom certo o que não é nosso: calendário do
+     type="date", popup do <select>, checkbox, e a barra de rolagem. Sem isto
+     o app fica escuro e os controles do sistema continuam brancos. */
+  color-scheme: dark;
 }

@@ -41,11 +41,11 @@ const HEX_PURO = /^#[0-9a-fA-F]{6}$/
  * linha porque é assim que o arquivo é formatado pelo Prettier, e comentários
  * saem antes para não doarem falsos positivos ao regex de propriedade.
  */
-function lerBloco(css: string, seletor: string): Map<string, string> {
+function lerBloco(css: string, seletor: RegExp): Map<string, string> {
   const limpo = css.replace(SEM_COMENTARIOS, '')
-  const inicio = limpo.indexOf(seletor)
-  if (inicio === -1) return new Map()
-  const abre = limpo.indexOf('{', inicio)
+  const achado = limpo.match(seletor)
+  if (achado?.index === undefined) return new Map()
+  const abre = limpo.indexOf('{', achado.index)
   const fecha = limpo.indexOf('\n}', abre)
   const corpo = limpo.slice(abre + 1, fecha)
 
@@ -57,20 +57,26 @@ function lerBloco(css: string, seletor: string): Map<string, string> {
 }
 
 /**
+ * Aspas simples, duplas ou nenhuma. O Prettier hoje deixa simples, mas casar o
+ * seletor por string literal transformaria uma reformatação em guard que passa
+ * sem conferir nada — modo de falha pior que não ter guard.
+ */
+const SELETOR_ESCURO = /\[data-theme\s*=\s*['"]?escuro['"]?\s*\]/
+
+/**
  * Temas encontrados no arquivo. O escuro só redefine valores, então herda o
  * claro por baixo — e é justamente por herdar que um token esquecido lá vira
  * uma cor clara sobre fundo escuro em vez de sumir sem deixar rastro.
  */
 function lerTemas(): Map<string, Map<string, string>> {
   const css = readFileSync(TOKENS_CSS, 'utf8')
-  const claro = lerBloco(css, ':root')
-  const temas = new Map([['claro', claro]])
+  const claro = lerBloco(css, /:root/)
+  const escuro = lerBloco(css, SELETOR_ESCURO)
 
-  const escuro = lerBloco(css, "[data-theme='escuro']")
-  if (escuro.size > 0) {
-    temas.set('escuro', new Map([...claro, ...escuro]))
-  }
-  return temas
+  return new Map([
+    ['claro', claro],
+    ['escuro', new Map([...claro, ...escuro])]
+  ])
 }
 
 /** [texto, superfície, mínimo, o que é na tela] */
@@ -99,6 +105,65 @@ const PARES: ReadonlyArray<readonly [string, string, number, string]> = [
   ['--fatia-faturas', '--forest', 3, 'fatia de faturas na barra do hero'],
   ['--fatia-fora-cartao', '--forest', 3, 'fatia de fora do cartão na barra do hero']
 ]
+
+/** Um token "carrega cor" se o valor tem hex ou rgb()/rgba() literal. */
+const CARREGA_COR = /#[0-9a-fA-F]{3,8}\b|rgba?\(/
+
+/**
+ * Tokens que herdam do claro DE PROPÓSITO, com o motivo. Qualquer outro token
+ * de cor precisa de contraparte no escuro — herdar por esquecimento é como um
+ * badge acaba com tinta clara sobre superfície clara.
+ */
+const HERANCA_DELIBERADA = new Map([
+  ['--fatia-entradas', 'calibrada para fundo escuro; o hero é escuro nos dois temas'],
+  ['--fatia-faturas', 'idem'],
+  ['--fatia-fora-cartao', 'idem']
+])
+
+describe('paridade entre os temas', () => {
+  it('todo token de cor do tema claro tem contraparte no escuro', () => {
+    const css = readFileSync(TOKENS_CSS, 'utf8')
+    const claro = lerBloco(css, /:root/)
+    const escuro = lerBloco(css, SELETOR_ESCURO)
+
+    expect(
+      escuro.size,
+      'O bloco [data-theme="escuro"] sumiu de tokens.css, ou o seletor mudou de ' +
+        'forma que o guard não reconhece. Sem ele, o teste de contraste do tema ' +
+        'escuro estaria conferindo a paleta clara e passando à toa.'
+    ).toBeGreaterThan(0)
+
+    const semContraparte: string[] = []
+    for (const [token, valor] of claro) {
+      if (!CARREGA_COR.test(valor)) continue
+      if (HERANCA_DELIBERADA.has(token)) continue
+      if (!escuro.has(token)) semContraparte.push(`${token}: ${valor}`)
+    }
+
+    expect(
+      semContraparte,
+      'Tokens de cor sem valor no tema escuro. Defina em [data-theme="escuro"], ' +
+        'ou registre em HERANCA_DELIBERADA com o motivo:\n' +
+        semContraparte.join('\n')
+    ).toEqual([])
+  })
+
+  it('não define no escuro token que o claro não tem', () => {
+    const css = readFileSync(TOKENS_CSS, 'utf8')
+    const claro = lerBloco(css, /:root/)
+    const escuro = lerBloco(css, SELETOR_ESCURO)
+
+    // color-scheme não é custom property e não entra na varredura.
+    const orfaos = [...escuro.keys()].filter((t) => !claro.has(t))
+
+    expect(
+      orfaos,
+      `Token que só existe no tema escuro:\n${orfaos.join('\n')}\n` +
+        'O :root é a definição da paleta — cor cuja única definição estivesse ' +
+        'atrás de [data-theme] simplesmente não existiria no tema claro.'
+    ).toEqual([])
+  })
+})
 
 describe('contraste da paleta', () => {
   const temas = lerTemas()
