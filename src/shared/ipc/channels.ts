@@ -56,7 +56,6 @@ export const FATURA_IPC_CHANNELS = {
 export const RENDA_IPC_CHANNELS = {
   list: 'renda:list',
   findById: 'renda:findById',
-  criarAvulsa: 'renda:criar-avulsa',
   criarRecorrente: 'renda:criar-recorrente',
   update: 'renda:update',
   arquivar: 'renda:arquivar',
@@ -67,6 +66,7 @@ export const RECEBIMENTO_IPC_CHANNELS = {
   criarAvulso: 'recebimento:criar-avulso',
   listar: 'recebimento:listar',
   marcarRecebido: 'recebimento:marcar-recebido',
+  atualizar: 'recebimento:atualizar',
   excluir: 'recebimento:excluir'
 } as const
 

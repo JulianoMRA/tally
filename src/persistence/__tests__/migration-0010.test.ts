@@ -26,8 +26,16 @@ describe('migration 0010_data_referencia_segue_a_fatura', () => {
     ).run()
   })
 
+  // Escopado ate a 0010 de proposito. A 0011 reconstroi tabelas com DROP, e
+  // como o wrapper do node-sqlite3-wasm nunca finaliza statements, um SELECT
+  // que o teste preparou antes deixa o DROP com "database table is locked".
+  // Nao afeta producao: la o runMigrations roda logo apos o openDatabase, em
+  // conexao sem nenhum prepare anterior (electron/main.ts, boot e reabertura).
   function aplicar0010(): void {
-    runMigrations(db)
+    runMigrations(
+      db,
+      loadBundledMigrations().filter((m) => m.version <= '0010_data_referencia_segue_a_fatura')
+    )
   }
 
   function inserirFatura(id: number, mesReferencia: string): void {
@@ -124,7 +132,7 @@ describe('migration 0010_data_referencia_segue_a_fatura', () => {
 
     aplicar0010()
     const depois = refDe(1)
-    runMigrations(db)
+    aplicar0010()
 
     expect(refDe(1)).toBe(depois)
   })

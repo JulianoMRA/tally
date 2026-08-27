@@ -14,13 +14,6 @@ const valorSchema = z
   .int()
   .min(1, 'Valor deve ser maior que zero')
 
-export const criarRendaAvulsaInputSchema = z.object({
-  nome: nomeSchema,
-  valorPadraoCentavos: valorSchema
-})
-
-export type CriarRendaAvulsaInput = z.infer<typeof criarRendaAvulsaInputSchema>
-
 export const criarRendaRecorrenteInputSchema = z.object({
   nome: nomeSchema,
   valorPadraoCentavos: valorSchema,
@@ -60,7 +53,6 @@ export type ResultadoCriarRendaRecorrente = {
 export type RendaApi = {
   list: (options?: ListRendaOptions) => Promise<Renda[]>
   findById: (id: number) => Promise<Renda | null>
-  criarAvulsa: (input: CriarRendaAvulsaInput) => Promise<Renda>
   criarRecorrente: (input: CriarRendaRecorrenteInput) => Promise<ResultadoCriarRendaRecorrente>
   update: (id: number, input: UpdateRendaInput) => Promise<Renda>
   arquivar: (id: number) => Promise<Renda>

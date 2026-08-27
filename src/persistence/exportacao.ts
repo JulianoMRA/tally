@@ -66,7 +66,7 @@ export function montarLinhasDoMes(db: Database, mesReferencia: string): TabelaEx
   for (const recebimento of detalhe.recebimentos) {
     linhas.push([
       'Recebimento',
-      recebimento.rendaNome ?? 'Avulso',
+      recebimento.nome,
       '',
       '',
       '',

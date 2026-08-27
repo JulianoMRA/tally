@@ -30,7 +30,6 @@ export { FATURA_IPC_CHANNELS, type FaturaDetalhada, type FaturaApi } from './fat
 
 export {
   RENDA_IPC_CHANNELS,
-  type CriarRendaAvulsaInput,
   type CriarRendaRecorrenteInput,
   type UpdateRendaInput,
   type ListRendaOptions,
@@ -40,6 +39,7 @@ export {
 export {
   RECEBIMENTO_IPC_CHANNELS,
   type CriarRecebimentoAvulsoInput,
+  type AtualizarRecebimentoInput,
   type MarcarRecebidoInput,
   type ExcluirRecebimentoInput,
   type ListarRecebimentosInput,

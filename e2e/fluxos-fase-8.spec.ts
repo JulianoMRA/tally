@@ -56,24 +56,49 @@ test.describe('Faturas — valor na lista', () => {
   })
 })
 
-test.describe('Renda avulsa — fonte reaproveitada', () => {
-  test('dois avulsos na mesma fonte não duplicam a fonte', async ({ app }) => {
+test.describe('Entrada avulsa sem fonte de renda', () => {
+  test('registrar avulso nao cria fonte e nao pede uma', async ({ app }) => {
     const { page } = await semear(app)
     await page.getByRole('link', { name: 'Rendas' }).click()
 
-    // O seed já criou a fonte "Freela Seed" pelo primeiro avulso. O segundo
-    // reusa a fonte em vez de criar outra — antes, cada "+ Novo avulso"
-    // inseria uma renda, e três freelas viravam três fontes idênticas.
+    // Antes daqui, o painel abria com um seletor de fonte e o registro criava
+    // (ou reusava) uma `renda` Avulsa — a entrada nao tinha onde guardar o
+    // proprio nome. Agora ela tem, e a aba Fontes nao e tocada.
     await page.getByRole('button', { name: '+ Novo avulso' }).click()
-    const dialogo = page.getByRole('dialog', { name: 'Novo recebimento avulso' })
-    await dialogo.getByLabel('Fonte').selectOption({ label: 'Freela Seed' })
+    const dialogo = page.getByRole('dialog', { name: 'Nova entrada avulsa' })
+
+    await expect(dialogo.getByLabel('Fonte')).toHaveCount(0)
+
+    await dialogo.getByLabel('Descrição').fill('Venda da bicicleta')
     await dialogo.getByLabel('Valor (R$)').fill('300,00')
     await dialogo.getByRole('button', { name: 'Registrar' }).click()
 
     await expect(dialogo).toHaveCount(0)
+    await expect(page.getByText('Venda da bicicleta')).toBeVisible()
 
+    // A aba Fontes segue com as recorrentes do seed, sem nenhuma avulsa nova.
     await page.getByRole('tab', { name: 'Fontes de renda' }).click()
-    await expect(page.getByText('Freela Seed')).toHaveCount(1)
+    await expect(page.getByText('Venda da bicicleta')).toHaveCount(0)
+    await expect(page.getByText('Freela Seed')).toHaveCount(0)
+  })
+
+  test('editar a entrada corrige a descricao sem passar por fonte nenhuma', async ({ app }) => {
+    const { page } = await semear(app)
+    await page.getByRole('link', { name: 'Rendas' }).click()
+
+    // O seed cria "Freela Seed" como entrada avulsa. Antes, corrigir esse nome
+    // exigia editar a fonte auto-criada na aba Fontes; agora a propria linha
+    // tem a acao.
+    const linha = page.locator('li', { hasText: 'Freela Seed' }).first()
+    await acionarNoMenuDaLinha(page, linha, 'Editar')
+
+    const dialogo = page.getByRole('dialog', { name: 'Editar entrada avulsa' })
+    await dialogo.getByLabel('Descrição').fill('Freela do cliente X')
+    await dialogo.getByRole('button', { name: 'Salvar' }).click()
+
+    await expect(dialogo).toHaveCount(0)
+    await expect(page.getByText('Freela do cliente X')).toBeVisible()
+    await expect(page.getByText('Freela Seed')).toHaveCount(0)
   })
 })
 

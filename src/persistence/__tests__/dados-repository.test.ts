@@ -50,7 +50,7 @@ describe('DadosRepository', () => {
     const payload = new DadosRepository(db).exportar()
 
     expect(payload.formatVersion).toBe(1)
-    expect(payload.app.schemaVersion).toMatch(/^0010/)
+    expect(payload.app.schemaVersion).toMatch(/^0011/)
     expect(payload.tables.cartao).toHaveLength(1)
     expect(payload.tables.orcamento).toHaveLength(1)
     expect(payload.tables.parcela).toHaveLength(1)
@@ -178,6 +178,49 @@ describe('DadosRepository', () => {
     // Rollback: os dados originais do destino permanecem intactos.
     expect(contar(destino, 'cartao')).toBe(1)
     expect(destino.prepare('SELECT nome FROM cartao').get()).toEqual({ nome: 'Antigo' })
+    origem.close()
+    destino.close()
+  })
+  it('converte fonte Avulsa legada do arquivo em descricao do recebimento', () => {
+    // Export gerado antes da migration 0011: o schema atual recusa
+    // `tipo = 'Avulsa'` e recusa recebimento sem descricao. Sem a conversao,
+    // um backup antigo deixaria de ser importavel.
+    const origem = novoBanco()
+    seedBasico(origem)
+    const payload = new DadosRepository(origem).exportar()
+
+    payload.tables.renda.push({
+      id: 900,
+      nome: 'Freela legado',
+      tipo: 'Avulsa',
+      valor_padrao_centavos: 50000,
+      dia_esperado: null,
+      ativa: 1,
+      created_at: '2026-06-01T00:00:00.000Z',
+      updated_at: '2026-06-01T00:00:00.000Z'
+    })
+    payload.tables.recebimento.push({
+      id: 900,
+      renda_id: 900,
+      valor_centavos: 50000,
+      data_esperada: '2026-06-10',
+      data_recebida: null,
+      status: 'Esperado',
+      created_at: '2026-06-01T00:00:00.000Z',
+      updated_at: '2026-06-01T00:00:00.000Z'
+    })
+
+    const destino = novoBanco()
+    expect(() => new DadosRepository(destino).importar(payload)).not.toThrow()
+
+    const linha = destino
+      .prepare('SELECT renda_id, descricao FROM recebimento WHERE id = 900')
+      .get() as { renda_id: number | null; descricao: string | null }
+    expect(linha).toEqual({ renda_id: null, descricao: 'Freela legado' })
+
+    const fonte = destino.prepare('SELECT id FROM renda WHERE id = 900').get()
+    expect(fonte).toBeUndefined()
+
     origem.close()
     destino.close()
   })

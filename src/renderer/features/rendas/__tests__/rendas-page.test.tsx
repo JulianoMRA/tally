@@ -9,7 +9,8 @@ function recebimento(overrides: Partial<RecebimentoComContexto> = {}): Recebimen
   return {
     id: 1,
     rendaId: 10,
-    rendaNome: 'Bolsa PET',
+    descricao: null,
+    nome: 'Bolsa PET',
     valorCentavos: 90000,
     dataEsperada: '2026-08-05',
     dataRecebida: null,

@@ -134,7 +134,7 @@ export default function PrintMensalPage() {
             <tbody>
               {detalhe.recebimentos.map((r) => (
                 <tr key={r.id}>
-                  <td>{r.rendaNome ?? 'Avulso'}</td>
+                  <td>{r.nome}</td>
                   <td>{formatarDataIso(r.dataEsperada)}</td>
                   <td>{r.status}</td>
                   <td className={styles.num}>{formatBRL(r.valorCentavos)}</td>

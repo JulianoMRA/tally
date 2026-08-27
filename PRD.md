@@ -150,10 +150,10 @@ prevista; entram no escopo quando forem priorizadas.
 
 ### 4.6 Rendas e Recebimentos (RF-REN)
 
-- **RF-REN-01** — Cadastrar fonte de renda com nome, tipo (Avulsa ou Recorrente), valor padrão, dia esperado de recebimento (se recorrente) e flag ativo.
+- **RF-REN-01** — Cadastrar fonte de renda com nome, valor padrão, dia esperado de recebimento e flag ativo. **Fonte de renda existe apenas para entrada constante** — toda fonte é Recorrente. O tipo `Avulsa` foi removido na migration 0011: ele existia só porque o recebimento não tinha onde guardar um nome, e o `valor_padrão` que exigia de uma fonte avulsa não alimentava cálculo nenhum.
 - **RF-REN-02** — Renda recorrente gera recebimentos esperados para os próximos N meses (configurável, default 12).
 - **RF-REN-03** — Marcar recebimento como recebido, com data efetiva.
-- **RF-REN-04** — Cadastrar recebimento avulso (freela, presente, etc.) sem fonte recorrente vinculada. Internamente cria uma fonte Avulsa com o mesmo nome; excluir o último recebimento dessa fonte exclui a fonte junto (sem órfãs na lista de rendas).
+- **RF-REN-04** — Cadastrar **entrada avulsa** (freela, presente, venda, reembolso) informando apenas descrição, valor, data esperada e — se já recebida — data de recebimento. **Não exige nem cria fonte de renda:** a descrição vive na própria linha (`recebimento.descricao`). O schema torna os dois estados mutuamente exclusivos: ou o recebimento vem de uma fonte (`renda_id`), ou tem nome próprio (`descricao`), nunca ambos e nunca nenhum. Editar uma entrada avulsa (descrição, valor, datas) é permitido; editar recebimento de fonte recorrente não, porque valor e dia derivam da fonte (RF-REN-05/06) e o próximo reajuste sobrescreveria a alteração.
 - **RF-REN-05** — Editar valor padrão da fonte recorrente afeta recebimentos futuros ainda não recebidos.
 - **RF-REN-06** — Editar fonte de renda: nome, valor padrão e (Recorrente) dia esperado. Mudar dia esperado recalcula `data_esperada` dos recebimentos Esperado, clampando ao último dia de meses curtos. Recebidos preservam.
 - **RF-REN-07** — **Status do recebimento em uma frase.** A linha deixa de ter duas colunas de data — "esperada DD/MM/AAAA" e "Recebido DD/MM/AAAA" — que diziam quase a mesma coisa. Uma frase só descreve o que aconteceu: `na conta em DD/MM` quando o dinheiro entrou (ou `na conta`, quando a data efetiva não foi registrada), `previsto para hoje`, `previsto para DD/MM · em N dias` quando ainda vai cair, e `previsto para DD/MM · atrasado N dias` quando a data passou sem entrada — este último destacado, porque é o caso que pede ação. Um **ponto de estado** acompanha a linha: preenchido quando o dinheiro está na conta, anel vazado quando é previsão. O valor só usa a cor de entrada quando já entrou.
@@ -308,14 +308,16 @@ CHECK constraint: `forma_pagamento = 'Credito'` ⇔ `cartao_id IS NOT NULL`.
 
 ### Renda
 
-`id, nome, tipo (Avulsa|Recorrente), valor_padrao_centavos, dia_esperado (1–31, nullable para Avulsa), ativa, created_at, updated_at`
+`id, nome, tipo (sempre 'Recorrente'), valor_padrao_centavos, dia_esperado (1–31, NOT NULL), ativa, created_at, updated_at`
 
 > Coluna `categoria_id` removida na migration 0003 (cobranças a terceiros viraram rendas avulsas — Slice 12.1).
-> CHECK: `tipo = 'Recorrente'` ⇒ `dia_esperado IS NOT NULL`.
+> CHECK: `tipo = 'Recorrente'`. O valor `Avulsa` saiu na migration 0011 (RF-REN-04); a coluna permanece documentando a intenção. `dia_esperado` virou NOT NULL na mesma migration — a exigência era condicional ao tipo, e sem `Avulsa` ela vale sempre.
 
 ### Recebimento
 
-`id, renda_id (nullable), valor_centavos, data_esperada, data_recebida (nullable), status (Esperado|Recebido), created_at, updated_at`
+`id, renda_id (nullable), descricao (nullable), valor_centavos, data_esperada, data_recebida (nullable), status (Esperado|Recebido), created_at, updated_at`
+
+> CHECK: `renda_id` e `descricao` são mutuamente exclusivos e exatamente um está preenchido — recebimento de fonte recorrente herda o nome dela; entrada avulsa traz o seu. Adicionados na migration 0011.
 
 ---
 

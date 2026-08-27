@@ -146,7 +146,7 @@ export async function semear(app: ElectronApplication): Promise<{
       dataInicio: emDias(-60)
     })
     await api.recebimento.criarAvulso({
-      nome: 'Freela Seed',
+      descricao: 'Freela Seed',
       valorCentavos: 150000,
       dataEsperada: emDias(0)
     })

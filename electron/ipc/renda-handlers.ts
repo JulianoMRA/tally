@@ -2,7 +2,6 @@ import type { IpcMain } from 'electron'
 import type { Database } from '../../src/persistence/database'
 import { RendaRepository } from '../../src/persistence/repositories/renda-repository'
 import {
-  criarRendaAvulsaInputSchema,
   criarRendaRecorrenteInputSchema,
   listRendaOptionsSchema,
   rendaIdSchema,
@@ -20,11 +19,6 @@ export function registerRendaHandlers(db: Database, ipcMain: IpcMain): void {
 
   ipcMain.handle(RENDA_IPC_CHANNELS.findById, (_event, payload: unknown) => {
     return repo.findById(rendaIdSchema.parse(payload))
-  })
-
-  ipcMain.handle(RENDA_IPC_CHANNELS.criarAvulsa, (_event, payload: unknown) => {
-    const input = criarRendaAvulsaInputSchema.parse(payload)
-    return repo.criarAvulsa(input)
   })
 
   ipcMain.handle(RENDA_IPC_CHANNELS.criarRecorrente, (_event, payload: unknown) => {

@@ -1,33 +1,13 @@
-import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import {
-  criarRendaAvulsaInputSchema,
-  criarRendaRecorrenteInputSchema,
-  type CriarRendaAvulsaInput,
-  type CriarRendaRecorrenteInput
-} from '@shared/ipc/renda'
-import { Button, Field, Input, SegmentedControl, type OpcaoSegmentada } from '../../components/ui'
+import { criarRendaRecorrenteInputSchema, type CriarRendaRecorrenteInput } from '@shared/ipc/renda'
+import { Button, Field, Input } from '../../components/ui'
 import styles from './rendas.module.css'
 
-type TipoForm = 'recorrente' | 'avulsa'
-
-const TIPOS_RENDA: readonly OpcaoSegmentada<TipoForm>[] = [
-  { valor: 'recorrente', rotulo: 'Recorrente' },
-  { valor: 'avulsa', rotulo: 'Avulsa' }
-]
-
-type AvulsaValues = Omit<CriarRendaAvulsaInput, 'valorPadraoCentavos'> & {
-  valorReais: string
-}
 type RecorrenteValues = Omit<CriarRendaRecorrenteInput, 'valorPadraoCentavos'> & {
   valorReais: string
 }
-
-const avulsaSchema = criarRendaAvulsaInputSchema
-  .omit({ valorPadraoCentavos: true })
-  .extend({ valorReais: z.string().regex(/^\d+([.,]\d{1,2})?$/, 'Valor inválido') })
 
 const recorrenteSchema = criarRendaRecorrenteInputSchema
   .omit({ valorPadraoCentavos: true })
@@ -38,7 +18,6 @@ function parseCentavos(reais: string): number {
 }
 
 type Props = {
-  onSalvarAvulsa: (input: CriarRendaAvulsaInput) => Promise<void>
   onSalvarRecorrente: (input: CriarRendaRecorrenteInput) => Promise<void>
 }
 
@@ -110,69 +89,20 @@ function FormRecorrente({ onSalvar }: { onSalvar: Props['onSalvarRecorrente'] })
   )
 }
 
-function FormAvulsa({ onSalvar }: { onSalvar: Props['onSalvarAvulsa'] }) {
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting }
-  } = useForm<AvulsaValues>({ resolver: zodResolver(avulsaSchema) })
-
-  async function onSubmit(values: AvulsaValues) {
-    await onSalvar({
-      nome: values.nome,
-      valorPadraoCentavos: parseCentavos(values.valorReais)
-    })
-    reset()
-  }
-
-  return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <Field label="Nome" error={errors.nome?.message} required>
-        <Input type="text" {...register('nome')} placeholder="Ex: Freela X" error={!!errors.nome} />
-      </Field>
-
-      <Field label="Valor padrão (R$)" error={errors.valorReais?.message} required>
-        <Input
-          type="text"
-          inputMode="decimal"
-          {...register('valorReais')}
-          placeholder="0,00"
-          error={!!errors.valorReais}
-        />
-      </Field>
-
-      <p className={styles.empty}>Fonte avulsa não gera recebimentos automáticos.</p>
-
-      <div className={styles.formActions}>
-        <Button type="submit" variant="primary" disabled={isSubmitting}>
-          {isSubmitting ? 'Salvando…' : 'Cadastrar fonte'}
-        </Button>
-      </div>
-    </form>
-  )
-}
-
-export function RendaForm({ onSalvarAvulsa, onSalvarRecorrente }: Props) {
-  const [tipo, setTipo] = useState<TipoForm>('recorrente')
-
+/**
+ * Cadastro de fonte de renda.
+ *
+ * Havia um SegmentedControl escolhendo entre Recorrente e Avulsa. Fonte avulsa
+ * deixou de existir na migration 0011 — entrada avulsa vive sozinha, na aba
+ * Recebimentos —, e com uma opcao so o seletor era cromo sem escolha. O
+ * "valor padrao" que ele pedia para a avulsa nao alimentava calculo nenhum:
+ * so era ecoado na lista, congelado no valor do primeiro recebimento.
+ */
+export function RendaForm({ onSalvarRecorrente }: Props) {
   return (
     <div className={styles.form}>
-      <h2 className={styles.formTitle}>Nova fonte de renda</h2>
-
-      <SegmentedControl
-        opcoes={TIPOS_RENDA}
-        valor={tipo}
-        onChange={setTipo}
-        label="Tipo de fonte de renda"
-        size="md"
-      />
-
-      {tipo === 'recorrente' ? (
-        <FormRecorrente onSalvar={onSalvarRecorrente} />
-      ) : (
-        <FormAvulsa onSalvar={onSalvarAvulsa} />
-      )}
+      <h2 className={styles.formTitle}>Nova fonte recorrente</h2>
+      <FormRecorrente onSalvar={onSalvarRecorrente} />
     </div>
   )
 }

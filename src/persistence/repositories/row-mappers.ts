@@ -211,6 +211,7 @@ export function mapRenda(row: RendaRow): Renda {
 export type RecebimentoRow = {
   id: number
   renda_id: number | null
+  descricao: string | null
   valor_centavos: number
   data_esperada: string
   data_recebida: string | null
@@ -223,6 +224,7 @@ export function mapRecebimento(row: RecebimentoRow): Recebimento {
   return {
     id: row.id,
     rendaId: row.renda_id,
+    descricao: row.descricao,
     valorCentavos: row.valor_centavos,
     dataEsperada: row.data_esperada,
     dataRecebida: row.data_recebida,

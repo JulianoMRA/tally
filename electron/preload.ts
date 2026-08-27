@@ -39,13 +39,13 @@ import type {
   DefinirNotaETagsInput
 } from '@shared/ipc/despesa'
 import type {
-  CriarRendaAvulsaInput,
   CriarRendaRecorrenteInput,
   UpdateRendaInput,
   ListRendaOptions
 } from '@shared/ipc/renda'
 import type {
   CriarRecebimentoAvulsoInput,
+  AtualizarRecebimentoInput,
   MarcarRecebidoInput,
   ExcluirRecebimentoInput,
   ListarRecebimentosInput
@@ -201,8 +201,6 @@ contextBridge.exposeInMainWorld('api', {
   renda: {
     list: (options?: ListRendaOptions) => ipcRenderer.invoke(RENDA_IPC_CHANNELS.list, options),
     findById: (id: number) => ipcRenderer.invoke(RENDA_IPC_CHANNELS.findById, id),
-    criarAvulsa: (input: CriarRendaAvulsaInput) =>
-      ipcRenderer.invoke(RENDA_IPC_CHANNELS.criarAvulsa, input),
     criarRecorrente: (input: CriarRendaRecorrenteInput) =>
       ipcRenderer.invoke(RENDA_IPC_CHANNELS.criarRecorrente, input),
     update: (id: number, input: UpdateRendaInput) =>
@@ -217,6 +215,8 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke(RECEBIMENTO_IPC_CHANNELS.listar, input ?? {}),
     marcarRecebido: (input: MarcarRecebidoInput) =>
       ipcRenderer.invoke(RECEBIMENTO_IPC_CHANNELS.marcarRecebido, input),
+    atualizar: (input: AtualizarRecebimentoInput) =>
+      ipcRenderer.invoke(RECEBIMENTO_IPC_CHANNELS.atualizar, input),
     excluir: (input: ExcluirRecebimentoInput) =>
       ipcRenderer.invoke(RECEBIMENTO_IPC_CHANNELS.excluir, input)
   },

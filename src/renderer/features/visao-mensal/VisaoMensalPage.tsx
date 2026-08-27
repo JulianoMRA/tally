@@ -50,7 +50,7 @@ const ABAS: readonly OpcaoSegmentada<Aba>[] = [
 ]
 
 const COMPARADORES_RECEBIMENTOS = {
-  fonte: alfabetico<RecebimentoComContexto>((r) => r.rendaNome),
+  fonte: alfabetico<RecebimentoComContexto>((r) => r.nome),
   data: porData<RecebimentoComContexto>((r) => r.dataEsperada),
   status: alfabetico<RecebimentoComContexto>((r) => r.status),
   valor: porNumero<RecebimentoComContexto>((r) => r.valorCentavos)
@@ -114,7 +114,7 @@ export default function VisaoMensalPage() {
         status: f.fatura.status
       })),
       recebimentos: detalhe.recebimentos.map((r) => ({
-        fonte: r.rendaNome,
+        fonte: r.nome,
         dataEsperada: r.dataEsperada,
         valorCentavos: r.valorCentavos,
         status: r.status
@@ -315,7 +315,7 @@ export default function VisaoMensalPage() {
                     <tbody>
                       {recebimentos.itensOrdenados.map((r) => (
                         <tr key={r.id}>
-                          <td>{r.rendaNome ?? '—'}</td>
+                          <td>{r.nome}</td>
                           <td className="mono">{formatarDataIso(r.dataEsperada)}</td>
                           <td className={styles.colStatus}>
                             {r.status === 'Recebido' ? (

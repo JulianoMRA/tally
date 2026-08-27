@@ -3,6 +3,7 @@ import type { Database } from '../../src/persistence/database'
 import { RecebimentoRepository } from '../../src/persistence/repositories/recebimento-repository'
 import {
   criarRecebimentoAvulsoInputSchema,
+  atualizarRecebimentoInputSchema,
   marcarRecebidoInputSchema,
   excluirRecebimentoInputSchema,
   listarRecebimentosInputSchema,
@@ -14,7 +15,7 @@ export function registerRecebimentoHandlers(db: Database, ipcMain: IpcMain): voi
 
   ipcMain.handle(RECEBIMENTO_IPC_CHANNELS.criarAvulso, (_event, payload: unknown) => {
     const input = criarRecebimentoAvulsoInputSchema.parse(payload)
-    const recebimento = repo.criarAvulsoCompleto(input)
+    const recebimento = repo.criarAvulso(input)
     return { recebimento }
   })
 
@@ -26,6 +27,10 @@ export function registerRecebimentoHandlers(db: Database, ipcMain: IpcMain): voi
   ipcMain.handle(RECEBIMENTO_IPC_CHANNELS.marcarRecebido, (_event, payload: unknown) => {
     const { recebimentoId, dataRecebida } = marcarRecebidoInputSchema.parse(payload)
     return repo.marcarRecebido(recebimentoId, dataRecebida)
+  })
+
+  ipcMain.handle(RECEBIMENTO_IPC_CHANNELS.atualizar, (_event, payload: unknown) => {
+    return repo.atualizar(atualizarRecebimentoInputSchema.parse(payload))
   })
 
   ipcMain.handle(RECEBIMENTO_IPC_CHANNELS.excluir, (_event, payload: unknown) => {
