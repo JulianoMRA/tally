@@ -1,4 +1,3 @@
-import type { Page } from '@playwright/test'
 import { test, expect } from './fixtures/electron-app'
 
 /**
