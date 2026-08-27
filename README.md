@@ -62,7 +62,7 @@ Bug reports during development follow a structured template (preconditions, step
 
 ## Status
 
-Tally has been in daily real use since **v1.0.0** and is currently at **v1.8.0**. The MVP and the whole V2 scope in [`PRD.md`](./PRD.md) are delivered; development continues in releases. The implementation was built in vertical slices — each one a thin end-to-end feature with UI, logic, persistence, and tests.
+Tally has been in daily real use since **v1.0.0** and is currently at **v1.9.0**. The MVP and the whole V2 scope in [`PRD.md`](./PRD.md) are delivered; development continues in releases. The implementation was built in vertical slices — each one a thin end-to-end feature with UI, logic, persistence, and tests.
 
 ### Roadmap
 
@@ -103,6 +103,7 @@ From here the project stopped delivering in slices and started delivering in rel
 - [x] **v1.6.2** (ago/2026) — fix release from a consistency sweep: three screens showed the raw Electron-wrapped IPC text instead of the actual error message, and a screen could hang on "Carregando…" forever because an auxiliary load had no `.catch`. Seven such unguarded loads were found; the duplicated table CSS became a shared `Table` primitive
 - [x] **v1.7.0** (ago/2026) — a custom title bar: the window had two rows of system chrome above the content, and since the sidebar already carries the brand, the app name showed up twice. The old "File" menu moved into the app — including the full JSON export/import, which lived nowhere else. Window controls stay native via `titleBarOverlay` on Windows; Linux keeps the default frame
 - [x] **v1.8.0** (ago/2026) — the title bar absorbs the page header: two stacked strips (40px bar + 56px `Topbar` carrying the `h1`) became a single 32px bar, giving ~56px of height back to every screen. The app menu now opens from the brand itself, the screen name moved into the bar and is still the `h1`, and the window controls became the app’s own — Linux keeps the native frame
+- [x] **v1.9.0** (ago/2026) — dark theme (“Papel noturno”), toggled from the app menu and remembered across restarts. Picked from three measured palettes; the one that keeps the warmth of the cream theme at the other end of the scale. Getting there meant splitting `--forest`, a token that silently did three jobs because it shared a hex with `--ink`. Along the way: the “Paga” badge failed WCAG AA and the axe sweep had never seen it, the monthly PDF would have printed white-on-white, and a spec had been red since v1.8.0
 
 Detalhes técnicos de cada slice em [`CHANGELOG.md`](./CHANGELOG.md).
 

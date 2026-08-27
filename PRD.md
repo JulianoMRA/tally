@@ -545,6 +545,7 @@ release. O que veio depois:
 | v1.6.2  | Varredura de consistência (ago/2026): mensagens de erro cruas em três telas, tela travando em "Carregando…" por rejeição sem `.catch`, e o CSS de tabela duplicado vira o primitivo `Table`           |
 | v1.7.0  | Barra de título própria (ago/2026): as duas faixas de cromo do sistema viram uma, o menu "Arquivo" migra para dentro do app e a marca deixa de aparecer duas vezes                                    |
 | v1.8.0  | Barra funde com o cabeçalho (ago/2026): 88px de cromo viram 32px, o nome da tela sobe para a barra, o menu sai da marca e os controles de janela passam a ser do app                                  |
+| v1.9.0  | Tema escuro (ago/2026): paleta Papel noturno alternável pelo menu do app, com a divisão de `--forest` que ela exigiu, o PDF mensal blindado contra o tema e três defeitos anteriores corrigidos       |
 
 O V2 da seção 3.2 está integralmente entregue.
 
