@@ -64,19 +64,31 @@ test.describe('Tema', () => {
     await expect(page.getByRole('menuitem', { name: 'Tema claro' })).toBeVisible()
   })
 
-  // A troca não pode recarregar a janela: formulário em edição se perderia.
+  /**
+   * A troca não pode recarregar a janela: estado de tela em edição se perderia.
+   *
+   * O campo de busca de Saídas serve de prova por ser estado puramente do
+   * cliente — não vem do banco e não sobrevive a um reload. Se a troca de tema
+   * recarregasse, ele voltaria vazio.
+   *
+   * A primeira versão deste teste usava o formulário de Categorias, que vive
+   * num SidePanel. Não funciona, e o motivo é comportamento correto do app: o
+   * overlay do painel é modal e cobre a barra de título, então o menu não é
+   * clicável enquanto ele está aberto.
+   */
   test('a troca não recarrega a janela nem descarta o que está digitado', async ({ app }) => {
     const page = await abrir(app)
 
-    await page.getByRole('link', { name: 'Categorias' }).click()
-    const nome = page.getByLabel('Nome', { exact: true })
-    await nome.fill('Rascunho que não pode sumir')
+    await page.getByRole('link', { name: 'Saídas' }).click()
+    const busca = page.getByPlaceholder('Buscar por descrição…')
+    await busca.fill('rascunho que não pode sumir')
 
     await abrirMenuDoApp(page)
     await page.getByRole('menuitem', { name: 'Tema escuro' }).click()
 
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'escuro')
-    await expect(nome).toHaveValue('Rascunho que não pode sumir')
+    await expect(busca).toHaveValue('rascunho que não pode sumir')
+    await expect(page.getByRole('heading', { name: 'Saídas', exact: true })).toBeVisible()
   })
 
   /**

@@ -94,9 +94,17 @@ export async function levarFaturasAoFimDoCiclo(page: Page): Promise<FaturasNoCic
     // exige fechar antes — é o ciclo Aberta → Fechada → Paga do RN-06.
     const [paga, fechada] = antigas
 
-    await api.fatura.fechar(paga.id)
-    await api.fatura.pagar(paga.id, iso(hoje))
-    await api.fatura.fechar(fechada.id)
+    // Fatura de mês passado JÁ NASCE fechada: a data de fechamento dela ficou
+    // no passado, e o app fecha sozinho. Chamar `fechar` nela devolve "Fatura
+    // já está fechada" e derruba o fixture. Daí o passo ser condicional em vez
+    // de incondicional — o que interessa é o estado final, não o caminho.
+    const fecharSePreciso = async (f: FaturaSeed): Promise<void> => {
+      if (f.status.kind === 'Aberta') await api.fatura.fechar(f.id)
+    }
+
+    await fecharSePreciso(paga)
+    if (paga.status.kind !== 'Paga') await api.fatura.pagar(paga.id, iso(hoje))
+    await fecharSePreciso(fechada)
 
     return { mesPaga: paga.mesReferencia, mesFechada: fechada.mesReferencia }
   })
