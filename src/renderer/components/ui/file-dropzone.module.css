@@ -16,7 +16,7 @@
 
 .zona:hover,
 .arrastando {
-  border-color: var(--forest);
+  border-color: var(--brand);
   background: var(--bg-elev);
 }
 
@@ -39,7 +39,7 @@
 }
 
 .acao {
-  color: var(--forest);
+  color: var(--brand);
   font-weight: 600;
   text-decoration: underline;
 }

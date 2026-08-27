@@ -223,6 +223,39 @@ prevista; entram no escopo quando forem priorizadas.
   (`autoHideMenuBar`) contendo apenas "Editar": é ele que registra os
   aceleradores de desfazer, copiar, colar e selecionar tudo.
 
+### RF-TEMA — Tema claro e escuro
+
+- **RF-TEMA-01** — **Dois temas.** **Claro** (o Cream de sempre, padrão) e
+  **Escuro** (Papel noturno). Não existe modo "seguir o sistema": a escolha é
+  explícita e só muda quando o usuário manda.
+- **RF-TEMA-02** — **A troca fica no menu do aplicativo** (RF-APP-04), como
+  primeiro item. O rótulo nomeia o **destino**, não o estado atual — "Tema
+  escuro" quando se está no claro. A barra tem 32px e já carrega marca, título,
+  subtítulo, ações e controles de janela; um botão dedicado não caberia sem
+  tirar outra coisa.
+- **RF-TEMA-03** — **A escolha persiste** em `settings.json`, campo `tema`.
+  Fora do SQLite: não consome migration nem entra no export/import de dados.
+  Arquivo gravado antes do campo existir assume Claro.
+- **RF-TEMA-04** — **A troca é imediata e não recarrega a janela.** Formulário
+  em edição não perde o que foi digitado.
+- **RF-TEMA-05** — **Sem flash na abertura.** O tema está aplicado antes do
+  primeiro paint. São duas causas distintas e as duas são tratadas: a janela
+  nasce com `backgroundColor` do tema gravado, e o preload carimba o atributo
+  de forma síncrona antes de a folha de estilo ser avaliada.
+- **RF-TEMA-06** — **Controles nativos acompanham.** `color-scheme` é
+  declarado nos dois temas, para que calendário de data, popup de `select`,
+  checkbox e barra de rolagem sejam desenhados pelo Chromium no tom certo.
+- **RF-TEMA-07** — **O relatório mensal em PDF é imune ao tema.** Papel A4 não
+  tem tema: a folha sai sempre clara, qualquer que seja a preferência. A rota
+  de impressão roda numa janela oculta com o mesmo bundle, então a imunidade é
+  garantida em duas camadas independentes.
+- **RF-TEMA-08** — **Cores de categoria e cartão não mudam.** São dado do
+  usuário e aparecem exatamente como gravadas nos dois temas. Nenhuma correção
+  automática de luminância.
+- **RF-TEMA-09** — **Contraste WCAG AA nos dois temas**, verificado por
+  cálculo sobre os pares de texto e superfície e pela varredura axe nas oito
+  telas — com os estados de ciclo de vida da fatura presentes.
+
 ---
 
 ## 5. Requisitos Não-Funcionais

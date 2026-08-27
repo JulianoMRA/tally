@@ -19,8 +19,8 @@
 }
 
 .input:focus {
-  border-color: var(--forest);
-  box-shadow: 0 0 0 3px rgba(15, 26, 20, 0.08);
+  border-color: var(--brand);
+  box-shadow: var(--focus-halo);
 }
 
 .input:disabled {
@@ -33,5 +33,5 @@
 }
 
 .error:focus {
-  box-shadow: 0 0 0 3px rgba(140, 59, 46, 0.1);
+  box-shadow: var(--error-halo);
 }

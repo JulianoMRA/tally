@@ -1,10 +1,19 @@
 /* Tally — Design tokens
-   Tema único: Cream. (Um tema escuro chegou a ser esboçado como
-   [data-theme="forest"], mas o switcher nunca foi implementado; os overrides
-   mortos foram removidos. Reintroduzir junto com o switcher quando priorizado.)
+   Dois temas: Cream (:root, padrão) e Papel noturno
+   ([data-theme="escuro"], no fim do arquivo).
+
+   Regra da casa: componente nenhum declara cor dentro de um seletor de tema.
+   O :root define a paleta clara inteira, o bloco do escuro redefine APENAS
+   valores, e todo CSS de feature consome var(). Cor cuja única definição
+   estivesse atrás de [data-theme] simplesmente não existiria no tema claro.
    ============================================================== */
 
-:root {
+/* O seletor de atributo ao lado do :root nao e redundante: ele permite fixar a
+   paleta clara num SUBCONJUNTO da arvore, independentemente do tema do
+   documento. E o que torna a folha de impressao imune ao tema — ver
+   PrintMensalPage e o comentario do bloco escuro. */
+:root,
+[data-theme='claro'] {
   /* Primary palette — Cream theme */
   --bg: #f1ebdd;
   --bg-elev: #f7f3e8;
@@ -18,15 +27,32 @@
   --rule: #d9d2bf;
   --rule-strong: #b8b19d;
 
-  /* Brand greens */
+  /* Marca — superfície e sinal de interação.
+     Era papel de --forest, que valia o mesmo hex de --ink e por isso servia
+     a três coisas ao mesmo tempo sem que a ambiguidade aparecesse: fundo de
+     controle (botão primário, item ativo da sidebar, opção ativa do
+     segmented), borda de afordância (foco de input, cartão selecionado) e
+     tinta forte de texto. No tema claro os três colidem em #0f1a14; no
+     escuro apontam para lados opostos. Quem é texto virou var(--ink); quem
+     é marca vive aqui. */
+  --brand: #0f1a14;
+  --brand-2: #1b2c22;
+  /* Texto sobre --brand. Antes era `color: var(--bg)`, que só funcionava
+     porque o fundo da página é o oposto da marca — coincidência, não
+     projeto. */
+  --on-brand: #f1ebdd;
+
+  /* Verde do hero da visão mensal — o único bloco de superfície própria da
+     interface, e o único consumidor deste token. Não é o mesmo papel de
+     --brand: o que define o hero é a separação contra --bg, e no escuro
+     manter isso exige um valor que --brand não serviria.
+     (--forest-2 saiu junto com --sage, --sage-2 e --bronze-2: os quatro
+     ficaram sem consumidor depois da divisão, e token de cor sem consumidor
+     é valor que alguém teria de inventar de novo a cada tema.) */
   --forest: #0f1a14;
-  --forest-2: #1b2c22;
-  --sage: #5b7a5e;
-  --sage-2: #91a992;
 
   /* Bronze — income / positive accent */
   --bronze: #a88454;
-  --bronze-2: #c9a76b;
 
   /* Semantic */
   --income: #3f6e47;
@@ -37,7 +63,13 @@
      varredura axe passou a rodar com dados na tela: badge nenhum renderiza na
      base vazia. */
   --pending: #8a6a1f;
-  --paid: #5b7a5e;
+  /* paid: #4e6b51 (era #5b7a5e) — 4,28:1 sobre --income-bg reprovava no WCAG
+     AA para texto pequeno no badge "Paga"; agora 5,30:1, o mesmo patamar de
+     --income sobre a mesma superfície. Terceira vez que este defeito aparece,
+     e sempre pelo mesmo motivo: o badge não existe na tela sem o dado que o
+     produz. --pending precisou de dados; este precisou de uma fatura fechada
+     E paga, que o seed nunca criava. Ver e2e/fixtures/ciclo-de-vida.ts. */
+  --paid: #4e6b51;
 
   /* Superfícies semânticas — fundo + borda dos badges e banners de status.
      Pareadas com os semânticos acima. --closed é o roxo de Fechada/Projeção,
@@ -118,8 +150,28 @@
 
   /* Anel de foco. Não existia: o app usava o outline default do Chromium
      (0,8px laranja) sobre fundo creme, e Input/Select ainda faziam
-     `outline: none`. Navegar por teclado era praticamente invisível. */
-  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--forest);
+     `outline: none`. Navegar por teclado era praticamente invisível.
+
+     O halo interno usa --bg, mas boa parte do que recebe foco está sobre
+     --bg-elev ou --bg-sunk: nesses casos ele não some no fundo, apenas não
+     o acompanha. Trocar por `outline` + `outline-offset` resolveria de vez
+     (o outline pinta sobre o que estiver atrás, sem supor cor), mas muda
+     pixel, e este passe existe justamente para não mudar nenhum. Fica
+     anotado para depois. */
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--brand);
+
+  /* Véu dos modais (Modal, ConfirmDialog, SidePanel). Era rgba(0,0,0,0.4)
+     repetido nos três. O guard de cores só varre hex, então rgba passava
+     batido — mas um véu preto sobre fundo escuro quase não separa o modal
+     do que está atrás, e é no escuro que ele precisa de outro valor. O valor
+     aqui é o literal que já estava nos três, sem um dígito de diferença:
+     este passe move o valor de lugar, não muda o que ele é. */
+  --overlay: rgba(0, 0, 0, 0.4);
+
+  /* Halos de 3px de Input e Select. Mesma história: literais repetidos que
+     precisam de valor próprio por tema. */
+  --focus-halo: 0 0 0 3px rgba(15, 26, 20, 0.08);
+  --error-halo: 0 0 0 3px rgba(140, 59, 46, 0.1);
 
   /* Largura de página — UMA, consumida só pelo PageContainer. Eram três tiers
      (narrow 760, default 1200, wide 1760), e a medição mostrou que na janela
@@ -134,4 +186,117 @@
   /* Medida de leitura para formulário de configuração. A página inteira não
      precisa estreitar por causa dele: quem limita é a linha do campo. */
   --form-max: 720px;
+
+  /* Par do `color-scheme: dark` do tema escuro. Declarar explicitamente nos
+     dois evita que o app herde a preferência do SO em um deles: sem isto, o
+     tema claro num Windows configurado no escuro ganharia calendário e popup
+     de select pretos sobre a interface creme. */
+  color-scheme: light;
+}
+
+/* ==============================================================
+   Papel noturno — tema escuro ([data-theme="escuro"])
+   ==============================================================
+
+   Redefine APENAS valores: nenhuma propriedade nova nasce aqui, e nenhum
+   componente sabe que este bloco existe. Token esquecido aqui herda o valor
+   claro — o que é bom, porque erro herdado aparece na hora (cor clara sobre
+   fundo escuro) em vez de sumir sem deixar rastro. O guard de contraste em
+   __tests__/contraste.test.ts confere os 22 pares de texto e superfície nos
+   dois temas.
+
+   A escolha de temperatura foi entre três paletas medidas. Esta mantém o calor
+   do creme na outra ponta da escala: fundo marrom escuro em vez de cinza ou
+   verde-preto, tinta creme amarelada, e o bronze — que no claro é só um
+   acento — assumindo o papel de marca. É a única das três em que o app
+   continua parecendo o mesmo app à noite.
+
+   Escala de superfície (contraste entre blocos, não de texto):
+     hero vs fundo    1,42:1   — mais separado que card vs fundo no claro
+     card vs fundo    1,10:1   — o claro faz 1,07:1
+     sidebar vs fundo 1,05:1
+   ============================================================== */
+
+[data-theme='escuro'] {
+  /* Superfícies. Mesma direção do claro: elevado clareia, afundado escurece. */
+  --bg: #17140e;
+  --bg-elev: #211d15;
+  --bg-sunk: #100e09;
+
+  --ink: #efe7d4;
+  --ink-2: #d2c9b3;
+  --ink-3: #99917e;
+  --ink-4: #665f4e;
+  --rule: #2b2619;
+  --rule-strong: #3d3626;
+
+  /* Marca em bronze. No claro ela é quase preta e ninguém a lê como cor —
+     aqui ela finalmente aparece. --on-brand fica escuro: sobre bronze, tinta
+     clara reprovaria. */
+  --brand: #c9a76b;
+  --brand-2: #dcc08c;
+  --on-brand: #17140e;
+
+  /* O hero é o único bloco de superfície própria, e no claro ele grita a
+     15:1 contra o creme. Escuro sobre escuro não reproduz isso: o #241d12 que
+     a proposta trazia dava 1,10:1 contra o fundo, praticamente invisível como
+     bloco. Aqui ele inverte de papel dentro do tema — deixa de ser o mais
+     escuro e passa a ser o mais claro da tela, sem virar uma laje de luz. A
+     1,42:1 ele separa mais do que qualquer card, e o texto segue creme. */
+  --forest: #3a3020;
+  --on-forest: #efe7d4;
+  --on-forest-2: #b5ab95;
+
+  /* Mais fechado que --brand de propósito: o avatar da sidebar e o item ativo
+     do menu ficariam da mesma cor, lado a lado, na mesma coluna. */
+  --bronze: #b8935a;
+
+  /* Semânticos clareados. Os do claro foram calibrados para texto sobre creme
+     e fecham demais o contraste aqui. */
+  --income: #86b98d;
+  --expense: #dd9583;
+  --pending: #e0b66d;
+  --paid: #9aae95;
+  --closed: #b0a2da;
+
+  /* Superfícies de badge: no claro são tintas pálidas do matiz, aqui são
+     tintas escuras dele. O par com o semântico acima é o que o guard mede. */
+  --income-bg: #182317;
+  --income-border: #2f452f;
+  --pending-bg: #2b2313;
+  --pending-border: #4c3f1f;
+  --expense-bg: #2d1d17;
+  --expense-border: #4f2f26;
+  --closed-bg: #221d2c;
+  --closed-border: #3b3352;
+
+  /* As três fatias do hero NÃO mudam de valor. Elas já tinham sido calibradas
+     para ler sobre fundo escuro, e o hero continua escuro nos dois temas —
+     esse foi o motivo de separar --forest de --brand em vez de inverter os
+     dois juntos. Sobre o --forest daqui elas fazem 4,56:1 a 6,39:1. */
+
+  /* Marca do limite sobre o trilho do ranking, que aqui é --bg-sunk. */
+  --limite-marca: #efe7d4;
+
+  /* Elevação no escuro se comunica por superfície e borda, não por sombra:
+     uma sombra creme não existe, e preto sobre preto não aparece. Estas ficam
+     discretas de propósito, o suficiente para descolar o que flutua. */
+  --shadow-1: 0 1px 0 rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-2: 0 1px 0 rgba(0, 0, 0, 0.2), 0 8px 24px -8px rgba(0, 0, 0, 0.44);
+  --shadow-up: 0 -8px 24px -10px rgba(0, 0, 0, 0.48);
+
+  /* O véu a 40% quase não separava: o que está atrás já é escuro. */
+  --overlay: rgba(0, 0, 0, 0.62);
+
+  /* Halos claros. Os do tema claro são tinta escura a 8% — invisíveis aqui. */
+  --focus-halo: 0 0 0 3px rgba(201, 167, 107, 0.16);
+  --error-halo: 0 0 0 3px rgba(221, 149, 131, 0.18);
+
+  /* --focus-ring não aparece aqui: ele é composto de var(--bg) e var(--brand),
+     então acompanha o tema sozinho. */
+
+  /* Faz o Chromium desenhar no tom certo o que não é nosso: calendário do
+     type="date", popup do <select>, checkbox, e a barra de rolagem. Sem isto
+     o app fica escuro e os controles do sistema continuam brancos. */
+  color-scheme: dark;
 }

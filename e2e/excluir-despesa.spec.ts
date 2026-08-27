@@ -1,4 +1,19 @@
 import { test, expect } from './fixtures/electron-app'
+
+/**
+ * Confirma um ConfirmDialog pelo rótulo do botão, ESCOPADO no diálogo.
+ *
+ * Sem o escopo, `getByRole('button', { name: 'Fechar' })` casa dois elementos
+ * desde a v1.8.0: o botão de confirmação e o **Fechar da janela**, que passou a
+ * ser desenhado pelo app (com `aria-label="Fechar"`) no lugar do controle
+ * nativo do Windows. Playwright em strict mode falha com dois matches.
+ *
+ * A quebra ficou invisível porque o E2E não roda desde antes do merge do #104,
+ * três releases atrás.
+ */
+async function confirmar(page: Page, rotulo: string): Promise<void> {
+  await page.getByRole('dialog').getByRole('button', { name: rotulo, exact: true }).click()
+}
 import {
   abrirCadastroDeSaida,
   criarCartao,
@@ -98,7 +113,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
 
     // Fecha e paga a fatura
     await page.getByRole('button', { name: 'Fechar fatura' }).click()
-    await page.getByRole('button', { name: 'Fechar', exact: true }).click()
+    await confirmar(page, 'Fechar')
     await page.getByRole('button', { name: 'Marcar como paga' }).click()
     await page.getByRole('button', { name: 'Confirmar pagamento' }).click()
 
@@ -142,7 +157,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await expect(page.getByText('1/1')).toBeVisible()
 
     await page.getByRole('button', { name: 'Fechar fatura' }).click()
-    await page.getByRole('button', { name: 'Fechar', exact: true }).click()
+    await confirmar(page, 'Fechar')
     await page.getByRole('button', { name: 'Marcar como paga' }).click()
     await page.getByRole('button', { name: 'Confirmar pagamento' }).click()
 

@@ -96,6 +96,16 @@ export const CONFIG_IPC_CHANNELS = {
   abrirPastaBackups: 'config:abrir-pasta-backups'
 } as const
 
+export const TEMA_IPC_CHANNELS = {
+  /**
+   * Sincrono de proposito, e o unico da ponte. O preload precisa do tema
+   * gravado antes de a pagina pintar; assincrono chegaria tarde e o app
+   * abriria claro para so entao virar escuro.
+   */
+  inicialSync: 'tema:inicial-sync',
+  definir: 'tema:definir'
+} as const
+
 export const DADOS_IPC_CHANNELS = {
   importarCsv: 'dados:importar-csv',
   exportarMesCsv: 'dados:exportar-mes-csv',

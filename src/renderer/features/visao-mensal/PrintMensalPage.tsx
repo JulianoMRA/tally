@@ -10,6 +10,13 @@ const MES_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/
  * Rota #/print/:mes — versão enxuta da visão mensal para o printToPDF do main
  * (janela oculta). O atributo data-print-pronto sinaliza que os dados do IPC
  * chegaram; o main espera por ele antes de gerar o PDF.
+ *
+ * `data-theme="claro"` fixa a paleta clara nesta subárvore, independentemente
+ * do tema do app: papel A4 não tem tema, e sem isto a folha sairia branca com
+ * tinta quase branca para quem usa o app no escuro. É a segunda das duas
+ * camadas — a primeira está no preload, que não carimba o tema escuro nesta
+ * rota. Duas porque a do preload é uma linha fácil de quebrar sem perceber, e
+ * esta aqui vale para qualquer token que a folha venha a usar.
  */
 export default function PrintMensalPage() {
   const { mes } = useParams<{ mes: string }>()
@@ -29,7 +36,7 @@ export default function PrintMensalPage() {
   const { totais } = detalhe
 
   return (
-    <div className={styles.pagina} data-print-pronto>
+    <div className={styles.pagina} data-theme="claro" data-print-pronto>
       <header className={styles.cabecalho}>
         <h1>Tally — {formatarMesReferencia(detalhe.mesReferencia, { capitalizar: true })}</h1>
         <p>Relatório mensal de faturas, gastos e recebimentos.</p>

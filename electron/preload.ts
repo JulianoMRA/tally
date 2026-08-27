@@ -15,7 +15,8 @@ import {
   CONFIG_IPC_CHANNELS,
   DADOS_IPC_CHANNELS,
   APP_IPC_CHANNELS,
-  JANELA_IPC_CHANNELS
+  JANELA_IPC_CHANNELS,
+  TEMA_IPC_CHANNELS
 } from '@shared/ipc/channels'
 import type { CartaoInput, ListCartaoOptions } from '@shared/ipc/cartao'
 import type { CategoriaInput, ListCategoriaOptions } from '@shared/ipc/categoria'
@@ -60,10 +61,75 @@ import type {
   RemoverLimiteInput,
   ListarProgressoInput
 } from '@shared/ipc/orcamento'
-import type { Config, RestaurarBackupInput } from '@shared/ipc/config'
+import type { Config, RestaurarBackupInput, Tema } from '@shared/ipc/config'
 import type { ImportarCsvInput, ExportarMesInput } from '@shared/ipc/importacao'
 
+/**
+ * Carimba o tema no <html> ANTES de a folha de estilo do <head> ser avaliada.
+ *
+ * Duas armadilhas, as duas descobertas rodando o app de verdade:
+ *
+ * 1. `document.documentElement` E NULL AQUI. Com `sandbox: true`, o preload
+ *    roda antes de o parser criar o <html>. Chamar `setAttribute` direto
+ *    lancava, e como a excecao derrubava o modulo inteiro, o
+ *    `exposeInMainWorld` la embaixo nunca rodava: `window.api` ficava
+ *    undefined e o app inteiro quebrava na primeira tela. Um MutationObserver
+ *    no proprio `document` entrega o atributo no mesmo tick em que o <html>
+ *    nasce — antes, portanto, de qualquer <link> do <head> ser processado.
+ *
+ * 2. Nada aqui pode derrubar a ponte. Tema e cosmetico; `window.api` e o app.
+ *    Dai o try/catch em volta de tudo, e nao so da leitura do settings.
+ *
+ * A leitura e sincrona porque `invoke` devolveria promessa, e a promessa
+ * resolveria depois do primeiro paint — o app abriria creme e viraria escuro.
+ * E a unica chamada sincrona da ponte.
+ */
+function lerTemaGravado(): Tema {
+  // A rota de impressao roda numa BrowserWindow oculta que carrega ESTE mesmo
+  // bundle, e o resultado dela e um PDF em papel A4. Papel nao tem tema: se o
+  // documento herdasse o escuro, a folha sairia branca com tinta quase branca,
+  // e o guard de cores nao avisaria — ele permite explicitamente o hex do
+  // print-mensal. Primeira das duas camadas; a outra e o `data-theme="claro"`
+  // no proprio elemento da folha, que sobrevive a alguem mexer aqui.
+  if (location.hash.startsWith('#/print/')) return 'claro'
+
+  try {
+    return (ipcRenderer.sendSync(TEMA_IPC_CHANNELS.inicialSync) as Tema) ?? 'claro'
+  } catch {
+    // Config ilegivel nunca impede o boot — mesma postura do `lerConfig`.
+    return 'claro'
+  }
+}
+
+function carimbarTemaInicial(): Tema {
+  const tema = lerTemaGravado()
+
+  try {
+    if (document.documentElement) {
+      document.documentElement.setAttribute('data-theme', tema)
+    } else {
+      const observador = new MutationObserver(() => {
+        if (!document.documentElement) return
+        document.documentElement.setAttribute('data-theme', tema)
+        observador.disconnect()
+      })
+      observador.observe(document, { childList: true })
+    }
+  } catch {
+    // Sem tema o app abre no claro, que e o padrao e resolve pelo :root. Uma
+    // falha aqui nunca pode impedir a ponte de ser exposta.
+  }
+
+  return tema
+}
+
+const temaInicial = carimbarTemaInicial()
+
 contextBridge.exposeInMainWorld('api', {
+  tema: {
+    inicial: () => temaInicial,
+    definir: (tema: Tema) => ipcRenderer.invoke(TEMA_IPC_CHANNELS.definir, tema)
+  },
   cartao: {
     list: (options?: ListCartaoOptions) => ipcRenderer.invoke(CARTAO_IPC_CHANNELS.list, options),
     findById: (id: number) => ipcRenderer.invoke(CARTAO_IPC_CHANNELS.findById, id),

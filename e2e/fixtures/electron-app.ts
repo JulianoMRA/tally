@@ -1,5 +1,5 @@
 import { test as base, _electron as electron, type ElectronApplication } from '@playwright/test'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -10,6 +10,15 @@ const mainEntry = join(__dirname, '..', '..', 'out', 'main', 'index.cjs')
 type ElectronFixtures = {
   app: ElectronApplication
   userDataDir: string
+  /**
+   * Tema com que o app sobe. Gravado no settings.json da base isolada ANTES do
+   * launch: o main o le para o backgroundColor da janela e o preload o le de
+   * forma sincrona para carimbar o atributo antes do primeiro paint. Trocar
+   * pelo menu depois de subir testaria a troca, nao o boot.
+   *
+   * Sobrescreva por arquivo com `test.use({ tema: 'escuro' })`.
+   */
+  tema: 'claro' | 'escuro'
 }
 
 /**
@@ -29,7 +38,9 @@ export const test = base.extend<ElectronFixtures>({
       // cleanup best-effort: Windows pode segurar o handle por instantes
     }
   },
-  app: async ({ userDataDir }, use) => {
+  tema: ['claro', { option: true }],
+  app: async ({ userDataDir, tema }, use) => {
+    writeFileSync(join(userDataDir, 'settings.json'), JSON.stringify({ tema }), 'utf8')
     // timeout: runners de CI com 2 workers tem cold start lento do Electron —
     // o default de 30s produzia "Process failed to launch" intermitente.
     const app = await electron.launch({

@@ -19,6 +19,7 @@ import type { Database } from '../src/persistence/database'
 import { openDatabase } from '../src/persistence/database'
 import { backupDatabase, type BackupOptions } from '../src/persistence/backup'
 import { lerConfig } from '../src/persistence/settings'
+import { COR_DE_FUNDO_POR_TEMA } from '../src/shared/ipc/config'
 import { runMigrations } from '../src/persistence/migrations/runner'
 import { DadosRepository } from '../src/persistence/repositories/dados-repository'
 import { exportPayloadSchema } from '../src/shared/ipc/dados'
@@ -475,6 +476,11 @@ function createWindow(): void {
     width: 1280,
     height: 800,
     title: 'Tally',
+    // Sem isto o Chromium pinta branco ate o primeiro paint. No tema claro
+    // quase nao se nota; no escuro e um flash branco de janela inteira. O
+    // preload cuida do outro flash, o do conteudo. Ler o settings aqui e
+    // sincrono e barato: ja estamos fora do caminho de renderizacao.
+    backgroundColor: COR_DE_FUNDO_POR_TEMA[lerConfig(resolveSettingsPath()).tema],
     // Sem `titleBarOverlay`: os controles agora são do app, no material dele.
     // A altura da barra (32px) vive só no CSS — `.barra` em
     // `title-bar.module.css` e o `calc(100vh - 32px)` do `.shell` em

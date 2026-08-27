@@ -6,8 +6,10 @@ import { lerConfig, gravarConfig } from '../../src/persistence/settings'
 import {
   configSchema,
   restaurarBackupInputSchema,
+  temaSchema,
   CONFIG_IPC_CHANNELS
 } from '../../src/shared/ipc/config'
+import { TEMA_IPC_CHANNELS } from '../../src/shared/ipc/channels'
 
 type JanelaAtual = () => BrowserWindow | undefined
 
@@ -33,6 +35,22 @@ export function registerConfigHandlers(
   }
 
   ipcMain.handle(CONFIG_IPC_CHANNELS.get, () => lerConfig(settingsPath))
+
+  // `on` + `returnValue`, nao `handle`: o preload chama isto de forma sincrona
+  // para carimbar o tema no <html> antes de a pagina pintar. Ver o comentario
+  // em `carimbarTemaInicial`.
+  ipcMain.on(TEMA_IPC_CHANNELS.inicialSync, (event) => {
+    event.returnValue = lerConfig(settingsPath).tema
+  })
+
+  // Grava so o tema, preservando o resto. `config:set` exigiria o objeto
+  // inteiro, e o renderer teria de ler antes de escrever — uma corrida com
+  // qualquer outra tela que estivesse salvando ajustes ao mesmo tempo.
+  ipcMain.handle(TEMA_IPC_CHANNELS.definir, (_event, payload: unknown) => {
+    const tema = temaSchema.parse(payload)
+    gravarConfig(settingsPath, { ...lerConfig(settingsPath), tema })
+    return tema
+  })
 
   ipcMain.handle(CONFIG_IPC_CHANNELS.set, (_event, payload: unknown) => {
     const config = configSchema.parse(payload)
