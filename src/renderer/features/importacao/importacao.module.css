@@ -22,20 +22,6 @@
   flex-wrap: wrap;
 }
 
-.inputArquivoLabel {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--text-3);
-  font-weight: 600;
-  color: var(--ink-2);
-}
-
-.inputArquivoLabel input {
-  font-size: var(--text-3);
-  color: var(--ink-3);
-}
-
 .dica {
   font-size: var(--text-2);
   color: var(--ink-3);

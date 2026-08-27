@@ -87,20 +87,6 @@
   color: var(--pending);
 }
 
-.cartaoSelect {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.cartaoLabel {
-  font-size: var(--text-2);
-  font-weight: 500;
-  color: var(--ink-2);
-  white-space: nowrap;
-}
-
 /* Lista de faturas */
 .faturaList {
   list-style: none;
@@ -114,18 +100,6 @@
 
 /* Visão geral: um Panel por cartão com suas faturas. Empilha por padrão;
    em telas largas distribui os cartões em duas colunas. */
-.overviewGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.overviewList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
 /* O <li> agora é só o item de lista; toda a aparência e a interação vivem no
    <button> interno. Antes o <li> carregava `role="button"`, o que tirava dele o
    papel de listitem e deixava o <ul> sem nenhum filho válido — violação
@@ -141,33 +115,7 @@
   text-align: left;
 }
 
-.overviewItem {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  /* O UA centraliza texto de <button>: sem isto o mês e as datas ficavam no
-     meio da linha depois da conversão de <li role="button"> para <li><button>. */
-  text-align: left;
-  gap: 12px;
-  padding: var(--dens-2) 16px;
-  border-bottom: 1px solid var(--rule);
-  cursor: pointer;
-}
-
-.overviewItem:last-child {
-  border-bottom: none;
-}
-
-.overviewItem:hover {
-  background: var(--bg-sunk);
-}
-
 @media (min-width: 1440px) {
-  .overviewGrid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
-  }
 }
 
 .faturaItem {
@@ -207,10 +155,6 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   margin-left: auto;
-}
-
-.overviewFiltro {
-  margin-bottom: 16px;
 }
 
 /* O total agregado fica à vista mesmo com as faturas colapsadas: é a
@@ -383,13 +327,6 @@
   margin: 0 0 3px;
 }
 
-.detalheActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
 /* Ações do ciclo de vida (dentro do card de resumo) */
 .cicloActions {
   display: flex;
@@ -416,23 +353,8 @@
 }
 
 /* Tabela de parcelas */
-.colId {
-  color: var(--ink-4);
-  font-family: var(--font-mono);
-  font-size: var(--text-2);
-}
-
 .colValor {
   text-align: right;
-}
-
-.thSortavel {
-  cursor: pointer;
-  user-select: none;
-}
-
-.thSortavel:hover {
-  color: var(--ink);
 }
 
 .tagAssinatura {
@@ -458,21 +380,6 @@
    homônimo usa `nowrap` + `flex-shrink: 0` e precisou de um container rolável.
    Não uniformize os dois módulos sem antes medir. Protegido por
    e2e/faturas-acoes-visiveis.spec.ts. */
-.rowActions {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.totalRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--dens-3) 16px;
-  border-top: 1px solid var(--rule);
-  background: var(--bg-sunk);
-}
-
 .totalLabel {
   font-size: var(--text-2);
   font-weight: 600;
@@ -480,12 +387,6 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-family: var(--font-mono);
-}
-
-.totalValor {
-  font-size: var(--text-4);
-  font-weight: 700;
-  color: var(--ink);
 }
 
 /* Modal de adiantamento */
@@ -505,76 +406,6 @@
 }
 
 /* Ajudas */
-.ajudasCell {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  align-items: center;
-}
-
-.ajudaChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 4px 2px 8px;
-  border-radius: 999px;
-  background: var(--bg-sunk);
-  border: 1px solid var(--rule);
-  font-size: var(--text-2);
-  color: var(--ink);
-  font-family: var(--font-mono);
-}
-
-.ajudaChipRecebida {
-  background: var(--income-bg);
-  border-color: var(--income-border);
-  color: var(--income);
-}
-
-.ajudaChipNome {
-  font-weight: 600;
-}
-
-.ajudaChipValor {
-  color: var(--ink-3);
-}
-
-.ajudaChipExcluir {
-  background: transparent;
-  border: none;
-  color: var(--ink-3);
-  font-size: var(--text-4);
-  line-height: 1;
-  padding: 0 4px;
-  cursor: pointer;
-  border-radius: 999px;
-}
-
-.ajudaChipExcluir:hover {
-  background: var(--rule);
-  color: var(--ink);
-}
-
-.ajudaAdicionarBtn {
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  background: var(--bg-elev);
-  border: 1px dashed var(--rule-strong);
-  color: var(--ink-3);
-  font-size: var(--text-3);
-  line-height: 1;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ajudaAdicionarBtn:hover {
-  border-color: var(--ink);
-  color: var(--ink);
-}
-
 /* Rodapé de totais bruto / ajudas / líquido */
 .totaisFooter {
   padding: var(--dens-3) 16px;

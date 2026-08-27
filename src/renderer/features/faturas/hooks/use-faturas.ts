@@ -37,28 +37,6 @@ export function useCicloFatura(onSucesso: (fatura: Fatura) => void) {
   return { fechar, pagar, reabrir, loading, erro }
 }
 
-export function useFaturasPorCartao(cartaoId: number | null) {
-  const [faturas, setFaturas] = useState<FaturaComTotal[]>([])
-  const [loading, setLoading] = useState(false)
-
-  const refetch = useCallback(async () => {
-    if (cartaoId === null) {
-      setFaturas([])
-      return
-    }
-    setLoading(true)
-    const data = await window.api.fatura.listarResumoPorCartao(cartaoId)
-    setFaturas(data)
-    setLoading(false)
-  }, [cartaoId])
-
-  useEffect(() => {
-    refetch()
-  }, [refetch])
-
-  return { faturas, loading, refetch }
-}
-
 // Casa cada cartão com a sua lista de faturas pelo índice (alinhado ao
 // Promise.all). Pura para permitir teste sem montar o hook.
 export function agruparFaturasPorCartao(

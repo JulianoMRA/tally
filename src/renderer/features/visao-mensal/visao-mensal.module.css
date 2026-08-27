@@ -394,15 +394,6 @@
 }
 
 /* Tabelas internas dos panels */
-.thSortavel {
-  cursor: pointer;
-  user-select: none;
-}
-
-.thSortavel:hover {
-  color: var(--ink);
-}
-
 .colValor {
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -546,12 +537,6 @@
   color: var(--on-brand);
   font-size: var(--text-2);
   font-weight: 700;
-}
-
-.passoTitulo {
-  font-size: var(--text-4);
-  font-weight: 600;
-  color: var(--ink);
 }
 
 .passoTexto {

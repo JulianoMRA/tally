@@ -1,8 +1,5 @@
 /// <reference types="vite/client" />
 import { createHash } from 'node:crypto'
-import { readFileSync, readdirSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import type { Database } from '../database'
 
 export type MigrationFile = {
@@ -24,8 +21,6 @@ const ENSURE_TABLE_SQL = `
     applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
   )
 `
-
-const DEFAULT_SQL_DIR = join(dirname(fileURLToPath(import.meta.url)), 'sql')
 
 /**
  * Carrega migrations inlinadas pelo Vite no momento do build.
@@ -50,19 +45,6 @@ export function loadBundledMigrations(): MigrationFile[] {
       }
     })
     .sort((a, b) => a.filename.localeCompare(b.filename))
-}
-
-export function loadMigrationFiles(dir: string = DEFAULT_SQL_DIR): MigrationFile[] {
-  const entries = readdirSync(dir)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-
-  return entries.map((filename) => {
-    const sql = readFileSync(join(dir, filename), 'utf8')
-    const version = filename.replace(/\.sql$/, '')
-    const checksum = createHash('sha256').update(sql).digest('hex')
-    return { version, filename, sql, checksum }
-  })
 }
 
 export function buildMigrationFile(version: string, sql: string): MigrationFile {

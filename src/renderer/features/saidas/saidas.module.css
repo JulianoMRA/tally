@@ -169,15 +169,6 @@
 /* Degrau compacto, e não o padrão: Saídas é a tabela mais densa do app — um
    mês real tem 30+ ocorrências, e aqui cada 2px valem uma linha a mais na
    tela. */
-.thSortavel {
-  cursor: pointer;
-  user-select: none;
-}
-
-.thSortavel:hover {
-  color: var(--ink);
-}
-
 .colValor {
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -198,19 +189,6 @@
   flex-shrink: 0;
 }
 
-.tagTipo {
-  font-size: var(--text-1);
-  font-weight: 600;
-  padding: 1px 7px;
-  border-radius: var(--r-pill);
-  background: var(--bg-sunk);
-  border: 1px solid var(--rule);
-  color: var(--ink-3);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
-
 /* width:1% + nowrap faz o auto-layout da tabela encolher a coluna até o
    conteúdo, sobrando o espaço restante para a Descrição. */
 .colAcoes {
@@ -218,19 +196,7 @@
   white-space: nowrap;
 }
 
-.rowActions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  justify-content: flex-end;
-  white-space: nowrap;
-}
-
 /* Sem isto os botões encolhem como itens flex e os rótulos ficam elipsados. */
-.rowActions > * {
-  flex-shrink: 0;
-}
-
 .itemCancelada td {
   opacity: 0.65;
 }

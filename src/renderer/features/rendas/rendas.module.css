@@ -231,12 +231,6 @@
   flex-wrap: wrap;
 }
 
-.recebidaInfo {
-  font-size: var(--text-2);
-  color: var(--income);
-  font-family: var(--font-mono);
-}
-
 /* Ponto de estado: cheio = dinheiro na conta, anel vazado = previsão. Dá para
    varrer a coluna sem ler o status linha a linha.
 
@@ -357,43 +351,12 @@
   font-weight: 600;
 }
 
-.totaisRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-  margin: 0 0 16px;
-  max-width: 1280px;
-}
-
-.totalCard {
-  background: var(--bg-elev);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-3);
-  padding: 16px 18px;
-  box-shadow: var(--shadow-1);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 .totalLabel {
   font-size: var(--text-2);
   color: var(--ink-3);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-family: var(--font-mono);
-}
-
-.totalValor {
-  font-size: var(--text-6);
-  font-weight: 800;
-  color: var(--ink);
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-
-.totalValorIncome {
-  color: var(--income);
 }
 
 .erro {

@@ -36,11 +36,6 @@ export const listCartaoOptionsSchema = z
 
 export type ListCartaoOptions = z.infer<typeof listCartaoOptionsSchema>
 
-export const updateCartaoInputSchema = z.object({
-  id: cartaoIdSchema,
-  data: cartaoInputSchema
-})
-
 export type CartaoApi = {
   list: (options?: ListCartaoOptions) => Promise<Cartao[]>
   findById: (id: number) => Promise<Cartao | null>
