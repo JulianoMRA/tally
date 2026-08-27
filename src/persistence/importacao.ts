@@ -90,8 +90,12 @@ export function importarLinhas(db: Database, linhas: LinhaImportacao[]): Resulta
         })
         return
       case 'recebimentoAvulso':
-        recebimentoRepo.criarAvulsoCompleto({
-          nome: item.nome,
+        // A coluna do CSV continua se chamando `nome` — mexer nela invalidaria
+        // os templates que o usuario ja baixou. O que mudou e o destino: era o
+        // nome de uma fonte criada implicitamente, agora e a descricao da
+        // propria entrada.
+        recebimentoRepo.criarAvulso({
+          descricao: item.nome,
           valorCentavos: item.valorCentavos,
           dataEsperada: item.dataEsperada,
           dataRecebida: item.dataRecebida ?? undefined

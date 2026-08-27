@@ -88,7 +88,10 @@ describe('importarLinhas (lote CSV em transação única)', () => {
     expect(contar(db, 'despesa')).toBe(4)
     // parcelada em andamento 7..12 = 6 parcelas; assinatura = 12; única crédito = 1; pix = 1
     expect(contar(db, 'parcela')).toBe(20)
-    expect(contar(db, 'renda')).toBe(2) // recorrente + avulsa implícita
+    // So a recorrente. O recebimento avulso deixou de criar fonte na 0011:
+    // o nome do CSV vira a descricao da propria entrada.
+    expect(contar(db, 'renda')).toBe(1)
+    expect(contar(db, 'recebimento')).toBeGreaterThan(0)
     expect(contar(db, 'recebimento')).toBe(13) // 12 esperados + 1 avulso
   })
 

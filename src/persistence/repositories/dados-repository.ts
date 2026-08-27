@@ -109,6 +109,8 @@ export class DadosRepository implements Repository {
       )
     }
 
+    const tabelas = normalizarAvulsasLegadas(payload.tables)
+
     return this.db.transaction(() => {
       for (const tabela of ORDEM_DELETE) {
         this.db.exec(`DELETE FROM ${tabela}`)
@@ -116,7 +118,7 @@ export class DadosRepository implements Repository {
 
       let totalLinhas = 0
       for (const tabela of ORDEM_INSERT) {
-        const linhas = payload.tables[tabela] ?? []
+        const linhas = tabelas[tabela] ?? []
         if (linhas.length === 0) continue
         const cols = this.colunas(tabela)
         const placeholders = cols.map(() => '?').join(', ')
@@ -131,5 +133,37 @@ export class DadosRepository implements Repository {
       }
       return { totalLinhas }
     })()
+  }
+}
+
+/**
+ * Aplica ao payload importado a mesma transformacao da migration 0011.
+ *
+ * Um export gerado antes dela traz rendas `tipo = 'Avulsa'` e recebimentos
+ * pendurados nelas. O schema atual recusa as duas coisas — a renda pelo CHECK
+ * de tipo, o recebimento por ficar sem `descricao` —, e sem isto o import
+ * inteiro abortaria. Como `importar` promete aceitar export de schema
+ * anterior, a conversao acontece aqui: o nome da fonte Avulsa vira a descricao
+ * do recebimento, o vinculo cai, e a fonte nao e inserida.
+ *
+ * Puro: nao toca o banco, so reescreve as linhas antes do INSERT.
+ */
+function normalizarAvulsasLegadas(tabelas: ExportPayload['tables']): ExportPayload['tables'] {
+  const nomePorRendaAvulsa = new Map<number, string>()
+  for (const renda of tabelas.renda) {
+    if (renda.tipo === 'Avulsa') {
+      nomePorRendaAvulsa.set(Number(renda.id), String(renda.nome))
+    }
+  }
+  if (nomePorRendaAvulsa.size === 0) return tabelas
+
+  return {
+    ...tabelas,
+    renda: tabelas.renda.filter((r) => !nomePorRendaAvulsa.has(Number(r.id))),
+    recebimento: tabelas.recebimento.map((r) => {
+      const nome = r.renda_id === null ? undefined : nomePorRendaAvulsa.get(Number(r.renda_id))
+      if (nome === undefined) return r
+      return { ...r, renda_id: null, descricao: nome }
+    })
   }
 }

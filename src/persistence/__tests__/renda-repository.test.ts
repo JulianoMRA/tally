@@ -14,16 +14,16 @@ describe('RendaRepository', () => {
     repo = new RendaRepository(db)
   })
 
-  describe('criarAvulsa', () => {
-    it('persiste tipo Avulsa, dia_esperado nulo, ativa=true', () => {
-      const r = repo.criarAvulsa({ nome: 'Freela X', valorPadraoCentavos: 50000 })
-
-      expect(r.tipo).toBe('Avulsa')
-      expect(r.diaEsperado).toBeNull()
-      expect(r.valorPadraoCentavos).toBe(50000)
-      expect(r.ativa).toBe(true)
-    })
-  })
+  // Estes testes so precisam de "uma renda qualquer". Usavam `criarAvulsa`
+  // por ser a criacao mais barata; desde a 0011 so existe Recorrente.
+  function fonte(nome: string, valorPadraoCentavos = 50000) {
+    return repo.criarRecorrente({
+      nome,
+      valorPadraoCentavos,
+      diaEsperado: 5,
+      dataInicio: '2026-06-01'
+    }).renda
+  }
 
   describe('criarRecorrente (RF-REN-02)', () => {
     it('cria renda + 12 recebimentos com status Esperado', () => {
@@ -72,16 +72,16 @@ describe('RendaRepository', () => {
 
   describe('list', () => {
     it('retorna ativas por padrão ordenadas por nome', () => {
-      repo.criarAvulsa({ nome: 'Zelda', valorPadraoCentavos: 1000 })
-      repo.criarAvulsa({ nome: 'Anna', valorPadraoCentavos: 2000 })
+      fonte('Zelda', 1000)
+      fonte('Anna', 2000)
 
       const lista = repo.list()
       expect(lista.map((r) => r.nome)).toEqual(['Anna', 'Zelda'])
     })
 
     it('incluirArquivadas=true traz arquivadas também', () => {
-      const a = repo.criarAvulsa({ nome: 'A', valorPadraoCentavos: 1000 })
-      repo.criarAvulsa({ nome: 'B', valorPadraoCentavos: 2000 })
+      const a = fonte('A', 1000)
+      fonte('B', 2000)
       repo.arquivar(a.id)
 
       expect(repo.list()).toHaveLength(1)
@@ -135,15 +135,6 @@ describe('RendaRepository', () => {
         .get(r.recebimentos[0].id) as { valor_centavos: number; status: string }
       expect(primeiro.valor_centavos).toBe(100000)
       expect(primeiro.status).toBe('Recebido')
-    })
-
-    it('renda Avulsa não tem recebimentos a ajustar', () => {
-      const r = repo.criarAvulsa({ nome: 'X', valorPadraoCentavos: 1000 })
-      const u = repo.update(r.id, {
-        nome: 'X',
-        valorPadraoCentavos: 2000
-      })
-      expect(u.valorPadraoCentavos).toBe(2000)
     })
 
     it('lança erro para id inexistente', () => {
@@ -229,7 +220,7 @@ describe('RendaRepository', () => {
 
   describe('desarquivar', () => {
     it('volta ativa para true mas não regenera recebimentos', () => {
-      const r = repo.criarAvulsa({ nome: 'X', valorPadraoCentavos: 1000 })
+      const r = fonte('X', 1000)
       repo.arquivar(r.id)
       const d = repo.desarquivar(r.id)
       expect(d.ativa).toBe(true)
@@ -344,7 +335,7 @@ describe('RendaRepository', () => {
       expect(mesesGerados(r.renda.id)).toHaveLength(12)
     })
 
-    it('ignora rendas arquivadas e rendas Avulsa', () => {
+    it('ignora rendas arquivadas', () => {
       const recorrenteArquivada = repo.criarRecorrente({
         nome: 'Antiga',
         valorPadraoCentavos: 100000,
@@ -353,15 +344,9 @@ describe('RendaRepository', () => {
       })
       repo.arquivar(recorrenteArquivada.renda.id)
 
-      const avulsa = repo.criarAvulsa({ nome: 'Freela', valorPadraoCentavos: 50000 })
-
       const resultado = repo.estenderHorizonteRecorrentes('2028-01')
 
       expect(resultado.recebimentosCriados).toBe(0)
-      const recebAvulsa = db
-        .prepare('SELECT COUNT(*) as n FROM recebimento WHERE renda_id = ?')
-        .get(avulsa.id) as { n: number }
-      expect(recebAvulsa.n).toBe(0)
     })
   })
 })

@@ -135,7 +135,10 @@ describe('migration 0001_initial_schema', () => {
     ).toThrow()
   })
 
-  it('exige dia_esperado para renda Recorrente e aceita NULL para Avulsa', () => {
+  // O caso "aceita NULL para Avulsa" saiu na 0011: fonte Avulsa deixou de
+  // existir e `dia_esperado` virou NOT NULL. A exigencia para Recorrente,
+  // que e o que este teste sempre quis provar, segue coberta aqui.
+  it('exige dia_esperado na renda', () => {
     expect(() =>
       db
         .prepare(
@@ -143,14 +146,6 @@ describe('migration 0001_initial_schema', () => {
         )
         .run('Bolsa PET', 'Recorrente', 100000, null)
     ).toThrow()
-
-    expect(() =>
-      db
-        .prepare(
-          'INSERT INTO renda (nome, tipo, valor_padrao_centavos, dia_esperado) VALUES (?, ?, ?, ?)'
-        )
-        .run('Freela', 'Avulsa', 50000, null)
-    ).not.toThrow()
   })
 
   it('respeita UNIQUE(cartao_id, mes_referencia) em fatura', () => {
@@ -179,7 +174,8 @@ describe('migration 0001_initial_schema', () => {
       '0007_hardening_schema',
       '0008_tags_notas',
       '0009_corrige_vencimento_anterior_ao_fechamento',
-      '0010_data_referencia_segue_a_fatura'
+      '0010_data_referencia_segue_a_fatura',
+      '0011_avulso_sem_fonte'
     ])
   })
 })

@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { StatusRecebimento } from '@domain/entities/recebimento'
 import type { Renda } from '@domain/entities/renda'
-import type { CriarRendaAvulsaInput, CriarRendaRecorrenteInput } from '@shared/ipc/renda'
-import type { CriarRecebimentoAvulsoInput, RecebimentoComContexto } from '@shared/ipc/recebimento'
+import type { CriarRendaRecorrenteInput } from '@shared/ipc/renda'
+import type { RecebimentoComContexto } from '@shared/ipc/recebimento'
 import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
 import {
@@ -35,7 +35,7 @@ import {
 } from './descrever-recebimento'
 import { useEvolucaoSaldo } from '../relatorios/hooks/use-evolucao-saldo'
 import { hojeIsoLocal } from '@shared/datas-locais'
-import { NovoAvulsoPanel } from './NovoAvulsoPanel'
+import { AvulsoPanel, type DadosAvulso } from './AvulsoPanel'
 import styles from './rendas.module.css'
 
 type Aba = 'recebimentos' | 'fontes'
@@ -106,29 +106,10 @@ function AbaRecebimentos({
     mesReferencia: mes,
     status: statusFiltro === 'Todos' ? undefined : statusFiltro
   })
-  const [fontesAvulsas, setFontesAvulsas] = useState<Renda[]>([])
   const [alvoMarcar, setAlvoMarcar] = useState<RecebimentoComContexto | null>(null)
   const [acaoErro, setAcaoErro] = useState<string | null>(null)
+  const [alvoEditar, setAlvoEditar] = useState<RecebimentoComContexto | null>(null)
   const [alvoExcluir, setAlvoExcluir] = useState<RecebimentoComContexto | null>(null)
-
-  // Só as avulsas ativas: um recebimento avulso não se pendura em fonte
-  // recorrente, e o repositório recusa esse vínculo.
-  useEffect(() => {
-    let ativo = true
-    window.api.renda
-      .list()
-      .then((todas) => {
-        if (ativo) setFontesAvulsas(todas.filter((r) => r.tipo === 'Avulsa' && r.ativa))
-      })
-      // Não usa `useCargaAuxiliar` porque não é carga de montagem: recarrega a
-      // cada abertura do painel de avulso.
-      .catch((e: unknown) => {
-        if (ativo) setAcaoErro(mensagemErro(e, 'Erro ao listar fontes de renda.'))
-      })
-    return () => {
-      ativo = false
-    }
-  }, [novoAvulsoAberto])
 
   async function handleMarcarRecebido(dataRecebida: string) {
     if (!alvoMarcar) return
@@ -140,9 +121,16 @@ function AbaRecebimentos({
     await recarregar()
   }
 
-  async function handleCriarAvulso(input: CriarRecebimentoAvulsoInput) {
+  async function handleCriarAvulso(input: DadosAvulso) {
     await window.api.recebimento.criarAvulso(input)
     onFecharNovoAvulso()
+    await recarregar()
+  }
+
+  async function handleEditarAvulso(input: DadosAvulso) {
+    if (!alvoEditar) return
+    await window.api.recebimento.atualizar({ recebimentoId: alvoEditar.id, ...input })
+    setAlvoEditar(null)
     await recarregar()
   }
 
@@ -246,9 +234,9 @@ function AbaRecebimentos({
                 aria-hidden="true"
               />
               <div className={styles.info}>
-                <span className={styles.nome}>{r.rendaNome ?? '—'}</span>
+                <span className={styles.nome}>{r.nome}</span>
                 <span className={styles.meta}>
-                  {r.rendaId === null ? 'sem fonte' : 'fonte cadastrada'}
+                  {r.rendaId === null ? 'entrada avulsa' : 'fonte recorrente'}
                 </span>
               </div>
               <span
@@ -273,6 +261,13 @@ function AbaRecebimentos({
                 )}
                 <RowActions
                   acoes={[
+                    // Editar so vale para avulsa: recebimento de fonte
+                    // recorrente tem valor e dia derivados dela (RF-REN-05/06),
+                    // e editar aqui criaria uma segunda verdade que o proximo
+                    // reajuste da fonte sobrescreveria sem avisar.
+                    ...(r.rendaId === null
+                      ? [{ label: 'Editar', onClick: () => setAlvoEditar(r) }]
+                      : []),
                     {
                       label: 'Excluir',
                       onClick: () => setAlvoExcluir(r),
@@ -280,7 +275,7 @@ function AbaRecebimentos({
                     }
                   ]}
                   visiveis={0}
-                  contexto={r.rendaNome ?? 'recebimento avulso'}
+                  contexto={r.nome}
                 />
               </div>
             </li>
@@ -290,7 +285,7 @@ function AbaRecebimentos({
 
       {alvoMarcar && (
         <MarcarRecebidoModal
-          descricao={alvoMarcar.rendaNome ?? `Recebimento #${alvoMarcar.id}`}
+          descricao={alvoMarcar.nome}
           valorReais={formatBRL(alvoMarcar.valorCentavos)}
           onConfirmar={handleMarcarRecebido}
           onCancelar={() => setAlvoMarcar(null)}
@@ -298,17 +293,21 @@ function AbaRecebimentos({
       )}
 
       {novoAvulsoAberto && (
-        <NovoAvulsoPanel
-          fontes={fontesAvulsas}
-          onConfirmar={handleCriarAvulso}
-          onCancelar={onFecharNovoAvulso}
+        <AvulsoPanel onConfirmar={handleCriarAvulso} onCancelar={onFecharNovoAvulso} />
+      )}
+
+      {alvoEditar && (
+        <AvulsoPanel
+          inicial={alvoEditar}
+          onConfirmar={handleEditarAvulso}
+          onCancelar={() => setAlvoEditar(null)}
         />
       )}
 
       {alvoExcluir && (
         <ConfirmDialog
           title="Excluir recebimento?"
-          body={`${formatBRL(alvoExcluir.valorCentavos)} — ${alvoExcluir.rendaNome ?? 'avulso'}. Esta acao e irreversivel.`}
+          body={`${formatBRL(alvoExcluir.valorCentavos)} — ${alvoExcluir.nome}. Esta acao e irreversivel.`}
           confirmText="Excluir"
           confirmVariant="danger"
           onConfirm={confirmarExcluir}
@@ -323,11 +322,6 @@ function AbaFontes() {
   const { rendas, loading, error, incluirArquivadas, setIncluirArquivadas, refetch } = useRendas()
   const [rendaEditar, setRendaEditar] = useState<Renda | null>(null)
   const toast = useToast()
-
-  async function handleSalvarAvulsa(input: CriarRendaAvulsaInput) {
-    await window.api.renda.criarAvulsa(input)
-    await refetch()
-  }
 
   async function handleSalvarRecorrente(input: CriarRendaRecorrenteInput) {
     await window.api.renda.criarRecorrente(input)
@@ -379,7 +373,7 @@ function AbaFontes() {
           {loading && <p className={styles.empty}>Carregando…</p>}
           {error && <p className={styles.errorMsg}>{error}</p>}
           {!loading && !error && (
-            <FontesAgrupadas
+            <ListaDeFontes
               rendas={rendas}
               onEditar={setRendaEditar}
               onArquivar={handleArquivar}
@@ -389,10 +383,7 @@ function AbaFontes() {
         </section>
 
         <section className={styles.formSection}>
-          <RendaForm
-            onSalvarAvulsa={handleSalvarAvulsa}
-            onSalvarRecorrente={handleSalvarRecorrente}
-          />
+          <RendaForm onSalvarRecorrente={handleSalvarRecorrente} />
         </section>
       </div>
 
@@ -407,7 +398,7 @@ function AbaFontes() {
   )
 }
 
-function FontesAgrupadas({
+function ListaDeFontes({
   rendas,
   onEditar,
   onArquivar,
@@ -418,46 +409,31 @@ function FontesAgrupadas({
   onArquivar: (id: number) => void
   onDesarquivar: (id: number) => void
 }) {
-  const recorrentes = rendas
-    .filter((r) => r.tipo === 'Recorrente')
-    .sort((a, b) => (a.diaEsperado ?? 0) - (b.diaEsperado ?? 0) || a.nome.localeCompare(b.nome))
-  const avulsas = rendas
-    .filter((r) => r.tipo === 'Avulsa')
-    .sort((a, b) => a.nome.localeCompare(b.nome))
+  // Havia dois paineis, "Recorrentes" e "Avulsas". Desde a migration 0011
+  // fonte de renda existe so para entrada constante — entrada avulsa vive
+  // sozinha, na aba Recebimentos —, entao sobrou uma lista so e o
+  // agrupamento perdeu a razao de ser.
+  const ordenadas = [...rendas].sort(
+    (a, b) => (a.diaEsperado ?? 0) - (b.diaEsperado ?? 0) || a.nome.localeCompare(b.nome)
+  )
 
-  const totalMensalRecorrentes = recorrentes
+  const totalMensal = ordenadas
     .filter((r) => r.ativa)
     .reduce((s, r) => s + r.valorPadraoCentavos, 0)
 
   return (
-    <>
-      <Panel
-        title="Recorrentes"
-        meta={`${recorrentes.length} ${recorrentes.length === 1 ? 'fonte' : 'fontes'}${recorrentes.length > 0 ? ` · ${formatBRL(totalMensalRecorrentes)}/mês` : ''}`}
-        flush
-        className={styles.panel}
-      >
-        <RendaList
-          rendas={recorrentes}
-          onEditar={onEditar}
-          onArquivar={onArquivar}
-          onDesarquivar={onDesarquivar}
-        />
-      </Panel>
-
-      <Panel
-        title="Avulsas"
-        meta={`${avulsas.length} ${avulsas.length === 1 ? 'fonte' : 'fontes'}`}
-        flush
-        className={styles.panel}
-      >
-        <RendaList
-          rendas={avulsas}
-          onEditar={onEditar}
-          onArquivar={onArquivar}
-          onDesarquivar={onDesarquivar}
-        />
-      </Panel>
-    </>
+    <Panel
+      title="Fontes recorrentes"
+      meta={`${ordenadas.length} ${ordenadas.length === 1 ? 'fonte' : 'fontes'}${ordenadas.length > 0 ? ` · ${formatBRL(totalMensal)}/mês` : ''}`}
+      flush
+      className={styles.panel}
+    >
+      <RendaList
+        rendas={ordenadas}
+        onEditar={onEditar}
+        onArquivar={onArquivar}
+        onDesarquivar={onDesarquivar}
+      />
+    </Panel>
   )
 }

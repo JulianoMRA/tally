@@ -92,7 +92,8 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     // Renda recorrente R$ 800,00 dia 5 (aba "Fontes de renda")
     await page.getByRole('link', { name: 'Rendas' }).click()
     await page.getByRole('tab', { name: 'Fontes de renda' }).click()
-    await page.getByRole('radio', { name: 'Recorrente' }).click()
+    // O seletor Recorrente/Avulsa saiu na 0011: fonte de renda so existe para
+    // entrada constante, entao o formulario ja abre no unico modo que resta.
     await page.getByLabel('Nome').fill('Bolsa Mensal E2E')
     await page.getByLabel('Valor padrão (R$)').fill('800,00')
     await page.getByLabel('Dia esperado').fill('5')

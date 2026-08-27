@@ -2,7 +2,6 @@ import type { Database } from '../database'
 import type { Renda } from '../../domain/entities/renda'
 import type { Recebimento } from '../../domain/entities/recebimento'
 import type {
-  CriarRendaAvulsaInput,
   CriarRendaRecorrenteInput,
   UpdateRendaInput,
   ListRendaOptions
@@ -35,18 +34,6 @@ export class RendaRepository implements Repository {
       : 'SELECT * FROM renda WHERE ativa = 1 ORDER BY nome ASC'
     const rows = this.db.prepare(sql).all() as RendaRow[]
     return rows.map(mapRenda)
-  }
-
-  criarAvulsa(input: CriarRendaAvulsaInput): Renda {
-    const info = this.db
-      .prepare(
-        `INSERT INTO renda (nome, tipo, valor_padrao_centavos, dia_esperado)
-         VALUES (?, 'Avulsa', ?, NULL)`
-      )
-      .run(input.nome, input.valorPadraoCentavos)
-    const renda = this.findById(Number(info.lastInsertRowid))
-    if (!renda) throw new Error('Falha ao recuperar renda após criar')
-    return renda
   }
 
   criarRecorrente(input: CriarRendaRecorrenteInput): ResultadoCriarRecorrente {

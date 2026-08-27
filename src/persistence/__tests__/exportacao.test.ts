@@ -36,8 +36,8 @@ describe('montarLinhasDoMes (exportação CSV do mês)', () => {
       valorCentavos: 2590,
       dataCompra: '2026-06-10'
     })
-    new RecebimentoRepository(db).criarAvulsoCompleto({
-      nome: 'Freela',
+    new RecebimentoRepository(db).criarAvulso({
+      descricao: 'Freela',
       valorCentavos: 50000,
       dataEsperada: '2026-06-15',
       dataRecebida: '2026-06-15'
