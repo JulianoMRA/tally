@@ -164,4 +164,38 @@ test.describe('Ajustes — cópias de segurança', () => {
     await expect(dialogo).toContainText('Os dados atuais serão substituídos')
     await expect(dialogo).toContainText('cópia do estado atual é criada antes')
   })
+  test('restaurar de fato conclui — a guarda nao recusa uma copia legitima', async ({ app }) => {
+    // Os dois specs acima param no dialogo. O caminho que faltava e o que a
+    // guarda de `resolverBackupRestauravel` intercepta: o renderer devolve o
+    // caminho que recebeu do `listarBackups`, o main confronta com a lista e so
+    // entao copia. Uma recusa falsa ali quebraria a restauracao inteira sem
+    // nenhum teste unitario perceber, porque o round-trip do caminho pelo IPC
+    // nao existe no unitario.
+    const { page } = await semear(app)
+    await page.getByRole('link', { name: 'Ajustes' }).click()
+
+    await page.getByRole('button', { name: 'Fazer cópia agora' }).click()
+    await expect(page.getByRole('listitem').first()).toBeVisible()
+
+    await acionarNoMenuDaLinha(page, page.getByRole('listitem').first(), 'Restaurar')
+    await page.getByRole('button', { name: 'Restaurar' }).click()
+
+    // A janela recarrega ao fim da restauracao. Se a guarda tivesse recusado, o
+    // handler teria lancado e a tela mostraria erro em vez de voltar inteira.
+    await page.waitForLoadState('domcontentloaded')
+    await expect(page.getByRole('heading', { name: 'Ajustes' })).toBeVisible()
+    await expect(page.getByText(/inválid|não está na pasta/i)).toHaveCount(0)
+
+    // Assercao causal: restaurar cria um backup de seguranca do estado atual
+    // ANTES de sobrescrever. A lista passar de uma para duas copias so acontece
+    // se o handler atravessou a guarda e rodou ate o fim — se ela tivesse
+    // recusado, o lancamento pararia antes do backupDatabase e a lista ficaria
+    // com uma. Nao depende do mes que a tela de Saidas abre nem de qual
+    // despesa o seed criou.
+    const painel = page
+      .getByRole('heading', { name: 'Cópias de segurança' })
+      .locator('..')
+      .locator('..')
+    await expect(painel.getByRole('listitem')).toHaveCount(2)
+  })
 })

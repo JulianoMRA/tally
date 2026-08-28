@@ -1,7 +1,12 @@
-import { copyFileSync, existsSync } from 'node:fs'
+import { copyFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { dialog, shell, type BrowserWindow, type IpcMain } from 'electron'
-import { backupDatabase, listarBackups } from '../../src/persistence/backup'
+import {
+  backupDatabase,
+  listarBackups,
+  resolverBackupRestauravel,
+  validarPastaDeBackups
+} from '../../src/persistence/backup'
 import { lerConfig, gravarConfig } from '../../src/persistence/settings'
 import {
   configSchema,
@@ -54,6 +59,9 @@ export function registerConfigHandlers(
 
   ipcMain.handle(CONFIG_IPC_CHANNELS.set, (_event, payload: unknown) => {
     const config = configSchema.parse(payload)
+    // Só na escrita: `lerConfig` cai nos defaults quando o arquivo não passa no
+    // schema, então recusar isto na leitura apagaria as outras configurações.
+    if (config.backupsDir !== null) validarPastaDeBackups(config.backupsDir)
     return gravarConfig(settingsPath, config)
   })
 
@@ -102,18 +110,25 @@ export function registerConfigHandlers(
     const { caminho } = restaurarBackupInputSchema.parse(payload)
     const dbPath = banco.caminhoDoBanco()
     if (!dbPath) throw new Error('Banco de dados não inicializado')
-    if (!existsSync(caminho)) throw new Error('Cópia de backup não encontrada')
+
+    // O caminho vem do renderer e vira `copyFileSync` por cima do banco. A
+    // guarda confronta com o que o app lista: só uma cópia da pasta de backups,
+    // com o nome que ele mesmo gera, chega ao `copyFileSync` abaixo.
+    const origem = resolverBackupRestauravel(dbPath, pastaDeBackups(dbPath), caminho)
 
     // O estado atual vira um backup antes de ser sobrescrito: restaurar por
     // engano não pode ser um caminho sem volta.
+    // `preservar`: sem isso a retenção deste backup podia apagar justamente a
+    // cópia sendo restaurada, e o copyFileSync abaixo falhava com ENOENT.
     backupDatabase(dbPath, {
       backupsDir: pastaDeBackups(dbPath),
-      maxBackups: lerConfig(settingsPath).retencaoBackups
+      maxBackups: lerConfig(settingsPath).retencaoBackups,
+      preservar: origem
     })
 
     banco.fechar()
     try {
-      copyFileSync(caminho, dbPath)
+      copyFileSync(origem, dbPath)
     } finally {
       banco.reabrir()
     }
