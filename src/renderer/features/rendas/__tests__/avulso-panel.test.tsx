@@ -68,11 +68,26 @@ describe('AvulsoPanel', () => {
     render(<AvulsoPanel onConfirmar={onConfirmar} onCancelar={vi.fn()} />)
 
     await user.type(screen.getByLabelText('Descrição'), 'X')
-    await user.type(screen.getByLabelText('Valor (R$)'), '1.234,56')
+    // Tres casas decimais: real nao tem, e nenhuma das duas leituras do ponto
+    // salva. Este teste usava '1.234,56', que passou a ser valido quando a
+    // gramatica de valor foi unificada.
+    await user.type(screen.getByLabelText('Valor (R$)'), '1,234')
     await user.click(screen.getByRole('button', { name: 'Registrar' }))
 
     expect(onConfirmar).not.toHaveBeenCalled()
     expect(screen.getByText('Valor inválido.')).toBeTruthy()
+  })
+
+  it('aceita separador de milhar — o que dava para importar agora dá para digitar', async () => {
+    const user = userEvent.setup()
+    const onConfirmar = vi.fn().mockResolvedValue(undefined)
+    render(<AvulsoPanel onConfirmar={onConfirmar} onCancelar={vi.fn()} />)
+
+    await user.type(screen.getByLabelText('Descrição'), 'Freela grande')
+    await user.type(screen.getByLabelText('Valor (R$)'), '1.234,56')
+    await user.click(screen.getByRole('button', { name: 'Registrar' }))
+
+    expect(onConfirmar.mock.calls[0][0].valorCentavos).toBe(123456)
   })
 
   describe('modo edição', () => {

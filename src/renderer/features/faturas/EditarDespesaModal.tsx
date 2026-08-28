@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { centavosParaReais, ehValorValido, parseCentavos } from '../../lib/dinheiro'
 import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
 import { Button, Field, Input, Modal, Select } from '../../components/ui'
@@ -14,14 +15,6 @@ type Props = {
     dataCompra?: string
   }) => Promise<void>
   onCancelar: () => void
-}
-
-function centavosParaReais(centavos: number): string {
-  return (centavos / 100).toFixed(2).replace('.', ',')
-}
-
-function parseCentavos(reais: string): number {
-  return Math.round(parseFloat(reais.replace(',', '.')) * 100)
 }
 
 export function EditarDespesaModal({ despesa, categorias, onConfirmar, onCancelar }: Props) {
@@ -46,7 +39,7 @@ export function EditarDespesaModal({ despesa, categorias, onConfirmar, onCancela
       setErro('Descrição é obrigatória.')
       return
     }
-    if (!/^\d+([.,]\d{1,2})?$/.test(valorReais)) {
+    if (!ehValorValido(valorReais)) {
       setErro('Valor inválido.')
       return
     }

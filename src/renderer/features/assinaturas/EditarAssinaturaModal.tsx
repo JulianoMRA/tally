@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
 import { Button, Field, Input, Modal, Select } from '../../components/ui'
-import { parseCentavos } from '../despesas/parcela-valor'
+import { centavosParaReais, ehValorValido, parseCentavos } from '../../lib/dinheiro'
 import styles from './assinaturas.module.css'
 
 type Props = {
@@ -19,9 +19,7 @@ type Props = {
 export function EditarAssinaturaModal({ assinatura, categorias, onConfirmar, onCancelar }: Props) {
   const [descricao, setDescricao] = useState(assinatura.descricao)
   const [categoriaId, setCategoriaId] = useState(String(assinatura.categoriaId))
-  const [valorReais, setValorReais] = useState(
-    (assinatura.valorCentavos / 100).toFixed(2).replace('.', ',')
-  )
+  const [valorReais, setValorReais] = useState(centavosParaReais(assinatura.valorCentavos))
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
@@ -30,7 +28,7 @@ export function EditarAssinaturaModal({ assinatura, categorias, onConfirmar, onC
       setErro('Descrição é obrigatória.')
       return
     }
-    if (!/^\d+([.,]\d{1,2})?$/.test(valorReais)) {
+    if (!ehValorValido(valorReais)) {
       setErro('Valor inválido.')
       return
     }

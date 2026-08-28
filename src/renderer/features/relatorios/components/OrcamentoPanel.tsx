@@ -18,14 +18,9 @@ const ESCOPOS: readonly OpcaoSegmentada<'global' | 'mensal'>[] = [
 import { formatBRL } from '../../../lib/format-brl'
 import { useOrcamento } from '../hooks/use-orcamento'
 import styles from '../relatorios.module.css'
+import { ehValorValido, parseCentavos } from '../../../lib/dinheiro'
 
 type Props = { mes: string; categorias: Categoria[] }
-
-const VALOR_REGEX = /^\d+([.,]\d{1,2})?$/
-
-function parseCentavos(reais: string): number {
-  return Math.round(parseFloat(reais.replace(',', '.')) * 100)
-}
 
 const FILL_CLASS: Record<StatusOrcamento, string> = {
   ok: styles.fillOk,
@@ -63,7 +58,7 @@ export function OrcamentoPanel({ mes, categorias }: Props) {
     return categorias.filter((c) => !comLimiteNoEscopo.has(c.id))
   }, [categorias, progresso, escopo])
 
-  const podeDefinir = categoriaId !== '' && VALOR_REGEX.test(limiteReais)
+  const podeDefinir = categoriaId !== '' && ehValorValido(limiteReais)
 
   async function handleDefinir() {
     if (!podeDefinir) return

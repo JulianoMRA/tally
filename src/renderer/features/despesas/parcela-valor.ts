@@ -1,9 +1,6 @@
-export type ModoValorParcela = 'total' | 'parcela'
+import { parseCentavos } from '../../lib/dinheiro'
 
-/** Converte um valor em reais digitado ('1234,56') para centavos inteiros. */
-export function parseCentavos(reais: string): number {
-  return Math.round(parseFloat(reais.replace(',', '.')) * 100)
-}
+export type ModoValorParcela = 'total' | 'parcela'
 
 /**
  * Resolve o valor TOTAL da compra parcelada em centavos a partir do modo de

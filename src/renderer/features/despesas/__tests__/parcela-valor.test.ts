@@ -1,17 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { parseCentavos, valorTotalCentavosParcelada } from '../parcela-valor'
+import { valorTotalCentavosParcelada } from '../parcela-valor'
 
-describe('parseCentavos', () => {
-  it('converte reais com vírgula em centavos', () => {
-    expect(parseCentavos('1234,56')).toBe(123456)
-    expect(parseCentavos('40')).toBe(4000)
-    expect(parseCentavos('0,99')).toBe(99)
-  })
-
-  it('aceita ponto como separador decimal', () => {
-    expect(parseCentavos('12.50')).toBe(1250)
-  })
-})
+// A leitura do valor digitado mudou de casa: vive em `lib/dinheiro.ts` e e
+// testada em `lib/__tests__/dinheiro.test.ts`. Aqui fica so a regra propria da
+// parcelada — como o modo de entrada vira o total da compra.
 
 describe('valorTotalCentavosParcelada', () => {
   it('no modo total usa o valor digitado como total da compra', () => {

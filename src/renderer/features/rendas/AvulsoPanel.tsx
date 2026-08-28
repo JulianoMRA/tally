@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { RecebimentoComContexto } from '@shared/ipc/recebimento'
 import { hojeIsoLocal } from '@shared/datas-locais'
 import { Button, Field, Input, SidePanel } from '../../components/ui'
-import { parseCentavos } from '../despesas/parcela-valor'
+import { centavosParaReais, ehValorValido, parseCentavos } from '../../lib/dinheiro'
 import styles from './rendas.module.css'
 
 export type DadosAvulso = {
@@ -17,12 +17,6 @@ type Props = {
   onCancelar: () => void
   /** Quando presente, o painel edita esta entrada em vez de criar uma nova. */
   inicial?: RecebimentoComContexto
-}
-
-const VALOR_REGEX = /^\d+([.,]\d{1,2})?$/
-
-function centavosParaReais(centavos: number): string {
-  return (centavos / 100).toFixed(2).replace('.', ',')
 }
 
 /**
@@ -55,7 +49,7 @@ export function AvulsoPanel({ onConfirmar, onCancelar, inicial }: Props) {
       setErro('Descrição é obrigatória.')
       return
     }
-    if (!VALOR_REGEX.test(valorReais)) {
+    if (!ehValorValido(valorReais)) {
       setErro('Valor inválido.')
       return
     }

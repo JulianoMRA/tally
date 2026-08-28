@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { centavosParaReais, ehValorValido, parseCentavos } from '../../lib/dinheiro'
 import type { Renda } from '@domain/entities/renda'
 import { Button, Field, Input, Modal } from '../../components/ui'
 import styles from './rendas.module.css'
@@ -11,14 +12,6 @@ type Props = {
     diaEsperado?: number | null
   }) => Promise<void>
   onCancelar: () => void
-}
-
-function centavosParaReais(centavos: number): string {
-  return (centavos / 100).toFixed(2).replace('.', ',')
-}
-
-function parseCentavos(reais: string): number {
-  return Math.round(parseFloat(reais.replace(',', '.')) * 100)
 }
 
 export function EditarRendaModal({ renda, onConfirmar, onCancelar }: Props) {
@@ -43,7 +36,7 @@ export function EditarRendaModal({ renda, onConfirmar, onCancelar }: Props) {
       setErro('Nome é obrigatório.')
       return
     }
-    if (!/^\d+([.,]\d{1,2})?$/.test(valorReais)) {
+    if (!ehValorValido(valorReais)) {
       setErro('Valor inválido.')
       return
     }

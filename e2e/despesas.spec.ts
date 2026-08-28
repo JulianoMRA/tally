@@ -52,4 +52,33 @@ test.describe('Despesa única + Fatura', () => {
     // Total da fatura
     await expect(page.getByText(/^Total$/)).toBeVisible()
   })
+  test('aceita separador de milhar no campo de valor', async ({ app }) => {
+    // A gramatica de valor era duplicada em dezoito lugares e o ponto
+    // significava coisas opostas no formulario e no import de CSV: dava para
+    // importar '1.234,56' e nao conseguir digita-lo. Unificada, o ponto e
+    // resolvido pelo que vem depois — tres digitos e milhar, uma ou duas
+    // casas no fim e decimal.
+    //
+    // O unitario cobre a gramatica; este spec cobre o unico trecho que ele nao
+    // alcanca: o valor atravessando o campo real ate virar linha gravada.
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+
+    await criarCartao(page, 'Inter Milhar E2E')
+    await criarCategoria(page, 'Eletronicos E2E')
+    await page.getByRole('link', { name: 'Saídas' }).click()
+
+    await abrirCadastroDeSaida(page)
+    await page.getByLabel('Descrição').fill('Notebook E2E')
+    await page.getByLabel('Categoria').selectOption({ label: 'Eletronicos E2E' })
+    await page.getByLabel('Cartão').selectOption({ label: 'Inter Milhar E2E' })
+    await page.getByLabel('Valor (R$)').fill('1.234,56')
+    await page.getByLabel('Data da compra').fill('2026-06-03')
+    await page.getByRole('button', { name: 'Registrar despesa' }).click()
+
+    // Nao basta o formulario aceitar: o valor tem de chegar gravado certo.
+    // '1.234,56' vale R$ 1.234,56 — nao R$ 1,23 nem R$ 123.456,00.
+    await expect(page.getByRole('cell', { name: 'Notebook E2E' })).toBeVisible()
+    await expect(page.getByRole('cell', { name: /R\$\s*1\.234,56/ })).toBeVisible()
+  })
 })
