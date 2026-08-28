@@ -42,6 +42,15 @@ de rede e sem código remoto:
   http(s) são abertas via `shell.openExternal` no navegador do SO
 - IPC tem schemas Zod em todos os canais (defense in depth)
 - SQL sempre via statements parametrizados — nenhuma string concatenada
+- Restauração de backup só aceita uma cópia que o próprio app lista
+  (`resolverBackupRestauravel`). O caminho vem do renderer e vira
+  `copyFileSync` por cima do banco; confrontar com `listarBackups` mantém
+  uma fonte de verdade só e descarta travessia com `..`, o próprio banco e
+  arquivo de nome estranho largado na pasta
+- Pasta de backups escolhida pelo usuário é validada como caminho absoluto
+  na ESCRITA do settings — não na leitura, porque `lerConfig` cai nos
+  defaults quando o arquivo não passa no schema, e recusar um valor já
+  gravado apagaria as outras configurações em silêncio
 - Export CSV neutraliza injeção de fórmula: célula de texto começando com `=`,
   `+`, `-`, `@`, tab ou CR sai prefixada com apóstrofo. O vetor não exige que o
   usuário digite contra si mesmo — a importação de CSV aceita arquivo de
