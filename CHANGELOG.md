@@ -6,6 +6,14 @@ vista técnico.
 
 ---
 
+## v1.11.0 — Uma gramática de valor (ago/2026)
+
+---
+
+**Unificação da leitura de valor monetário (ago/2026)** — Fecha o último item de peso da auditoria. `parseCentavos` existia em **cinco cópias**, `centavosParaReais` em três mais uma inline, e o regex de validação em **dez ocorrências espalhadas por seis arquivos** — dezoito lugares para editar em conjunto se a regra de entrada de valor mudasse, num app de finanças, onde a cópia que passasse batido viraria divergência silenciosa. **O achado que a auditoria não tinha visto, e que só apareceu ao abrir para consolidar:** o app tinha **duas gramáticas de dinheiro, e o ponto significava coisas opostas nelas**. O formulário lia `12.34` como decimal e recusava `1.234,56`; o import de CSV fazia o inverso. Efeito prático: dava para importar um valor que o app não deixava digitar. **Não havia corrupção silenciosa** — sempre que as duas divergiam, uma delas rejeitava, e nunca liam a mesma string com valores diferentes; o custo era irritação, não dado errado. **Entregue:** `renderer/lib/dinheiro.ts` resolve o ponto pelo que vem depois dele — três dígitos e separador de milhar (`1.000`), uma ou duas casas no fim e decimal (`12.34`, hábito de teclado numérico). Aceita tudo que qualquer um dos dois lados aceitava e não rejeita nada que já passava; `1.234` resolve para R$ 1.234,00, que é a única leitura possível porque real não tem três casas. **O parser do CSV (`shared/csv/valor-brl.ts`) fica como está, de propósito:** lá o valor entra em lote e ninguém vê o resultado antes de gravar, enquanto o formulário tem o campo na frente do usuário. A gramática nova é um **superconjunto** da dele, então tudo que é importável passou a ser digitável — a assimetria que sobra aponta para o lado seguro, e há teste fixando a direção. **A conta passou a ser inteira, sem float:** `parseFloat(x) * 100` dava `1998.9999999999998` para `'19,99'` e só não errava por causa do `Math.round` — com no máximo duas casas o arredondamento sempre salvava, então **nunca houve bug**; a conta inteira apenas não depende disso para estar certa. **O que o E2E ensinou:** a suíte digita 31 campos de valor em 18 specs, mas **nenhum usava separador de milhar** — ela provava ausência de regressão no formato antigo, não que a capacidade nova funciona. Fechado com um caso em `despesas.spec.ts` cuja asserção discrimina: leitura errada de `1.234,56` sairia como `R$ 1,23` ou `R$ 123.456,00`. Um teste da v1.10.0 precisou mudar, porque afirmava que `1.234,56` é recusado — exatamente a regra alterada aqui. **1075 → 1111 testes unitários**, −34 linhas nos arquivos de tela. **E2E: 108 specs, suíte inteira verde.**
+
+---
+
 ## v1.10.1 — Motor de renderização em dia (ago/2026)
 
 ---

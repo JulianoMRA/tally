@@ -62,7 +62,7 @@ Bug reports during development follow a structured template (preconditions, step
 
 ## Status
 
-Tally has been in daily real use since **v1.0.0** and is currently at **v1.10.1**. The MVP and the whole V2 scope in [`PRD.md`](./PRD.md) are delivered; development continues in releases. The implementation was built in vertical slices — each one a thin end-to-end feature with UI, logic, persistence, and tests.
+Tally has been in daily real use since **v1.0.0** and is currently at **v1.11.0**. The MVP and the whole V2 scope in [`PRD.md`](./PRD.md) are delivered; development continues in releases. The implementation was built in vertical slices — each one a thin end-to-end feature with UI, logic, persistence, and tests.
 
 ### Roadmap
 
@@ -106,6 +106,7 @@ From here the project stopped delivering in slices and started delivering in rel
 - [x] **v1.9.0** (ago/2026) — dark theme (“Papel noturno”), toggled from the app menu and remembered across restarts. Picked from three measured palettes; the one that keeps the warmth of the cream theme at the other end of the scale. Getting there meant splitting `--forest`, a token that silently did three jobs because it shared a hex with `--ink`. Along the way: the “Paga” badge failed WCAG AA and the axe sweep had never seen it, the monthly PDF would have printed white-on-white, and a spec had been red since v1.8.0
 - [x] **v1.10.0** (ago/2026) — a one-off income entry no longer requires registering an income source. The cause was never the form: `recebimento` had no name column, so the description came from a `LEFT JOIN` on `renda` and creating a source was the only way for the entry to have something to be called. Migration `0011` gives it its own `descricao`, with a `CHECK` making the two states mutually exclusive. Shipped alongside CSV formula-injection neutralisation on month export, and the removal of dead code left behind by earlier refactors
 - [x] **v1.10.1** (ago/2026) — Electron bumped from 42.3.3 to 42.10.1, seven Chromium patches behind. It closes the last advisory that reached the shipped binary: `electron` is a devDependency but it _is_ the runtime inside the installer, so an unapplied Chromium patch is a patch missing from the user's machine. Verified the way a runtime bump has to be — the 1075 unit tests all mock `window.api`, so they prove nothing here; the app was booted in both themes and the full E2E suite run
+- [x] **v1.11.0** (ago/2026) — one grammar for typed money. `parseCentavos` lived in five copies and the validation regex in ten, across six files — eighteen places to edit in lockstep. Opening it up revealed something the audit had missed: the app had **two** money grammars where the dot meant opposite things. The form read `12.34` as decimal and rejected `1.234,56`; the CSV importer did the reverse, so you could import a value you couldn't type. The dot is now resolved by what follows it — three digits means thousands, one or two trailing digits means decimal
 
 Detalhes técnicos de cada slice em [`CHANGELOG.md`](./CHANGELOG.md).
 
