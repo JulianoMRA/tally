@@ -551,6 +551,7 @@ release. O que veio depois:
 | v1.10.0 | Entrada avulsa sem fonte de renda (ago/2026): registrar um freela deixa de exigir o cadastro de uma fonte; mais a neutralização de fórmula no export CSV e a remoção do código morto acumulado        |
 | v1.10.1 | Motor de renderização em dia (ago/2026): Electron 42.3.3 para 42.10.1, fechando a última advisory que atingia o binário instalado; mais o `smoke:visual`, quebrado desde a v1.10.0                    |
 | v1.11.0 | Uma gramática de valor (ago/2026): `parseCentavos` em cinco cópias e o regex de valor em dez viram um módulo só, e o ponto passa a ser resolvido pelo que vem depois dele — milhar ou decimal         |
+| v1.11.1 | Restauração de backup blindada (ago/2026): só se restaura uma cópia que o próprio app lista, e a retenção deixa de apagar justamente a cópia escolhida                                                |
 
 O V2 da seção 3.2 está integralmente entregue.
 

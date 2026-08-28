@@ -6,6 +6,14 @@ vista técnico.
 
 ---
 
+## v1.11.1 — Restauração de backup blindada (ago/2026)
+
+---
+
+**Hardening do `restaurarBackup`, e um defeito de retenção que veio junto (ago/2026)** — Fecha o último item de segurança da auditoria. **O que estava aberto:** `restaurarBackup` recebia um caminho do renderer e fazia `copyFileSync` dele **por cima do banco**, verificando apenas que o arquivo existia — o main emprestava seu poder de escrever no disco para um caminho que não escolheu, confused deputy clássico. **Severidade baixa, e vale dizer por quê** em vez de inflar o achado: o renderer não tem superfície de injeção (zero `dangerouslySetInnerHTML`, zero `<a href>`, zero `eval`, CSP estrita, `sandbox: true`); é defesa em profundidade, e protege também contra um bug do renderer mandando o caminho errado. **Entregue:** `resolverBackupRestauravel` fixa o invariante **"só se restaura o que o próprio app lista"**, confrontando com `listarBackups` em vez de reimplementar pasta e nome — uma fonte de verdade só, e mudança lá não deixa a guarda para trás; descarta de graça travessia com `..`, o próprio banco e arquivo de nome estranho largado na pasta. A pasta de backups passa a exigir caminho absoluto (relativo resolveria contra o `cwd`, imprevisível num app empacotado, e é onde o `mkdirSync(recursive)` criaria a árvore), **mas só na escrita do settings**: `lerConfig` cai nos defaults quando o arquivo não passa no schema, então recusar ali um valor já gravado apagaria em silêncio todas as outras configurações do usuário, o tema incluído — trocar uma falha de severidade baixa por perda de configuração seria mau negócio. **Bug pré-existente corrigido junto, achado ao ligar a guarda e confirmado por medição antes de ser afirmado:** o backup de segurança roda ANTES do `copyFileSync` e aplica retenção, que podia apagar justamente a cópia sendo restaurada. Alcançável com a retenção padrão de 10 assim que existissem dez cópias e a escolhida fosse a mais antiga — cerca de cinco dias de uso, já que o app copia no boot e na saída. **Sem perda de dado** (o `copyFileSync` falha antes de tocar o banco e o `finally` reabre a conexão), mas a restauração quebrava com ENOENT; `backupDatabase` ganhou `preservar`, e a retenção guarda uma cópia a mais por um ciclo. **A lacuna de teste que a mudança expôs:** os dois specs de restauração **paravam no diálogo de confirmação**, então o round-trip renderer → IPC → guarda → `copyFileSync` não tinha cobertura nenhuma — e é exatamente onde uma recusa falsa quebraria a restauração em silêncio, aparecendo só no dia em que o usuário precisasse dela. Spec novo conclui a restauração, com asserção causal (a lista de cópias tem de passar de uma para duas, porque restaurar cria o backup de segurança antes de sobrescrever). **1111 → 1127 testes unitários.** `SECURITY.md` atualizado com as duas guardas no threat model.
+
+---
+
 ## v1.11.0 — Uma gramática de valor (ago/2026)
 
 ---
