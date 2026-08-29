@@ -8,7 +8,6 @@ import {
 } from './fixtures/navegacao'
 
 // RF-VIS-05 + RF-VIS-06 — relatórios: ranking por categoria + evolução
-// TODO(e2e): realinhar seletores com a UI atual e reativar (drift pre-CI). Ver slice-16.5.
 test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
   test('cadastra 2 despesas em categorias distintas e valida ranking em /relatorios', async ({
     app

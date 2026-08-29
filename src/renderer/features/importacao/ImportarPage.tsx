@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { parseCsv } from '@shared/csv/parse-csv'
-import type { LinhaImportacao, ResultadoImportacao } from '@shared/ipc/importacao'
+import {
+  LIMITE_LINHAS_IMPORTACAO,
+  type LinhaImportacao,
+  type ResultadoImportacao
+} from '@shared/ipc/importacao'
 import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
 import {
@@ -62,6 +66,14 @@ export default function ImportarPage() {
       const conteudo = await arquivo.text()
       const { header, linhas } = parseCsv(conteudo)
       validarHeader(template, header)
+      // A mesma regra que o schema do IPC aplica, checada aqui para o usuário
+      // ver o motivo antes do preview e da conversão de milhares de linhas —
+      // e não como uma falha de validação vinda do main.
+      if (linhas.length > LIMITE_LINHAS_IMPORTACAO) {
+        throw new Error(
+          `O arquivo tem ${linhas.length} linhas e o limite por importação é ${LIMITE_LINHAS_IMPORTACAO}. Divida o arquivo e importe em partes.`
+        )
+      }
       const { validas, erros } = converterLinhas(template, linhas)
       setPreview({ kind: 'pronto', nomeArquivo: arquivo.name, validas, erros })
     } catch (e) {

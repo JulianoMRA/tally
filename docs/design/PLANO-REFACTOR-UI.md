@@ -1,5 +1,9 @@
 # Plano — Refactor visual (ago/2026)
 
+> **CONCLUÍDO.** As nove fases foram executadas e mergeadas (ago/2026). Este
+> arquivo é histórico: serve para consultar o que foi decidido e por quê, não
+> para saber o que fazer a seguir. Nada aqui está pendente.
+
 Plano de execução da proposta de UI em `docs/design/referencia/proposta-2026-08/`.
 Origem: auditoria de interface feita sobre `src/renderer` na `main`, sincronizada
 em 15/08/2026.
