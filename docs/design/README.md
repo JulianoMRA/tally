@@ -23,7 +23,8 @@ em `src/renderer/styles/tokens.css`, nunca ali.
 
 Em `docs/design/referencia/proposta-2026-08/`. Auditoria de interface sobre
 `src/renderer`, com diagnóstico de 17 pontos e painéis antes/depois de seis
-telas. O plano de execução está em `docs/design/PLANO-REFACTOR-UI.md`.
+telas. O plano de execução está em `docs/design/PLANO-REFACTOR-UI.md`, com as nove
+fases **já concluídas** — é registro do que foi decidido, não trabalho pendente.
 
 | Arquivo               | Conteúdo                                               |
 | --------------------- | ------------------------------------------------------ |

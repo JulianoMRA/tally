@@ -79,8 +79,28 @@ export const linhaImportacaoSchema = z.discriminatedUnion('tipo', [
   recebimentoAvulsoSchema
 ])
 
+/**
+ * Teto de linhas por importação.
+ *
+ * Todo o resto do app tem limite — descrição em 120 caracteres, parcelas em
+ * 360, retenção de backup em 100 — e o lote de importação era o único campo
+ * sem teto. Ele vira **uma transação SQLite única** (`importarLinhas` é
+ * all-or-nothing), e o arquivo vem de terceiro, que é o próprio caso de uso.
+ *
+ * 5000 é folgado de propósito: um ano de uso pesado não passa de alguns
+ * milhares de lançamentos. O número existe para haver um limite, não para
+ * apertar o uso real.
+ */
+export const LIMITE_LINHAS_IMPORTACAO = 5000
+
 export const importarCsvInputSchema = z.object({
-  linhas: z.array(linhaImportacaoSchema).min(1, 'Nenhuma linha para importar')
+  linhas: z
+    .array(linhaImportacaoSchema)
+    .min(1, 'Nenhuma linha para importar')
+    .max(
+      LIMITE_LINHAS_IMPORTACAO,
+      `Importação limitada a ${LIMITE_LINHAS_IMPORTACAO} linhas por arquivo. Divida o arquivo e importe em partes.`
+    )
 })
 
 export type LinhaImportacao = z.infer<typeof linhaImportacaoSchema>
