@@ -26,11 +26,14 @@ describe('migration 0010_data_referencia_segue_a_fatura', () => {
     ).run()
   })
 
-  // Escopado ate a 0010 de proposito. A 0011 reconstroi tabelas com DROP, e
-  // como o wrapper do node-sqlite3-wasm nunca finaliza statements, um SELECT
-  // que o teste preparou antes deixa o DROP com "database table is locked".
-  // Nao afeta producao: la o runMigrations roda logo apos o openDatabase, em
-  // conexao sem nenhum prepare anterior (electron/main.ts, boot e reabertura).
+  // Escopado ate a 0010 de proposito: o que este arquivo mede e o estado do
+  // schema NAQUELA migration, e a 0011 reconstroi recebimento e renda.
+  //
+  // O escopo ja foi tambem uma necessidade tecnica — sem finalizar statements,
+  // um SELECT preparado antes deixava o DROP da 0011 com "database table is
+  // locked". Deixou de ser: o wrapper agora reaproveita e finaliza statements
+  // (`src/persistence/database.ts`), e este teste passa mesmo aplicando todas
+  // as migrations. O escopo fica pelo motivo de design, nao pelo lock.
   function aplicar0010(): void {
     runMigrations(
       db,
