@@ -127,8 +127,6 @@
     "js-yaml": "^4.3.1"
   },
   "dependencies": {
-    "@electron-toolkit/preload": "^3.0.2",
-    "@electron-toolkit/utils": "^3.0.0",
     "@fontsource/geist": "^5.2.8",
     "@fontsource/geist-mono": "^5.2.7",
     "@hookform/resolvers": "^5.2.2",

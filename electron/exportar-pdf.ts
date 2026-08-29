@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron'
 import { join } from 'path'
-import { is } from '@electron-toolkit/utils'
+import { ehDev } from './ambiente'
 
 /**
  * Renderiza a rota de impressão (#/print/:mes) numa janela oculta e devolve o
@@ -37,7 +37,7 @@ export async function gerarPdfDoMes(mes: string): Promise<Buffer> {
 
   try {
     const rendererUrl = process.env['ELECTRON_RENDERER_URL']
-    if (is.dev && rendererUrl) {
+    if (ehDev() && rendererUrl) {
       await win.loadURL(`${rendererUrl}#/print/${mes}`)
     } else {
       await win.loadFile(join(__dirname, '../renderer/index.html'), { hash: `/print/${mes}` })
