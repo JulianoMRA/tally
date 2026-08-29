@@ -10,7 +10,7 @@ import {
 } from 'electron'
 import { join } from 'path'
 import { mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from 'fs'
-import { is } from '@electron-toolkit/utils'
+import { ehDev } from './ambiente'
 // electron-updater e CJS; o default import + destructuring e o padrao seguro
 // para o bundle CJS do electron-vite (named import quebra o interop).
 import electronUpdater from 'electron-updater'
@@ -67,7 +67,7 @@ function iniciarTimerFechamento(database: Database): void {
   fechamentoTimer = setInterval(() => {
     try {
       const fechadas = new FaturaRepository(database).fecharVencidas(hojeIsoLocal())
-      if (is.dev && fechadas > 0) {
+      if (ehDev() && fechadas > 0) {
         console.log(`[faturas] timer: ${fechadas} fatura(s) Aberta vencidas → Fechada`)
       }
       verificarAvisos(database, resolveSettingsPath())
@@ -128,7 +128,7 @@ function limparLockOrfao(dbPath: string): void {
   if (!existsSync(lockPath)) return
   try {
     rmSync(lockPath, { recursive: true, force: true })
-    if (is.dev) {
+    if (ehDev()) {
       console.warn(`[db] lock órfão removido: ${lockPath} (shutdown sujo anterior?)`)
     }
   } catch (err) {
@@ -144,12 +144,12 @@ function inicializarBancoDeDados(): Database {
   // Copia de seguranca do arquivo ANTES de abrir/migrar: se uma migration
   // corromper o schema, o estado pre-migration fica preservado em backups/.
   const backupPath = backupDatabase(dbPath, opcoesDeBackup())
-  if (is.dev && backupPath) {
+  if (ehDev() && backupPath) {
     console.log(`[db] backup criado: ${backupPath}`)
   }
   const database = openDatabase(dbPath)
   const result = runMigrations(database)
-  if (is.dev && result.applied.length > 0) {
+  if (ehDev() && result.applied.length > 0) {
     console.log(`[migrations] aplicadas: ${result.applied.join(', ')}`)
   }
   // RN-06: auto-fechamento de faturas vencidas no boot. Antes vivia em
@@ -157,7 +157,7 @@ function inicializarBancoDeDados(): Database {
   // SELECTs nunca disparem UPDATEs como efeito colateral. Data LOCAL — com
   // toISOString (UTC) faturas fechavam ate 3h mais cedo em UTC-3.
   const fechadas = new FaturaRepository(database).fecharVencidas(hojeIsoLocal())
-  if (is.dev && fechadas > 0) {
+  if (ehDev() && fechadas > 0) {
     console.log(`[faturas] ${fechadas} fatura(s) Aberta vencidas → Fechada`)
   }
   return database
@@ -247,7 +247,7 @@ function encerrarComFalha(motivo: string, err: unknown): never {
 // 'unsafe-inline' em style-src é exigido pelo emit do Vite (CSS Modules + recharts inline styles).
 // Em dev, 'unsafe-eval' adicional para HMR do Vite; em produção, política mais estrita.
 function cspHeader(): string {
-  if (is.dev) {
+  if (ehDev()) {
     // Dev: Vite HMR injeta inline scripts (preamble do @vitejs/plugin-react)
     // e usa eval para hot-update. unsafe-inline + unsafe-eval necessarios.
     // ws:/wss: para o websocket do HMR.
@@ -281,7 +281,7 @@ function cspHeader(): string {
 // legítimos podem ser bloqueados. Producao ja esta protegida por
 // contextIsolation + nodeIntegration: false + webSecurity: true.
 function instalarCSP(): void {
-  if (!is.dev) return
+  if (!ehDev()) return
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
@@ -455,7 +455,7 @@ function construirMenuApp(): void {
       ]
     }
   ]
-  if (is.dev) {
+  if (ehDev()) {
     template.push({
       label: 'Desenvolvimento',
       submenu: [{ role: 'reload' }, { role: 'forceReload' }, { role: 'toggleDevTools' }]
@@ -530,7 +530,7 @@ function createWindow(): void {
     abrirExternoSeguro(url)
   })
 
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+  if (ehDev() && process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
     win.loadFile(join(__dirname, '../renderer/index.html'))
@@ -608,7 +608,7 @@ if (!obteveLock) {
   const onSignal = (sinal: NodeJS.Signals): void => {
     if (isShuttingDown) return
     isShuttingDown = true
-    if (is.dev) console.log(`[main] recebido ${sinal}, encerrando.`)
+    if (ehDev()) console.log(`[main] recebido ${sinal}, encerrando.`)
     fecharBanco()
     app.exit(0)
   }
