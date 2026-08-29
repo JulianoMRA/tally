@@ -73,8 +73,9 @@ chore(types): reativa noImplicitAny (alinha com CLAUDE.md "strict")
 
 - **`pre-commit`** → `lint-staged` (ESLint + Prettier nos arquivos staged)
 - **`commit-msg`** → `commitlint` valida o header
-- **`pre-push`** → `npm run typecheck && npm run test:run` (barra push se
-  tipos ou testes unitários quebrarem)
+- **`pre-push`** → `npm run lint && npm run typecheck && npm run test:run`
+  (barra push se lint, tipos ou testes unitários quebrarem). O `lint` entrou em
+  ago/2026: sem CI, nada impedia um push com erro de lint, e ele custa segundos
 
 Nunca use `--no-verify` sem justificativa clara — investigue o que o hook
 está bloqueando antes.
@@ -167,7 +168,7 @@ em ago/2026. Todo o pipeline roda na máquina, na ordem abaixo, antes de abrir P
 
 Os hooks do Husky cobrem a parte rápida automaticamente: `pre-commit` roda
 ESLint e Prettier nos arquivos staged, `commit-msg` valida o conventional
-commit, e `pre-push` roda typecheck + suíte unitária.
+commit, e `pre-push` roda lint + typecheck + suíte unitária.
 
 PR contra `main` segue obrigatório para merge — o que mudou é que a verificação
 é sua responsabilidade local, não de um runner.

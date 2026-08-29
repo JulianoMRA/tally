@@ -463,7 +463,8 @@ do mantenedor, na ordem abaixo, antes de abrir PR:
 7. `npm audit --omit=dev --audit-level=high`
 
 Automação que resta são os hooks do Husky: `pre-commit` (ESLint + Prettier nos
-staged), `commit-msg` (commitlint) e `pre-push` (typecheck + suíte unitária).
+staged), `commit-msg` (commitlint) e `pre-push` (lint + typecheck + suíte
+unitária).
 
 **Histórico das remoções.** Dependabot saiu em jul/2026: o volume de PRs de
 deps-dev e de actions superava o valor num projeto pessoal de um mantenedor.
