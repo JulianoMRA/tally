@@ -39,6 +39,7 @@ import { registerAppHandlers } from './ipc/app-handlers'
 import { registerJanelaHandlers, observarEstadoDaJanela } from './ipc/janela-handlers'
 import { registerDadosHandlers } from './ipc/dados-handlers'
 import { verificarAvisos } from './avisos'
+import { ehNavegacaoInterna, urlExternaPermitida } from './navegacao'
 import {
   CARTAO_IPC_CHANNELS,
   CATEGORIA_IPC_CHANNELS,
@@ -292,18 +293,10 @@ function instalarCSP(): void {
 }
 
 // Abre uma URL no navegador externo apenas se for http(s) bem-formada.
-// new URL() rejeita strings malformadas e a checagem exata de protocolo evita
-// esquemas perigosos (file:, javascript:, etc.) que um startsWith deixaria passar.
+// A decisao vive em `navegacao.ts`, sem dependencia de electron, para ter teste.
 function abrirExternoSeguro(rawUrl: string): void {
-  let parsed: URL
-  try {
-    parsed = new URL(rawUrl)
-  } catch {
-    return
-  }
-  if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-    shell.openExternal(parsed.href)
-  }
+  const permitida = urlExternaPermitida(rawUrl)
+  if (permitida) shell.openExternal(permitida)
 }
 
 function janelaAtual(): BrowserWindow | undefined {
@@ -522,17 +515,19 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  // Bloqueia navegação para fora do app (preserva apenas o renderer atual).
+  // Bloqueia navegação para fora do documento do app. Só o fragmento pode
+  // mudar — é assim que o `createHashRouter` troca de tela. Qualquer outro
+  // destino é cancelado e, se for http(s), entregue ao navegador do SO.
+  //
+  // A guarda anterior autorizava `file://` inteiro e comparava a URL corrente
+  // por prefixo, o que a anulava enquanto a janela ainda não tinha página
+  // (`startsWith('')` é sempre verdadeiro). Nada disso era alcançável — o
+  // renderer não renderiza link nenhum —, mas a janela mantém o preload, então
+  // o que passasse aqui carregaria com `window.api` ao alcance.
   win.webContents.on('will-navigate', (event, url) => {
-    const rendererUrl = process.env['ELECTRON_RENDERER_URL']
-    const ehInterno =
-      (rendererUrl && url.startsWith(rendererUrl)) ||
-      url.startsWith('file://') ||
-      url.startsWith(win.webContents.getURL())
-    if (!ehInterno) {
-      event.preventDefault()
-      abrirExternoSeguro(url)
-    }
+    if (ehNavegacaoInterna(win.webContents.getURL(), url)) return
+    event.preventDefault()
+    abrirExternoSeguro(url)
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {

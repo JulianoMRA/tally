@@ -17,8 +17,22 @@ export async function gerarPdfDoMes(mes: string): Promise<Buffer> {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      webSecurity: true
+      webSecurity: true,
+      allowRunningInsecureContent: false
     }
+  })
+
+  // As mesmas guardas da janela principal. Esta carrega o MESMO preload, logo
+  // tem `window.api` inteiro — e como ela é oculta, o que acontecesse aqui não
+  // teria nem a chance de ser notado. Ela existe para renderizar uma rota e
+  // virar PDF: nada deve navegar nem abrir janela a partir dela.
+  //
+  // Cancelar toda navegação não atrapalha o carregamento: `will-navigate` não
+  // dispara para `loadURL`/`loadFile` chamados pelo main, só para navegação
+  // iniciada pela própria página.
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+  win.webContents.on('will-navigate', (event) => {
+    event.preventDefault()
   })
 
   try {

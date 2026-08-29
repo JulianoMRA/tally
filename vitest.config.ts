@@ -6,7 +6,11 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    // `electron/**` entrou em ago/2026: a camada do main process tinha zero
+    // testes e nenhum caminho para ganhar um, porque o include nao a alcancava.
+    // Sao os handlers IPC, a exportacao de PDF, os avisos e as guardas de
+    // navegacao — codigo de fronteira, justamente onde erro passa despercebido.
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'electron/**/*.test.ts'],
     // O default do vitest é `!process.env.CI`. Sem CI desde ago/2026, isso
     // liberava .only para sempre: um `it.only` esquecido deixava a suíte verde
     // pulando o resto do arquivo (medido: 693 passed | 13 skipped, exit 0).
