@@ -530,29 +530,30 @@ Ordem proposta para implementação. Cada slice é uma fatia ponta-a-ponta (UI +
 Após o slice 14 o projeto saiu do modelo de slices e passou a entregar por
 release. O que veio depois:
 
-| Release | Entrega principal                                                                                                                                                                                     |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| v1.0.0  | Auditoria completa do app fechada em 6 PRs (jun/2026): RN-06 passa a valer de fato, proteção de fatura Fechada, datas no fuso local, feedback de erro em todas as telas                               |
-| v1.1.0  | As 11 fases do plano de melhorias (jul/2026). **Fecha todo o V2 do PRD** — orçamento, exportação, backup e tags/notas —, mais auto-update, importador CSV, notificações de fatura e página de Ajustes |
-| v1.1.1  | Release de correção (jul/2026): ações da tabela de Saídas inalcançáveis por `overflow: hidden`                                                                                                        |
-| v1.2.0  | Plano de UI/UX (ago/2026): Topbar, controles segmentados unificados, ações de linha em menu overflow, largura de página centralizada no `PageContainer`, varredura a11y com dados e gate de teclado   |
-| v1.2.1  | Release de correção (ago/2026): falhas do auto-updater ficavam invisíveis e o nome do artefato divergia do `latest.yml`                                                                               |
-| v1.2.2  | Release de correção (ago/2026): vencimento calculado no mês seguinte quando o dia de vencimento é anterior ao de fechamento                                                                           |
-| v1.2.3  | Release de correção (ago/2026): fatura residual de cartão arquivado seguia visível; datas das faturas passam a se realinhar ao editar o cartão                                                        |
-| v1.3.0  | Refactor visual, lote 1 (ago/2026): hero de saldo e agenda na visão mensal, `SidePanel`, Saídas com a lista assumindo a tela e impacto mensal por ocorrência                                          |
-| v1.4.0  | Refactor visual, F5 (ago/2026): Faturas em tela única, com trilho de cartões e a fatura corrente sem nenhum clique                                                                                    |
-| v1.5.0  | **Fecha o refactor visual** (ago/2026): Rendas, Cartões, Categorias, Ajustes e Importar, mais o sistema — uma largura de página, seis degraus de tipo e três densidades. Nove fases, 17 pontos        |
-| v1.5.1  | Release de correção (ago/2026): a data da compra volta à lista de Saídas, e a ordenação por ela deixa de ser inalcançável depois do primeiro clique em outra coluna                                   |
-| v1.6.0  | Passador de mês em Rendas (ago/2026): as setas de mês anterior e próximo saem de Visão mensal e Saídas e viram o componente `SeletorMes`, usado pelas três telas                                      |
-| v1.6.1  | Release de correção (ago/2026): clicar fora do modal de nota descartava o texto digitado; o esqueleto repetido em seis modais vira o primitivo `Modal`                                                |
-| v1.6.2  | Varredura de consistência (ago/2026): mensagens de erro cruas em três telas, tela travando em "Carregando…" por rejeição sem `.catch`, e o CSS de tabela duplicado vira o primitivo `Table`           |
-| v1.7.0  | Barra de título própria (ago/2026): as duas faixas de cromo do sistema viram uma, o menu "Arquivo" migra para dentro do app e a marca deixa de aparecer duas vezes                                    |
-| v1.8.0  | Barra funde com o cabeçalho (ago/2026): 88px de cromo viram 32px, o nome da tela sobe para a barra, o menu sai da marca e os controles de janela passam a ser do app                                  |
-| v1.9.0  | Tema escuro (ago/2026): paleta Papel noturno alternável pelo menu do app, com a divisão de `--forest` que ela exigiu, o PDF mensal blindado contra o tema e três defeitos anteriores corrigidos       |
-| v1.10.0 | Entrada avulsa sem fonte de renda (ago/2026): registrar um freela deixa de exigir o cadastro de uma fonte; mais a neutralização de fórmula no export CSV e a remoção do código morto acumulado        |
-| v1.10.1 | Motor de renderização em dia (ago/2026): Electron 42.3.3 para 42.10.1, fechando a última advisory que atingia o binário instalado; mais o `smoke:visual`, quebrado desde a v1.10.0                    |
-| v1.11.0 | Uma gramática de valor (ago/2026): `parseCentavos` em cinco cópias e o regex de valor em dez viram um módulo só, e o ponto passa a ser resolvido pelo que vem depois dele — milhar ou decimal         |
-| v1.11.1 | Restauração de backup blindada (ago/2026): só se restaura uma cópia que o próprio app lista, e a retenção deixa de apagar justamente a cópia escolhida                                                |
+| Release | Entrega principal                                                                                                                                                                                                        |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| v1.0.0  | Auditoria completa do app fechada em 6 PRs (jun/2026): RN-06 passa a valer de fato, proteção de fatura Fechada, datas no fuso local, feedback de erro em todas as telas                                                  |
+| v1.1.0  | As 11 fases do plano de melhorias (jul/2026). **Fecha todo o V2 do PRD** — orçamento, exportação, backup e tags/notas —, mais auto-update, importador CSV, notificações de fatura e página de Ajustes                    |
+| v1.1.1  | Release de correção (jul/2026): ações da tabela de Saídas inalcançáveis por `overflow: hidden`                                                                                                                           |
+| v1.2.0  | Plano de UI/UX (ago/2026): Topbar, controles segmentados unificados, ações de linha em menu overflow, largura de página centralizada no `PageContainer`, varredura a11y com dados e gate de teclado                      |
+| v1.2.1  | Release de correção (ago/2026): falhas do auto-updater ficavam invisíveis e o nome do artefato divergia do `latest.yml`                                                                                                  |
+| v1.2.2  | Release de correção (ago/2026): vencimento calculado no mês seguinte quando o dia de vencimento é anterior ao de fechamento                                                                                              |
+| v1.2.3  | Release de correção (ago/2026): fatura residual de cartão arquivado seguia visível; datas das faturas passam a se realinhar ao editar o cartão                                                                           |
+| v1.3.0  | Refactor visual, lote 1 (ago/2026): hero de saldo e agenda na visão mensal, `SidePanel`, Saídas com a lista assumindo a tela e impacto mensal por ocorrência                                                             |
+| v1.4.0  | Refactor visual, F5 (ago/2026): Faturas em tela única, com trilho de cartões e a fatura corrente sem nenhum clique                                                                                                       |
+| v1.5.0  | **Fecha o refactor visual** (ago/2026): Rendas, Cartões, Categorias, Ajustes e Importar, mais o sistema — uma largura de página, seis degraus de tipo e três densidades. Nove fases, 17 pontos                           |
+| v1.5.1  | Release de correção (ago/2026): a data da compra volta à lista de Saídas, e a ordenação por ela deixa de ser inalcançável depois do primeiro clique em outra coluna                                                      |
+| v1.6.0  | Passador de mês em Rendas (ago/2026): as setas de mês anterior e próximo saem de Visão mensal e Saídas e viram o componente `SeletorMes`, usado pelas três telas                                                         |
+| v1.6.1  | Release de correção (ago/2026): clicar fora do modal de nota descartava o texto digitado; o esqueleto repetido em seis modais vira o primitivo `Modal`                                                                   |
+| v1.6.2  | Varredura de consistência (ago/2026): mensagens de erro cruas em três telas, tela travando em "Carregando…" por rejeição sem `.catch`, e o CSS de tabela duplicado vira o primitivo `Table`                              |
+| v1.7.0  | Barra de título própria (ago/2026): as duas faixas de cromo do sistema viram uma, o menu "Arquivo" migra para dentro do app e a marca deixa de aparecer duas vezes                                                       |
+| v1.8.0  | Barra funde com o cabeçalho (ago/2026): 88px de cromo viram 32px, o nome da tela sobe para a barra, o menu sai da marca e os controles de janela passam a ser do app                                                     |
+| v1.9.0  | Tema escuro (ago/2026): paleta Papel noturno alternável pelo menu do app, com a divisão de `--forest` que ela exigiu, o PDF mensal blindado contra o tema e três defeitos anteriores corrigidos                          |
+| v1.10.0 | Entrada avulsa sem fonte de renda (ago/2026): registrar um freela deixa de exigir o cadastro de uma fonte; mais a neutralização de fórmula no export CSV e a remoção do código morto acumulado                           |
+| v1.10.1 | Motor de renderização em dia (ago/2026): Electron 42.3.3 para 42.10.1, fechando a última advisory que atingia o binário instalado; mais o `smoke:visual`, quebrado desde a v1.10.0                                       |
+| v1.11.0 | Uma gramática de valor (ago/2026): `parseCentavos` em cinco cópias e o regex de valor em dez viram um módulo só, e o ponto passa a ser resolvido pelo que vem depois dele — milhar ou decimal                            |
+| v1.11.1 | Restauração de backup blindada (ago/2026): só se restaura uma cópia que o próprio app lista, e a retenção deixa de apagar justamente a cópia escolhida                                                                   |
+| v1.11.2 | Statements finalizados e guardas de fronteira (ago/2026): prepared statements deixam de vazar e de travar tabela para DDL, guarda de navegação passa a exigir o mesmo documento, e o gate do `npm audit` sai do vermelho |
 
 O V2 da seção 3.2 está integralmente entregue.
 
