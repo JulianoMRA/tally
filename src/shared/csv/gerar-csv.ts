@@ -49,9 +49,30 @@ function citarSePreciso(campo: string): string {
   return campo
 }
 
-/** Centavos → '1234,56' (sem separador de milhar; inverso de parseValorBrl). */
+/**
+ * Centavos → '1234,56' (sem separador de milhar; inverso de parseValorBrl).
+ *
+ * Recusa negativo em vez de formatá-lo. **Valor negativo não é representável no
+ * Tally**, e as três camadas agora dizem isso: o schema do banco tem
+ * `CHECK (valor_centavos >= 0)` em toda coluna de dinheiro, os schemas Zod
+ * exigem `min(1)`, e esta função fecha o conjunto.
+ *
+ * Antes ela aceitava calado e devolvia número **errado**: `-12345` centavos
+ * saía como `-124,45`, porque o `Math.floor` arredonda para baixo (−123,45 vira
+ * −124) e o `Math.abs` do resto perde o sinal. Nunca foi alcançável — nenhum
+ * caminho do app produz negativo —, mas num app de finanças um formatador que
+ * erra em silêncio é pior que um que recusa. Se um negativo aparecer, a
+ * exportação falha com mensagem clara em vez de gerar uma planilha com número
+ * inventado.
+ */
 export function formatarValorCsv(centavos: number): string {
+  if (centavos < 0) {
+    throw new Error(
+      `Valor monetário negativo não é representável: ${centavos} centavos. ` +
+        `Todo valor no Tally é positivo (CHECK do banco e schemas de IPC).`
+    )
+  }
   const inteiros = Math.floor(centavos / 100)
-  const resto = Math.abs(centavos % 100)
+  const resto = centavos % 100
   return `${inteiros},${resto.toString().padStart(2, '0')}`
 }

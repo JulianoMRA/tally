@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { Despesa } from '@domain/entities/despesa'
 import { montarPreenchimentoDespesa } from '../montar-preenchimento'
+import { parseCentavos } from '../../../lib/dinheiro'
 
 function despesa(over: Partial<Despesa>): Despesa {
   return {
@@ -66,5 +67,30 @@ describe('montarPreenchimentoDespesa', () => {
       cartaoId: 5,
       valorReais: '39,90'
     })
+  })
+})
+
+describe('montarPreenchimentoDespesa — o valor volta legivel para o formulario', () => {
+  // O preenchimento usava `formatarValorCsv`, o formatador do EXPORT de CSV,
+  // para preencher um campo de tela. Os dois produzem o mesmo texto para valor
+  // positivo, entao nunca houve defeito visivel — mas sao gramaticas de dois
+  // lados diferentes do app, e a do formulario tem uma garantia que a do CSV
+  // nao tem: o campo abre com algo que ele proprio aceita de volta.
+  //
+  // Este teste fixa essa garantia, que e o motivo da troca por
+  // `centavosParaReais`.
+  it.each([1, 50, 100, 1999, 123456, 99999999])(
+    'preenche %d centavos com um texto que o parseCentavos le de volta',
+    (centavos) => {
+      const preenchimento = montarPreenchimentoDespesa(despesa({ valorCentavos: centavos }))
+
+      expect(parseCentavos(preenchimento.valorReais)).toBe(centavos)
+    }
+  )
+
+  it('nao usa separador de milhar, para o ida-e-volta ser trivial', () => {
+    const preenchimento = montarPreenchimentoDespesa(despesa({ valorCentavos: 123456789 }))
+
+    expect(preenchimento.valorReais).toBe('1234567,89')
   })
 })

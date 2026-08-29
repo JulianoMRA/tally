@@ -117,4 +117,20 @@ describe('formatarValorCsv', () => {
     const valores = [1, 99, 100, 12345, 999999901].map((c) => ['x', formatarValorCsv(c)])
     expect(parseCsv(serializarCsv(['d', 'valor'], valores)).linhas).toEqual(valores)
   })
+
+  // Valor negativo nao e representavel no Tally, e as tres camadas dizem isso:
+  // o schema do banco tem CHECK (valor_centavos >= 0) em toda coluna de
+  // dinheiro, os schemas Zod exigem min(1), e agora o formatador tambem.
+  //
+  // Antes ele aceitava calado e devolvia numero ERRADO: -12345 centavos saia
+  // como '-124,45', porque o Math.floor arredonda para baixo e o Math.abs do
+  // resto perde o sinal. Nunca foi alcancavel, mas num app de financas um
+  // formatador que erra em silencio e pior que um que recusa.
+  it.each([-1, -50, -12345])('recusa %d centavos em vez de formatar errado', (centavos) => {
+    expect(() => formatarValorCsv(centavos)).toThrow(/negativo/i)
+  })
+
+  it('aceita zero, que e o piso do CHECK do banco', () => {
+    expect(formatarValorCsv(0)).toBe('0,00')
+  })
 })

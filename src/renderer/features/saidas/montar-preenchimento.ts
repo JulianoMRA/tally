@@ -1,5 +1,5 @@
 import type { Despesa } from '@domain/entities/despesa'
-import { formatarValorCsv } from '@shared/csv/gerar-csv'
+import { centavosParaReais } from '../../lib/dinheiro'
 
 // Pré-preenchimento do DespesaForm ao duplicar uma saída. Discriminado pela
 // aba do formulário. `dataCompra` NÃO é copiada (duplicar = nova compra hoje);
@@ -43,7 +43,13 @@ export type PreenchimentoDespesa =
  */
 export function montarPreenchimentoDespesa(despesa: Despesa): PreenchimentoDespesa {
   const descricao = `${despesa.descricao} (cópia)`
-  const valorReais = formatarValorCsv(despesa.valorCentavos)
+  // `centavosParaReais`, não `formatarValorCsv`: o destino é um campo de tela,
+  // e a gramática do formulário garante que o campo abre com um texto que ele
+  // próprio aceita de volta. O formatador do CSV produz o mesmo texto para
+  // valor positivo — nunca houve defeito visível —, mas é a gramática do outro
+  // lado do app, e o PR #116 unificou a leitura de valor justamente para que
+  // essas duas não voltassem a divergir em silêncio.
+  const valorReais = centavosParaReais(despesa.valorCentavos)
 
   if (despesa.tipo === 'Assinatura') {
     return {
