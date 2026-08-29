@@ -38,8 +38,17 @@ de rede e sem código remoto:
 - Fuses do Electron no binário empacotado: `runAsNode`, `NODE_OPTIONS` e
   argumentos de inspect desabilitados; app carrega somente do asar
   (`onlyLoadAppFromAsar`)
-- `window.open` é negado; navegação interna fica presa ao renderer; URLs
-  http(s) são abertas via `shell.openExternal` no navegador do SO
+- `window.open` é negado nas duas janelas — a principal e a oculta que gera o
+  PDF do mês, que carrega o mesmo preload e portanto tem `window.api` inteiro
+- Navegação só é aceita para o mesmo documento que a janela já carrega: só o
+  fragmento pode mudar, que é como o `createHashRouter` troca de tela. A
+  comparação é protocolo + host + caminho (`electron/navegacao.ts`), **nunca
+  por origem** — a de toda URL `file:` é a string `'null'`, então dois arquivos
+  diferentes do disco a compartilham — **nem por prefixo**. Janela sem página
+  carregada recusa tudo. A janela do PDF cancela qualquer navegação
+- URLs http(s) recusadas vão para `shell.openExternal` no navegador do SO, com
+  comparação exata de protocolo: `javascript:`, `file:`, `data:` e handlers de
+  protocolo do Windows não chegam lá
 - IPC tem schemas Zod em todos os canais (defense in depth)
 - SQL sempre via statements parametrizados — nenhuma string concatenada
 - Restauração de backup só aceita uma cópia que o próprio app lista
