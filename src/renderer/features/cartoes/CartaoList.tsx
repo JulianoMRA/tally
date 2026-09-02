@@ -57,10 +57,13 @@ export function CartaoList({ cartoes, resumos, onEditar, onArquivar, onDesarquiv
             {cartao.ativo ? (
               <>
                 <div className={styles.colunaFatura}>
-                  <span className={styles.colunaLabel}>Fatura aberta</span>
+                  {/* "Fatura do mês" e não "Fatura aberta": o valor é o total
+                      do mês corrente qualquer que seja o status, então o rótulo
+                      antigo seguia dizendo "aberta" depois de fechar ou pagar. */}
+                  <span className={styles.colunaLabel}>Fatura do mês</span>
                   <span className={`${styles.colunaValor} tnum`}>
-                    {resumo?.aberturaCentavos !== null && resumo !== undefined
-                      ? formatBRL(resumo.aberturaCentavos)
+                    {resumo?.faturaDoMesCentavos !== null && resumo !== undefined
+                      ? formatBRL(resumo.faturaDoMesCentavos)
                       : '—'}
                   </span>
                 </div>

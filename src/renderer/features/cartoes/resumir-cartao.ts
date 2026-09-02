@@ -1,8 +1,14 @@
 import type { FaturaComTotal } from '@shared/ipc/fatura'
 
 export type ResumoCartao = {
-  /** Total da fatura do mês corrente, ou null quando não há fatura no mês. */
-  aberturaCentavos: number | null
+  /**
+   * Total da fatura do mês corrente, ou null quando não há fatura no mês.
+   *
+   * É a fatura DO MÊS, qualquer que seja o status dela — o nome anterior
+   * (`abertura`) sugeria fatura Aberta, e a tela repetia a sugestão num rótulo
+   * que continuava dizendo "Fatura aberta" depois de fechada ou paga.
+   */
+  faturaDoMesCentavos: number | null
   /** Últimos 6 meses encerrados, do mais antigo ao mais recente. */
   serie: { mes: string; totalCentavos: number }[]
   /** Média dos meses da série. Null quando não há histórico. */
@@ -39,7 +45,7 @@ export function resumirCartao(faturas: readonly FaturaComTotal[], mesAtual: stri
   const soma = serie.reduce((s, p) => s + p.totalCentavos, 0)
 
   return {
-    aberturaCentavos: doMes ? doMes.totalCentavos : null,
+    faturaDoMesCentavos: doMes ? doMes.totalCentavos : null,
     serie,
     // Sem histórico não há média; e histórico que soma zero não é referência
     // de nada — mesmo raciocínio de `mediaDeEntradas` em Rendas.
