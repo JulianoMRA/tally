@@ -317,6 +317,86 @@ describe('ParcelaRepository', () => {
         repo.adiantar({ despesaId: 9999, quantidade: 1, faturaDestinoId: destino })
       ).toThrow(/não encontrada/i)
     })
+
+    /**
+     * O invariante da migration 0010: parcela COM fatura tem
+     * `data_referencia = fatura.mes_referencia || '-01'`.
+     *
+     * O adiantamento trocava só o `fatura_id` e deixava a coluna no mês
+     * antigo — desfazendo linha a linha o backfill que a 0010 aplicou, e
+     * reintroduzindo exatamente a divergência que ela existe para eliminar:
+     * a mesma parcela em um mês pela fatura e em outro pela parcela.
+     */
+    it('realinha data_referencia ao mês da fatura destino', () => {
+      const cartaoId = inserirCartao(db, 'Nubank', 15, 22)
+      const catId = inserirCategoria(db)
+      const f1 = inserirFatura(db, cartaoId, '2026-05')
+      const f2 = inserirFatura(db, cartaoId, '2026-06')
+      const destino = inserirFatura(db, cartaoId, '2026-04')
+      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-05-01', 2000, 'Parcelada')
+
+      repo.criar({
+        despesaId,
+        faturaId: f1,
+        numero: 1,
+        total: 2,
+        valorCentavos: 1000,
+        dataReferencia: '2026-05-01'
+      })
+      repo.criar({
+        despesaId,
+        faturaId: f2,
+        numero: 2,
+        total: 2,
+        valorCentavos: 1000,
+        dataReferencia: '2026-06-01'
+      })
+
+      const resultado = repo.adiantar({ despesaId, quantidade: 1, faturaDestinoId: destino })
+
+      expect(resultado.movidas[0].dataReferencia).toBe('2026-04-01')
+
+      const divergentes = db
+        .prepare(
+          `SELECT p.id FROM parcela p
+           INNER JOIN fatura f ON f.id = p.fatura_id
+           WHERE p.data_referencia <> f.mes_referencia || '-01'`
+        )
+        .all() as { id: number }[]
+      expect(divergentes).toEqual([])
+    })
+
+    it('não encosta na data_referencia das parcelas que ficaram onde estavam', () => {
+      const cartaoId = inserirCartao(db, 'Nubank', 15, 22)
+      const catId = inserirCategoria(db)
+      const f1 = inserirFatura(db, cartaoId, '2026-05')
+      const f2 = inserirFatura(db, cartaoId, '2026-06')
+      const destino = inserirFatura(db, cartaoId, '2026-04')
+      const despesaId = inserirDespesa(db, catId, cartaoId, '2026-05-01', 2000, 'Parcelada')
+
+      repo.criar({
+        despesaId,
+        faturaId: f1,
+        numero: 1,
+        total: 2,
+        valorCentavos: 1000,
+        dataReferencia: '2026-05-01'
+      })
+      repo.criar({
+        despesaId,
+        faturaId: f2,
+        numero: 2,
+        total: 2,
+        valorCentavos: 1000,
+        dataReferencia: '2026-06-01'
+      })
+
+      repo.adiantar({ despesaId, quantidade: 1, faturaDestinoId: destino })
+
+      const parada = repo.listarPorDespesa(despesaId).find((p) => p.numero === 1)
+      expect(parada?.faturaId).toBe(f1)
+      expect(parada?.dataReferencia).toBe('2026-05-01')
+    })
   })
 
   describe('cancelarPendentes', () => {
