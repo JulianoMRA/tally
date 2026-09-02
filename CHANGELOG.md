@@ -6,6 +6,22 @@ vista técnico.
 
 ---
 
+## v1.11.3 — Escopo temporal dos resumos (set/2026)
+
+---
+
+**O card do trilho de Faturas passa a dizer qual fatura está mostrando (set/2026)** — Reportado como defeito: navegar o painel de Faturas para outro mês deixava o card do cartão, lá em cima, preso na fatura do mês corrente — dois totais diferentes na tela, sem nada explicando por quê. Investigação mostrou que não era bug: é o contrato de RF-FAT-06, registrado no PRD desde a F5 do refactor visual — o trilho responde "como cada cartão está hoje", independente de onde o painel navega. O que faltava era **dizer** isso. O card faz dois trabalhos nos mesmos pixels — é o resumo de hoje e é também o seletor do painel (`aria-pressed`, borda de foco) —, e seleção cria expectativa de identidade: o que está aceso em cima deveria ser o que está aberto embaixo. Cada card passa a nomear o mês da fatura que exibe, e o card em foco admite quando o painel saiu dela ("painel em dezembro de 2026"). A regra de divergência sai pura para `escopo-do-trilho.ts`; `TrilhoCartoes` ganha seus primeiros testes de componente. O chip reusa o par `--pending`/`--pending-bg` do aviso de link quebrado — par de contraste já calibrado nos dois temas, em vez de abrir um novo para uma folga de 4,55:1.
+
+---
+
+**"Fatura aberta" deixa de mentir depois que a fatura fecha (set/2026)** — Achado ao investigar o item anterior: a coluna de resumo em Cartões rotulava `aberturaCentavos` como "Fatura aberta", mas o valor é o total do mês corrente **qualquer que seja o status** — depois de fechar ou pagar a fatura, o rótulo seguia dizendo "aberta". Defeito de rótulo, não de cálculo: o número já estava certo. Vira "Fatura do mês", e o campo no código de `aberturaCentavos` para `faturaDoMesCentavos` — o nome antigo carregava a mesma sugestão errada que a tela.
+
+---
+
+**A agenda do horizonte deixa de dizer "próximos" para um mês que ainda não chegou (set/2026)** — Terceiro achado da mesma varredura. `diasAteFimDoMes` colapsava três situações num inteiro só: mês encerrado e o último dia do mês corrente devolviam ambos zero, e mês futuro devolvia o mês inteiro — que o painel "Ainda vai acontecer" anunciava como "próximos N dias" a partir de **hoje**. Em setembro, abrir dezembro fazia a agenda dizer "próximos 31 dias", que a partir de hoje seriam setembro e outubro. Vira `classificarHorizonte` (union discriminada) mais `rotuloHorizonte`: "próximos N dias" só no mês corrente, "os N dias do mês" no futuro, "último dia do mês" no dia 31, "mês encerrado" no passado. `AgendaPanel` passa a receber o rótulo pronto em vez de montá-lo a partir de uma contagem — era essa reinterpretação que o deixava ancorar em hoje um número de outro mês.
+
+---
+
 ## v1.11.2 — Statements finalizados e guardas de fronteira (ago/2026)
 
 ---
