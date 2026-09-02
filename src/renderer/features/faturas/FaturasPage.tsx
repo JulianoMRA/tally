@@ -120,6 +120,9 @@ export default function FaturasPage() {
     [grupoEmFoco]
   )
   const indiceAtual = ordenadas.findIndex((f) => f.fatura.id === faturaId)
+  // O trilho mostra a fatura corrente e o painel mostra esta: quando os dois
+  // meses divergem, o card em foco precisa dizer isso.
+  const mesDoPainel = ordenadas[indiceAtual]?.mesReferencia ?? null
   const anterior = indiceAtual > 0 ? ordenadas[indiceAtual - 1] : undefined
   const proxima =
     indiceAtual >= 0 && indiceAtual < ordenadas.length - 1 ? ordenadas[indiceAtual + 1] : undefined
@@ -148,6 +151,7 @@ export default function FaturasPage() {
             <TrilhoCartoes
               grupos={grupos}
               cartaoSelecionadoId={cartaoEmFoco}
+              mesDoPainel={mesDoPainel}
               onSelecionar={selecionarCartao}
             />
 

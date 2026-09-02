@@ -75,6 +75,38 @@
   font-family: var(--font-mono);
 }
 
+/* Nomeia a fatura que o card exibe. Sem isso o card e o painel mostram dois
+   totais sem dizer que são de meses diferentes — e como o card é também o
+   seletor do painel, a divergência lê como defeito em vez de decisão. Mesma
+   forma do rótulo de coluna de Cartões: micro, mono, caixa alta. */
+.trilhoEscopo {
+  font-size: var(--text-1);
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Só no cartão em foco, e só quando o painel saiu da fatura corrente. Herda o
+   par --pending/--pending-bg do aviso de link quebrado, que é a linguagem de
+   ressalva desta tela e um contraste já conferido nos dois temas. */
+.trilhoDivergencia {
+  font-size: var(--text-2);
+  color: var(--pending);
+  background: var(--pending-bg);
+  border: 1px solid var(--pending-border);
+  border-radius: var(--r-1);
+  padding: 2px 6px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Link de fatura que não existe mais. Fica entre o trilho e o painel, que é
    onde a discrepância seria notada. */
 .avisoLinkQuebrado {
