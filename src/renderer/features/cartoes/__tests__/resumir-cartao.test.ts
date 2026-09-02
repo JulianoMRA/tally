@@ -26,7 +26,7 @@ describe('resumirCartao — fatura do mês', () => {
   it('traz o total da fatura do mês corrente', () => {
     const r = resumirCartao([fatura('2026-07', 50000), fatura('2026-08', 128490)], '2026-08')
 
-    expect(r.aberturaCentavos).toBe(128490)
+    expect(r.faturaDoMesCentavos).toBe(128490)
   })
 
   // Cartão sem compra no mês não tem fatura. Zero diria "gastei nada"; null
@@ -34,7 +34,7 @@ describe('resumirCartao — fatura do mês', () => {
   it('devolve null quando o cartão não tem fatura no mês', () => {
     const r = resumirCartao([fatura('2026-06', 50000)], '2026-08')
 
-    expect(r.aberturaCentavos).toBeNull()
+    expect(r.faturaDoMesCentavos).toBeNull()
   })
 })
 
