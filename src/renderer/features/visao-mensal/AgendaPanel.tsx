@@ -2,12 +2,12 @@ import type { EventoAgenda } from '@domain/services/montar-agenda-do-mes'
 import { EmptyState, Panel } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
 import { formatarDiaMesAbreviado } from '../../lib/formatar-data'
-import { pluralizar } from '../../lib/pluralizar'
 import styles from './visao-mensal.module.css'
 
 type Props = {
   eventos: EventoAgenda[]
-  diasNoHorizonte: number
+  /** Já formatado por `rotuloHorizonte`: só o mês corrente conta "próximos N dias". */
+  horizonte: string
 }
 
 type LinhaAgenda = {
@@ -50,13 +50,9 @@ function descrever(evento: EventoAgenda): LinhaAgenda {
  * que ainda vão vencer e de entradas que ainda não caíram, e nenhuma das duas
  * aparecia em lugar nenhum da tela.
  */
-export function AgendaPanel({ eventos, diasNoHorizonte }: Props) {
+export function AgendaPanel({ eventos, horizonte }: Props) {
   return (
-    <Panel
-      title="Ainda vai acontecer"
-      meta={`próximos ${diasNoHorizonte} ${pluralizar('dia', diasNoHorizonte)}`}
-      flush
-    >
+    <Panel title="Ainda vai acontecer" meta={horizonte} flush>
       {eventos.length === 0 ? (
         <EmptyState title="Nada previsto até o fim do mês." />
       ) : (

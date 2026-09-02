@@ -35,7 +35,7 @@ import { PrimeiroUso } from './PrimeiroUso'
 import { RankingCategorias } from './RankingCategorias'
 import { SaldoHero } from './SaldoHero'
 import { useVisaoMensal } from './hooks/use-visao-mensal'
-import { diasAteFimDoMes } from './horizonte'
+import { rotuloHorizonte } from './horizonte'
 import styles from './visao-mensal.module.css'
 
 // Os painéis de gráficos (recharts) ficam num chunk separado: só são baixados
@@ -206,7 +206,7 @@ export default function VisaoMensalPage() {
                   qtdCartoes={detalhe.faturas.length}
                   qtdGastosForaCartao={detalhe.gastosForaCartao.length}
                 />
-                <AgendaPanel eventos={agenda} diasNoHorizonte={diasAteFimDoMes(mes, hoje)} />
+                <AgendaPanel eventos={agenda} horizonte={rotuloHorizonte(mes, hoje)} />
               </div>
 
               <div className={styles.gradeCorpo}>
