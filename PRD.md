@@ -182,7 +182,7 @@ prevista; entram no escopo quando forem priorizadas.
 - **RF-VIS-05** — Comparativo: visualizar últimos 6 ou 12 meses com gráfico de evolução de entradas, gastos e saldo.
 - **RF-VIS-06** — Relatórios por categoria: ranking de categorias no mês e evolução temporal de uma categoria específica.
   > A pizza de gastos do mês existiu até ago/2026 e foi removida no refactor visual: mostrava o mesmo dado do ranking, que já ordena, e com sete fatias deixava de ser legível. O ranking absorveu a leitura de proporção.
-- **RF-VIS-07** — **Agenda do horizonte** ("Ainda vai acontecer"): lista os eventos futuros que compõem o saldo projetado — fechamento e vencimento de fatura, e recebimentos ainda esperados — ordenados por data. Fatura Paga e fatura sem lançamentos não entram (não movem mais o saldo); fatura Fechada emite só o vencimento. Torna o número projetado do RN-08 auditável: sem a lista, ele só pode ser aceito, não conferido.
+- **RF-VIS-07** — **Agenda do horizonte** ("Ainda vai acontecer"): lista os eventos futuros que compõem o saldo projetado — fechamento e vencimento de fatura, e recebimentos ainda esperados — ordenados por data. Fatura Paga e fatura sem lançamentos não entram (não movem mais o saldo); fatura Fechada emite só o vencimento. O rótulo do horizonte depende de onde o mês exibido está em relação a hoje: **"próximos N dias" só no mês corrente**, "os N dias do mês" num mês que ainda não começou — ancorar o futuro em hoje faria dezembro visto em setembro anunciar "próximos 31 dias", que a partir de hoje seriam setembro e outubro — e "mês encerrado" no passado. Torna o número projetado do RN-08 auditável: sem a lista, ele só pode ser aceito, não conferido.
 
 ### 4.10 Orçamento (RF-ORC)
 

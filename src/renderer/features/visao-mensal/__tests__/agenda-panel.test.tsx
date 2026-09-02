@@ -31,14 +31,14 @@ describe('AgendaPanel', () => {
   afterEach(cleanup)
 
   it('mostra o dia com o mês abreviado, porque a lista atravessa a virada', () => {
-    render(<AgendaPanel eventos={[VENCIMENTO, FECHAMENTO]} diasNoHorizonte={15} />)
+    render(<AgendaPanel eventos={[VENCIMENTO, FECHAMENTO]} horizonte="próximos 15 dias" />)
 
     expect(screen.getByText('20 ago')).toBeTruthy()
     expect(screen.getByText('03 set')).toBeTruthy()
   })
 
   it('apresenta vencimento de fatura como saída, com sinal', () => {
-    render(<AgendaPanel eventos={[VENCIMENTO]} diasNoHorizonte={15} />)
+    render(<AgendaPanel eventos={[VENCIMENTO]} horizonte="próximos 15 dias" />)
 
     expect(screen.getByText('Fatura Inter')).toBeTruthy()
     expect(screen.getByText('vencimento')).toBeTruthy()
@@ -46,7 +46,7 @@ describe('AgendaPanel', () => {
   })
 
   it('apresenta recebimento previsto como entrada, com sinal', () => {
-    render(<AgendaPanel eventos={[RECEBIMENTO]} diasNoHorizonte={15} />)
+    render(<AgendaPanel eventos={[RECEBIMENTO]} horizonte="próximos 15 dias" />)
 
     expect(screen.getByText('Ajuda família')).toBeTruthy()
     expect(screen.getByText(/^\+R\$\s*700,00$/)).toBeTruthy()
@@ -55,7 +55,7 @@ describe('AgendaPanel', () => {
   // Fechar não move dinheiro — só congela o que já foi gasto. Um valor com
   // sinal ali somaria duas vezes na leitura de quem varre a coluna.
   it('fechamento de fatura não exibe valor com sinal, só o acumulado', () => {
-    render(<AgendaPanel eventos={[FECHAMENTO]} diasNoHorizonte={15} />)
+    render(<AgendaPanel eventos={[FECHAMENTO]} horizonte="próximos 15 dias" />)
 
     expect(screen.getByText('Nubank fecha')).toBeTruthy()
     expect(screen.getByText(/R\$\s*1\.284,90 acumulados/)).toBeTruthy()
@@ -63,21 +63,24 @@ describe('AgendaPanel', () => {
   })
 
   it('nomeia recebimento avulso sem fonte vinculada', () => {
-    render(<AgendaPanel eventos={[{ ...RECEBIMENTO, fonte: null }]} diasNoHorizonte={15} />)
+    render(<AgendaPanel eventos={[{ ...RECEBIMENTO, fonte: null }]} horizonte="próximos 15 dias" />)
 
     expect(screen.getByText('Recebimento avulso')).toBeTruthy()
   })
 
-  it('mostra o horizonte no meta do painel, pluralizado', () => {
-    const { rerender } = render(<AgendaPanel eventos={[VENCIMENTO]} diasNoHorizonte={15} />)
+  // Quem decide o texto é `rotuloHorizonte`: em mês futuro o horizonte é o mês
+  // inteiro, e o painel não pode ancorá-lo em hoje com um "próximos".
+  it('exibe o rótulo de horizonte que recebe, sem reinterpretá-lo', () => {
+    const { rerender } = render(<AgendaPanel eventos={[VENCIMENTO]} horizonte="próximos 15 dias" />)
     expect(screen.getByText('próximos 15 dias')).toBeTruthy()
 
-    rerender(<AgendaPanel eventos={[VENCIMENTO]} diasNoHorizonte={1} />)
-    expect(screen.getByText('próximos 1 dia')).toBeTruthy()
+    rerender(<AgendaPanel eventos={[VENCIMENTO]} horizonte="os 31 dias do mês" />)
+    expect(screen.getByText('os 31 dias do mês')).toBeTruthy()
+    expect(screen.queryByText(/próximos/)).toBeNull()
   })
 
   it('mostra estado vazio quando nada está previsto', () => {
-    render(<AgendaPanel eventos={[]} diasNoHorizonte={15} />)
+    render(<AgendaPanel eventos={[]} horizonte="próximos 15 dias" />)
 
     expect(screen.getByText('Nada previsto até o fim do mês.')).toBeTruthy()
   })
