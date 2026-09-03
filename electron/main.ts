@@ -422,7 +422,11 @@ async function importarDados(): Promise<void> {
   try {
     const conteudo = readFileSync(filePaths[0], 'utf8')
     const payload = exportPayloadSchema.parse(JSON.parse(conteudo))
-    backupDatabase(dbPathAtual)
+    // `opcoesDeBackup()` como nos outros dois pontos de backup (boot e saida).
+    // Sem elas este ia para a pasta padrao com retencao 10, ignorando o que o
+    // usuario configurou em RF-CFG-01 — e justamente a copia que mais importa
+    // achar depois, porque e a ultima antes de a importacao substituir TUDO.
+    backupDatabase(dbPathAtual, opcoesDeBackup())
     const { totalLinhas } = new DadosRepository(db).importar(payload)
     await dialog.showMessageBox(win, {
       type: 'info',
