@@ -3,6 +3,7 @@ import type { Parcela } from '../../domain/entities/parcela'
 import type { Fatura } from '../../domain/entities/fatura'
 import type { Repository } from './types'
 import { selecionarParcelasParaAdiantar } from '../../domain/services/adiantar-parcelas'
+import { mesReferenciaParaData } from '../../domain/services/mes-referencia'
 import { mapFatura, mapParcela, type FaturaRow, type ParcelaRow } from './row-mappers'
 
 export type CriarParcelaInput = {
@@ -102,10 +103,21 @@ export class ParcelaRepository implements Repository {
       ...new Set(mover.map((p) => p.faturaId).filter((id): id is number => id !== null))
     ]
 
+    // Invariante da migration 0010: parcela COM fatura tem `data_referencia`
+    // igual ao mes da fatura. Mover so o `fatura_id` deixava a coluna no mes
+    // antigo e desfazia, linha a linha, o backfill daquela migration — a mesma
+    // parcela passava a cair num mes pela fatura e em outro pela parcela. O
+    // sintoma visivel era o CSV do mes exportar linhas datadas de outro mes.
+    const dataReferenciaDestino = mesReferenciaParaData(faturaDestino.mesReferencia)
+
     return this.db.transaction(() => {
-      const update = this.db.prepare('UPDATE parcela SET fatura_id = ? WHERE id = ?')
+      const update = this.db.prepare(
+        `UPDATE parcela
+         SET fatura_id = ?, data_referencia = ?, updated_at = datetime('now')
+         WHERE id = ?`
+      )
       for (const p of mover) {
-        update.run(input.faturaDestinoId, p.id)
+        update.run(input.faturaDestinoId, dataReferenciaDestino, p.id)
       }
       const movidas = mover.map((p) => {
         const row = this.db.prepare('SELECT * FROM parcela WHERE id = ?').get(p.id) as ParcelaRow

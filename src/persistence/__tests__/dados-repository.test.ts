@@ -50,7 +50,7 @@ describe('DadosRepository', () => {
     const payload = new DadosRepository(db).exportar()
 
     expect(payload.formatVersion).toBe(1)
-    expect(payload.app.schemaVersion).toMatch(/^0011/)
+    expect(payload.app.schemaVersion).toMatch(/^0012/)
     expect(payload.tables.cartao).toHaveLength(1)
     expect(payload.tables.orcamento).toHaveLength(1)
     expect(payload.tables.parcela).toHaveLength(1)

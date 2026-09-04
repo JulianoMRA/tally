@@ -5,6 +5,7 @@ import { runMigrations } from '../migrations/runner'
 import { montarLinhasDoMes } from '../exportacao'
 import { serializarCsv } from '../../shared/csv/gerar-csv'
 import { DespesaRepository } from '../repositories/despesa-repository'
+import { ParcelaRepository } from '../repositories/parcela-repository'
 import { RecebimentoRepository } from '../repositories/recebimento-repository'
 
 describe('montarLinhasDoMes (exportação CSV do mês)', () => {
@@ -108,5 +109,37 @@ describe('montarLinhasDoMes (exportação CSV do mês)', () => {
     expect(junho.linhas[0][2]).toBe('parcela 1/3')
     expect(julho.linhas).toHaveLength(1)
     expect(julho.linhas[0][2]).toBe('parcela 2/3')
+  })
+
+  /**
+   * O sintoma visível de o adiantamento não mover `data_referencia` junto com
+   * `fatura_id`: a exportação lê as parcelas PELA FATURA do mês, mas imprime
+   * `parcela.data_referencia` na coluna `data`. Com a coluna presa no mês
+   * antigo, o CSV de junho saía com linhas datadas de agosto.
+   */
+  it('data das parcelas adiantadas cai no mês exportado', () => {
+    const { despesa } = new DespesaRepository(db).criarParceladaCredito({
+      descricao: 'Notebook',
+      categoriaId: 1,
+      cartaoId: 1,
+      totalParcelas: 3,
+      valorTotalCentavos: 30000,
+      dataCompra: '2026-06-02'
+    })
+
+    const destino = db.prepare("SELECT id FROM fatura WHERE mes_referencia = '2026-06'").get() as {
+      id: number
+    }
+    new ParcelaRepository(db).adiantar({
+      despesaId: despesa.id,
+      quantidade: 2,
+      faturaDestinoId: destino.id
+    })
+
+    const { linhas } = montarLinhasDoMes(db, '2026-06')
+
+    expect(linhas).toHaveLength(3)
+    const datas = linhas.filter((l) => l[0] === 'Fatura').map((l) => l[5])
+    expect(datas).toEqual(['2026-06-01', '2026-06-01', '2026-06-01'])
   })
 })
