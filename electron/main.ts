@@ -39,6 +39,7 @@ import { registerAppHandlers } from './ipc/app-handlers'
 import { registerJanelaHandlers, observarEstadoDaJanela } from './ipc/janela-handlers'
 import { registerDadosHandlers } from './ipc/dados-handlers'
 import { verificarAvisos } from './avisos'
+import { executarManutencaoPeriodica } from './manutencao'
 import { ehNavegacaoInterna, urlExternaPermitida } from './navegacao'
 import {
   CARTAO_IPC_CHANNELS,
@@ -63,17 +64,24 @@ let fechamentoTimer: NodeJS.Timeout | null = null
 // sessões longas (app aberto virando o dia). Timer horário cobre esse caso.
 const FECHAMENTO_INTERVALO_MS = 60 * 60 * 1000
 
-function iniciarTimerFechamento(database: Database): void {
+// A manutenção em si vive em `manutencao.ts`, sem dependência de electron, para
+// ter teste. Aqui fica só a ligação com o timer e com os canais de log.
+//
+// `obterBanco: () => db` lê a variável do módulo a cada execução, e não a
+// conexão de agora: `reabrirBanco()` troca `db` embaixo, e capturar a instância
+// deixava o timer preso na conexão fechada — ver o comentário do módulo.
+function iniciarTimerFechamento(): void {
   fechamentoTimer = setInterval(() => {
-    try {
-      const fechadas = new FaturaRepository(database).fecharVencidas(hojeIsoLocal())
-      if (ehDev() && fechadas > 0) {
-        console.log(`[faturas] timer: ${fechadas} fatura(s) Aberta vencidas → Fechada`)
-      }
-      verificarAvisos(database, resolveSettingsPath())
-    } catch (err) {
-      console.error('[faturas] timer de fechamento falhou:', err)
-    }
+    executarManutencaoPeriodica({
+      obterBanco: () => db,
+      avisar: (database) => verificarAvisos(database, resolveSettingsPath()),
+      registrar: (mensagem) => {
+        if (ehDev()) console.log(`[faturas] timer: ${mensagem}`)
+      },
+      // `log`, e não `console.error`: binário empacotado não tem console, e foi
+      // por isso que a falha desta manutenção passou despercebida.
+      registrarFalha: (err) => log.error('[faturas] timer de manutenção falhou:', err)
+    })
   }, FECHAMENTO_INTERVALO_MS)
 }
 
@@ -567,7 +575,7 @@ if (!obteveLock) {
       })
       construirMenuApp()
       createWindow()
-      iniciarTimerFechamento(db)
+      iniciarTimerFechamento()
       iniciarAutoUpdate()
       verificarAvisos(db, resolveSettingsPath())
 
