@@ -35,6 +35,7 @@ import { registerVisaoMensalHandlers } from './ipc/visao-mensal-handlers'
 import { registerRelatorioHandlers } from './ipc/relatorio-handlers'
 import { registerOrcamentoHandlers } from './ipc/orcamento-handlers'
 import { registerConfigHandlers } from './ipc/config-handlers'
+import { registerSimulacaoHandlers } from './ipc/simulacao-handlers'
 import { registerAppHandlers } from './ipc/app-handlers'
 import { registerJanelaHandlers, observarEstadoDaJanela } from './ipc/janela-handlers'
 import { registerDadosHandlers } from './ipc/dados-handlers'
@@ -115,6 +116,15 @@ function resolveDbPath(): string {
 
 function resolveSettingsPath(): string {
   return join(app.getPath('userData'), 'settings.json')
+}
+
+/**
+ * Arquivo proprio, e nao o settings.json: o schema da config invalida o arquivo
+ * inteiro quando um campo tem tipo errado, entao uma simulacao corrompida
+ * levaria tema, pasta de backups e retencao junto. Ver `persistence/simulacoes`.
+ */
+function resolveSimulacoesPath(): string {
+  return join(app.getPath('userData'), 'simulacoes.json')
 }
 
 /** Opcoes de backup derivadas da configuracao do usuario (pasta + retencao). */
@@ -570,6 +580,7 @@ if (!obteveLock) {
         fechar: fecharBanco,
         reabrir: reabrirBanco
       })
+      registerSimulacaoHandlers(resolveSimulacoesPath(), ipcMain)
       registerJanelaHandlers(ipcMain, janelaAtual)
       registerAppHandlers(ipcMain, {
         exportarDados,

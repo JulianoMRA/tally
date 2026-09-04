@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, cleanup } from '@testing-library/react'
+import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { CONFIG_DEFAULTS, type Config } from '@shared/ipc/config'
 import { ToastProvider } from '../../../components/ui'
@@ -40,8 +40,13 @@ describe('AjustesPage', () => {
     instalarApiMock({ ...CONFIG_DEFAULTS, retencaoBackups: 25 })
     renderPagina()
 
+    // `waitFor` no VALOR, e nao so no elemento: o `useForm` desta tela recebe
+    // `defaultValues` assincrono, entao os inputs nascem vazios no primeiro
+    // render e so sao preenchidos quando o `config.get()` resolve. O
+    // `findByLabelText` espera o elemento, que existe desde o inicio — sob
+    // carga a assercao chegava antes do preenchimento e lia string vazia.
     const retencao = await screen.findByLabelText('Quantidade de backups mantidos')
-    expect((retencao as HTMLInputElement).value).toBe('25')
+    await waitFor(() => expect((retencao as HTMLInputElement).value).toBe('25'))
     expect((screen.getByLabelText('Pasta de backups') as HTMLInputElement).value).toContain(
       'Padrão'
     )

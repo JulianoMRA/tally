@@ -48,7 +48,15 @@ async function caixa(page: Page, seletor: string) {
 test.describe('Layout responsivo', () => {
   for (const largura of [1024, 1280, 1760] as const) {
     test(`nenhuma página gera scroll horizontal em ${largura}px`, async ({ app }) => {
-      for (const rota of ['Visão mensal', 'Saídas', 'Faturas', 'Rendas', 'Cartões', 'Ajustes']) {
+      for (const rota of [
+        'Visão mensal',
+        'Saídas',
+        'Faturas',
+        'Rendas',
+        'Simulação',
+        'Cartões',
+        'Ajustes'
+      ]) {
         const page = await abrir(app, largura, rota)
         expect(await temScrollHorizontal(page), `${rota} rolou na horizontal`).toBe(false)
       }

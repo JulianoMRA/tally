@@ -27,6 +27,7 @@ export type Rota =
   | 'Faturas'
   | 'Saídas'
   | 'Rendas'
+  | 'Simulação'
   | 'Cartões'
   | 'Categorias'
   | 'Importar dados'

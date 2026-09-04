@@ -56,6 +56,20 @@ export {
 } from './visao-mensal'
 
 export {
+  SIMULACAO_IPC_CHANNELS,
+  simulacaoDoMesSchema,
+  obterSimulacaoInputSchema,
+  salvarSimulacaoInputSchema,
+  SIMULACAO_VAZIA,
+  MAX_ITENS_SIMULACAO,
+  MAX_REPETICOES_SIMULACAO,
+  MAX_DESCRICAO_SIMULACAO,
+  type ObterSimulacaoInput,
+  type SalvarSimulacaoInput,
+  type SimulacaoApi
+} from './simulacao'
+
+export {
   RELATORIO_IPC_CHANNELS,
   type TotaisPorCategoriaInput,
   type EvolucaoSaldoInput,
@@ -104,6 +118,7 @@ import type { RendaApi } from './renda'
 import type { RecebimentoApi } from './recebimento'
 import type { VisaoMensalApi } from './visao-mensal'
 import type { RelatorioApi } from './relatorio'
+import type { SimulacaoApi } from './simulacao'
 import type { OrcamentoApi } from './orcamento'
 import type { ConfigApi, TemaApi } from './config'
 import type { DadosApi } from './importacao'
@@ -119,6 +134,7 @@ export type Api = {
   recebimento: RecebimentoApi
   visaoMensal: VisaoMensalApi
   relatorio: RelatorioApi
+  simulacao: SimulacaoApi
   orcamento: OrcamentoApi
   config: ConfigApi
   tema: TemaApi

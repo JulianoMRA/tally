@@ -13,6 +13,7 @@ const PAGINAS = [
   { link: 'Faturas', heading: 'Faturas' },
   { link: 'Saídas', heading: 'Saídas' },
   { link: 'Rendas', heading: 'Rendas' },
+  { link: 'Simulação', heading: 'Simulação' },
   { link: 'Cartões', heading: 'Cartões' },
   { link: 'Categorias', heading: 'Categorias' },
   { link: 'Importar dados', heading: 'Importar dados' },

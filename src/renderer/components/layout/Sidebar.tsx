@@ -80,6 +80,30 @@ const NAV: NavGroup[] = [
             <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
           </svg>
         )
+      },
+      {
+        to: '/simulacao',
+        label: 'Simulação',
+        icon: (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="4" y="2" width="16" height="20" rx="2" />
+            <line x1="8" y1="6" x2="16" y2="6" />
+            <line x1="8" y1="11" x2="8" y2="11" />
+            <line x1="12" y1="11" x2="12" y2="11" />
+            <line x1="16" y1="11" x2="16" y2="11" />
+            <line x1="8" y1="15" x2="8" y2="15" />
+            <line x1="12" y1="15" x2="12" y2="15" />
+            <line x1="16" y1="15" x2="16" y2="18" />
+            <line x1="8" y1="18" x2="12" y2="18" />
+          </svg>
+        )
       }
     ]
   },

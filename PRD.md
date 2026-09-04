@@ -225,6 +225,26 @@ prevista; entram no escopo quando forem priorizadas.
   (`autoHideMenuBar`) contendo apenas "Editar": é ele que registra os
   aceleradores de desfazer, copiar, colar e selecionar tudo.
 
+### 4.13 Simulação (RF-SIM)
+
+Área de rascunho para responder "e se eu gastar X?" sem cadastrar nada. Existe
+porque, até aqui, testar uma hipótese exigia criar uma despesa falsa e apagá-la
+depois — o que mexe em fatura, parcela e no ciclo da RN-06 para uma pergunta que
+não é sobre dado real.
+
+- **RF-SIM-01** — **Área isolada de hipóteses.** Tela que calcula o efeito de gastos e entradas hipotéticos sobre o saldo de um mês **sem criar despesa, parcela, fatura, renda ou recebimento**. Nada do que é digitado aqui entra na RN-08, no ranking de categorias, no orçamento, na exportação ou em qualquer relatório. Os únicos canais IPC que a tela usa são `simulacao:obter`, `simulacao:salvar` e o `visao-mensal:detalhar` — este último só de leitura, para conhecer a sobra projetada do mês.
+- **RF-SIM-02** — **Uma lista por mês.** Seletor de mês igual ao da Visão mensal, abrindo no mês corrente. Simular outubro não altera setembro; cada mês nasce vazio.
+- **RF-SIM-03** — **Ponto de partida em dois modos**, alternáveis sem perder a lista de hipóteses. **Saldo do mês** (padrão): a sobra projetada daquele mês pela RN-08, o mesmo número do hero da Visão mensal. **Valor que eu digito**: um valor informado pelo usuário, que cobre "tenho 200 na conta hoje" — o app acompanha fluxo mensal e **não tem saldo bancário no modelo**, então esse número não é derivável de nada que ele guarda. O valor digitado é preservado ao voltar para o modo saldo do mês.
+- **RF-SIM-04** — **Hipótese.** Cada linha tem descrição, valor unitário, tipo (sai ou entra), repetições (1 a 99, para "100 por fim de semana" caber em uma linha) e um estado ligado/desligado. **Desligar tira a linha da conta sem tirar da lista** — é o que permite comparar cenários sem redigitar. Todos os campos são editáveis na própria linha, e o total do topo se move junto. Valor negativo é recusado: quem dá o sinal é o tipo. Teto de 50 hipóteses por mês.
+- **RF-SIM-05** — **Resultado ao vivo.** Sem botão de calcular. O saldo simulado aparece em corpo display, negativo em destaque, com a composição em três parcelas: ponto de partida, entradas simuladas e saídas simuladas. O rótulo é sempre **simulado**, nunca "projetado" ou "previsto", que no resto do app significam dado real ainda não realizado.
+- **RF-SIM-06** — **Persistência fora do banco.** A simulação vive num `simulacoes.json` no `userData`, com arquivo próprio — não o `settings.json`, cujo schema invalida o arquivo inteiro quando um campo tem tipo errado e levaria tema, pasta de backups e retenção junto. Não consome migration e não entra no export/import de dados nem no CSV do mês: é rascunho, não dado financeiro. Arquivo ausente, ilegível ou inválido devolve simulação vazia e nunca impede o boot; a validação é **mês a mês**, então um mês corrompido é descartado sozinho.
+- **RF-SIM-07** — **Limpar o mês.** Apaga as hipóteses do mês exibido e devolve o ponto de partida ao saldo do mês, com confirmação. Não afeta outros meses nem dado real.
+
+> Fora do escopo da primeira versão, registrado para não se perder: cenários
+> nomeados comparados lado a lado, data e categoria por hipótese (que abririam
+> a evolução do saldo dia a dia e o cruzamento com o orçamento) e um botão para
+> converter uma hipótese em despesa real.
+
 ### RF-TEMA — Tema claro e escuro
 
 - **RF-TEMA-01** — **Dois temas.** **Claro** (o Cream de sempre, padrão) e
@@ -414,14 +434,27 @@ Pagar a fatura marca todas as parcelas dela como `Paga` (com a mesma data de pag
 
 `saldo = soma(recebimentos do mês) - (soma(faturas do mês) + soma(gastos fora de cartão do mês))`.
 
+### RN-09 — Saldo simulado
+
+`saldo simulado = ponto de partida + soma(entradas hipotéticas ativas) − soma(saídas hipotéticas ativas)`
+
+O efeito de cada hipótese é `valor × repetições`. Hipótese desligada não entra
+em nenhum dos dois totais. O ponto de partida pode ser negativo — é resultado de
+cálculo (a sobra projetada da RN-08 ou um valor digitado) e o mês pode estar no
+vermelho; o valor de uma hipótese, não, porque valor monetário negativo não é
+representável no projeto e o sinal vem do tipo.
+
+**Esta regra não alimenta nenhuma outra.** Ela lê a RN-08 quando o ponto de
+partida é o saldo do mês, e nada mais no app lê o resultado dela.
+
 ---
 
 ## 8. Estratégia de QA
 
 ### 8.1 Testes unitários (Vitest)
 
-- **Cobertura mínima**: 80% no domain layer (regras de negócio RN-01 a RN-08), 60% global.
-- **Foco**: cálculo de fatura por data de compra (RN-01), geração de parcelas (RN-02), adiantamento (RN-03), geração de ocorrências de assinatura (RN-04), ciclo de vida da fatura (RN-06), total da fatura (RN-07), balanço mensal (RN-08).
+- **Cobertura mínima**: 80% no domain layer (regras de negócio RN-01 a RN-09), 60% global.
+- **Foco**: cálculo de fatura por data de compra (RN-01), geração de parcelas (RN-02), adiantamento (RN-03), geração de ocorrências de assinatura (RN-04), ciclo de vida da fatura (RN-06), total da fatura (RN-07), balanço mensal (RN-08), saldo simulado (RN-09).
 - **TDD obrigatório** no domain layer: teste antes da implementação.
 
 ### 8.2 Testes de integração (Vitest + node-sqlite3-wasm em memória)
