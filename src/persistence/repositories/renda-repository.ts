@@ -10,6 +10,7 @@ import type { Repository } from './types'
 import { calcularExtensaoNecessaria } from '../../domain/services/calcular-extensao-horizonte'
 import { gerarRecebimentosRecorrentes } from '../../domain/services/gerar-recebimentos-recorrentes'
 import { clampDiaNoMes } from '../../domain/services/mes-referencia'
+import { hojeIsoLocal } from '../../shared/datas-locais'
 import { mapRenda, mapRecebimento, type RendaRow, type RecebimentoRow } from './row-mappers'
 
 const HORIZONTE_RECEBIMENTOS_MESES = 12
@@ -146,13 +147,87 @@ export class RendaRepository implements Repository {
     })()
   }
 
-  desarquivar(id: number): Renda {
-    this.db
-      .prepare('UPDATE renda SET ativa = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
-      .run(id)
-    const renda = this.findById(id)
-    if (!renda) throw new Error(`Renda #${id} não encontrada`)
-    return renda
+  /**
+   * RF-REN-09 — desarquivar reativa a fonte E regenera o horizonte a partir de
+   * hoje, espelhando o `arquivar`: ele apaga o futuro, este o recria.
+   *
+   * Sem a regeneração, uma fonte que nunca teve recebimento Recebido voltava
+   * sterilizada: `arquivar` apagou todos os Esperado, o
+   * `estenderHorizonteRecorrentes` deriva o ponto de partida de
+   * `MAX(data_esperada)` — que virava NULL — e o `calcularExtensaoNecessaria`
+   * devolve null nesse caso. A fonte reaparecia na lista como ativa e não
+   * alimentava mês nenhum, para sempre, contra a RF-REN-02.
+   *
+   * Não dá para deixar isso a cargo do horizonte preguiçoso: ele só roda para
+   * mês FUTURO (`estenderHorizonteSeNecessario` volta cedo quando
+   * `mesesAdiante <= 0`), então a fonte seguiria invisível no mês corrente até
+   * o usuário navegar adiante.
+   *
+   * `hoje` é injetável para teste determinístico — mesmo padrão do `backup.ts`.
+   */
+  desarquivar(id: number, hoje: string = hojeIsoLocal()): Renda {
+    return this.db.transaction(() => {
+      const anterior = this.findById(id)
+      if (!anterior) throw new Error(`Renda #${id} não encontrada`)
+
+      this.db
+        .prepare('UPDATE renda SET ativa = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+        .run(id)
+      const renda = this.findById(id)
+      if (!renda) throw new Error(`Renda #${id} não encontrada`)
+
+      // Só semeia quando a fonte estava DE FATO arquivada. Desarquivar uma
+      // fonte já ativa é no-op do ponto de vista do usuário, e semear ali
+      // esticaria o horizonte alguns meses como efeito colateral silencioso.
+      if (!anterior.ativa) this.semearHorizonte(renda, hoje)
+      return renda
+    })()
+  }
+
+  /**
+   * Recria o horizonte de uma fonte recorrente a partir de `hoje`, pulando os
+   * meses que já têm recebimento.
+   *
+   * O salto é o que torna a operação segura de repetir e o que protege o
+   * Recebido que o `arquivar` preservou: sem ele, um recebimento marcado como
+   * recebido num mês futuro ganharia um Esperado irmão, e o mês contaria a
+   * mesma entrada duas vezes.
+   *
+   * Valor zero é possível no banco (`CHECK >= 0`) embora o schema de IPC exija
+   * `min(1)`, e `gerarRecebimentosRecorrentes` recusa `<= 0`. Sair antes evita
+   * que uma linha importada assim transforme o desarquivamento em erro.
+   */
+  private semearHorizonte(renda: Renda, hoje: string): void {
+    if (renda.tipo !== 'Recorrente') return
+    if (renda.diaEsperado === null) return
+    if (renda.valorPadraoCentavos <= 0) return
+
+    const planejados = gerarRecebimentosRecorrentes({
+      dataInicio: hoje,
+      valorPadraoCentavos: renda.valorPadraoCentavos,
+      diaEsperado: renda.diaEsperado,
+      quantidade: HORIZONTE_RECEBIMENTOS_MESES
+    })
+
+    const ocupados = new Set(
+      (
+        this.db
+          .prepare(
+            `SELECT DISTINCT substr(data_esperada, 1, 7) AS mes
+             FROM recebimento WHERE renda_id = ?`
+          )
+          .all(renda.id) as { mes: string }[]
+      ).map((r) => r.mes)
+    )
+
+    const insert = this.db.prepare(
+      `INSERT INTO recebimento (renda_id, valor_centavos, data_esperada, status)
+       VALUES (?, ?, ?, 'Esperado')`
+    )
+    for (const p of planejados) {
+      if (ocupados.has(p.dataEsperada.slice(0, 7))) continue
+      insert.run(renda.id, p.valorCentavos, p.dataEsperada)
+    }
   }
 
   /**

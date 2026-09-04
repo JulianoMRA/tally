@@ -25,6 +25,24 @@ describe('RendaRepository', () => {
     }).renda
   }
 
+  function contarRecebimentos(rendaId: number): number {
+    return (
+      db.prepare('SELECT COUNT(*) AS n FROM recebimento WHERE renda_id = ?').get(rendaId) as {
+        n: number
+      }
+    ).n
+  }
+
+  function mesesDe(rendaId: number): string[] {
+    const rows = db
+      .prepare(
+        `SELECT substr(data_esperada, 1, 7) AS mes FROM recebimento
+         WHERE renda_id = ? ORDER BY data_esperada ASC`
+      )
+      .all(rendaId) as { mes: string }[]
+    return rows.map((r) => r.mes)
+  }
+
   describe('criarRecorrente (RF-REN-02)', () => {
     it('cria renda + 12 recebimentos com status Esperado', () => {
       const r = repo.criarRecorrente({
@@ -218,12 +236,97 @@ describe('RendaRepository', () => {
     })
   })
 
-  describe('desarquivar', () => {
-    it('volta ativa para true mas não regenera recebimentos', () => {
+  describe('desarquivar (RF-REN-09)', () => {
+    it('volta ativa para true', () => {
       const r = fonte('X', 1000)
       repo.arquivar(r.id)
       const d = repo.desarquivar(r.id)
       expect(d.ativa).toBe(true)
+    })
+
+    /**
+     * O bug que este teste tranca: `arquivar` apaga todos os Esperado, e uma
+     * fonte que nunca teve Recebido ficava sem nenhum recebimento. O
+     * `estenderHorizonteRecorrentes` deriva o ponto de partida de
+     * `MAX(data_esperada)`, que virava NULL, e o `calcularExtensaoNecessaria`
+     * devolve null nesse caso — o caminho documentado como "o caller deveria
+     * ter usado a criação inicial". Só que ali não existe criação inicial.
+     *
+     * Resultado: a fonte voltava para a lista como ativa e não alimentava mês
+     * nenhum, para sempre. Contradiz a RF-REN-02, que descreve fonte ativa
+     * como tendo os próximos N meses gerados.
+     */
+    it('regenera o horizonte da fonte que ficou sem nenhum recebimento', () => {
+      const r = fonte('Bolsa PET', 70000)
+      repo.arquivar(r.id)
+      expect(contarRecebimentos(r.id)).toBe(0)
+
+      repo.desarquivar(r.id, '2026-09-03')
+
+      expect(contarRecebimentos(r.id)).toBe(12)
+      expect(mesesDe(r.id)[0]).toBe('2026-09')
+    })
+
+    it('gera a partir de hoje, não do início histórico da fonte', () => {
+      const r = fonte('Bolsa PET', 70000)
+      repo.arquivar(r.id)
+
+      repo.desarquivar(r.id, '2026-09-03')
+
+      // A fonte nasceu em 2026-06; desarquivar em setembro não retroage.
+      expect(mesesDe(r.id)).toEqual([
+        '2026-09',
+        '2026-10',
+        '2026-11',
+        '2026-12',
+        '2027-01',
+        '2027-02',
+        '2027-03',
+        '2027-04',
+        '2027-05',
+        '2027-06',
+        '2027-07',
+        '2027-08'
+      ])
+    })
+
+    it('não duplica mês que já tem recebimento preservado', () => {
+      const r = repo.criarRecorrente({
+        nome: 'Bolsa',
+        valorPadraoCentavos: 100000,
+        diaEsperado: 5,
+        dataInicio: '2026-09-01'
+      })
+      // Recebimento de outubro já marcado como Recebido: `arquivar` o preserva.
+      const outubro = r.recebimentos.find((rec) => rec.dataEsperada.startsWith('2026-10'))
+      db.prepare(
+        "UPDATE recebimento SET status = 'Recebido', data_recebida = '2026-10-05' WHERE id = ?"
+      ).run(outubro?.id)
+      repo.arquivar(r.renda.id)
+      expect(contarRecebimentos(r.renda.id)).toBe(1)
+
+      repo.desarquivar(r.renda.id, '2026-09-03')
+
+      const meses = mesesDe(r.renda.id)
+      expect(new Set(meses).size).toBe(meses.length)
+      expect(meses.filter((m) => m === '2026-10')).toHaveLength(1)
+    })
+
+    /**
+     * Semear só quando a fonte estava arquivada. Semear sempre esticaria o
+     * horizonte como efeito colateral: uma fonte criada em junho tem meses até
+     * maio, e semear em setembro acrescentaria junho, julho e agosto do ano
+     * seguinte — três meses que ninguém pediu.
+     */
+    it('desarquivar uma fonte já ativa não mexe nos recebimentos', () => {
+      const r = fonte('X', 1000)
+      const antes = contarRecebimentos(r.id)
+      const mesesAntes = mesesDe(r.id)
+
+      repo.desarquivar(r.id, '2026-09-03')
+
+      expect(contarRecebimentos(r.id)).toBe(antes)
+      expect(mesesDe(r.id)).toEqual(mesesAntes)
     })
   })
 
