@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { gerarOcorrenciasAssinatura } from '../gerar-ocorrencias-assinatura'
+import {
+  gerarOcorrenciasAPartirDoMes,
+  gerarOcorrenciasAssinatura
+} from '../gerar-ocorrencias-assinatura'
 import type { Cartao } from '../../entities/cartao'
 
 function cartao(diaFechamento: number): Cartao {
@@ -196,5 +199,86 @@ describe('gerarOcorrenciasAssinatura (RN-04)', () => {
         })
       ).toThrow(/ocorrenciaInicial/)
     })
+  })
+})
+
+/**
+ * A extensão preguiçosa do horizonte já conhece o mês de referência onde a
+ * próxima ocorrência tem de cair — ele sai de `calcularExtensaoNecessaria`.
+ * Passar esse mês por `gerarOcorrenciasAssinatura` obrigava a inventar uma
+ * data de compra (`YYYY-MM-01`) e a reaplicar a RN-01 sobre ela, e a RN-01
+ * manda a compra do dia F para a fatura seguinte: com `diaFechamento = 1`,
+ * `1 < 1` é falso e a série inteira deslizava um mês.
+ *
+ * Esta entrada existe para o caller que já sabe o mês e não deveria passar
+ * pela RN-01 de novo.
+ */
+describe('gerarOcorrenciasAPartirDoMes (RN-04, mês já conhecido)', () => {
+  it('começa exatamente no mês pedido, sem reaplicar a RN-01', () => {
+    const ocorrencias = gerarOcorrenciasAPartirDoMes({
+      mesReferenciaInicial: '2027-02',
+      valorMensalCentavos: 2000,
+      ocorrenciaInicial: 13,
+      quantidade: 3
+    })
+
+    expect(ocorrencias.map((o) => o.dataReferencia)).toEqual([
+      '2027-02-01',
+      '2027-03-01',
+      '2027-04-01'
+    ])
+  })
+
+  it('não depende do cartão: o mês pedido manda, qualquer que seja o fechamento', () => {
+    // O caso que quebrava. Antes, dia de fechamento 1 empurrava tudo um mês.
+    const ocorrencias = gerarOcorrenciasAPartirDoMes({
+      mesReferenciaInicial: '2027-02',
+      valorMensalCentavos: 2000,
+      quantidade: 1
+    })
+
+    expect(ocorrencias[0].dataReferencia).toBe('2027-02-01')
+  })
+
+  it('continua a numeração a partir de ocorrenciaInicial', () => {
+    const ocorrencias = gerarOcorrenciasAPartirDoMes({
+      mesReferenciaInicial: '2026-05',
+      valorMensalCentavos: 1000,
+      ocorrenciaInicial: 13,
+      quantidade: 3
+    })
+
+    expect(ocorrencias.map((o) => o.numero)).toEqual([13, 14, 15])
+    for (const o of ocorrencias) expect(o.total).toBeNull()
+  })
+
+  it('atravessa a virada de ano', () => {
+    const ocorrencias = gerarOcorrenciasAPartirDoMes({
+      mesReferenciaInicial: '2026-11',
+      valorMensalCentavos: 1000,
+      quantidade: 4
+    })
+
+    expect(ocorrencias.map((o) => o.dataReferencia)).toEqual([
+      '2026-11-01',
+      '2026-12-01',
+      '2027-01-01',
+      '2027-02-01'
+    ])
+  })
+
+  it('valida quantidade, ocorrenciaInicial, valor e formato do mês', () => {
+    const base = { mesReferenciaInicial: '2026-05', valorMensalCentavos: 1000, quantidade: 1 }
+
+    expect(() => gerarOcorrenciasAPartirDoMes({ ...base, quantidade: 0 })).toThrow(/quantidade/)
+    expect(() => gerarOcorrenciasAPartirDoMes({ ...base, ocorrenciaInicial: 0 })).toThrow(
+      /ocorrenciaInicial/
+    )
+    expect(() => gerarOcorrenciasAPartirDoMes({ ...base, valorMensalCentavos: 0 })).toThrow(
+      /valor/i
+    )
+    expect(() => gerarOcorrenciasAPartirDoMes({ ...base, mesReferenciaInicial: '2026-5' })).toThrow(
+      /m[êe]s/i
+    )
   })
 })

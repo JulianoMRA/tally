@@ -12,7 +12,10 @@ import { mapDespesa, mapParcela, type DespesaRow, type ParcelaRow } from './row-
 import { calcularExtensaoNecessaria } from '../../domain/services/calcular-extensao-horizonte'
 import { gerarParcelas } from '../../domain/services/gerar-parcelas'
 import { mesReferenciaParaData } from '../../domain/services/mes-referencia'
-import { gerarOcorrenciasAssinatura } from '../../domain/services/gerar-ocorrencias-assinatura'
+import {
+  gerarOcorrenciasAPartirDoMes,
+  gerarOcorrenciasAssinatura
+} from '../../domain/services/gerar-ocorrencias-assinatura'
 import { validarFaturaAceitaNovaParcela } from '../../domain/services/ciclo-fatura'
 import {
   parcelasElegiveisParaRecalculo,
@@ -861,9 +864,15 @@ export class DespesaRepository implements Repository {
         })
         if (!extensao) continue
 
-        const novasOcorrencias = gerarOcorrenciasAssinatura({
-          cartao,
-          dataInicio: `${extensao.mesReferenciaInicial}-01`,
+        // `gerarOcorrenciasAPartirDoMes`, e nao `gerarOcorrenciasAssinatura`:
+        // o mes de referencia ja veio do `calcularExtensaoNecessaria`, e
+        // passa-lo como data de compra (`YYYY-MM-01`) fazia a RN-01 ser
+        // reaplicada sobre ele. A RN-01 manda a compra feita NO dia de
+        // fechamento para a fatura seguinte, entao com `diaFechamento = 1` a
+        // serie inteira deslizava um mes — e o buraco era permanente, porque a
+        // chamada seguinte ve o ultimo mes ja alem do alvo e nao gera nada.
+        const novasOcorrencias = gerarOcorrenciasAPartirDoMes({
+          mesReferenciaInicial: extensao.mesReferenciaInicial,
           valorMensalCentavos: a.valor_centavos,
           quantidade: extensao.quantidade,
           ocorrenciaInicial: extensao.ocorrenciaInicial

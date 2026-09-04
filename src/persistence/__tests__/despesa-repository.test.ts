@@ -704,6 +704,66 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
       expect(mesesGerados(a.despesa.id)).toHaveLength(15)
       expect(mesesGerados(b.despesa.id)).toHaveLength(15)
     })
+
+    /**
+     * O bug que estes dois testes trancam: a extensão passava o mês de
+     * referência como se fosse data de compra (`YYYY-MM-01`) e a RN-01 era
+     * reaplicada sobre ele. A RN-01 manda a compra feita NO dia de fechamento
+     * para a fatura seguinte, então com `diaFechamento = 1` o teste `1 < 1` é
+     * falso e a série inteira deslizava um mês.
+     *
+     * O buraco resultante é permanente: a chamada seguinte vê o último mês já
+     * além do alvo e não gera nada, então o mês pulado nunca é preenchido.
+     */
+    it('cartão que fecha no dia 1 estende sem deixar buraco na série', () => {
+      const cartaoDia1 = inserirCartao(db, 'FechaDia1', 1, 10)
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId: cartaoDia1,
+        valorMensalCentavos: 2000,
+        dataInicio: '2026-01-15'
+      })
+
+      // Horizonte inicial: 2026-02 .. 2027-01 (a compra de 15/01 já cai em
+      // fevereiro pela RN-01, e isso está correto).
+      expect(mesesGerados(r.despesa.id)).toHaveLength(12)
+
+      repo.estenderHorizonteAssinaturas('2027-04')
+
+      const meses = mesesGerados(r.despesa.id)
+      const buracos: string[] = []
+      for (let i = 1; i < meses.length; i++) {
+        const [ay, am] = meses[i - 1].split('-').map(Number)
+        const [by, bm] = meses[i].split('-').map(Number)
+        if ((by - ay) * 12 + (bm - am) !== 1) buracos.push(`${meses[i - 1]} -> ${meses[i]}`)
+      }
+
+      expect(buracos).toEqual([])
+      expect(meses[meses.length - 1]).toBe('2027-04')
+      expect(meses).toHaveLength(15)
+    })
+
+    it('cartão que fecha no dia 1 numera as ocorrências sem salto', () => {
+      const cartaoDia1 = inserirCartao(db, 'FechaDia1', 1, 10)
+      const r = repo.criarAssinaturaCredito({
+        descricao: 'Spotify',
+        categoriaId: catId,
+        cartaoId: cartaoDia1,
+        valorMensalCentavos: 2000,
+        dataInicio: '2026-01-15'
+      })
+
+      repo.estenderHorizonteAssinaturas('2027-04')
+
+      const numeros = (
+        db
+          .prepare('SELECT numero FROM parcela WHERE despesa_id = ? ORDER BY numero ASC')
+          .all(r.despesa.id) as { numero: number }[]
+      ).map((p) => p.numero)
+
+      expect(numeros).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
+    })
   })
 
   describe('excluir (RF-DES-09)', () => {
