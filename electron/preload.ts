@@ -11,6 +11,7 @@ import {
   RECEBIMENTO_IPC_CHANNELS,
   VISAO_MENSAL_IPC_CHANNELS,
   RELATORIO_IPC_CHANNELS,
+  SIMULACAO_IPC_CHANNELS,
   ORCAMENTO_IPC_CHANNELS,
   CONFIG_IPC_CHANNELS,
   DADOS_IPC_CHANNELS,
@@ -61,6 +62,7 @@ import type {
   RemoverLimiteInput,
   ListarProgressoInput
 } from '@shared/ipc/orcamento'
+import type { ObterSimulacaoInput, SalvarSimulacaoInput } from '@shared/ipc/simulacao'
 import type { Config, RestaurarBackupInput, Tema } from '@shared/ipc/config'
 import type { ImportarCsvInput, ExportarMesInput } from '@shared/ipc/importacao'
 
@@ -231,6 +233,11 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke(RELATORIO_IPC_CHANNELS.evolucaoSaldo, input),
     evolucaoCategoria: (input: EvolucaoCategoriaInput) =>
       ipcRenderer.invoke(RELATORIO_IPC_CHANNELS.evolucaoCategoria, input)
+  },
+  simulacao: {
+    obter: (input: ObterSimulacaoInput) => ipcRenderer.invoke(SIMULACAO_IPC_CHANNELS.obter, input),
+    salvar: (input: SalvarSimulacaoInput) =>
+      ipcRenderer.invoke(SIMULACAO_IPC_CHANNELS.salvar, input)
   },
   orcamento: {
     definirLimite: (input: DefinirLimiteInput) =>

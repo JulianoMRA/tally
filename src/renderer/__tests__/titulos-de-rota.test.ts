@@ -56,7 +56,7 @@ function titulosDasPaginas(): string[] {
  * Sidebar não é exportada.
  */
 describe('títulos de rota', () => {
-  it('cobre as oito rotas de tela', () => {
+  it('cobre as nove rotas de tela', () => {
     expect(Object.keys(titulosDoRouter()).sort()).toEqual([
       'ajustes',
       'cartoes',
@@ -65,7 +65,8 @@ describe('títulos de rota', () => {
       'importar',
       'mensal',
       'rendas',
-      'saidas'
+      'saidas',
+      'simulacao'
     ])
   })
 
@@ -77,7 +78,7 @@ describe('títulos de rota', () => {
     const daRota = Object.values(titulosDoRouter())
     const daPagina = titulosDasPaginas()
 
-    expect(daPagina.length).toBeGreaterThanOrEqual(8)
+    expect(daPagina.length).toBeGreaterThanOrEqual(9)
     for (const titulo of daPagina) {
       expect(daRota).toContain(titulo)
     }

@@ -21,6 +21,7 @@ const ROTAS = [
   'Faturas',
   'Saídas',
   'Rendas',
+  'Simulação',
   'Cartões',
   'Categorias',
   'Importar dados',

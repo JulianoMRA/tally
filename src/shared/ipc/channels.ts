@@ -74,6 +74,16 @@ export const VISAO_MENSAL_IPC_CHANNELS = {
   detalhar: 'visao-mensal:detalhar'
 } as const
 
+/**
+ * Simulação (RF-SIM). Grava num JSON próprio no `userData`, não no SQLite: é
+ * rascunho de hipótese, não dado financeiro, e por isso fica de fora das
+ * migrations e do export/import de dados.
+ */
+export const SIMULACAO_IPC_CHANNELS = {
+  obter: 'simulacao:obter',
+  salvar: 'simulacao:salvar'
+} as const
+
 export const RELATORIO_IPC_CHANNELS = {
   totaisPorCategoria: 'relatorio:totaisPorCategoria',
   evolucaoSaldo: 'relatorio:evolucaoSaldo',
