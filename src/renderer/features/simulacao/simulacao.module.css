@@ -213,6 +213,25 @@
   }
 }
 
+/* Segunda linha da grade, largura inteira. Era um `hint` dentro do campo
+   "Vezes no mês", e ali ele desalinhava a linha: a dica renderiza abaixo do
+   input, então aquele campo ficava mais alto que os outros três e o
+   `align-items: end` empurrava o input dele para cima. Fora do campo, a linha
+   volta a alinhar e a frase deixa de caber em 12px espremidos. */
+.formularioNota {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: var(--text-2);
+  color: var(--ink-3);
+  line-height: 1.5;
+  max-width: 72ch;
+}
+
+.formularioNota strong {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
 .aviso {
   margin: 0;
   padding: 12px 16px 0;

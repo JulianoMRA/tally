@@ -260,7 +260,11 @@ export default function SimulacaoPage() {
                   onChange={(e) => setValor(e.target.value)}
                 />
               </Field>
-              <Field label="Vezes no mês" hint="4 fins de semana, 20 almoços">
+              {/* Sem `hint` aqui de propósito: a dica renderiza abaixo do input e,
+                  num grid com `align-items: end`, faz este campo subir enquanto os
+                  outros três encostam o input no fundo da linha. A explicação virou
+                  a nota abaixo do formulário, onde ainda cabe uma frase inteira. */}
+              <Field label="Vezes no mês">
                 <Input
                   type="number"
                   min={1}
@@ -272,6 +276,10 @@ export default function SimulacaoPage() {
               <Button type="submit" variant="primary" disabled={!podeAdicionar}>
                 Adicionar
               </Button>
+              <p className={styles.formularioNota}>
+                <strong>Vezes no mês</strong> repete a mesma hipótese: 100,00 quatro vezes é um
+                gasto de fim de semana; 25,00 vinte vezes é o almoço dos dias úteis.
+              </p>
             </form>
 
             {cheio && (
