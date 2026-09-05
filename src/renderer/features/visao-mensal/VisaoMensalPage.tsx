@@ -1,9 +1,9 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
-import type { Despesa } from '@domain/entities/despesa'
 import { diferencaEmMeses } from '@domain/services/mes-referencia'
 import { montarAgendaDoMes } from '@domain/services/montar-agenda-do-mes'
 import { hojeIsoLocal } from '@shared/datas-locais'
 import type { RecebimentoComContexto } from '@shared/ipc/recebimento'
+import type { GastoForaCartaoDoMes } from '@shared/ipc/visao-mensal'
 import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
 import {
@@ -57,14 +57,14 @@ const COMPARADORES_RECEBIMENTOS = {
 }
 
 const COMPARADORES_GASTOS = {
-  descricao: alfabetico<Despesa>((g) => g.descricao),
-  forma: alfabetico<Despesa>((g) => g.formaPagamento),
-  data: porData<Despesa>((g) => g.dataCompra),
-  valor: porNumero<Despesa>((g) => g.valorCentavos)
+  descricao: alfabetico<GastoForaCartaoDoMes>((g) => g.descricao),
+  forma: alfabetico<GastoForaCartaoDoMes>((g) => g.formaPagamento),
+  data: porData<GastoForaCartaoDoMes>((g) => g.data),
+  valor: porNumero<GastoForaCartaoDoMes>((g) => g.valorCentavos)
 }
 
 const SEM_RECEBIMENTOS: RecebimentoComContexto[] = []
-const SEM_GASTOS: Despesa[] = []
+const SEM_GASTOS: GastoForaCartaoDoMes[] = []
 
 export default function VisaoMensalPage() {
   const [mes, setMes] = useState(mesAtualReferencia())
@@ -254,7 +254,7 @@ export default function VisaoMensalPage() {
                           <tr key={g.id}>
                             <td>{g.descricao}</td>
                             <td className="mono">{g.formaPagamento}</td>
-                            <td className="mono">{formatarDataIso(g.dataCompra)}</td>
+                            <td className="mono">{formatarDataIso(g.data)}</td>
                             <td className={`${styles.colValor} tnum`}>
                               {formatBRL(g.valorCentavos)}
                             </td>

@@ -108,7 +108,7 @@ export default function PrintMensalPage() {
                 <tr key={g.id}>
                   <td>{g.descricao}</td>
                   <td>{g.formaPagamento}</td>
-                  <td>{formatarDataIso(g.dataCompra)}</td>
+                  <td>{formatarDataIso(g.data)}</td>
                   <td className={styles.num}>{formatBRL(g.valorCentavos)}</td>
                 </tr>
               ))}

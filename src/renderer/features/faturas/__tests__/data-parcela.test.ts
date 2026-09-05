@@ -31,6 +31,8 @@ function despesa(overrides: Partial<Despesa> = {}): Despesa {
     valorCentavos: 15000,
     totalParcelas: 3,
     dataCompra: '2026-05-15',
+    diaCobranca: null,
+    recorreAte: null,
     nota: null,
     ativa: true,
     createdAt: '2026-05-15T12:00:00Z',

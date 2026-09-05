@@ -22,6 +22,8 @@ import {
 import type { CartaoInput, ListCartaoOptions } from '@shared/ipc/cartao'
 import type { CategoriaInput, ListCategoriaOptions } from '@shared/ipc/categoria'
 import type {
+  DespesaAssinaturaForaCartaoInput,
+  AtualizarLimiteRecorrenciaInput,
   DespesaUnicaCreditoInput,
   DespesaParceladaCreditoInput,
   DespesaEmAndamentoInput,
@@ -164,6 +166,10 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.cancelarPendentes, input),
     criarAssinaturaCredito: (input: DespesaAssinaturaCreditoInput) =>
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.criarAssinaturaCredito, input),
+    criarAssinaturaForaCartao: (input: DespesaAssinaturaForaCartaoInput) =>
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.criarAssinaturaForaCartao, input),
+    atualizarLimiteRecorrencia: (input: AtualizarLimiteRecorrenciaInput) =>
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.atualizarLimiteRecorrencia, input),
     cancelarAssinatura: (input: CancelarAssinaturaInput) =>
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.cancelarAssinatura, input),
     reajustarValorMensalAssinatura: (input: ReajustarAssinaturaInput) =>

@@ -8,6 +8,7 @@ import type {
   DespesaParceladaCreditoInput,
   DespesaEmAndamentoInput,
   DespesaAssinaturaCreditoInput,
+  DespesaAssinaturaForaCartaoInput,
   DespesaUnicaForaCartaoInput,
   DespesaComTags,
   OcorrenciaDoMes
@@ -379,6 +380,26 @@ export default function SaidasPage() {
     )
   }
 
+  // RF-DES-19 — so a recorrente sem cartao tem limite; a de credito nao passa
+  // este callback e o campo nem aparece no modal.
+  async function handleAlterarLimite(despesaId: number, recorreAte: string | null) {
+    await window.api.despesa.atualizarLimiteRecorrencia({ despesaId, recorreAte })
+    await recarregar()
+  }
+
+  async function handleSalvarAssinaturaForaCartao(input: DespesaAssinaturaForaCartaoInput) {
+    await registrar(
+      () => window.api.despesa.criarAssinaturaForaCartao(input),
+      (r) => ({
+        descricao: r.despesa.descricao,
+        mesReferencia: r.parcelas[0]?.dataReferencia ?? '—',
+        cartaoNome: input.formaPagamento,
+        parcelas: r.parcelas.length
+      }),
+      'Erro ao registrar despesa recorrente.'
+    )
+  }
+
   async function handleEditarDespesaConfirmar(input: {
     descricao: string
     categoriaId: number
@@ -673,6 +694,7 @@ export default function SaidasPage() {
             onSalvarParcelada={handleSalvarParcelada}
             onSalvarEmAndamento={handleSalvarEmAndamento}
             onSalvarAssinatura={handleSalvarAssinatura}
+            onSalvarAssinaturaForaCartao={handleSalvarAssinaturaForaCartao}
           />
         </SidePanel>
       )}
@@ -699,6 +721,11 @@ export default function SaidasPage() {
           assinatura={editandoAssinatura}
           categorias={categorias}
           onConfirmar={handleEditarAssinaturaConfirmar}
+          onAlterarLimite={
+            editandoAssinatura.cartaoId === null
+              ? (recorreAte) => handleAlterarLimite(editandoAssinatura.id, recorreAte)
+              : undefined
+          }
           onCancelar={() => setEditandoAssinatura(null)}
         />
       )}

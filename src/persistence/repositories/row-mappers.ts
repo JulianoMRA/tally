@@ -82,6 +82,8 @@ export type DespesaRow = {
   valor_centavos: number
   total_parcelas: number | null
   data_compra: string
+  dia_cobranca: number | null
+  recorre_ate: string | null
   nota: string | null
   ativa: 0 | 1
   created_at: string
@@ -99,6 +101,8 @@ export function mapDespesa(row: DespesaRow): Despesa {
     valorCentavos: row.valor_centavos,
     totalParcelas: row.total_parcelas,
     dataCompra: row.data_compra,
+    diaCobranca: row.dia_cobranca ?? null,
+    recorreAte: row.recorre_ate ?? null,
     nota: row.nota ?? null,
     ativa: row.ativa === 1,
     createdAt: row.created_at,

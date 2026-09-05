@@ -57,7 +57,7 @@ export function montarLinhasDoMes(db: Database, mesReferencia: string): TabelaEx
       gasto.formaPagamento,
       nomesCategoria.get(gasto.categoriaId) ?? '',
       '',
-      gasto.dataCompra,
+      gasto.data,
       formatarValorCsv(gasto.valorCentavos),
       ''
     ])

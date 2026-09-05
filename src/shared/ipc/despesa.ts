@@ -134,6 +134,49 @@ export const despesaAssinaturaCreditoInputSchema = z.object({
 
 export type DespesaAssinaturaCreditoInput = z.infer<typeof despesaAssinaturaCreditoInputSchema>
 
+/**
+ * RF-DES-16 — recorrente FORA de cartao. Sem `cartaoId` e sem `dataInicio`:
+ * uma recorrente sem cartao nao tem data de compra, tem um mes em que comeca e
+ * um dia em que acontece.
+ */
+export const despesaAssinaturaForaCartaoInputSchema = z.object({
+  descricao: z
+    .string()
+    .trim()
+    .min(1, 'Descrição é obrigatória')
+    .max(120, 'Descrição deve ter no máximo 120 caracteres'),
+  categoriaId: z
+    .number({ message: 'Categoria é obrigatória' })
+    .int()
+    .positive('Categoria inválida'),
+  formaPagamento: z.enum(['Debito', 'Pix', 'Dinheiro'], {
+    message: 'Forma de pagamento inválida'
+  }),
+  valorMensalCentavos: z
+    .number({ message: 'Valor mensal é obrigatório' })
+    .int()
+    .min(1, 'Valor deve ser maior que zero'),
+  mesInicial: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Mês deve estar no formato YYYY-MM'),
+  diaCobranca: z
+    .number({ message: 'Dia da cobrança é obrigatório' })
+    .int()
+    .min(1, 'Dia deve estar entre 1 e 31')
+    .max(31, 'Dia deve estar entre 1 e 31'),
+  recorreAte: dataIsoSchema.nullable()
+})
+
+export type DespesaAssinaturaForaCartaoInput = z.infer<
+  typeof despesaAssinaturaForaCartaoInputSchema
+>
+
+/** RF-DES-19 — altera a data limite; `null` volta a recorrencia para "sempre". */
+export const atualizarLimiteRecorrenciaInputSchema = z.object({
+  despesaId: z.number().int().positive(),
+  recorreAte: dataIsoSchema.nullable()
+})
+
+export type AtualizarLimiteRecorrenciaInput = z.infer<typeof atualizarLimiteRecorrenciaInputSchema>
+
 export const cancelarAssinaturaInputSchema = z.object({
   despesaId: z.number().int().positive()
 })
@@ -291,6 +334,10 @@ export type DespesaApi = {
   criarAssinaturaCredito: (
     input: DespesaAssinaturaCreditoInput
   ) => Promise<ResultadoCriarAssinatura>
+  criarAssinaturaForaCartao: (
+    input: DespesaAssinaturaForaCartaoInput
+  ) => Promise<ResultadoCriarAssinatura>
+  atualizarLimiteRecorrencia: (input: AtualizarLimiteRecorrenciaInput) => Promise<Despesa>
   cancelarAssinatura: (input: CancelarAssinaturaInput) => Promise<ResultadoCancelarAssinatura>
   reajustarValorMensalAssinatura: (
     input: ReajustarAssinaturaInput

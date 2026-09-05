@@ -11,11 +11,18 @@ import { TagRepository } from './tag-repository'
 import { mapDespesa, mapParcela, type DespesaRow, type ParcelaRow } from './row-mappers'
 import { calcularExtensaoNecessaria } from '../../domain/services/calcular-extensao-horizonte'
 import { gerarParcelas } from '../../domain/services/gerar-parcelas'
-import { mesReferenciaParaData } from '../../domain/services/mes-referencia'
+import {
+  diferencaEmMeses,
+  mesReferenciaParaData,
+  proxMesReferencia
+} from '../../domain/services/mes-referencia'
+import type { GastoForaCartaoDoMes } from '../../shared/ipc/visao-mensal'
 import {
   gerarOcorrenciasAPartirDoMes,
-  gerarOcorrenciasAssinatura
+  gerarOcorrenciasAssinatura,
+  gerarOcorrenciasSemCartao
 } from '../../domain/services/gerar-ocorrencias-assinatura'
+import { hojeIsoLocal, mesAtualReferencia } from '../../shared/datas-locais'
 import { validarFaturaAceitaNovaParcela } from '../../domain/services/ciclo-fatura'
 import {
   parcelasElegiveisParaRecalculo,
@@ -109,6 +116,24 @@ export type CriarAssinaturaCreditoInput = {
   cartaoId: number
   valorMensalCentavos: number
   dataInicio: string
+}
+
+/**
+ * RF-DES-16 — recorrente FORA de cartao. Nao tem `dataInicio` nem `cartaoId`:
+ * uma recorrente sem cartao nao tem data de compra, tem um mes em que comeca e
+ * um dia em que acontece.
+ */
+export type CriarAssinaturaForaCartaoInput = {
+  descricao: string
+  categoriaId: number
+  formaPagamento: FormaPagamentoForaCartao
+  valorMensalCentavos: number
+  /** Mes da primeira cobranca, "YYYY-MM". */
+  mesInicial: string
+  /** Dia do mes da cobranca, 1..31. */
+  diaCobranca: number
+  /** Data limite "YYYY-MM-DD"; null = recorre sempre. */
+  recorreAte: string | null
 }
 
 export type ResultadoCriarAssinatura = {
@@ -346,6 +371,74 @@ export class DespesaRepository implements Repository {
     })()
   }
 
+  /**
+   * RF-DES-16 — recorrente FORA de cartao (Pix, debito ou dinheiro).
+   *
+   * Espelha `criarAssinaturaCredito`, sem os dois passos que dependem de
+   * cartao: nao consulta a RN-01 para achar o mes (o mes vem informado) e nao
+   * cria fatura (`fatura_id` fica NULL). A `data_compra` guardada e a data da
+   * PRIMEIRA ocorrencia — e o mais proximo de "quando isso comecou" que este
+   * tipo tem —, enquanto o dia pedido vive em `dia_cobranca`, intacto do clamp.
+   */
+  criarAssinaturaForaCartao(input: CriarAssinaturaForaCartaoInput): ResultadoCriarAssinatura {
+    const parcelaRepo = new ParcelaRepository(this.db)
+    this.validarCategoria(input.categoriaId)
+
+    const planejadas = gerarOcorrenciasSemCartao({
+      mesReferenciaInicial: input.mesInicial,
+      diaCobranca: input.diaCobranca,
+      valorMensalCentavos: input.valorMensalCentavos,
+      quantidade: HORIZONTE_ASSINATURA_MESES,
+      recorreAte: input.recorreAte
+    })
+
+    if (planejadas.length === 0) {
+      throw new Error(
+        'A data limite e anterior a primeira cobranca: a recorrencia nao geraria nenhuma ocorrencia.'
+      )
+    }
+
+    return this.db.transaction(() => {
+      const info = this.db
+        .prepare(
+          `INSERT INTO despesa (descricao, categoria_id, tipo, forma_pagamento, cartao_id,
+                                valor_centavos, total_parcelas, data_compra, dia_cobranca, recorre_ate)
+           VALUES (?, ?, 'Assinatura', ?, NULL, ?, NULL, ?, ?, ?)`
+        )
+        .run(
+          input.descricao,
+          input.categoriaId,
+          input.formaPagamento,
+          input.valorMensalCentavos,
+          planejadas[0].dataReferencia,
+          input.diaCobranca,
+          input.recorreAte
+        )
+
+      const despesaRow = this.db
+        .prepare('SELECT * FROM despesa WHERE id = ?')
+        .get(Number(info.lastInsertRowid)) as DespesaRow | undefined
+      if (!despesaRow) throw new Error('Falha ao recuperar despesa apos criar')
+      const despesa = mapDespesa(despesaRow)
+
+      const parcelas: Parcela[] = []
+      for (const o of planejadas) {
+        parcelas.push(
+          parcelaRepo.criar({
+            despesaId: despesa.id,
+            faturaId: null,
+            numero: o.numero,
+            total: o.total,
+            valorCentavos: o.valorCentavos,
+            dataReferencia: o.dataReferencia
+          })
+        )
+      }
+
+      return { despesa, parcelas }
+    })()
+  }
+
   cancelarAssinatura(despesaId: number): ResultadoCancelarAssinatura {
     const despesaRow = this.db.prepare('SELECT * FROM despesa WHERE id = ?').get(despesaId) as
       | DespesaRow
@@ -356,16 +449,35 @@ export class DespesaRepository implements Repository {
     }
 
     return this.db.transaction(() => {
-      // RN: parcelas em fatura Aberta são canceladas; Fechada/Paga preservam histórico.
-      // Filtra também por parcela.status='Pendente' (defense in depth — não deveria
-      // existir parcela Paga em fatura Aberta, mas se houver, preservar).
-      const rowsParaCancelar = this.db
-        .prepare(
-          `SELECT p.* FROM parcela p
-           INNER JOIN fatura f ON f.id = p.fatura_id
-           WHERE p.despesa_id = ? AND f.status = 'Aberta' AND p.status = 'Pendente'`
-        )
-        .all(despesaId) as ParcelaRow[]
+      // Com cartao: parcelas em fatura Aberta sao canceladas; Fechada/Paga
+      // preservam historico. Filtra tambem por parcela.status='Pendente'
+      // (defense in depth — nao deveria existir parcela Paga em fatura Aberta,
+      // mas se houver, preservar).
+      //
+      // SEM cartao (RF-DES-20) nao existe fatura para consultar, e o INNER JOIN
+      // acima nao casaria com nada — cancelar seria um no-op silencioso. O
+      // criterio equivalente e a DATA: ocorrencia com data ainda no futuro nao
+      // aconteceu e pode sumir; a de ontem ja tirou dinheiro da conta e fica.
+      // Note que aqui o corte e mais conservador que no ramo com cartao, onde a
+      // fatura Aberta do mes corrente e cancelavel inteira: la nada saiu da
+      // conta ainda, porque a fatura nao foi paga.
+      const rowsParaCancelar = (
+        despesaRow.cartao_id === null
+          ? this.db
+              .prepare(
+                `SELECT p.* FROM parcela p
+                 WHERE p.despesa_id = ? AND p.fatura_id IS NULL
+                   AND p.status = 'Pendente' AND p.data_referencia > ?`
+              )
+              .all(despesaId, hojeIsoLocal())
+          : this.db
+              .prepare(
+                `SELECT p.* FROM parcela p
+                 INNER JOIN fatura f ON f.id = p.fatura_id
+                 WHERE p.despesa_id = ? AND f.status = 'Aberta' AND p.status = 'Pendente'`
+              )
+              .all(despesaId)
+      ) as ParcelaRow[]
 
       const del = this.db.prepare('DELETE FROM parcela WHERE id = ?')
       const canceladas: Parcela[] = []
@@ -427,15 +539,23 @@ export class DespesaRepository implements Repository {
    * `atualizarAssinatura`.
    */
   private aplicarValorMensal(despesaId: number, valorCentavos: number): void {
+    // Duas clausulas, uma por ramo, na mesma instrucao. Sem a segunda, reajustar
+    // uma recorrente sem cartao nao atualizaria nada e nao reclamaria — o
+    // `fatura_id IN (...)` simplesmente nao casa com `fatura_id NULL`.
+    // Ocorrencia sem cartao com data ja passada nao e tocada: ela ja saiu da
+    // conta pelo valor antigo, e reescreve-la falsificaria o mes fechado.
     this.db
       .prepare(
         `UPDATE parcela
          SET valor_centavos = ?, updated_at = datetime('now')
          WHERE despesa_id = ?
            AND status = 'Pendente'
-           AND fatura_id IN (SELECT id FROM fatura WHERE status = 'Aberta')`
+           AND (
+             fatura_id IN (SELECT id FROM fatura WHERE status = 'Aberta')
+             OR (fatura_id IS NULL AND data_referencia > ?)
+           )`
       )
-      .run(valorCentavos, despesaId)
+      .run(valorCentavos, despesaId, hojeIsoLocal())
   }
 
   private atualizarAssinatura(
@@ -595,17 +715,223 @@ export class DespesaRepository implements Repository {
     return rows.map(mapDespesa)
   }
 
-  listarGastosForaCartao(filtro?: { mesReferencia?: string }): Despesa[] {
-    let sql =
-      "SELECT * FROM despesa WHERE tipo = 'Unica' AND forma_pagamento != 'Credito' AND ativa = 1"
+  /**
+   * Gastos fora de cartao do mes — a unidade e a OCORRENCIA, nao a despesa
+   * (RN-08).
+   *
+   * A consulta era `FROM despesa WHERE tipo = 'Unica'` agrupada por
+   * `substr(data_compra, 1, 7)`. Enquanto toda despesa fora de cartao era
+   * Unica, uma despesa tinha exatamente uma parcela no mesmo mes e as duas
+   * leituras davam o mesmo numero. A recorrente sem cartao (RF-DES-16) quebra a
+   * equivalencia — uma despesa, N ocorrencias em N meses — e a leitura por
+   * despesa passaria a contar a recorrente inteira no mes de inicio e nada nos
+   * demais. O ranking de categorias, o orcamento e a lista de Saidas ja
+   * contavam por parcela; esta consulta alinha a Visao mensal e a exportacao.
+   *
+   * **Sem filtro por `ativa`, de proposito.** Cancelar uma recorrente apaga as
+   * ocorrencias futuras e marca a despesa como inativa; as passadas continuam
+   * existindo porque aconteceram. Filtrar por `ativa = 1` as apagaria dos meses
+   * ja encerrados, reescrevendo historico. O filtro existia na consulta antiga
+   * e era inerte, porque nada marcava despesa Unica como inativa.
+   */
+  listarGastosForaCartao(filtro?: { mesReferencia?: string }): GastoForaCartaoDoMes[] {
+    let sql = `SELECT p.id           AS id,
+                      p.despesa_id   AS despesa_id,
+                      p.numero       AS numero,
+                      p.valor_centavos AS valor_centavos,
+                      p.data_referencia AS data,
+                      d.descricao    AS descricao,
+                      d.categoria_id AS categoria_id,
+                      d.forma_pagamento AS forma_pagamento,
+                      d.tipo         AS tipo
+               FROM parcela p
+               JOIN despesa d ON d.id = p.despesa_id
+               WHERE p.fatura_id IS NULL AND d.forma_pagamento != 'Credito'`
     const params: string[] = []
     if (filtro?.mesReferencia) {
-      sql += ' AND substr(data_compra, 1, 7) = ?'
+      sql += ' AND substr(p.data_referencia, 1, 7) = ?'
       params.push(filtro.mesReferencia)
     }
-    sql += ' ORDER BY data_compra DESC, id DESC'
-    const rows = this.db.prepare(sql).all(...params) as DespesaRow[]
-    return rows.map(mapDespesa)
+    sql += ' ORDER BY p.data_referencia DESC, p.id DESC'
+
+    type LinhaGasto = {
+      id: number
+      despesa_id: number
+      numero: number
+      valor_centavos: number
+      data: string
+      descricao: string
+      categoria_id: number
+      forma_pagamento: FormaPagamento
+      tipo: TipoDespesa
+    }
+
+    return (this.db.prepare(sql).all(...params) as LinhaGasto[]).map((r) => ({
+      id: r.id,
+      despesaId: r.despesa_id,
+      numero: r.numero,
+      valorCentavos: r.valor_centavos,
+      data: r.data,
+      descricao: r.descricao,
+      categoriaId: r.categoria_id,
+      formaPagamento: r.forma_pagamento,
+      tipo: r.tipo
+    }))
+  }
+
+  /**
+   * RF-DES-16 — estende o horizonte de uma recorrente SEM cartao ate `mesAlvo`.
+   *
+   * Devolve quantas ocorrencias criou. Para sozinha quando `recorre_ate` corta
+   * antes do alvo (RF-DES-18), e nao gera nada quando ja esta coberta.
+   */
+  private estenderRecorrenteSemCartao(
+    a: DespesaRow & { ultimo_mes: string | null; ultimo_numero: number | null },
+    mesAlvo: string,
+    parcelaRepo: ParcelaRepository
+  ): number {
+    // Recorrente sem dia de cobranca nao e gerable. Nao deveria existir — o
+    // cadastro exige o dia —, mas um import de backup antigo poderia trazer.
+    if (a.dia_cobranca === null) return 0
+
+    const extensao = calcularExtensaoNecessaria({
+      mesAlvo,
+      ultimoMesExistente: a.ultimo_mes,
+      ultimoNumeroExistente: a.ultimo_numero
+    })
+    if (!extensao) return 0
+
+    const novas = gerarOcorrenciasSemCartao({
+      mesReferenciaInicial: extensao.mesReferenciaInicial,
+      diaCobranca: a.dia_cobranca,
+      valorMensalCentavos: a.valor_centavos,
+      quantidade: extensao.quantidade,
+      ocorrenciaInicial: extensao.ocorrenciaInicial,
+      recorreAte: a.recorre_ate
+    })
+
+    for (const o of novas) {
+      parcelaRepo.criar({
+        despesaId: a.id,
+        faturaId: null,
+        numero: o.numero,
+        total: o.total,
+        valorCentavos: o.valorCentavos,
+        dataReferencia: o.dataReferencia
+      })
+    }
+    return novas.length
+  }
+
+  /**
+   * RF-DES-19 — altera a data limite de uma recorrente sem cartao.
+   *
+   * Encurtar apaga as ocorrencias futuras alem do novo limite; esticar (ou
+   * voltar para "sempre", com `null`) regenera ate o horizonte de 12 meses.
+   * Ocorrencia com data ja passada nunca e tocada.
+   *
+   * **A regeneracao tem um caso que so aparece depois de encurtar ao extremo:**
+   * se o novo limite apagar TODAS as ocorrencias, `calcularExtensaoNecessaria`
+   * nao tem de onde partir e devolve null — a recorrente ficaria ativa e esteril
+   * para sempre, que e exatamente o defeito da fonte de renda desarquivada do
+   * PR `#129`. Por isso, quando nao sobra ocorrencia nenhuma, a serie e semeada
+   * de novo a partir do mes da `data_compra`, que e onde ela comecou.
+   */
+  atualizarLimiteRecorrencia(despesaId: number, recorreAte: string | null): Despesa {
+    const despesaRow = this.db.prepare('SELECT * FROM despesa WHERE id = ?').get(despesaId) as
+      | DespesaRow
+      | undefined
+    if (!despesaRow) throw new Error(`Despesa #${despesaId} nao encontrada`)
+    if (despesaRow.tipo !== 'Assinatura' || despesaRow.cartao_id !== null) {
+      throw new Error(`Despesa #${despesaId} nao e uma recorrente sem cartao`)
+    }
+    if (recorreAte !== null && !/^\d{4}-\d{2}-\d{2}$/.test(recorreAte)) {
+      throw new Error(`recorreAte invalido: '${recorreAte}'. Esperado YYYY-MM-DD.`)
+    }
+
+    const parcelaRepo = new ParcelaRepository(this.db)
+
+    return this.db.transaction(() => {
+      this.db
+        .prepare(`UPDATE despesa SET recorre_ate = ?, updated_at = datetime('now') WHERE id = ?`)
+        .run(recorreAte, despesaId)
+
+      if (recorreAte !== null) {
+        this.db
+          .prepare(
+            `DELETE FROM parcela
+             WHERE despesa_id = ? AND fatura_id IS NULL AND status = 'Pendente'
+               AND data_referencia > ? AND data_referencia > ?`
+          )
+          .run(despesaId, hojeIsoLocal(), recorreAte)
+      }
+
+      const atualizadaRow = this.db
+        .prepare('SELECT * FROM despesa WHERE id = ?')
+        .get(despesaId) as DespesaRow
+
+      if (atualizadaRow.ativa === 1) {
+        let mesAlvo = mesAtualReferencia()
+        for (let i = 0; i < HORIZONTE_ASSINATURA_MESES - 1; i++) {
+          mesAlvo = proxMesReferencia(mesAlvo)
+        }
+        this.sincronizarRecorrenteSemCartao(atualizadaRow, mesAlvo, parcelaRepo)
+      }
+
+      const finalRow = this.db
+        .prepare('SELECT * FROM despesa WHERE id = ?')
+        .get(despesaId) as DespesaRow
+      return mapDespesa(finalRow)
+    })()
+  }
+
+  /**
+   * Gera o que falta para a recorrente sem cartao alcancar `mesAlvo`, semeando
+   * do zero quando nao sobrou ocorrencia nenhuma de onde continuar.
+   */
+  private sincronizarRecorrenteSemCartao(
+    despesaRow: DespesaRow,
+    mesAlvo: string,
+    parcelaRepo: ParcelaRepository
+  ): number {
+    const agregado = this.db
+      .prepare(
+        `SELECT MAX(substr(data_referencia, 1, 7)) AS ultimo_mes,
+                MAX(numero)                        AS ultimo_numero
+         FROM parcela WHERE despesa_id = ? AND fatura_id IS NULL`
+      )
+      .get(despesaRow.id) as { ultimo_mes: string | null; ultimo_numero: number | null }
+
+    if (agregado.ultimo_mes !== null) {
+      return this.estenderRecorrenteSemCartao(
+        { ...despesaRow, ultimo_mes: agregado.ultimo_mes, ultimo_numero: agregado.ultimo_numero },
+        mesAlvo,
+        parcelaRepo
+      )
+    }
+
+    // Nenhuma ocorrencia sobrou: semeia de novo a partir do mes de inicio.
+    if (despesaRow.dia_cobranca === null) return 0
+    const mesInicial = despesaRow.data_compra.slice(0, 7)
+    const quantidade = Math.max(1, diferencaEmMeses(mesInicial, mesAlvo) + 1)
+    const novas = gerarOcorrenciasSemCartao({
+      mesReferenciaInicial: mesInicial,
+      diaCobranca: despesaRow.dia_cobranca,
+      valorMensalCentavos: despesaRow.valor_centavos,
+      quantidade,
+      recorreAte: despesaRow.recorre_ate
+    })
+    for (const o of novas) {
+      parcelaRepo.criar({
+        despesaId: despesaRow.id,
+        faturaId: null,
+        numero: o.numero,
+        total: o.total,
+        valorCentavos: o.valorCentavos,
+        dataReferencia: o.dataReferencia
+      })
+    }
+    return novas.length
   }
 
   /**
@@ -838,9 +1164,16 @@ export class DespesaRepository implements Repository {
     const assinaturas = this.db
       .prepare(
         `SELECT d.*,
-                (SELECT MAX(f.mes_referencia) FROM parcela p
-                   INNER JOIN fatura f ON f.id = p.fatura_id
-                   WHERE p.despesa_id = d.id) AS ultimo_mes,
+                COALESCE(
+                  (SELECT MAX(f.mes_referencia) FROM parcela p
+                     INNER JOIN fatura f ON f.id = p.fatura_id
+                     WHERE p.despesa_id = d.id),
+                  -- Sem cartao nao ha fatura: o mes vem da propria ocorrencia.
+                  -- Sem este ramo o ultimo_mes era NULL e a extensao devolvia
+                  -- null, deixando a recorrente parada para sempre.
+                  (SELECT MAX(substr(p.data_referencia, 1, 7)) FROM parcela p
+                     WHERE p.despesa_id = d.id AND p.fatura_id IS NULL)
+                ) AS ultimo_mes,
                 (SELECT MAX(p.numero) FROM parcela p
                    WHERE p.despesa_id = d.id) AS ultimo_numero
          FROM despesa d
@@ -853,7 +1186,10 @@ export class DespesaRepository implements Repository {
       let faturasCriadas = 0
 
       for (const a of assinaturas) {
-        if (a.cartao_id === null) continue
+        if (a.cartao_id === null) {
+          parcelasCriadas += this.estenderRecorrenteSemCartao(a, mesAlvo, parcelaRepo)
+          continue
+        }
         const cartao = cartaoRepo.findById(a.cartao_id)
         if (!cartao) continue
 
