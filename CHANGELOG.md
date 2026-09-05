@@ -6,6 +6,30 @@ vista técnico.
 
 ---
 
+## v1.13.0 — Despesa recorrente fora de cartão (set/2026)
+
+---
+
+**Uma despesa que se repete todo mês sem passar por cartão (set/2026)** — Aluguel, mensalidade, faxina: coisas que acontecem todo mês e são pagas por Pix, débito ou dinheiro. O app só sabia repetir despesa dentro de fatura, então a única forma de acompanhar um aluguel era cadastrá-lo doze vezes à mão. A **recorrente fora de cartão** (RF-DES-16 a RF-DES-20) reusa `tipo = 'Assinatura'` com `cartao_id NULL` — o `CHECK` da tabela já aceitava essa combinação desde a 0001, e isso foi confirmado por INSERT antes de a migration ser escrita, não por leitura do SQL. No formulário, a aba **Assinatura** ganhou o seletor de forma de pagamento que a aba **Única** já tinha: crédito segue o fluxo de fatura, o resto cai no fluxo sem fatura.
+
+**O dia de cobrança precisou de coluna própria, e o motivo é o clamp.** O cadastro pede **mês da primeira cobrança** e **dia**, no lugar de uma data de compra — uma recorrente não tem data de compra, tem um dia em que acontece. Derivar esse dia da data da primeira ocorrência parecia economia de uma coluna, mas quebra no caso que importa: "todo dia 31" começando em fevereiro gravaria 28, e a série inteira herdaria o 28 daí em diante, porque o clamp não tem volta. `dia_cobranca` guarda o dia como foi pedido e cada ocorrência clampa no seu próprio mês — fevereiro encolhe para 28, março volta a 31.
+
+**Duração: sempre, ou até uma data.** A recorrente pode ser aberta, como a assinatura de cartão, ou ter limite (`recorre_ate`). O limite é lido **pela data e não pelo mês**: "recorrente até 15/03/2027" com cobrança todo dia 20 encerra em fevereiro, porque março cairia em 20/03, depois do limite escrito. É editável depois, e alterar re-sincroniza as ocorrências futuras — encurtar apaga as que passam do novo limite, esticar volta a gerar. Ocorrência que já aconteceu nunca é tocada.
+
+**A RN-04 ganhou um ramo, e ele não passa pela RN-01.** Sem cartão não há dia de fechamento a consultar: o mês informado é o mês da primeira ocorrência, ponto. Reaplicar a RN-01 sobre um mês já resolvido é precisamente o defeito corrigido na v1.11.4 (PR `#130`), onde um cartão com fechamento no dia 1 deslizava a série inteira em um mês — a regra nova nasce já sabendo disso.
+
+**A RN-08 mudou de fonte: conta ocorrências, não despesas.** `listarGastosForaCartao` era `SELECT * FROM despesa WHERE tipo = 'Unica'` agrupado por data de compra, enquanto o resto do app — lista de Saídas, ranking de categorias, orçamento — já contava por parcela. As duas leituras davam o mesmo número **enquanto toda despesa fora de cartão era Única**: uma despesa, uma parcela, mesmo mês. A recorrente quebra a equivalência (uma despesa, N ocorrências em N meses), e a leitura por despesa contaria a recorrente inteira no mês de início e nada nos demais — invisível na Visão mensal e fora do saldo. A exportação CSV e PDF se corrigiu junto, por reusar a mesma leitura. **O filtro `ativa = 1` saiu na mesma consulta**: ele era inerte, porque nada marcava despesa Única como inativa, mas com a recorrente passaria a apagar as ocorrências passadas de uma recorrente cancelada dos meses já encerrados — reescrita de histórico.
+
+**Três no-ops silenciosos corrigidos.** A extensão de horizonte tinha um `continue` explícito para `cartao_id === null` e derivava o último mês de um `INNER JOIN fatura`; cancelar filtrava por fatura Aberta; reajustar o valor filtrava por `fatura_id IN (...)`. Sem fatura, os três não casavam com nada e **não faziam nada sem reclamar** — mesmo formato do defeito da fonte de renda desarquivada da v1.11.4. Para a recorrente sem cartão o critério passa a ser a **data**: ocorrência de ontem já saiu da conta e fica, a de amanhã pode sumir. É mais conservador que o ramo com cartão, onde a fatura Aberta do mês corrente é cancelável inteira — ali nada saiu da conta ainda, porque a fatura não foi paga.
+
+**Nota de método: os testes dos no-ops foram verificados ao contrário.** Os 23 testes de persistência passaram na primeira execução, o que para um conjunto que existe justamente para provar três correções é motivo de desconfiança — um teste escrito depois do conserto pode estar apenas descrevendo o conserto. As três correções foram revertidas temporariamente e **exatamente quatro testes ficaram vermelhos**, um por no-op (cancelar derruba dois), antes de serem restauradas. Sem esse passo não haveria como afirmar que os testes medem comportamento em vez da implementação recém-escrita.
+
+**Migration 0013**: dois `ALTER TABLE ADD COLUMN`, sem o create-copy-drop-rename das 0003/0007/0011 — medido nesta engine que a forma com `CHECK` é aceita e que o `CHECK` passa a valer depois do ALTER. Verificada também num banco pré-existente antes da release: o log de boot registrou **apenas a 0013 aplicada**, com as doze anteriores reconhecidas e puladas.
+
+**1245 → 1294 testes unitários**, 127 → 130 arquivos: 19 de domínio (RN-04 sem cartão, por TDD), 23 de persistência e 7 de componente. **E2E: 114 → 116 specs**, com dois novos, um deles provando a correção da RN-08 ponta a ponta — cadastra a recorrente e confere que ela aparece na Visão mensal em dois meses diferentes, pelo valor de um mês. **A suíte E2E completa não rodou**: foram executados os cinco specs afetados (o novo mais `visao-mensal`, `exportar`, `gastos` e `saidas-data-e-ordenacao`, que são os que provam que o gasto único não regrediu com a troca de fonte), 12 verdes. Proposto e decidido assim; as três varreduras — axe, alinhamento de páginas e scroll horizontal — ficaram sem execução nesta versão.
+
+---
+
 ## v1.12.0 — Simulação (set/2026)
 
 ---
