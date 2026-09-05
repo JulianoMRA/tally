@@ -11,6 +11,8 @@ import {
   despesaEmAndamentoInputSchema,
   despesaAssinaturaCreditoInputSchema,
   cancelarAssinaturaInputSchema,
+  despesaAssinaturaForaCartaoInputSchema,
+  atualizarLimiteRecorrenciaInputSchema,
   reajustarAssinaturaInputSchema,
   listarAssinaturasInputSchema,
   adiantarParcelasInputSchema,
@@ -57,6 +59,16 @@ export function registerDespesaHandlers(db: Database, ipcMain: IpcMain): void {
   ipcMain.handle(DESPESA_IPC_CHANNELS.criarAssinaturaCredito, (_event, payload: unknown) => {
     const input = despesaAssinaturaCreditoInputSchema.parse(payload)
     return repo.criarAssinaturaCredito(input)
+  })
+
+  ipcMain.handle(DESPESA_IPC_CHANNELS.criarAssinaturaForaCartao, (_event, payload: unknown) => {
+    const input = despesaAssinaturaForaCartaoInputSchema.parse(payload)
+    return repo.criarAssinaturaForaCartao(input)
+  })
+
+  ipcMain.handle(DESPESA_IPC_CHANNELS.atualizarLimiteRecorrencia, (_event, payload: unknown) => {
+    const { despesaId, recorreAte } = atualizarLimiteRecorrenciaInputSchema.parse(payload)
+    return repo.atualizarLimiteRecorrencia(despesaId, recorreAte)
   })
 
   ipcMain.handle(DESPESA_IPC_CHANNELS.cancelarAssinatura, (_event, payload: unknown) => {

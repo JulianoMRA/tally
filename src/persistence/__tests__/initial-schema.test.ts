@@ -176,7 +176,8 @@ describe('migration 0001_initial_schema', () => {
       '0009_corrige_vencimento_anterior_ao_fechamento',
       '0010_data_referencia_segue_a_fatura',
       '0011_avulso_sem_fonte',
-      '0012_realinha_data_referencia_apos_adiantamento'
+      '0012_realinha_data_referencia_apos_adiantamento',
+      '0013_recorrente_fora_de_cartao'
     ])
   })
 })

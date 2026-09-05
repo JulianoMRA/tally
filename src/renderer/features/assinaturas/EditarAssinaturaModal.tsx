@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
-import { Button, Field, Input, Modal, Select } from '../../components/ui'
+import { Button, Field, Input, Modal, SegmentedControl, Select } from '../../components/ui'
+import type { OpcaoSegmentada } from '../../components/ui'
 import { centavosParaReais, ehValorValido, parseCentavos } from '../../lib/dinheiro'
 import styles from './assinaturas.module.css'
 
@@ -13,15 +14,33 @@ type Props = {
     categoriaId: number
     valorCentavos: number
   }) => Promise<void>
+  /** RF-DES-19 — so existe para recorrente SEM cartao; ausente na de credito. */
+  onAlterarLimite?: (recorreAte: string | null) => Promise<void>
   onCancelar: () => void
 }
 
-export function EditarAssinaturaModal({ assinatura, categorias, onConfirmar, onCancelar }: Props) {
+const DURACOES: readonly OpcaoSegmentada<'sempre' | 'ate'>[] = [
+  { valor: 'sempre', rotulo: 'Sempre' },
+  { valor: 'ate', rotulo: 'Até uma data' }
+]
+
+export function EditarAssinaturaModal({
+  assinatura,
+  categorias,
+  onConfirmar,
+  onAlterarLimite,
+  onCancelar
+}: Props) {
   const [descricao, setDescricao] = useState(assinatura.descricao)
   const [categoriaId, setCategoriaId] = useState(String(assinatura.categoriaId))
   const [valorReais, setValorReais] = useState(centavosParaReais(assinatura.valorCentavos))
+  const [duracao, setDuracao] = useState<'sempre' | 'ate'>(assinatura.recorreAte ? 'ate' : 'sempre')
+  const [recorreAte, setRecorreAte] = useState(assinatura.recorreAte ?? '')
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+
+  const editaLimite = typeof onAlterarLimite === 'function'
+  const limiteAlvo = duracao === 'ate' ? recorreAte : null
 
   async function handleConfirmar() {
     if (!descricao.trim()) {
@@ -37,6 +56,10 @@ export function EditarAssinaturaModal({ assinatura, categorias, onConfirmar, onC
       setErro('Valor deve ser maior que zero.')
       return
     }
+    if (editaLimite && duracao === 'ate' && !recorreAte) {
+      setErro('Informe a data limite.')
+      return
+    }
     setErro(null)
     setLoading(true)
     try {
@@ -45,6 +68,11 @@ export function EditarAssinaturaModal({ assinatura, categorias, onConfirmar, onC
         categoriaId: Number(categoriaId),
         valorCentavos
       })
+      // Depois do valor, e so quando mudou: alterar o limite regenera ou apaga
+      // ocorrencias futuras, e nao faz sentido pagar isso a cada salvamento.
+      if (editaLimite && limiteAlvo !== (assinatura.recorreAte ?? null)) {
+        await onAlterarLimite(limiteAlvo)
+      }
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Erro ao salvar.')
     } finally {
@@ -96,6 +124,26 @@ export function EditarAssinaturaModal({ assinatura, categorias, onConfirmar, onC
           onChange={(e) => setValorReais(e.target.value)}
         />
       </Field>
+
+      {editaLimite && (
+        <>
+          <SegmentedControl
+            opcoes={DURACOES}
+            valor={duracao}
+            onChange={setDuracao}
+            label="Duração da recorrência"
+          />
+          {duracao === 'ate' && (
+            <Field label="Recorrente até">
+              <Input
+                type="date"
+                value={recorreAte}
+                onChange={(e) => setRecorreAte(e.target.value)}
+              />
+            </Field>
+          )}
+        </>
+      )}
 
       {erro && <p className={styles.erro}>{erro}</p>}
     </Modal>

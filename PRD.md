@@ -127,6 +127,12 @@ prevista; entram no escopo quando forem priorizadas.
 
 - **RF-DES-15** — **Prévia de destino no cadastro**: com cartão e data preenchidos, o formulário mostra em qual fatura o lançamento vai cair, aplicando RN-01 antes de salvar. Cobre compra única, primeira parcela e primeira mensalidade. Sem isso, lançamento em cartão ou mês errado só aparece depois de salvar e navegar até Faturas.
 
+- **RF-DES-16** — **Despesa recorrente fora de cartão.** Despesa que se repete todo mês com forma de pagamento Pix, Débito ou Dinheiro — aluguel, mensalidade, faxina. É o mesmo `tipo` de domínio da assinatura (a diferença é só de onde sai a data da ocorrência), então reusa `tipo = 'Assinatura'` com `cartao_id NULL`; o `CHECK` da tabela `despesa` já aceita essa combinação desde a 0001. No formulário, a aba **Assinatura** ganha o seletor de forma de pagamento que a aba **Única** já tem: Crédito segue o fluxo de fatura, as demais formas caem no fluxo sem fatura.
+- **RF-DES-17** — **Primeira cobrança e dia.** O cadastro pede o **mês da primeira cobrança** e o **dia** (1 a 31), no lugar de uma data de compra — uma recorrente não tem data de compra, tem um dia em que acontece. Cada ocorrência cai nesse dia do seu mês; mês curto usa o último dia, pelo mesmo `clampDiaNoMes` que a RN-01 aplica às datas de fatura. O dia pedido é guardado em coluna própria (`dia_cobranca`) e **não** é derivado da data da primeira ocorrência: sem isso, "todo dia 31" começando em fevereiro viraria dia 28 para sempre, porque o clamp não tem volta.
+- **RF-DES-18** — **Duração: sempre ou até uma data.** Escolha no cadastro. **Sempre** gera indefinidamente até ser cancelada, como a assinatura de cartão. **Até uma data** (`recorre_ate`) para de gerar no limite, e o horizonte preguiçoso passa a parar no menor entre o mês alvo e o limite. A leitura do limite é **literal pela data**: uma ocorrência só existe se a data dela é menor ou igual a `recorre_ate`. "Recorrente até 15/03/2027" com cobrança todo dia 20 tem a última ocorrência em fevereiro/2027 — março cairia em 20/03, depois do limite escrito.
+- **RF-DES-19** — **Alterar o limite depois.** `recorre_ate` é editável no mesmo modal que já edita a assinatura. Encurtar apaga as ocorrências futuras além do novo limite; esticar gera até ele, respeitando o teto de 24 meses da projeção. **Ocorrência passada nunca é tocada**, e trocar para "sempre" volta a gerar normalmente.
+- **RF-DES-20** — **Cancelar e reajustar valem para a recorrente sem cartão.** Cancelar (RF-DES-07) para de gerar ocorrências futuras; reajustar o valor mensal (RF-DES-08) atualiza as ocorrências futuras. As duas operações hoje filtram por fatura Aberta, o que sem fatura não casa com nada — para a recorrente sem cartão o critério passa a ser a ocorrência ainda **Pendente e sem fatura**.
+
 ### 4.4 Faturas (RF-FAT)
 
 - **RF-FAT-01** — Faturas são geradas automaticamente para cada cartão a cada mês de referência conforme parcelas vão sendo vinculadas.
@@ -409,7 +415,15 @@ Ao adiantar M parcelas de uma despesa:
 
 ### RN-04 — Geração de ocorrências de assinatura
 
-Despesa do tipo Assinatura gera ocorrências mês a mês conforme o tempo avança ou conforme o usuário navega para meses futuros (geração preguiçosa). Mantém-se um horizonte de 12 meses adiante.
+Despesa do tipo Assinatura gera ocorrências mês a mês conforme o tempo avança ou conforme o usuário navega para meses futuros (geração preguiçosa). Mantém-se um horizonte de 12 meses adiante na criação e de até 24 meses na extensão (RF-VIS-04).
+
+**Dois ramos, conforme haja cartão ou não.**
+
+_Com cartão._ O mês da primeira ocorrência sai da RN-01 aplicada à data de início; cada ocorrência seguinte cai no mês de referência seguinte, com `data_referencia` no dia 01 — ali a data que importa é o vencimento da fatura, não a da ocorrência.
+
+_Sem cartão (RF-DES-16)._ O mês da primeira ocorrência é o mês informado, **sem passar pela RN-01** — não há dia de fechamento a consultar, e reaplicar a regra sobre um mês já resolvido é a origem do defeito corrigido no PR `#130`. A `data_referencia` de cada ocorrência é o dia de cobrança clampado naquele mês (`clampDiaNoMes`), e a geração para quando a data ultrapassa `recorre_ate` (RF-DES-18).
+
+Em nenhum dos dois ramos a ocorrência sem cartão cria fatura: `fatura_id` fica `NULL`.
 
 ### ~~RN-05 — Ajuda recorrente~~
 
@@ -433,6 +447,8 @@ Pagar a fatura marca todas as parcelas dela como `Paga` (com a mesma data de pag
 ### RN-08 — Balanço mensal
 
 `saldo = soma(recebimentos do mês) - (soma(faturas do mês) + soma(gastos fora de cartão do mês))`.
+
+**"Gastos fora de cartão do mês" conta ocorrências, não despesas.** A parcela sem fatura cuja `data_referencia` cai no mês é a unidade; antes a conta somava `despesa.valor_centavos` das despesas Únicas com data de compra no mês. As duas leituras davam o mesmo número enquanto toda despesa fora de cartão era Única — uma despesa, uma parcela, mesmo mês. A recorrente sem cartão (RF-DES-16) quebra a equivalência (uma despesa, N ocorrências em N meses), e a leitura por despesa passaria a contar a recorrente inteira no mês de início e nada nos demais. O resto do app — ranking de categorias, orçamento e a lista de Saídas — já contava por parcela; esta é a correção que alinha a Visão mensal e a exportação ao mesmo critério.
 
 ### RN-09 — Saldo simulado
 

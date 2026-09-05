@@ -30,6 +30,8 @@ export const DESPESA_IPC_CHANNELS = {
   adiantarParcelas: 'despesa:adiantar-parcelas',
   cancelarPendentes: 'despesa:cancelar-pendentes',
   criarAssinaturaCredito: 'despesa:criar-assinatura-credito',
+  criarAssinaturaForaCartao: 'despesa:criar-assinatura-fora-cartao',
+  atualizarLimiteRecorrencia: 'despesa:atualizar-limite-recorrencia',
   cancelarAssinatura: 'despesa:cancelar-assinatura',
   reajustarValorMensalAssinatura: 'despesa:reajustar-valor-mensal-assinatura',
   listarAssinaturas: 'despesa:listar-assinaturas',

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { z } from 'zod'
 import {
   useForm,
   type FieldErrors,
@@ -12,12 +13,14 @@ import {
   despesaParceladaCreditoInputSchema,
   despesaEmAndamentoInputBaseSchema,
   despesaAssinaturaCreditoInputSchema,
+  despesaAssinaturaForaCartaoInputSchema,
   despesaUnicaForaCartaoInputSchema,
   parcelaAtualNaoExcedeTotal,
   type DespesaUnicaCreditoInput,
   type DespesaParceladaCreditoInput,
   type DespesaEmAndamentoInput,
   type DespesaAssinaturaCreditoInput,
+  type DespesaAssinaturaForaCartaoInput,
   type DespesaUnicaForaCartaoInput
 } from '@shared/ipc/despesa'
 import type { Cartao } from '@domain/entities/cartao'
@@ -78,6 +81,16 @@ const assinaturaSchema = despesaAssinaturaCreditoInputSchema
   .omit({ valorMensalCentavos: true })
   .extend({ valorReais: valorReaisSchema })
 
+// ──── Assinatura fora de cartão (RF-DES-16) ─────────────────────
+const assinaturaForaCartaoSchema = despesaAssinaturaForaCartaoInputSchema
+  .omit({ valorMensalCentavos: true, formaPagamento: true, recorreAte: true })
+  // `recorreAte` como string livre aqui, e não a data do contrato: o campo fica
+  // vazio quando a duração é "sempre", e a obrigatoriedade no modo "até" é
+  // conferida no submit, onde o modo é conhecido.
+  .extend({ valorReais: valorReaisSchema, recorreAte: z.string() })
+
+type AssinaturaForaCartaoValues = z.infer<typeof assinaturaForaCartaoSchema>
+
 // ──── Única fora de cartão ──────────────────────────────────────
 type UnicaForaCartaoValues = Omit<DespesaUnicaForaCartaoInput, 'valorCentavos'> & {
   valorReais: string
@@ -96,6 +109,7 @@ type Props = {
   onSalvarParcelada: (input: DespesaParceladaCreditoInput) => Promise<void>
   onSalvarEmAndamento: (input: DespesaEmAndamentoInput) => Promise<void>
   onSalvarAssinatura: (input: DespesaAssinaturaCreditoInput) => Promise<void>
+  onSalvarAssinaturaForaCartao: (input: DespesaAssinaturaForaCartaoInput) => Promise<void>
 }
 
 type FormaPagamento = 'Credito' | 'Pix' | 'Debito' | 'Dinheiro'
@@ -620,6 +634,176 @@ function FormAssinatura({
   )
 }
 
+const DURACOES: readonly OpcaoSegmentada<'sempre' | 'ate'>[] = [
+  { valor: 'sempre', rotulo: 'Sempre' },
+  { valor: 'ate', rotulo: 'Até uma data' }
+]
+
+/**
+ * RF-DES-16 — recorrente sem cartão.
+ *
+ * Pede **mês da primeira cobrança** e **dia**, e não uma data de compra: uma
+ * recorrente não tem data de compra, tem um dia em que acontece. O dia vai para
+ * coluna própria justamente para sobreviver ao clamp de mês curto — "todo dia
+ * 31" precisa voltar a ser 31 em março depois de ter sido 28 em fevereiro.
+ */
+function FormAssinaturaForaCartao({
+  categorias,
+  formaPagamento,
+  onSalvar
+}: {
+  categorias: Categoria[]
+  formaPagamento: 'Pix' | 'Debito' | 'Dinheiro'
+  onSalvar: Props['onSalvarAssinaturaForaCartao']
+}) {
+  const [duracao, setDuracao] = useState<'sempre' | 'ate'>('sempre')
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting }
+  } = useForm<AssinaturaForaCartaoValues>({
+    resolver: zodResolver(assinaturaForaCartaoSchema),
+    defaultValues: { diaCobranca: 1, recorreAte: '' }
+  })
+
+  async function onSubmit(values: AssinaturaForaCartaoValues) {
+    if (duracao === 'ate' && !values.recorreAte) {
+      setError('recorreAte', { message: 'Informe a data limite' })
+      return
+    }
+    await onSalvar({
+      descricao: values.descricao,
+      categoriaId: Number(values.categoriaId),
+      formaPagamento,
+      valorMensalCentavos: parseCentavos(values.valorReais),
+      mesInicial: values.mesInicial,
+      diaCobranca: Number(values.diaCobranca),
+      recorreAte: duracao === 'ate' ? values.recorreAte : null
+    })
+    reset()
+    setDuracao('sempre')
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className={styles.formInner}>
+      <CamposComuns
+        register={register}
+        errors={errors}
+        cartoes={[]}
+        categorias={categorias}
+        mostrarCartao={false}
+      />
+
+      <div className={styles.fieldRow}>
+        <Field label="Valor mensal (R$)" error={errors.valorReais?.message} required>
+          <Input
+            type="text"
+            inputMode="decimal"
+            {...register('valorReais')}
+            placeholder="0,00"
+            error={!!errors.valorReais}
+            className={styles.valorDestaque}
+          />
+        </Field>
+        <Field label="Primeira cobrança" error={errors.mesInicial?.message} required>
+          <Input type="month" {...register('mesInicial')} error={!!errors.mesInicial} />
+        </Field>
+        <Field label="Todo dia" error={errors.diaCobranca?.message} required>
+          <Input
+            type="number"
+            min={1}
+            max={31}
+            {...register('diaCobranca', { valueAsNumber: true })}
+            error={!!errors.diaCobranca}
+          />
+        </Field>
+      </div>
+
+      <SegmentedControl
+        opcoes={DURACOES}
+        valor={duracao}
+        onChange={setDuracao}
+        label="Duração da recorrência"
+      />
+
+      {duracao === 'ate' && (
+        <Field label="Recorrente até" error={errors.recorreAte?.message} required>
+          <Input type="date" {...register('recorreAte')} error={!!errors.recorreAte} />
+        </Field>
+      )}
+
+      <p className={styles.valorParcela}>
+        {duracao === 'sempre'
+          ? 'Serão geradas 12 ocorrências, e o horizonte segue crescendo até você cancelar.'
+          : 'A última ocorrência é a que cair até a data limite, inclusive.'}
+      </p>
+
+      <div className={styles.formActions}>
+        <Button type="submit" variant="primary" disabled={isSubmitting}>
+          {isSubmitting ? 'Registrando…' : 'Registrar recorrente'}
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+/**
+ * A aba Assinatura ganha o mesmo seletor de forma de pagamento que a aba Única
+ * já tinha: a forma decide QUAIS CAMPOS existem — crédito pede cartão e data de
+ * início, o resto pede mês e dia de cobrança.
+ */
+function AbaAssinatura({
+  cartoes,
+  categorias,
+  onSalvarCredito,
+  onSalvarForaCartao,
+  defaultsCredito
+}: {
+  cartoes: Cartao[]
+  categorias: Categoria[]
+  onSalvarCredito: Props['onSalvarAssinatura']
+  onSalvarForaCartao: Props['onSalvarAssinaturaForaCartao']
+  defaultsCredito?: Partial<AssinaturaValues>
+}) {
+  const [forma, setForma] = useState<FormaPagamento>('Credito')
+
+  const formaLabels: readonly OpcaoSegmentada<FormaPagamento>[] = [
+    { valor: 'Credito', rotulo: 'Crédito' },
+    { valor: 'Pix', rotulo: 'Pix' },
+    { valor: 'Debito', rotulo: 'Débito' },
+    { valor: 'Dinheiro', rotulo: 'Dinheiro' }
+  ]
+
+  return (
+    <div className={styles.formInner}>
+      <SegmentedControl
+        opcoes={formaLabels}
+        valor={forma}
+        onChange={setForma}
+        label="Forma de pagamento"
+        variante="cartoes"
+      />
+
+      {forma === 'Credito' ? (
+        <FormAssinatura
+          cartoes={cartoes}
+          categorias={categorias}
+          onSalvar={onSalvarCredito}
+          defaultValues={defaultsCredito}
+        />
+      ) : (
+        <FormAssinaturaForaCartao
+          categorias={categorias}
+          formaPagamento={forma}
+          onSalvar={onSalvarForaCartao}
+        />
+      )}
+    </div>
+  )
+}
+
 function cartaoIdDefault(cartaoId: number | null): number | undefined {
   return cartaoId ?? undefined
 }
@@ -632,7 +816,8 @@ export function DespesaForm({
   onSalvarUnicaForaCartao,
   onSalvarParcelada,
   onSalvarEmAndamento,
-  onSalvarAssinatura
+  onSalvarAssinatura,
+  onSalvarAssinaturaForaCartao
 }: Props) {
   const [tipo, setTipo] = useState<TipoDespesa>(preenchimento?.tipo ?? 'unica')
 
@@ -707,11 +892,12 @@ export function DespesaForm({
         <FormEmAndamento cartoes={cartoes} categorias={categorias} onSalvar={onSalvarEmAndamento} />
       )}
       {tipo === 'assinatura' && (
-        <FormAssinatura
+        <AbaAssinatura
           cartoes={cartoes}
           categorias={categorias}
-          onSalvar={onSalvarAssinatura}
-          defaultValues={
+          onSalvarCredito={onSalvarAssinatura}
+          onSalvarForaCartao={onSalvarAssinaturaForaCartao}
+          defaultsCredito={
             preAssinatura
               ? {
                   descricao: preAssinatura.descricao,
