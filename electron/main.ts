@@ -440,12 +440,22 @@ async function importarDados(): Promise<void> {
   try {
     const conteudo = readFileSync(filePaths[0], 'utf8')
     const payload = exportPayloadSchema.parse(JSON.parse(conteudo))
-    // `opcoesDeBackup()` como nos outros dois pontos de backup (boot e saida).
-    // Sem elas este ia para a pasta padrao com retencao 10, ignorando o que o
-    // usuario configurou em RF-CFG-01 — e justamente a copia que mais importa
-    // achar depois, porque e a ultima antes de a importacao substituir TUDO.
-    backupDatabase(dbPathAtual, opcoesDeBackup())
-    const { totalLinhas } = new DadosRepository(db).importar(payload)
+    // Fecha em volta da cópia, como a restauração de backup faz: copiar um
+    // SQLite em uso pode capturar um journal a meio caminho, e esta é a última
+    // cópia antes de a importação substituir TUDO — a que mais importa achar
+    // depois. `opcoesDeBackup()` porque sem elas ela iria para a pasta padrão
+    // com retenção 10, ignorando o que o usuário configurou em RF-CFG-01.
+    fecharBanco()
+    try {
+      backupDatabase(dbPathAtual, opcoesDeBackup())
+    } finally {
+      reabrirBanco()
+    }
+
+    // `db` é a conexão NOVA: `reabrirBanco` trocou a do módulo embaixo.
+    const conexao = db
+    if (!conexao) throw new Error('Banco de dados indisponível após o backup.')
+    const { totalLinhas } = new DadosRepository(conexao).importar(payload)
     await dialog.showMessageBox(win, {
       type: 'info',
       title: 'Importação concluída',

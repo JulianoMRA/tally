@@ -116,18 +116,23 @@ export function registerConfigHandlers(
     // com o nome que ele mesmo gera, chega ao `copyFileSync` abaixo.
     const origem = resolverBackupRestauravel(dbPath, pastaDeBackups(dbPath), caminho)
 
-    // O estado atual vira um backup antes de ser sobrescrito: restaurar por
-    // engano não pode ser um caminho sem volta.
-    // `preservar`: sem isso a retenção deste backup podia apagar justamente a
-    // cópia sendo restaurada, e o copyFileSync abaixo falhava com ENOENT.
-    backupDatabase(dbPath, {
-      backupsDir: pastaDeBackups(dbPath),
-      maxBackups: lerConfig(settingsPath).retencaoBackups,
-      preservar: origem
-    })
-
+    // Fecha ANTES da cópia de segurança, e não só antes do `copyFileSync`:
+    // essa cópia é o único desfazer que a restauração tem, e era tirada com a
+    // conexão ainda aberta — exatamente o que `criarBackupAgora`, acima,
+    // evita fechando em volta ("copiar um SQLite em uso pode capturar um
+    // journal a meio caminho"). Um fechar/reabrir só, cobrindo as duas cópias.
     banco.fechar()
     try {
+      // O estado atual vira um backup antes de ser sobrescrito: restaurar por
+      // engano não pode ser um caminho sem volta.
+      // `preservar`: sem isso a retenção deste backup podia apagar justamente
+      // a cópia sendo restaurada, e o copyFileSync abaixo falhava com ENOENT.
+      backupDatabase(dbPath, {
+        backupsDir: pastaDeBackups(dbPath),
+        maxBackups: lerConfig(settingsPath).retencaoBackups,
+        preservar: origem
+      })
+
       copyFileSync(origem, dbPath)
     } finally {
       banco.reabrir()
