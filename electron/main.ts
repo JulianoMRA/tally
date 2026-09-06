@@ -294,10 +294,19 @@ function cspHeader(): string {
   )
 }
 
-// CSP aplicada apenas em dev (renderer via http://localhost). Em producao o
-// renderer carrega via file:// onde 'self' e ambiguo no Electron — scripts
-// legítimos podem ser bloqueados. Producao ja esta protegida por
-// contextIsolation + nodeIntegration: false + webSecurity: true.
+// Instala a CSP de DEV, por header. Em produção ela não vem daqui: o plugin
+// `tally-csp-meta` (electron.vite.config.ts) injeta a política estrita como
+// <meta http-equiv> no index.html durante o build, logo após o charset, para
+// que preceda as tags que o Vite acrescenta ao <head>.
+//
+// A divisão existe porque o index.html é o mesmo nos dois modos, e o dev
+// precisa das exceções do HMR do Vite ('unsafe-eval', inline, ws:) que não
+// podem vazar para o binário publicado.
+//
+// O comentário anterior aqui dizia que produção não tinha CSP e estava
+// protegida apenas por contextIsolation + nodeIntegration: false. Era falso
+// desde que o plugin entrou, e enganoso do jeito pior: quem lesse isto podia
+// concluir que faltava a política — ou confiar que ela não existia.
 function instalarCSP(): void {
   if (!ehDev()) return
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
@@ -440,12 +449,22 @@ async function importarDados(): Promise<void> {
   try {
     const conteudo = readFileSync(filePaths[0], 'utf8')
     const payload = exportPayloadSchema.parse(JSON.parse(conteudo))
-    // `opcoesDeBackup()` como nos outros dois pontos de backup (boot e saida).
-    // Sem elas este ia para a pasta padrao com retencao 10, ignorando o que o
-    // usuario configurou em RF-CFG-01 — e justamente a copia que mais importa
-    // achar depois, porque e a ultima antes de a importacao substituir TUDO.
-    backupDatabase(dbPathAtual, opcoesDeBackup())
-    const { totalLinhas } = new DadosRepository(db).importar(payload)
+    // Fecha em volta da cópia, como a restauração de backup faz: copiar um
+    // SQLite em uso pode capturar um journal a meio caminho, e esta é a última
+    // cópia antes de a importação substituir TUDO — a que mais importa achar
+    // depois. `opcoesDeBackup()` porque sem elas ela iria para a pasta padrão
+    // com retenção 10, ignorando o que o usuário configurou em RF-CFG-01.
+    fecharBanco()
+    try {
+      backupDatabase(dbPathAtual, opcoesDeBackup())
+    } finally {
+      reabrirBanco()
+    }
+
+    // `db` é a conexão NOVA: `reabrirBanco` trocou a do módulo embaixo.
+    const conexao = db
+    if (!conexao) throw new Error('Banco de dados indisponível após o backup.')
+    const { totalLinhas } = new DadosRepository(conexao).importar(payload)
     await dialog.showMessageBox(win, {
       type: 'info',
       title: 'Importação concluída',

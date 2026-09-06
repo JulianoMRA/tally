@@ -793,6 +793,11 @@ export class DespesaRepository implements Repository {
     // Recorrente sem dia de cobranca nao e gerable. Nao deveria existir — o
     // cadastro exige o dia —, mas um import de backup antigo poderia trazer.
     if (a.dia_cobranca === null) return 0
+    // Mesmo motivo do dia de cobranca ausente: linha que so um import de
+    // backup produz, e que `gerarOcorrenciasSemCartao` recusaria. Repetida
+    // aqui porque `sincronizarRecorrenteSemCartao` tambem chega por este
+    // caminho, fora do laco de `estenderHorizonteAssinaturas`.
+    if (a.valor_centavos <= 0) return 0
 
     const extensao = calcularExtensaoNecessaria({
       mesAlvo,
@@ -912,6 +917,7 @@ export class DespesaRepository implements Repository {
 
     // Nenhuma ocorrencia sobrou: semeia de novo a partir do mes de inicio.
     if (despesaRow.dia_cobranca === null) return 0
+    if (despesaRow.valor_centavos <= 0) return 0
     const mesInicial = despesaRow.data_compra.slice(0, 7)
     const quantidade = Math.max(1, diferencaEmMeses(mesInicial, mesAlvo) + 1)
     const novas = gerarOcorrenciasSemCartao({
@@ -1186,6 +1192,12 @@ export class DespesaRepository implements Repository {
       let faturasCriadas = 0
 
       for (const a of assinaturas) {
+        // Valor zero e possivel no banco (CHECK >= 0, e o import de dados
+        // aceita min(0)) embora nenhum formulario o produza, e os geradores do
+        // domain recusam <= 0. Sem esta guarda uma unica assinatura zerada
+        // fazia a Visao mensal de QUALQUER mes futuro morrer — esta extensao
+        // roda a cada navegacao. Cobre os dois ramos, com e sem cartao.
+        if (a.valor_centavos <= 0) continue
         if (a.cartao_id === null) {
           parcelasCriadas += this.estenderRecorrenteSemCartao(a, mesAlvo, parcelaRepo)
           continue

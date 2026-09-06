@@ -62,11 +62,17 @@ export class RelatorioRepository implements Repository {
       )
       .all(mesReferencia, mesReferencia) as Row[]
 
+    // `Number(...)`: o driver devolve o SUM como BigInt quando ele passa de
+    // 2^53, e a partir daí qualquer aritmética no renderer morre com "Cannot
+    // mix BigInt and other types". `listarResumoPorCartao` já convertia; estes
+    // dois pontos eram a assimetria que sobrava. Exige valores irreais para
+    // acontecer, mas a conversão é de graça e o tipo declarado passa a ser
+    // verdade em runtime, não só no compilador.
     return rows.map((r) => ({
       categoriaId: r.id,
       categoriaNome: r.nome,
       cor: r.cor,
-      totalCentavos: r.total
+      totalCentavos: Number(r.total)
     }))
   }
 
@@ -124,7 +130,7 @@ export class RelatorioRepository implements Repository {
       )
       .all(categoriaId, categoriaId) as Row[]
 
-    const totaisPorMes = new Map(rows.map((r) => [r.mes, r.total]))
+    const totaisPorMes = new Map(rows.map((r) => [r.mes, Number(r.total)]))
     return gerarSerieMensal(mesFinal, meses).map((mes) => ({
       mes,
       totalCentavos: totaisPorMes.get(mes) ?? 0
