@@ -260,6 +260,13 @@ export class RendaRepository implements Repository {
 
       for (const r of recorrentes) {
         if (r.dia_esperado === null) continue
+        // Mesma guarda do `semearHorizonte`, e pelo mesmo motivo: valor zero
+        // e possivel no banco (CHECK >= 0, e o import de dados aceita min(0))
+        // embora nenhum formulario o produza, e `gerarRecebimentosRecorrentes`
+        // recusa <= 0. Sem isto, uma unica fonte zerada fazia a Visao mensal
+        // de QUALQUER mes futuro morrer com a mensagem crua do gerador — esta
+        // extensao roda a cada navegacao, e o erro propaga ate a tela.
+        if (r.valor_padrao_centavos <= 0) continue
 
         const extensao = calcularExtensaoNecessaria({
           mesAlvo,
