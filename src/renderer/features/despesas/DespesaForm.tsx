@@ -34,7 +34,11 @@ import {
   Select,
   type OpcaoSegmentada
 } from '../../components/ui'
-import { valorTotalCentavosParcelada, type ModoValorParcela } from './parcela-valor'
+import {
+  textoPreviaParcelamento,
+  valorTotalCentavosParcelada,
+  type ModoValorParcela
+} from './parcela-valor'
 import { PreviaDestino } from './PreviaDestino'
 import styles from './despesas.module.css'
 import { parseCentavos, valorReaisSchema } from '../../lib/dinheiro'
@@ -392,17 +396,7 @@ function FormParcelada({
   const [modoValor, setModoValor] = useState<ModoValorParcela>('total')
   const valorReais = watch('valorReais') ?? ''
   const totalParcelas = watch('totalParcelas')
-  const valorNumerico = parseFloat(valorReais.replace(',', '.'))
-  const previewValido =
-    Number.isFinite(valorNumerico) &&
-    typeof totalParcelas === 'number' &&
-    Number.isInteger(totalParcelas) &&
-    totalParcelas > 0
-  const previewTexto = !previewValido
-    ? null
-    : modoValor === 'total'
-      ? `≈ R$ ${(valorNumerico / totalParcelas).toFixed(2)} por parcela`
-      : `= R$ ${(valorNumerico * totalParcelas).toFixed(2)} no total`
+  const previewTexto = textoPreviaParcelamento(modoValor, valorReais, Number(totalParcelas))
 
   async function onSubmit(values: ParceladaValues) {
     await onSalvar({
