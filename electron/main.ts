@@ -294,10 +294,19 @@ function cspHeader(): string {
   )
 }
 
-// CSP aplicada apenas em dev (renderer via http://localhost). Em producao o
-// renderer carrega via file:// onde 'self' e ambiguo no Electron — scripts
-// legítimos podem ser bloqueados. Producao ja esta protegida por
-// contextIsolation + nodeIntegration: false + webSecurity: true.
+// Instala a CSP de DEV, por header. Em produção ela não vem daqui: o plugin
+// `tally-csp-meta` (electron.vite.config.ts) injeta a política estrita como
+// <meta http-equiv> no index.html durante o build, logo após o charset, para
+// que preceda as tags que o Vite acrescenta ao <head>.
+//
+// A divisão existe porque o index.html é o mesmo nos dois modos, e o dev
+// precisa das exceções do HMR do Vite ('unsafe-eval', inline, ws:) que não
+// podem vazar para o binário publicado.
+//
+// O comentário anterior aqui dizia que produção não tinha CSP e estava
+// protegida apenas por contextIsolation + nodeIntegration: false. Era falso
+// desde que o plugin entrou, e enganoso do jeito pior: quem lesse isto podia
+// concluir que faltava a política — ou confiar que ela não existia.
 function instalarCSP(): void {
   if (!ehDev()) return
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
