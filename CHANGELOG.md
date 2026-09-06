@@ -6,6 +6,32 @@ vista técnico.
 
 ---
 
+## v1.13.1 — Correções de auditoria (set/2026)
+
+---
+
+**Seis correções de uma varredura completa do repositório (set/2026)** — Auditoria de código, não feature: leitura de ponta a ponta atrás de erro, bug e vulnerabilidade. **Nada de segurança apareceu.** `npm audit --omit=dev` segue em zero, o Electron está na 42.10.1, e as varreduras por SQL concatenado, `dangerouslySetInnerHTML`, `eval` e segredo versionado voltaram vazias — o SQL é todo parametrizado, as interpolações que existem são nomes de tabela em `as const`, e os 78 handlers IPC com payload passam por Zod sem exceção. O que a auditoria encontrou foram defeitos de correção e de robustez, e é o que esta versão corrige.
+
+**A prévia do parcelamento errava por três ordens de grandeza.** `DespesaForm` calculava o texto "≈ R$ X por parcela" com `parseFloat(valorReais.replace(',', '.'))` — o único ponto do app que não passava pelo `parseCentavos`, e justamente o caso que motivou centralizar a leitura de valor em `lib/dinheiro.ts`. O `replace` troca só a **primeira** vírgula, então `'2.500,00'` virava `'2.500.00'`, que o `parseFloat` lê como `2.5`: doze parcelas de R$ 2.500,00 apareciam como **R$ 0,21 cada**. O valor gravado nunca esteve errado — o submit já usava `valorTotalCentavosParcelada` —, mas a tela mentia sobre ele no formato que o próprio campo aceita. A regra saiu do componente e virou `textoPreviaParcelamento`, com aritmética inteira e formatação pelo `formatBRL` (antes o texto saía com ponto decimal, fora do padrão pt-BR do resto do app).
+
+**Uma linha de valor zero derrubava a Visão mensal de todo mês futuro.** As três colunas de dinheiro têm `CHECK (>= 0)` e o schema de export/import valida centavos com `int().min(0)`, então um backup restaurado pode trazer zero — nenhum formulário o produz, todos exigem `min(1)`. Os geradores do domain, por outro lado, **recusam** valor `<= 0`, e a extensão preguiçosa de horizonte os chamava sem filtrar. Como `detalhar` roda a extensão antes de ler o mês, uma única fonte zerada — talvez de algo que o usuário nem usa mais — impedia a tela principal de abrir em **qualquer** mês futuro, exibindo a mensagem crua do gerador. Vale para os três caminhos: renda recorrente, assinatura de cartão e recorrente sem cartão. **A guarda já existia em `semearHorizonte`, com o comentário que a explica** — faltava exatamente nos dois caminhos que rodam a cada navegação, que é o padrão de defeito desta auditoria inteira: proteção correta aplicada no lugar frio e ausente no quente.
+
+**ZodError chegava ao usuário como despejo de JSON.** No zod v4 a `message` do `ZodError` é o JSON completo dos issues — `code`, `origin`, `note` e o resto do diagnóstico —, e o `mensagemErro` repassava isso ao toast. Caso concreto: `z.number().int()` recusa acima de `Number.isSafeInteger`, mas o formulário só valida o regex da string do campo de valor, então digitar vinte dígitos devolvia um bloco de JSON de várias linhas. Não havia corrupção de dado — o main rejeitou, que é o correto —, mas a mensagem não dizia o que houve. A maioria dos schemas do projeto já traz texto em português; faltava extraí-lo.
+
+**A cópia de segurança da restauração era tirada com o banco aberto.** `criarBackupAgora` fecha e reabre em volta da cópia porque copiar um SQLite em uso pode capturar um journal a meio caminho. A restauração e a importação não faziam isso — e a cópia delas é a que mais importa, porque é o único desfazer de uma operação que substitui o banco inteiro. Agora um fechar/reabrir só cobre as duas cópias na restauração; na importação ele vem antes do import, que precisa da conexão viva, e o `DadosRepository` passa a receber a conexão **nova**, já que `reabrirBanco` troca a do módulo embaixo.
+
+**O dedup de notificações crescia sem limite.** A chave era `tipo:id:data` e nada era removido: a data no meio garantia que a entrada de ontem jamais voltasse a casar, e também que nunca saísse. Num app que fica aberto o dia inteiro, com um timer horário chamando isto, o conjunto só crescia. Guardar o dia a que o conjunto pertence e esvaziá-lo na virada dá o mesmo dedup com tamanho limitado ao número de faturas em janela.
+
+**Dois pontos de valor monetário que confiavam em invariante não verificado.** `formatarValorCsv` já recusava negativo pelo argumento de que "num app de finanças um formatador que erra em silêncio é pior que um que recusa"; não-inteiro tinha o mesmo defeito e escapava pela mesma porta — `123.5` saía como `'1,23.5'`, uma célula que não é número nenhum no meio de uma planilha. E o driver devolve o `SUM` do SQLite como **BigInt** acima de 2^53, o que faz qualquer aritmética no renderer morrer com "Cannot mix BigInt and other types": `listarResumoPorCartao` já convertia com `Number()`, e os dois pontos do `RelatorioRepository` eram a assimetria que sobrava.
+
+**Um comentário que contradizia o código.** O `main.ts` afirmava que produção não tinha CSP e estava protegida apenas por `contextIsolation` + `nodeIntegration: false`. Era falso desde que o plugin `tally-csp-meta` entrou: ele injeta a política estrita como `<meta http-equiv>` no `index.html` durante o build — conferido no `out/renderer/index.html` gerado. O `SECURITY.md` já descrevia o arranjo certo; o comentário enganava do jeito pior, podendo levar alguém a concluir que faltava a política, ou a confiar que ela não existia.
+
+**Um achado ficou de fora, de propósito.** Um centavo em 360 parcelas produz 359 parcelas de R$ 0,00 e uma de R$ 0,01 — o `CHECK` do banco aceita, e é alcançável pela UI. Recusar isso não seria corrigir um defeito, e sim criar uma regra de negócio nova: o caso `1 centavo em 3 parcelas` já é um teste explícito e passante do projeto, escrito para provar que a soma bate sem centavo perdido. Fica registrado como decisão de produto pendente, não como bug.
+
+**1294 → 1320 testes unitários**, 130 → 133 arquivos. `electron/` sai de 7 testes para 27: ganhou `avisos.test.ts` e `config-handlers-backup.test.ts`, este último observando a ordem fechar-antes-de-copiar **por efeito** — o `fechar` falso marca o arquivo do banco, então o conteúdo dentro da cópia diz se ela foi tirada antes ou depois. `main.ts` segue sem teste, por não ser exercitável sem subir o Electron. A correção da prévia foi verificada ao contrário, revertendo-a para confirmar que o teste do separador de milhar fica vermelho.
+
+---
+
 ## v1.13.0 — Despesa recorrente fora de cartão (set/2026)
 
 ---
