@@ -66,6 +66,17 @@ function citarSePreciso(campo: string): string {
  * inventado.
  */
 export function formatarValorCsv(centavos: number): string {
+  // Não-inteiro tinha o mesmo defeito do negativo e escapava pela mesma porta:
+  // `Math.floor(centavos / 100)` com `centavos % 100` deixa um resto
+  // fracionário que o padStart não corrige, e 123.5 saía como '1,23.5' — uma
+  // célula que não é número nenhum, no meio de uma planilha. Cobre NaN e
+  // infinito de graça.
+  if (!Number.isInteger(centavos)) {
+    throw new Error(
+      `Valor monetário precisa ser inteiro em centavos: ${centavos}. ` +
+        `Todo valor no Tally é um número inteiro de centavos (INTEGER no banco).`
+    )
+  }
   if (centavos < 0) {
     throw new Error(
       `Valor monetário negativo não é representável: ${centavos} centavos. ` +

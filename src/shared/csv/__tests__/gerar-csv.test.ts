@@ -134,3 +134,30 @@ describe('formatarValorCsv', () => {
     expect(formatarValorCsv(0)).toBe('0,00')
   })
 })
+
+/**
+ * A funcao ja recusava negativo — "num app de financas um formatador que erra
+ * em silencio e pior que um que recusa". Nao-inteiro tinha o mesmo defeito e
+ * escapava: `Math.floor(centavos / 100)` e `centavos % 100` produzem um resto
+ * fracionario, e o padStart nao o corrige. O resultado era uma celula que nao
+ * e numero nenhum, no meio de uma planilha.
+ */
+describe('formatarValorCsv com valor nao-inteiro', () => {
+  it('recusa em vez de emitir uma celula malformada', () => {
+    expect(() => formatarValorCsv(123.5)).toThrow(/inteiro/)
+  })
+
+  it('recusa fracao menor que um centavo', () => {
+    expect(() => formatarValorCsv(0.5)).toThrow(/inteiro/)
+  })
+
+  it('recusa NaN e infinito', () => {
+    expect(() => formatarValorCsv(Number.NaN)).toThrow(/inteiro/)
+    expect(() => formatarValorCsv(Number.POSITIVE_INFINITY)).toThrow(/inteiro/)
+  })
+
+  it('segue aceitando inteiro, zero incluido', () => {
+    expect(formatarValorCsv(0)).toBe('0,00')
+    expect(formatarValorCsv(12345)).toBe('123,45')
+  })
+})
