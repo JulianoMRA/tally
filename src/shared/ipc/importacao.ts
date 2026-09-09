@@ -93,6 +93,20 @@ export const linhaImportacaoSchema = z.discriminatedUnion('tipo', [
  */
 export const LIMITE_LINHAS_IMPORTACAO = 5000
 
+/**
+ * Teto de bytes do arquivo, checado ANTES de lê-lo.
+ *
+ * O teto de linhas acima só pode ser aplicado depois do `parseCsv`, e o parse
+ * só roda depois de `arquivo.text()` — que carrega o arquivo inteiro na
+ * memória do renderer. Um arquivo de vários GB escolhido por engano era lido
+ * por completo para só então ser recusado por ter linhas demais.
+ *
+ * 8 MB é ordens de grandeza acima de um CSV legítimo destes templates: 5000
+ * linhas de ~150 bytes dão menos de 1 MB. Como o teto de linhas, existe para
+ * haver um limite, não para apertar o uso real.
+ */
+export const LIMITE_BYTES_IMPORTACAO = 8 * 1024 * 1024
+
 export const importarCsvInputSchema = z.object({
   linhas: z
     .array(linhaImportacaoSchema)
