@@ -24,9 +24,11 @@ export function EvolucaoCategoriaChart({ dados, cor, nome }: Props) {
       <LineChart data={dadosFormatados} margin={{ top: 8, right: 24, bottom: 0, left: 4 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--rule)" />
         <XAxis dataKey="mes" stroke="var(--ink-3)" fontSize={12} />
+        {/* Mesmo motivo do EvolucaoLineChart: 60px fixos cortam `R$ 600,00`. */}
         <YAxis
           stroke="var(--ink-3)"
           fontSize={12}
+          width="auto"
           tickFormatter={(v: number) => formatBRLCompacto(v * 100)}
         />
         <Tooltip

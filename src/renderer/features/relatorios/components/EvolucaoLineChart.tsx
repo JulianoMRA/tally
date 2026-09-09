@@ -27,9 +27,17 @@ export function EvolucaoLineChart({ dados }: Props) {
       <LineChart data={dadosFormatados} margin={{ top: 8, right: 24, bottom: 0, left: 4 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--rule)" />
         <XAxis dataKey="mes" stroke="var(--ink-3)" fontSize={12} />
+        {/*
+          `width="auto"` dimensiona o eixo pelo rótulo mais largo. O default do
+          recharts é 60px fixos, e `R$ 600,00` a 12px não cabe: o "R" saía
+          fatiado ao meio. Acontecia só abaixo de R$ 1.000, porque a partir daí
+          `formatBRLCompacto` encurta para `R$ 1,2k` — ou seja, o corte pegava
+          exatamente a faixa em que este app vive.
+        */}
         <YAxis
           stroke="var(--ink-3)"
           fontSize={12}
+          width="auto"
           tickFormatter={(v: number) => formatBRLCompacto(v * 100)}
         />
         <Tooltip
