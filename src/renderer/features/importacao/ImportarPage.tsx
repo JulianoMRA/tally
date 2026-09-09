@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { parseCsv } from '@shared/csv/parse-csv'
 import {
+  LIMITE_BYTES_IMPORTACAO,
   LIMITE_LINHAS_IMPORTACAO,
   type LinhaImportacao,
   type ResultadoImportacao
@@ -63,6 +64,14 @@ export default function ImportarPage() {
       return
     }
     try {
+      // Antes do `text()`: ler para depois recusar carrega o arquivo inteiro na
+      // memória à toa. Ver LIMITE_BYTES_IMPORTACAO.
+      if (arquivo.size > LIMITE_BYTES_IMPORTACAO) {
+        const mb = (arquivo.size / (1024 * 1024)).toFixed(1)
+        throw new Error(
+          `O arquivo tem ${mb} MB e o limite por importação é ${LIMITE_BYTES_IMPORTACAO / (1024 * 1024)} MB. Divida o arquivo e importe em partes.`
+        )
+      }
       const conteudo = await arquivo.text()
       const { header, linhas } = parseCsv(conteudo)
       validarHeader(template, header)

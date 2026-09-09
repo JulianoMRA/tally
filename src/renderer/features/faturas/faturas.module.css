@@ -235,6 +235,13 @@
   margin: 0;
 }
 
+.erro {
+  color: var(--expense);
+  font-size: var(--text-3);
+  padding: 16px 0;
+  margin: 0;
+}
+
 /* Detalhe — empilhado por padrão; em telas largas, tabela à esquerda e
    painel de resumo à direita. DOM: header → main → aside, que é a ordem visual
    dos DOIS layouts — o grid nomeia as áreas e não depende da ordem. */
