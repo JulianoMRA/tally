@@ -48,7 +48,7 @@ Architecture follows clean separation across four layers: **domain** (pure busin
 Quality strategy is treated as a first-class concern, not an afterthought.
 
 - **TDD mandatory in the domain layer.** All business rules (RN-01 through RN-08 documented in [`PRD.md`](./PRD.md)) start with a failing test before any implementation.
-- **Coverage minimums:** 80% in the domain layer, 60% global.
+- **Coverage minimums, per layer and global:** 80% domain, 90% persistence, 85% shared, 40% renderer, 10% Electron main, and 55% across the whole app. Until Sep/2026 the gate measured only the domain and persistence layers — 27% of production lines — so the "60% global" it advertised was applied to the two layers already held to 80%, and read 99%. Measured honestly across every layer, the global figure was 57.7%: **below the very threshold the gate claimed to enforce.** The renderer is more than half the codebase and has the largest number of test files in the project, and it was under no threshold at all. The Electron floor is deliberately low — it's declared debt, and a small visible number beats no number.
 - **Integration tests** run against in-memory SQLite to validate repositories without mocking the database.
 - **E2E tests** (84 Playwright specs against the real Electron app, each in an isolated temp database) cover the critical user flows: registering an in-progress installment plan, advancing parcelas, paying a statement — which locks its expenses against edit/deletion (RN-06) —, deleting expenses, navigating to a projected future month, per-category budgets, and reports. Beyond flows, they also assert things a click-through never catches: that no screen scrolls horizontally at three window widths, that row actions aren't clipped by their container, and that every page opens at the same left edge regardless of its width tier.
 - **Accessibility scans** (axe-core via Playwright) run against every main screen — serious/critical WCAG violations fail the suite.
@@ -194,7 +194,7 @@ Useful scripts:
 ```bash
 npm run dev            # Electron + Vite with hot reload
 npm run test:run       # Vitest single run
-npm run test:coverage  # Vitest with coverage (80% domain / 60% global gates)
+npm run test:coverage  # Vitest with coverage (per-layer + 55% global gates)
 npm run e2e            # Playwright E2E (requires npm run build first)
 npm run lint           # ESLint
 npm run typecheck      # tsc -b --noEmit (includes e2e specs)
