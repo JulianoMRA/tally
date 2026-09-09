@@ -11,6 +11,7 @@ import type {
   DespesaAssinaturaForaCartaoInput,
   DespesaUnicaForaCartaoInput,
   DespesaComTags,
+  NotaETags,
   OcorrenciaDoMes
 } from '@shared/ipc/despesa'
 import { PageContainer } from '../../components/layout/PageContainer'
@@ -319,13 +320,43 @@ export default function SaidasPage() {
     [itensOrdenados]
   )
 
-  async function registrar<T>(
+  /**
+   * RF-DES-13 no cadastro — grava nota e tags logo após criar a despesa.
+   *
+   * São duas chamadas, e não uma: os seis canais de criação teriam de aceitar
+   * `nota` e `tags` no schema, e os seis métodos do repositório teriam de
+   * escrevê-los dentro da própria transação. Reusar `definirNotaETags`, que já
+   * é o caminho do modal de edição e já tem teste, custa um round-trip local a
+   * mais e nenhuma mudança de contrato.
+   *
+   * O preço é não ser atômico, e ele é aceitável AQUI: tags e nota são
+   * metadados por definição (RF-DES-13) — não afetam valor, parcela nem status
+   * de fatura. Se a segunda chamada falhar, a despesa está criada e correta, o
+   * usuário vê o aviso e pode etiquetar pelo menu da linha. Falhar de verdade
+   * exigiria o SQLite recusar uma escrita microssegundos depois de aceitar
+   * outra, e nesse cenário a criação também teria falhado.
+   */
+  async function gravarNotaETags(despesaId: number, meta: NotaETags) {
+    if (meta.nota === null && meta.tags.length === 0) return
+    try {
+      await window.api.despesa.definirNotaETags({ despesaId, ...meta })
+    } catch (e) {
+      toast.show(
+        mensagemErro(e, 'A despesa foi criada, mas a nota e as tags não foram salvas.'),
+        'error'
+      )
+    }
+  }
+
+  async function registrar<T extends { despesa: Despesa }>(
     acao: () => Promise<T>,
     montarBanner: (resultado: T) => UltimaRegistrada,
-    erroMsg: string
+    erroMsg: string,
+    meta?: NotaETags
   ) {
     try {
       const resultado = await acao()
+      if (meta) await gravarNotaETags(resultado.despesa.id, meta)
       const banner = montarBanner(resultado)
       setUltimaRegistrada(banner)
       // Salta para o mês em que o lançamento caiu. Sem isto, registrar uma
@@ -346,7 +377,7 @@ export default function SaidasPage() {
     }
   }
 
-  async function handleSalvarUnica(input: DespesaUnicaCreditoInput) {
+  async function handleSalvarUnica(input: DespesaUnicaCreditoInput, meta: NotaETags) {
     await registrar(
       () => window.api.despesa.criarUnicaCredito(input),
       (r) => ({
@@ -354,11 +385,12 @@ export default function SaidasPage() {
         mesReferencia: r.fatura.mesReferencia,
         cartaoNome: nomeCartao(input.cartaoId)
       }),
-      'Erro ao registrar despesa.'
+      'Erro ao registrar despesa.',
+      meta
     )
   }
 
-  async function handleSalvarParcelada(input: DespesaParceladaCreditoInput) {
+  async function handleSalvarParcelada(input: DespesaParceladaCreditoInput, meta: NotaETags) {
     await registrar(
       () => window.api.despesa.criarParceladaCredito(input),
       (r) => ({
@@ -367,11 +399,12 @@ export default function SaidasPage() {
         cartaoNome: nomeCartao(input.cartaoId),
         parcelas: r.parcelas.length
       }),
-      'Erro ao registrar despesa parcelada.'
+      'Erro ao registrar despesa parcelada.',
+      meta
     )
   }
 
-  async function handleSalvarEmAndamento(input: DespesaEmAndamentoInput) {
+  async function handleSalvarEmAndamento(input: DespesaEmAndamentoInput, meta: NotaETags) {
     await registrar(
       () => window.api.despesa.criarParceladaEmAndamento(input),
       (r) => ({
@@ -380,11 +413,12 @@ export default function SaidasPage() {
         cartaoNome: nomeCartao(input.cartaoId),
         parcelas: r.parcelas.length
       }),
-      'Erro ao registrar despesa em andamento.'
+      'Erro ao registrar despesa em andamento.',
+      meta
     )
   }
 
-  async function handleSalvarUnicaForaCartao(input: DespesaUnicaForaCartaoInput) {
+  async function handleSalvarUnicaForaCartao(input: DespesaUnicaForaCartaoInput, meta: NotaETags) {
     await registrar(
       () => window.api.despesa.criarUnicaForaCartao(input),
       (r) => ({
@@ -393,11 +427,12 @@ export default function SaidasPage() {
         cartaoNome: '—',
         formaForaCartao: input.formaPagamento
       }),
-      'Erro ao registrar gasto fora de cartão.'
+      'Erro ao registrar gasto fora de cartão.',
+      meta
     )
   }
 
-  async function handleSalvarAssinatura(input: DespesaAssinaturaCreditoInput) {
+  async function handleSalvarAssinatura(input: DespesaAssinaturaCreditoInput, meta: NotaETags) {
     await registrar(
       () => window.api.despesa.criarAssinaturaCredito(input),
       (r) => ({
@@ -406,7 +441,8 @@ export default function SaidasPage() {
         cartaoNome: nomeCartao(input.cartaoId),
         parcelas: r.parcelas.length
       }),
-      'Erro ao registrar assinatura.'
+      'Erro ao registrar assinatura.',
+      meta
     )
   }
 
@@ -417,7 +453,10 @@ export default function SaidasPage() {
     await recarregar()
   }
 
-  async function handleSalvarAssinaturaForaCartao(input: DespesaAssinaturaForaCartaoInput) {
+  async function handleSalvarAssinaturaForaCartao(
+    input: DespesaAssinaturaForaCartaoInput,
+    meta: NotaETags
+  ) {
     await registrar(
       () => window.api.despesa.criarAssinaturaForaCartao(input),
       (r) => ({
@@ -426,7 +465,8 @@ export default function SaidasPage() {
         cartaoNome: input.formaPagamento,
         parcelas: r.parcelas.length
       }),
-      'Erro ao registrar despesa recorrente.'
+      'Erro ao registrar despesa recorrente.',
+      meta
     )
   }
 
