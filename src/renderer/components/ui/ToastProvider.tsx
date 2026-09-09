@@ -1,27 +1,12 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode
-} from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import styles from './toast.module.css'
-
-export type ToastKind = 'success' | 'error' | 'info'
+import { ToastContext, type ToastKind } from './toast-context'
 
 type Toast = {
   id: number
   message: string
   kind: ToastKind
 }
-
-type ToastContextValue = {
-  show: (message: string, kind?: ToastKind) => void
-}
-
-const ToastContext = createContext<ToastContextValue | null>(null)
 
 const DEFAULT_DURATION_MS = 3000
 // Erro fica mais tempo: costuma trazer a mensagem do IPC, que é mais longa do
@@ -117,10 +102,4 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       </div>
     </ToastContext.Provider>
   )
-}
-
-export function useToast(): ToastContextValue {
-  const ctx = useContext(ToastContext)
-  if (!ctx) throw new Error('useToast precisa estar dentro de <ToastProvider>')
-  return ctx
 }
