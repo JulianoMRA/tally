@@ -13,7 +13,7 @@ function seedBasico(db: Database): void {
   db.exec(
     `INSERT INTO cartao (id, nome, dia_fechamento, dia_vencimento, cor) VALUES (1, 'Inter', 5, 12, '#ff7a00')`
   )
-  db.exec(`INSERT INTO categoria (id, nome, tipo, cor) VALUES (1, 'Mercado', 'Despesa', '#abcdef')`)
+  db.exec(`INSERT INTO categoria (id, nome, cor) VALUES (1, 'Mercado', '#abcdef')`)
   db.exec(
     `INSERT INTO orcamento (id, categoria_id, mes_referencia, valor_limite_centavos) VALUES (1, 1, NULL, 50000)`
   )
@@ -50,7 +50,7 @@ describe('DadosRepository', () => {
     const payload = new DadosRepository(db).exportar()
 
     expect(payload.formatVersion).toBe(1)
-    expect(payload.app.schemaVersion).toMatch(/^0013/)
+    expect(payload.app.schemaVersion).toMatch(/^0014/)
     expect(payload.tables.cartao).toHaveLength(1)
     expect(payload.tables.orcamento).toHaveLength(1)
     expect(payload.tables.parcela).toHaveLength(1)

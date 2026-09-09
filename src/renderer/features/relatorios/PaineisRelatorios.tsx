@@ -37,7 +37,7 @@ export default function PaineisRelatorios({ mes }: Props) {
   const { dados: evolucaoCat } = useEvolucaoCategoria(categoriaIdSelecionada, mes, periodoCategoria)
 
   useCargaAuxiliar(
-    () => window.api.categoria.list({ tipo: 'Despesa' }),
+    () => window.api.categoria.list(),
     (cs) => {
       setCategorias(cs)
       setCategoriaIdSelecionada((atual) => atual ?? cs[0]?.id ?? null)

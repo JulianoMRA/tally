@@ -41,9 +41,7 @@ describe('migration 0005_orcamento', () => {
   it('garante um unico limite global por categoria (ux_orcamento_global)', () => {
     const db = openInMemoryDatabase()
     runMigrations(db)
-    db.prepare(
-      "INSERT INTO categoria (nome, tipo, cor) VALUES ('Mercado', 'Despesa', '#4caf50')"
-    ).run()
+    db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Mercado', '#4caf50')").run()
 
     db.prepare(
       'INSERT INTO orcamento (categoria_id, mes_referencia, valor_limite_centavos) VALUES (1, NULL, 50000)'
@@ -61,9 +59,7 @@ describe('migration 0005_orcamento', () => {
   it('rejeita valor de limite negativo (CHECK)', () => {
     const db = openInMemoryDatabase()
     runMigrations(db)
-    db.prepare(
-      "INSERT INTO categoria (nome, tipo, cor) VALUES ('Lazer', 'Despesa', '#2196f3')"
-    ).run()
+    db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Lazer', '#2196f3')").run()
     expect(() =>
       db
         .prepare(

@@ -44,15 +44,8 @@ describe('migration 0001_initial_schema', () => {
       db.prepare('PRAGMA table_info(categoria)').all() as { name: string }[]
     ).map((c) => c.name)
     expect(colsCategoria).not.toContain('icone')
-    expect(colsCategoria).toEqual([
-      'id',
-      'nome',
-      'tipo',
-      'cor',
-      'ativo',
-      'created_at',
-      'updated_at'
-    ])
+    // Sem 'tipo': a 0014 removeu a coluna.
+    expect(colsCategoria).toEqual(['id', 'nome', 'cor', 'ativo', 'created_at', 'updated_at'])
 
     const colsRenda = (db.prepare('PRAGMA table_info(renda)').all() as { name: string }[]).map(
       (c) => c.name
@@ -109,11 +102,7 @@ describe('migration 0001_initial_schema', () => {
   })
 
   it('exige cartao_id quando forma_pagamento é Credito e proíbe quando não é', () => {
-    db.prepare('INSERT INTO categoria (nome, tipo, cor) VALUES (?, ?, ?)').run(
-      'Lazer',
-      'Despesa',
-      '#000'
-    )
+    db.prepare('INSERT INTO categoria (nome, cor) VALUES (?, ?)').run('Lazer', '#000')
     db.prepare(
       'INSERT INTO cartao (nome, dia_fechamento, dia_vencimento, cor) VALUES (?, ?, ?, ?)'
     ).run('Inter', 5, 12, '#f60')
@@ -177,7 +166,8 @@ describe('migration 0001_initial_schema', () => {
       '0010_data_referencia_segue_a_fatura',
       '0011_avulso_sem_fonte',
       '0012_realinha_data_referencia_apos_adiantamento',
-      '0013_recorrente_fora_de_cartao'
+      '0013_recorrente_fora_de_cartao',
+      '0014_categoria_sem_tipo'
     ])
   })
 })

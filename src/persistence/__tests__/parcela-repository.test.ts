@@ -12,9 +12,7 @@ function inserirCartao(db: Database, nome: string, dF: number, dV: number): numb
 }
 
 function inserirCategoria(db: Database): number {
-  const info = db
-    .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Alimentação', 'Despesa', '#aaa')")
-    .run()
+  const info = db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Alimentação', '#aaa')").run()
   return Number(info.lastInsertRowid)
 }
 

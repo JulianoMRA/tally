@@ -44,7 +44,7 @@ describe('verificarAvisos', () => {
     db.prepare(
       "INSERT INTO cartao (nome, dia_fechamento, dia_vencimento, cor) VALUES ('Inter', 5, 12, '#f60')"
     ).run()
-    db.prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('C', 'Despesa', '#111')").run()
+    db.prepare("INSERT INTO categoria (nome, cor) VALUES ('C', '#111')").run()
     db.prepare(
       `INSERT INTO fatura (cartao_id, mes_referencia, data_fechamento, data_vencimento, status)
        VALUES (1, '2026-09', ?, '2026-09-12', 'Aberta')`

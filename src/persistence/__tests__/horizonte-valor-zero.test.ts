@@ -62,7 +62,7 @@ describe('extensão de horizonte com valor zero no banco', () => {
   })
 
   it('assinatura de cartão zerada não impede a visão mensal de mês futuro', () => {
-    db.prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('C', 'Despesa', '#111')").run()
+    db.prepare("INSERT INTO categoria (nome, cor) VALUES ('C', '#111')").run()
     db.prepare(
       "INSERT INTO cartao (nome, dia_fechamento, dia_vencimento, cor) VALUES ('X', 5, 12, '#222')"
     ).run()
@@ -85,7 +85,7 @@ describe('extensão de horizonte com valor zero no banco', () => {
   })
 
   it('recorrente sem cartão zerada não impede a visão mensal de mês futuro', () => {
-    db.prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('C', 'Despesa', '#111')").run()
+    db.prepare("INSERT INTO categoria (nome, cor) VALUES ('C', '#111')").run()
     db.prepare(
       `INSERT INTO despesa (descricao, categoria_id, tipo, forma_pagamento, cartao_id,
                             valor_centavos, data_compra, ativa, dia_cobranca, recorre_ate)

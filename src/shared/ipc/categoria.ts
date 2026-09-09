@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { corHexSchema } from './cartao'
-import type { Categoria, TipoCategoria } from '../../domain/entities/categoria'
+import type { Categoria } from '../../domain/entities/categoria'
 
 export const categoriaInputSchema = z.object({
   nome: z
@@ -8,7 +8,6 @@ export const categoriaInputSchema = z.object({
     .trim()
     .min(1, 'Nome é obrigatório')
     .max(60, 'Nome deve ter no máximo 60 caracteres'),
-  tipo: z.enum(['Despesa', 'Renda', 'Ambos'], { message: 'Tipo inválido' }),
   cor: corHexSchema
 })
 
@@ -18,14 +17,12 @@ export const categoriaIdSchema = z.number().int().positive()
 
 export const listCategoriaOptionsSchema = z
   .object({
-    incluirArquivados: z.boolean().optional(),
-    tipo: z.enum(['Despesa', 'Renda', 'Ambos']).optional()
+    incluirArquivados: z.boolean().optional()
   })
   .optional()
 
 export type ListCategoriaOptions = {
   incluirArquivados?: boolean
-  tipo?: TipoCategoria
 }
 
 export type CategoriaApi = {

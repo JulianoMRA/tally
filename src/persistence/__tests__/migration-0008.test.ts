@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import type { Database } from '../database'
 import { openInMemoryDatabase } from '../database'
 import { runMigrations, loadBundledMigrations } from '../migrations/runner'
+import { inserirCategoriaEmQualquerSchema } from './__helpers__/categoria-legada'
 
 /**
  * Fase 11 — a 0008 adiciona `despesa.nota` e as tabelas `tag` /
@@ -18,7 +19,7 @@ describe('migration 0008_tags_notas', () => {
     db.exec(
       `INSERT INTO cartao (id, nome, dia_fechamento, dia_vencimento, cor) VALUES (1, 'Inter', 5, 12, '#f60')`
     )
-    db.exec(`INSERT INTO categoria (id, nome, tipo, cor) VALUES (1, 'Mercado', 'Despesa', '#fa0')`)
+    inserirCategoriaEmQualquerSchema(db, 1, 'Mercado', '#fa0')
     db.prepare(
       `INSERT INTO despesa (id, descricao, categoria_id, tipo, forma_pagamento, cartao_id, valor_centavos, total_parcelas, data_compra)
        VALUES (?, 'Compra', 1, 'Unica', 'Credito', 1, 5000, 1, '2026-06-03')`

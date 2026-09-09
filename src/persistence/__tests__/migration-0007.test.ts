@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import type { Database } from '../database'
 import { openInMemoryDatabase } from '../database'
 import { runMigrations, loadBundledMigrations } from '../migrations/runner'
+import { inserirCategoriaEmQualquerSchema } from './__helpers__/categoria-legada'
 
 /**
  * Fase 2 (hardening de dados) — valida que a 0007:
@@ -29,9 +30,7 @@ describe('migration 0007_hardening_schema', () => {
     db.prepare(
       'INSERT INTO cartao (id, nome, dia_fechamento, dia_vencimento, cor) VALUES (1, ?, 5, 12, ?)'
     ).run('Inter', '#f60')
-    db.prepare(
-      "INSERT INTO categoria (id, nome, tipo, cor) VALUES (10, 'Mercado', 'Despesa', ?)"
-    ).run('#fa0')
+    inserirCategoriaEmQualquerSchema(db, 10, 'Mercado', '#fa0')
     db.prepare(
       `INSERT INTO despesa (id, descricao, categoria_id, tipo, forma_pagamento, cartao_id, valor_centavos, total_parcelas, data_compra)
        VALUES (100, 'Compra', 10, 'Parcelada', 'Credito', 1, 6000, 2, '2026-05-01')`

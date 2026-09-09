@@ -20,9 +20,7 @@ function inserirCartao(db: Database, nome: string, fechamento: number, venciment
 }
 
 function inserirCategoria(db: Database, nome: string): number {
-  const info = db
-    .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES (?, 'Despesa', '#5b7a5e')")
-    .run(nome)
+  const info = db.prepare("INSERT INTO categoria (nome, cor) VALUES (?, '#5b7a5e')").run(nome)
   return Number(info.lastInsertRowid)
 }
 

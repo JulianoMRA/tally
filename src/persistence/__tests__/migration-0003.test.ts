@@ -29,10 +29,9 @@ describe('migration 0003_drop_colunas_mortas', () => {
 
     // Insere antes de... (na verdade tudo no setup ja aplicou 0003,
     // entao validamos via insert + select no schema final)
-    db.prepare('INSERT INTO categoria (id, nome, tipo, cor, ativo) VALUES (?, ?, ?, ?, 1)').run(
+    db.prepare('INSERT INTO categoria (id, nome, cor, ativo) VALUES (?, ?, ?, 1)').run(
       10,
       'Mercado',
-      'Despesa',
       '#fa0'
     )
 
@@ -90,12 +89,13 @@ describe('migration 0003_drop_colunas_mortas', () => {
       '0010_data_referencia_segue_a_fatura',
       '0011_avulso_sem_fonte',
       '0012_realinha_data_referencia_apos_adiantamento',
-      '0013_recorrente_fora_de_cartao'
+      '0013_recorrente_fora_de_cartao',
+      '0014_categoria_sem_tipo'
     ])
 
     const second = runMigrations(db, files)
     expect(second.applied).toEqual([])
-    expect(second.skipped).toHaveLength(13)
+    expect(second.skipped).toHaveLength(14)
   })
 
   it('preserva categoria + renda inseridas antes do upgrade (simulacao real)', () => {
@@ -117,11 +117,12 @@ describe('migration 0003_drop_colunas_mortas', () => {
     // Aplica 0003
     runMigrations(db, todas)
 
-    const cat = db.prepare('SELECT id, nome, tipo, cor FROM categoria WHERE id = 7').get() as {
+    // Sem : a 0014 removeu a coluna, e este SELECT roda depois dela.
+    const cat = db.prepare('SELECT id, nome, cor FROM categoria WHERE id = 7').get() as {
       id: number
       nome: string
     }
-    expect(cat).toEqual({ id: 7, nome: 'Lazer', tipo: 'Despesa', cor: '#f0a' })
+    expect(cat).toEqual({ id: 7, nome: 'Lazer', cor: '#f0a' })
 
     const renda = db
       .prepare('SELECT id, nome, tipo, dia_esperado FROM renda WHERE id = 3')

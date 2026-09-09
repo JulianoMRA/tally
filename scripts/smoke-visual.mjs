@@ -218,7 +218,7 @@ await page.evaluate(async () => {
     ['Casa', '#3f6e47'],
     ['Assinaturas', '#5a4a8a']
   ]) {
-    cats[nome] = await api.categoria.create({ nome, tipo: 'Despesa', cor })
+    cats[nome] = await api.categoria.create({ nome, cor })
   }
 
   for (const [descricao, cat, valor, dias] of [

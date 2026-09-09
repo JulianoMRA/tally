@@ -129,11 +129,7 @@ export default function SaidasPage() {
     setCartoes,
     'Erro ao listar cartões.'
   )
-  useCargaAuxiliar(
-    () => window.api.categoria.list({ tipo: 'Despesa' }),
-    setCategorias,
-    'Erro ao listar categorias.'
-  )
+  useCargaAuxiliar(() => window.api.categoria.list(), setCategorias, 'Erro ao listar categorias.')
 
   const cartoesAtivos = useMemo(() => cartoes.filter((c) => c.ativo), [cartoes])
 

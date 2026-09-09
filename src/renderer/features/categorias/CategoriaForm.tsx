@@ -24,27 +24,15 @@ export function CategoriaForm({ categoriaInicial, onSalvar, onCancelar }: Props)
     defaultValues: categoriaInicial
       ? {
           nome: categoriaInicial.nome,
-          tipo: categoriaInicial.tipo,
           cor: categoriaInicial.cor
         }
-      : { tipo: 'Despesa', cor: COR_PADRAO }
+      : { cor: COR_PADRAO }
   })
 
   return (
     <form onSubmit={handleSubmit(onSalvar)} className={styles.form}>
       <Field label="Nome" error={errors.nome?.message} required>
         <Input type="text" {...register('nome')} placeholder="Ex: Mercado" error={!!errors.nome} />
-      </Field>
-
-      <Field label="Tipo" error={errors.tipo?.message} required>
-        <div className={styles.radioGroup}>
-          {(['Despesa', 'Renda', 'Ambos'] as const).map((tipo) => (
-            <label key={tipo} className={styles.radioLabel}>
-              <input type="radio" value={tipo} {...register('tipo')} />
-              {tipo}
-            </label>
-          ))}
-        </div>
       </Field>
 
       <Field label="Cor" error={errors.cor?.message}>

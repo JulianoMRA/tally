@@ -17,10 +17,9 @@ function arquivarCartao(db: Database, id: number): void {
   db.prepare('UPDATE cartao SET ativo = 0 WHERE id = ?').run(id)
 }
 
-function inserirCategoria(db: Database, nome = 'Geral', tipo = 'Despesa'): number {
-  return db
-    .prepare('INSERT INTO categoria (nome, tipo, cor) VALUES (?, ?, ?)')
-    .run(nome, tipo, '#000').lastInsertRowid as number
+function inserirCategoria(db: Database, nome = 'Geral'): number {
+  return db.prepare('INSERT INTO categoria (nome, cor) VALUES (?, ?)').run(nome, '#000')
+    .lastInsertRowid as number
 }
 
 describe('VisaoMensalRepository.detalhar (RF-VIS-01/02 + RN-08)', () => {

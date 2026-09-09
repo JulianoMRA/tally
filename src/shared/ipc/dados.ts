@@ -30,7 +30,6 @@ const cartaoRowSchema = z.looseObject({
 const categoriaRowSchema = z.looseObject({
   id: idSchema,
   nome: z.string().min(1),
-  tipo: z.enum(['Despesa', 'Renda', 'Ambos']),
   cor: z.string().min(1),
   ativo: flag01Schema,
   created_at: timestampSchema,
