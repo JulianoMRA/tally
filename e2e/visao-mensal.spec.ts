@@ -72,7 +72,7 @@ test.describe('Visão mensal (RF-VIS-01, RF-VIS-02, RN-08)', () => {
     await criarCartao(page, 'Inter Projecao E2E')
 
     await criarCategoria(page, 'Streaming Projecao E2E')
-    await criarCategoria(page, 'Bolsa Projecao E2E', 'Renda')
+    await criarCategoria(page, 'Bolsa Projecao E2E')
 
     // Assinatura mensal de R$ 30,00 começando hoje (form inline em Despesas, tipo Assinatura)
     const hoje = new Date()

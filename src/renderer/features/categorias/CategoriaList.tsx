@@ -9,15 +9,13 @@ type Props = {
   onDesarquivar: (id: number) => void
 }
 
-const TIPO_LABEL: Record<string, string> = { Despesa: 'Despesa', Renda: 'Renda', Ambos: 'Ambos' }
-
 /**
  * Mesmo padrão da lista de cartões (ponto 16): largura cheia, editar visível,
  * arquivar no menu ⋯ com confirmação, e arquivadas esmaecidas no fim em vez de
  * escondidas atrás de um estado que recarrega a lista.
  *
- * Categoria não tem série histórica como o cartão — o que ela carrega de
- * informação é o tipo, que decide onde ela aparece nos formulários.
+ * Categoria não tem série histórica como o cartão, e desde a migration 0014
+ * não tem mais tipo: a linha carrega nome, cor e o estado de arquivada.
  */
 export function CategoriaList({ categorias, onEditar, onArquivar, onDesarquivar }: Props) {
   if (categorias.length === 0) {
@@ -43,7 +41,6 @@ export function CategoriaList({ categorias, onEditar, onArquivar, onDesarquivar 
 
           <div className={styles.listItemInfo}>
             <span className={styles.listItemNome}>{categoria.nome}</span>
-            <span className={styles.listItemMeta}>{TIPO_LABEL[categoria.tipo]}</span>
           </div>
 
           <div className={styles.listItemActions}>

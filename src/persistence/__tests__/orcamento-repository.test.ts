@@ -17,7 +17,7 @@ describe('OrcamentoRepository', () => {
   })
 
   it('definirLimite global (mes null) cria e findByCategoria recupera', () => {
-    const cat = categorias.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50' })
+    const cat = categorias.create({ nome: 'Mercado', cor: '#4caf50' })
     repo.definirLimite(cat.id, 50000, null)
     const orc = repo.findByCategoria(cat.id, null)
     expect(orc?.valorLimiteCentavos).toBe(50000)
@@ -25,7 +25,7 @@ describe('OrcamentoRepository', () => {
   })
 
   it('definirLimite global e idempotente: atualiza sem duplicar', () => {
-    const cat = categorias.create({ nome: 'Lazer', tipo: 'Despesa', cor: '#2196f3' })
+    const cat = categorias.create({ nome: 'Lazer', cor: '#2196f3' })
     repo.definirLimite(cat.id, 20000, null)
     repo.definirLimite(cat.id, 30000, null)
     expect(repo.findByCategoria(cat.id, null)?.valorLimiteCentavos).toBe(30000)
@@ -34,7 +34,7 @@ describe('OrcamentoRepository', () => {
   })
 
   it('definirLimite mensal convive com o global da mesma categoria', () => {
-    const cat = categorias.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50' })
+    const cat = categorias.create({ nome: 'Mercado', cor: '#4caf50' })
     repo.definirLimite(cat.id, 50000, null)
     repo.definirLimite(cat.id, 80000, '2026-12')
 
@@ -45,7 +45,7 @@ describe('OrcamentoRepository', () => {
   })
 
   it('definirLimite mensal e idempotente por (categoria, mes)', () => {
-    const cat = categorias.create({ nome: 'Lazer', tipo: 'Despesa', cor: '#2196f3' })
+    const cat = categorias.create({ nome: 'Lazer', cor: '#2196f3' })
     repo.definirLimite(cat.id, 20000, '2026-12')
     repo.definirLimite(cat.id, 25000, '2026-12')
     expect(repo.findByCategoria(cat.id, '2026-12')?.valorLimiteCentavos).toBe(25000)
@@ -54,8 +54,8 @@ describe('OrcamentoRepository', () => {
   })
 
   it('listarLimitesEfetivos: limite do mes sobrepoe o global, com origem', () => {
-    const mercado = categorias.create({ nome: 'Mercado', tipo: 'Despesa', cor: '#4caf50' })
-    const aluguel = categorias.create({ nome: 'Aluguel', tipo: 'Despesa', cor: '#f44336' })
+    const mercado = categorias.create({ nome: 'Mercado', cor: '#4caf50' })
+    const aluguel = categorias.create({ nome: 'Aluguel', cor: '#f44336' })
     repo.definirLimite(mercado.id, 50000, null)
     repo.definirLimite(mercado.id, 80000, '2026-12') // dezembro estoura o global
     repo.definirLimite(aluguel.id, 120000, null)
@@ -84,7 +84,7 @@ describe('OrcamentoRepository', () => {
   })
 
   it('limite apenas mensal aparece somente no proprio mes', () => {
-    const cat = categorias.create({ nome: 'Presentes', tipo: 'Despesa', cor: '#9c27b0' })
+    const cat = categorias.create({ nome: 'Presentes', cor: '#9c27b0' })
     repo.definirLimite(cat.id, 30000, '2026-12')
 
     expect(repo.listarLimitesEfetivos('2026-12')).toContainEqual(
@@ -94,7 +94,7 @@ describe('OrcamentoRepository', () => {
   })
 
   it('removerLimite respeita o escopo (mensal nao apaga o global)', () => {
-    const cat = categorias.create({ nome: 'Saude', tipo: 'Despesa', cor: '#e91e63' })
+    const cat = categorias.create({ nome: 'Saude', cor: '#e91e63' })
     repo.definirLimite(cat.id, 10000, null)
     repo.definirLimite(cat.id, 15000, '2026-12')
 

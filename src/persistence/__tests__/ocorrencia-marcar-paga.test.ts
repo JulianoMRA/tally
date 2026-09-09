@@ -5,9 +5,7 @@ import { runMigrations } from '../migrations/runner'
 import { ParcelaRepository } from '../repositories/parcela-repository'
 
 function inserirCategoria(db: Database): number {
-  const info = db
-    .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Casa', 'Despesa', '#aaa')")
-    .run()
+  const info = db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Casa', '#aaa')").run()
   return Number(info.lastInsertRowid)
 }
 

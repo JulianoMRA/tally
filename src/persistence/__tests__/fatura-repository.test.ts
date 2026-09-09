@@ -159,9 +159,8 @@ describe('FaturaRepository — sincronização parcela <-> fatura (RN-06)', () =
     despesaRepo = new DespesaRepository(db)
     parcelaRepo = new ParcelaRepository(db)
     categoriaId = Number(
-      db
-        .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Mercado', 'Despesa', '#aaa')")
-        .run().lastInsertRowid
+      db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Mercado', '#aaa')").run()
+        .lastInsertRowid
     )
   })
 
@@ -428,9 +427,8 @@ describe('FaturaRepository.listarAvisos (fase 7 — notificações)', () => {
 
   it('RF-CAR-02: avisa fatura com parcelas de cartao arquivado (ainda ha o que pagar)', () => {
     const inter = inserirCartao(db, 'Inter', 5, 12)
-    const catId = db
-      .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Geral', 'Despesa', '#000')")
-      .run().lastInsertRowid as number
+    const catId = db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Geral', '#000')").run()
+      .lastInsertRowid as number
     new DespesaRepository(db).criarUnicaCredito({
       descricao: 'Compra antes de arquivar',
       categoriaId: Number(catId),

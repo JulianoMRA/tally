@@ -15,9 +15,7 @@ function inserirCartao(db: Database, nome: string, dF: number, dV: number): numb
 }
 
 function inserirCategoria(db: Database): number {
-  const info = db
-    .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Alimentação', 'Despesa', '#aaa')")
-    .run()
+  const info = db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Alimentação', '#aaa')").run()
   return Number(info.lastInsertRowid)
 }
 
@@ -160,9 +158,8 @@ describe('DespesaRepository.criarParceladaCredito (RF-DES-02, RN-02)', () => {
     cartaoId = db
       .prepare('INSERT INTO cartao (nome, dia_fechamento, dia_vencimento, cor) VALUES (?, ?, ?, ?)')
       .run('Nubank', 15, 22, '#000').lastInsertRowid as number
-    catId = db
-      .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Eletrônicos', 'Despesa', '#aaa')")
-      .run().lastInsertRowid as number
+    catId = db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Eletrônicos', '#aaa')").run()
+      .lastInsertRowid as number
   })
 
   it('persiste despesa com tipo Parcelada e totalParcelas correto', () => {
@@ -280,9 +277,8 @@ describe('DespesaRepository.criarParceladaEmAndamento (RF-DES-03)', () => {
     cartaoId = db
       .prepare('INSERT INTO cartao (nome, dia_fechamento, dia_vencimento, cor) VALUES (?, ?, ?, ?)')
       .run('Inter', 5, 12, '#000').lastInsertRowid as number
-    catId = db
-      .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Assinatura', 'Despesa', '#bbb')")
-      .run().lastInsertRowid as number
+    catId = db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Assinatura', '#bbb')").run()
+      .lastInsertRowid as number
   })
 
   it('gera apenas as parcelas restantes (K/N..N/N)', () => {
@@ -331,9 +327,8 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
     repo = new DespesaRepository(db)
     parcelaRepo = new ParcelaRepository(db)
     cartaoId = inserirCartao(db, 'Inter', 5, 12)
-    catId = db
-      .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Streaming', 'Despesa', '#bbb')")
-      .run().lastInsertRowid as number
+    catId = db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Streaming', '#bbb')").run()
+      .lastInsertRowid as number
   })
 
   describe('criarAssinaturaCredito', () => {
@@ -913,9 +908,8 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
         valorCentavos: 5000,
         dataCompra: '2026-06-03'
       })
-      const cat2 = db
-        .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Lazer', 'Despesa', '#abc')")
-        .run().lastInsertRowid as number
+      const cat2 = db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Lazer', '#abc')").run()
+        .lastInsertRowid as number
 
       const atualizada = repo.atualizar(r.despesa.id, {
         descricao: 'Mercadinho',
@@ -1056,9 +1050,8 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
         valorMensalCentavos: 1990,
         dataInicio: '2026-06-03'
       })
-      const cat2 = db
-        .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Lazer', 'Despesa', '#abc')")
-        .run().lastInsertRowid as number
+      const cat2 = db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Lazer', '#abc')").run()
+        .lastInsertRowid as number
 
       const atualizada = repo.atualizar(r.despesa.id, {
         descricao: 'Spotify Premium',

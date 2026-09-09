@@ -93,11 +93,7 @@ export function FaturaDetalhe({
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const toast = useToast()
 
-  useCargaAuxiliar(
-    () => window.api.categoria.list({ tipo: 'Despesa' }),
-    setCategorias,
-    'Erro ao listar categorias.'
-  )
+  useCargaAuxiliar(() => window.api.categoria.list(), setCategorias, 'Erro ao listar categorias.')
 
   const parcelasOrdenadas = useMemo(() => {
     const copia = [...parcelas]

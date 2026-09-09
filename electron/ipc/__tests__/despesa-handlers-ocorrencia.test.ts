@@ -52,8 +52,7 @@ describe('handlers de ocorrência paga (RF-DES-21)', () => {
     registerDespesaHandlers(db, ipc.ipcMain)
 
     const catId = Number(
-      db.prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Casa', 'Despesa', '#aaa')").run()
-        .lastInsertRowid
+      db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Casa', '#aaa')").run().lastInsertRowid
     )
     const despesaId = Number(
       db

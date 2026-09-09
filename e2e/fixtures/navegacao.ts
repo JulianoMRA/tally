@@ -122,18 +122,13 @@ export async function criarCartao(
 }
 
 /** Mesma história de `criarCartao`, para Categorias. */
-export async function criarCategoria(
-  page: Page,
-  nome: string,
-  tipo: 'Despesa' | 'Renda' = 'Despesa'
-): Promise<void> {
+export async function criarCategoria(page: Page, nome: string): Promise<void> {
   await irPara(page, 'Categorias')
   await page.getByRole('button', { name: '+ Nova categoria' }).click()
 
   const painel = page.getByRole('dialog', { name: 'Nova categoria' })
   await expect(painel).toBeVisible()
   await painel.getByLabel('Nome').fill(nome)
-  await painel.getByRole('radio', { name: tipo }).check()
   await painel.getByRole('button', { name: 'Salvar' }).click()
 
   await expect(page.getByText(nome)).toBeVisible()

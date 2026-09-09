@@ -9,9 +9,7 @@ import { ParcelaRepository } from '../repositories/parcela-repository'
 const HOJE = '2026-09-15T12:00:00Z'
 
 function inserirCategoria(db: Database): number {
-  const info = db
-    .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES ('Moradia', 'Despesa', '#aaa')")
-    .run()
+  const info = db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Moradia', '#aaa')").run()
   return Number(info.lastInsertRowid)
 }
 

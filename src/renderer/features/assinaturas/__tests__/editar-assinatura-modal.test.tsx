@@ -10,7 +10,6 @@ const CATEGORIAS: Categoria[] = [
   {
     id: 1,
     nome: 'Moradia',
-    tipo: 'Despesa',
     cor: '#aaa',
     ativo: true,
     createdAt: '2026-06-01T00:00:00Z',

@@ -95,7 +95,14 @@ prevista; entram no escopo quando forem priorizadas.
 
 ### 4.2 Categorias (RF-CAT)
 
-- **RF-CAT-01** — Cadastrar categoria com nome, tipo (Despesa, Renda ou Ambos) e cor.
+- **RF-CAT-01** — Cadastrar categoria com **nome e cor**. Categoria é sempre de despesa; não existe mais o campo `tipo` (Despesa / Renda / Ambos), removido pela migration `0014`.
+
+  > O campo nasceu para separar categorias de despesa das de renda. O Slice 12.1 removeu `renda.categoria_id` e renda deixou de ter categoria — a partir dali os únicos chamadores no app pediam `tipo = 'Despesa'`, e **ninguém jamais pedia `'Renda'`**. O efeito era pior do que uma coluna sem uso: o formulário continuava oferecendo as três opções, e uma categoria criada como `'Renda'` era **inalcançável em todo o app** — não aparecia no cadastro de despesa, filtrado por `'Despesa'`, e renda não tinha onde exibi-la. O campo deixava gravar um registro garantidamente inerte. Mesmo motivo e mesmo tratamento que a `0003` deu a `categoria.icone` e a `renda.categoria_id`.
+  >
+  > Categorias existentes são preservadas, **inclusive as que eram `'Renda'` ou `'Ambos'`**: elas viram categorias comuns, que é como o app já as trataria se pudesse enxergá-las. Backup gerado antes da `0014` continua importável — o `looseObject` do schema deixa a chave extra passar e o importador monta o `INSERT` pelas colunas do schema atual.
+  >
+  > Voltar a ter categoria em renda é feature nova (RF-REN), não a volta deste campo.
+
 - **RF-CAT-02** — Editar e arquivar categorias. Despesas vinculadas a categoria arquivada continuam exibindo a categoria com indicador de inativa. Como em RF-CAR-02, arquivar pede confirmação explícita e vive no menu de ações; arquivadas aparecem esmaecidas ao fim da lista.
 
 ### 4.3 Despesas (RF-DES)

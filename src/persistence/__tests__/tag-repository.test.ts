@@ -22,7 +22,7 @@ describe('TagRepository', () => {
     db.exec(
       `INSERT INTO cartao (id, nome, dia_fechamento, dia_vencimento, cor) VALUES (1, 'Inter', 5, 12, '#f60')`
     )
-    db.exec(`INSERT INTO categoria (id, nome, tipo, cor) VALUES (1, 'Mercado', 'Despesa', '#fa0')`)
+    db.exec(`INSERT INTO categoria (id, nome, cor) VALUES (1, 'Mercado', '#fa0')`)
   })
 
   it('upsertPorNome cria e reaproveita a tag (case-insensitive), aparando espaços', () => {

@@ -13,7 +13,6 @@ test.describe('Categorias CRUD', () => {
     await criarCategoria(page, 'Mercado')
 
     const linha = page.getByRole('listitem').filter({ hasText: 'Mercado' })
-    await expect(linha.getByText('Despesa', { exact: true })).toBeVisible()
 
     // --- Editar: renomear para Supermercado ---
     await linha.getByRole('button', { name: 'Editar' }).click()

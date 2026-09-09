@@ -11,7 +11,7 @@
  *   * NULL ↔ null (nunca undefined em campos persistidos)
  */
 import type { Cartao } from '../../domain/entities/cartao'
-import type { Categoria, TipoCategoria } from '../../domain/entities/categoria'
+import type { Categoria } from '../../domain/entities/categoria'
 import type { Despesa, FormaPagamento, TipoDespesa } from '../../domain/entities/despesa'
 import type { Fatura, StatusFatura } from '../../domain/entities/fatura'
 import type { Orcamento } from '../../domain/entities/orcamento'
@@ -51,7 +51,6 @@ export function mapCartao(row: CartaoRow): Cartao {
 export type CategoriaRow = {
   id: number
   nome: string
-  tipo: TipoCategoria
   cor: string
   ativo: 0 | 1
   created_at: string
@@ -62,7 +61,6 @@ export function mapCategoria(row: CategoriaRow): Categoria {
   return {
     id: row.id,
     nome: row.nome,
-    tipo: row.tipo,
     cor: row.cor,
     ativo: row.ativo === 1,
     createdAt: row.created_at,

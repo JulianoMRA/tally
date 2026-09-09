@@ -14,9 +14,8 @@ function inserirCartao(db: Database, nome: string, dF = 5, dV = 12): number {
 }
 
 function inserirCategoria(db: Database, nome: string, cor = '#000'): number {
-  return db
-    .prepare("INSERT INTO categoria (nome, tipo, cor) VALUES (?, 'Despesa', ?)")
-    .run(nome, cor).lastInsertRowid as number
+  return db.prepare('INSERT INTO categoria (nome, cor) VALUES (?, ?)').run(nome, cor)
+    .lastInsertRowid as number
 }
 
 describe('RelatorioRepository.totaisPorCategoriaEmMes (RF-VIS-06)', () => {

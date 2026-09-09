@@ -74,9 +74,11 @@ test.describe('Navegação por teclado', () => {
     await expect(page.getByRole('menu')).toBeVisible()
 
     // O foco entra no primeiro item, e as setas circulam.
-    expect((await foco(page))?.texto).toBe('Duplicar')
+    // "Feira no Pix" e gasto fora de cartao, entao o menu comeca em "Marcar como
+    // paga" (RF-DES-21) -- "Editar" e a acao primaria e fica fora do menu.
+    expect((await foco(page))?.texto).toBe('Marcar como paga')
     await page.keyboard.press('ArrowDown')
-    expect((await foco(page))?.texto).toBe('Nota/Tags')
+    expect((await foco(page))?.texto).toBe('Duplicar')
 
     await page.keyboard.press('Escape')
     await expect(page.getByRole('menu')).toHaveCount(0)

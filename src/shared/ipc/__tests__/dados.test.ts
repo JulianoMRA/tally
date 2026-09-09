@@ -107,7 +107,13 @@ function payloadValido(): ExportPayload {
           created_at: '2026-06-01 10:00:00',
           updated_at: '2026-06-01 10:00:00'
         }
-      ]
+      ],
+      // `tag` e `despesa_tag` têm `.default([])` no schema, então são opcionais
+      // na ENTRADA e obrigatórias no tipo de SAÍDA — que é o que
+      // `ExportPayload` é. Faltando aqui, o `as` só passava por sorte da
+      // heurística de sobreposição do TS.
+      tag: [],
+      despesa_tag: []
     }
   } as ExportPayload
 }
@@ -115,6 +121,21 @@ function payloadValido(): ExportPayload {
 describe('exportPayloadSchema — validação por tabela', () => {
   it('aceita um payload completo válido', () => {
     expect(() => exportPayloadSchema.parse(payloadValido())).not.toThrow()
+  })
+
+  /**
+   * A migration 0014 tirou `categoria.tipo`. Um backup gerado antes dela ainda
+   * traz a coluna, e não pode virar lixo por isso: o `looseObject` deixa a
+   * chave extra passar, e o `dados-repository` monta o INSERT pelas colunas do
+   * schema ATUAL, de modo que o `tipo` é simplesmente ignorado na inserção.
+   *
+   * O fixture acima já carrega `tipo` de propósito — este teste diz em voz alta
+   * o que aquilo está provando, para que ninguém o "limpe" depois.
+   */
+  it('aceita export antigo que ainda traz categoria.tipo', () => {
+    const p = payloadValido()
+    expect(p.tables.categoria[0]).toHaveProperty('tipo')
+    expect(() => exportPayloadSchema.parse(p)).not.toThrow()
   })
 
   it('aceita tabelas vazias', () => {
