@@ -293,7 +293,7 @@ não é sobre dado real.
 - **RNF-03** — Tempo de inicialização < 3s em hardware modesto.
 - **RNF-04** — Operações de leitura na visão mensal < 200ms para até 10 anos de histórico.
 - **RNF-05** — Idioma: pt-BR. Moeda: BRL. Formato de data: dd/MM/yyyy.
-- **RNF-06** — Cobertura mínima de testes: 80% no domain layer, 60% global.
+- **RNF-06** — Cobertura mínima de testes, com piso por camada e um piso global que vale sobre o app inteiro. Até set/2026 a medição alcançava apenas `domain` e `persistence` — 27% das linhas de produção —, de modo que o piso "60% global" incidia sobre as duas camadas já exigidas a 80% e media 99%. Medido sobre todas as camadas, o global era 57,7%: abaixo do próprio piso anunciado. Os pisos vigentes, um degrau abaixo do medido em 08/09/2026 para servirem de catraca: **domain 80%**, **persistence 90%**, **shared 85%**, **renderer 40%**, **electron 10%** e **55% global** (linhas). O piso do `electron` é baixo por ser dívida declarada — `main.ts` não é exercitável sem subir o Electron —, e um número baixo e visível vale mais do que a ausência de número.
 - **RNF-07** — Pipeline local verde obrigatório antes de abrir PR: lint + typecheck + testes unitários + build.
 
 ---
@@ -469,7 +469,7 @@ partida é o saldo do mês, e nada mais no app lê o resultado dela.
 
 ### 8.1 Testes unitários (Vitest)
 
-- **Cobertura mínima**: 80% no domain layer (regras de negócio RN-01 a RN-09), 60% global.
+- **Cobertura mínima**: piso por camada — domain 80% (regras RN-01 a RN-09), persistence 90%, shared 85%, renderer 40%, electron 10% — e 55% global sobre o app inteiro. Ver RNF-06 para por que os números mudaram em set/2026.
 - **Foco**: cálculo de fatura por data de compra (RN-01), geração de parcelas (RN-02), adiantamento (RN-03), geração de ocorrências de assinatura (RN-04), ciclo de vida da fatura (RN-06), total da fatura (RN-07), balanço mensal (RN-08), saldo simulado (RN-09).
 - **TDD obrigatório** no domain layer: teste antes da implementação.
 

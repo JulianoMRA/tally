@@ -131,8 +131,26 @@ que o `latest.yml` referencia.
 - **E2E** (`Playwright + _electron`) — `e2e/*.spec.ts`. Cada teste recebe
   uma pasta `userData` isolada via fixture (`TALLY_USER_DATA`).
 
-Coverage mínima (thresholds no `vitest.config.ts`): **80% no domain**
-(RN-01..RN-08), **60% global**. `npm run test:coverage` falha abaixo disso.
+Coverage mínima (thresholds no `vitest.config.ts`), por camada e global:
+
+| Camada        | Piso (linhas) | Medido em 08/09/2026 |
+| ------------- | ------------- | -------------------- |
+| `domain`      | 80% (RNF-06)  | 98,5%                |
+| `persistence` | 90%           | 99,2%                |
+| `shared`      | 85%           | 90,4%                |
+| `renderer`    | 40%           | 45,4%                |
+| `electron`    | 10%           | 10,1%                |
+| **global**    | **55%**       | **57,7%**            |
+
+`npm run test:coverage` falha abaixo disso. Os pisos ficam um degrau abaixo do
+medido de propósito: seguram regressão sem quebrar no primeiro commit, e sobem
+quando a camada sobe.
+
+Até set/2026 a medição alcançava apenas `domain` e `persistence` — 27% das
+linhas de produção. O piso "60% global" incidia sobre as duas camadas já
+exigidas a 80% e media 99%, enquanto o global honesto era 57,7%: abaixo do
+próprio piso anunciado. O `renderer` é mais da metade do código e tem o maior
+número de arquivos de teste do projeto, e não entrava em piso nenhum.
 
 ### `.only` é barrado
 
