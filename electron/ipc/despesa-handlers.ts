@@ -24,6 +24,8 @@ import {
   excluirDespesaInputSchema,
   atualizarDespesaInputSchema,
   definirNotaETagsInputSchema,
+  marcarOcorrenciaPagaInputSchema,
+  desmarcarOcorrenciaPagaInputSchema,
   DESPESA_IPC_CHANNELS
 } from '../../src/shared/ipc/despesa'
 
@@ -149,6 +151,7 @@ export function registerDespesaHandlers(db: Database, ipcMain: IpcMain): void {
           tipo: l.tipo,
           dataCompra: l.data_compra,
           dataReferencia: l.data_referencia,
+          faturaId: l.fatura_id,
           statusParcela: l.status,
           ativa: l.ativa === 1,
           nota: l.nota ?? null,
@@ -169,6 +172,20 @@ export function registerDespesaHandlers(db: Database, ipcMain: IpcMain): void {
   ipcMain.handle(DESPESA_IPC_CHANNELS.definirNotaETags, (_event, payload: unknown) => {
     const { despesaId, nota, tags } = definirNotaETagsInputSchema.parse(payload)
     return repo.definirNotaETags(despesaId, { nota, tags })
+  })
+
+  // RF-DES-21. Vive no grupo de despesa, e nao num grupo `parcela:*` novo,
+  // porque a tela que dispara e Saidas — que lista ocorrencias de despesa — e
+  // porque um grupo novo exigiria registro em `main.ts` e em
+  // `reregistrarHandlersDeDados`, duas listas que ja divergiram no passado.
+  ipcMain.handle(DESPESA_IPC_CHANNELS.marcarOcorrenciaPaga, (_event, payload: unknown) => {
+    const { parcelaId, dataPagamento } = marcarOcorrenciaPagaInputSchema.parse(payload)
+    return parcelaRepo.marcarPaga(parcelaId, dataPagamento)
+  })
+
+  ipcMain.handle(DESPESA_IPC_CHANNELS.desmarcarOcorrenciaPaga, (_event, payload: unknown) => {
+    const { parcelaId } = desmarcarOcorrenciaPagaInputSchema.parse(payload)
+    return parcelaRepo.desmarcarPaga(parcelaId)
   })
 
   ipcMain.handle(DESPESA_IPC_CHANNELS.excluir, (_event, payload: unknown) => {

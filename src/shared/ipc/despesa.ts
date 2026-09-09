@@ -288,6 +288,25 @@ export const definirNotaETagsInputSchema = z.object({
 
 export type DefinirNotaETagsInput = z.infer<typeof definirNotaETagsInputSchema>
 
+/**
+ * RF-DES-21 — marcar/desmarcar ocorrência sem fatura.
+ *
+ * `dataPagamento` é obrigatória ao marcar e ausente ao desmarcar: o inverso de
+ * pagar é não ter data, e não ter uma data guardada de uma parcela pendente.
+ */
+export const marcarOcorrenciaPagaInputSchema = z.object({
+  parcelaId: z.number().int().positive(),
+  dataPagamento: dataIsoSchema
+})
+
+export type MarcarOcorrenciaPagaInput = z.infer<typeof marcarOcorrenciaPagaInputSchema>
+
+export const desmarcarOcorrenciaPagaInputSchema = z.object({
+  parcelaId: z.number().int().positive()
+})
+
+export type DesmarcarOcorrenciaPagaInput = z.infer<typeof desmarcarOcorrenciaPagaInputSchema>
+
 /** Despesa com os nomes das tags vinculadas — usado na lista de Saídas. */
 export type DespesaComTags = Despesa & { tags: string[] }
 
@@ -315,6 +334,12 @@ export type OcorrenciaDoMes = {
   tipo: TipoDespesa
   dataCompra: string
   dataReferencia: string
+  /**
+   * `null` quando a ocorrência não pertence a fatura alguma. É o campo que
+   * decide quem pode marcá-la como paga (RF-DES-21) — e não `cartaoId`, que
+   * hoje coincide por causa do CHECK do schema, mas é inferência.
+   */
+  faturaId: number | null
   statusParcela: StatusParcela
   ativa: boolean
   nota: string | null
@@ -354,6 +379,8 @@ export type DespesaApi = {
   excluir: (input: ExcluirDespesaInput) => Promise<ResultadoExcluirDespesa>
   atualizar: (input: AtualizarDespesaInput) => Promise<Despesa>
   definirNotaETags: (input: DefinirNotaETagsInput) => Promise<Despesa>
+  marcarOcorrenciaPaga: (input: MarcarOcorrenciaPagaInput) => Promise<Parcela>
+  desmarcarOcorrenciaPaga: (input: DesmarcarOcorrenciaPagaInput) => Promise<Parcela>
 }
 
 export { DESPESA_IPC_CHANNELS } from './channels'

@@ -4,6 +4,10 @@ import type { Fatura } from '../../domain/entities/fatura'
 import type { Repository } from './types'
 import { selecionarParcelasParaAdiantar } from '../../domain/services/adiantar-parcelas'
 import { mesReferenciaParaData } from '../../domain/services/mes-referencia'
+import {
+  podeDesmarcarOcorrenciaPaga,
+  podeMarcarOcorrenciaPaga
+} from '../../domain/services/ocorrencia-sem-fatura'
 import { mapFatura, mapParcela, type FaturaRow, type ParcelaRow } from './row-mappers'
 
 export type CriarParcelaInput = {
@@ -167,5 +171,72 @@ export class ParcelaRepository implements Repository {
       }
       return { canceladas: pendentes }
     })()
+  }
+
+  private buscarOuFalhar(parcelaId: number): Parcela {
+    const row = this.db.prepare('SELECT * FROM parcela WHERE id = ?').get(parcelaId) as
+      | ParcelaRow
+      | undefined
+    if (!row) throw new Error(`Parcela #${parcelaId} não encontrada`)
+    return mapParcela(row)
+  }
+
+  /**
+   * RF-DES-21 — marca uma ocorrência sem fatura como paga.
+   *
+   * A elegibilidade vive no domain (`podeMarcarOcorrenciaPaga`); aqui fica só a
+   * escrita. Parcela COM fatura é recusada: quem a marca é o pagamento da
+   * fatura (RN-06), e furar isso deixaria uma fatura Aberta com parcela Paga
+   * dentro.
+   */
+  marcarPaga(parcelaId: number, dataPagamento: string): Parcela {
+    const parcela = this.buscarOuFalhar(parcelaId)
+    const permitido = podeMarcarOcorrenciaPaga(parcela)
+    if (!permitido.ok) {
+      throw new Error(
+        permitido.motivo === 'pertence-a-fatura'
+          ? `Parcela #${parcelaId} pertence a uma fatura; marque a fatura como paga.`
+          : `Parcela #${parcelaId} já está paga.`
+      )
+    }
+
+    this.db
+      .prepare(
+        `UPDATE parcela
+         SET status = 'Paga', data_pagamento = ?, updated_at = datetime('now')
+         WHERE id = ?`
+      )
+      .run(dataPagamento, parcelaId)
+
+    return this.buscarOuFalhar(parcelaId)
+  }
+
+  /**
+   * RF-DES-21 — devolve a ocorrência a Pendente.
+   *
+   * `data_pagamento` volta a NULL, e não fica como resíduo: parcela Pendente
+   * com data de pagamento seria um estado que nada mais no app produz, e que
+   * uma leitura futura teria de aprender a ignorar.
+   */
+  desmarcarPaga(parcelaId: number): Parcela {
+    const parcela = this.buscarOuFalhar(parcelaId)
+    const permitido = podeDesmarcarOcorrenciaPaga(parcela)
+    if (!permitido.ok) {
+      throw new Error(
+        permitido.motivo === 'pertence-a-fatura'
+          ? `Parcela #${parcelaId} pertence a uma fatura; reabra a fatura para desfazer o pagamento.`
+          : `Parcela #${parcelaId} já está pendente.`
+      )
+    }
+
+    this.db
+      .prepare(
+        `UPDATE parcela
+         SET status = 'Pendente', data_pagamento = NULL, updated_at = datetime('now')
+         WHERE id = ?`
+      )
+      .run(parcelaId)
+
+    return this.buscarOuFalhar(parcelaId)
   }
 }
