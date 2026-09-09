@@ -43,6 +43,7 @@ export type OcorrenciaRow = {
   data_referencia: string
   mes_referencia: string
   status: StatusParcela
+  fatura_id: number | null
   despesa_id: number
   descricao: string
   categoria_id: number
@@ -662,6 +663,7 @@ export class DespesaRepository implements Repository {
            p.valor_centavos    AS parcela_valor_centavos,
            p.data_referencia   AS data_referencia,
            p.status            AS status,
+           p.fatura_id         AS fatura_id,
            d.id                AS despesa_id,
            d.descricao         AS descricao,
            d.categoria_id      AS categoria_id,

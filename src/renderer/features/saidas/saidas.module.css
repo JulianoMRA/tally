@@ -86,9 +86,18 @@
   white-space: nowrap;
 }
 
+/* A largura é sugestão, não trava: sem `table-layout: fixed`, a coluna cresce
+   quando o selo "Paga" (RF-DES-21) entra ao lado do rótulo. É o que se quer —
+   o selo é exceção e só aparece em algumas linhas. */
 .colParcela {
   width: 96px;
   white-space: nowrap;
+}
+
+.parcelaComSelo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .parcelaRotulo {

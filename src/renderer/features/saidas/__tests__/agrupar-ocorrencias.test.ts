@@ -16,6 +16,7 @@ function ocorrencia(overrides: Partial<OcorrenciaDoMes> = {}): OcorrenciaDoMes {
     tipo: 'Unica',
     dataCompra: '2026-08-14',
     dataReferencia: '2026-08-01',
+    faturaId: 1,
     statusParcela: 'Pendente',
     ativa: true,
     nota: null,

@@ -37,6 +37,7 @@ import { formatBRL } from '../../lib/format-brl'
 import { formatarMesReferencia } from '../../lib/formatar-data'
 import { mensagemErro } from '../../lib/mensagem-erro'
 import { mesAtualReferencia } from '../../lib/mes-atual'
+import { hojeIsoLocal } from '@shared/datas-locais'
 import { useOrdenacao } from '../../lib/use-ordenacao'
 import { DespesaForm } from '../despesas/DespesaForm'
 import { EditarDespesaModal } from '../faturas/EditarDespesaModal'
@@ -214,10 +215,36 @@ export default function SaidasPage() {
     }
   }
 
+  /**
+   * RF-DES-21 — marcar/desmarcar a ocorrência do mês como paga.
+   *
+   * Só existe sem fatura: com fatura, quem marca é o pagamento dela (RN-06), e
+   * a ação nem aparece no menu. A data usada é hoje — a mesma escolha de
+   * "Marcar recebido" em Rendas, e pelo mesmo motivo: pedir a data num modal
+   * para o caso normal (paguei agora) cobra um passo de quase todo mundo.
+   */
+  async function alternarPagamento(o: OcorrenciaDoMes) {
+    const marcando = o.statusParcela !== 'Paga'
+    try {
+      if (marcando) {
+        await window.api.despesa.marcarOcorrenciaPaga({
+          parcelaId: o.parcelaId,
+          dataPagamento: hojeIsoLocal()
+        })
+      } else {
+        await window.api.despesa.desmarcarOcorrenciaPaga({ parcelaId: o.parcelaId })
+      }
+      toast.show(marcando ? 'Ocorrência marcada como paga.' : 'Pagamento desfeito.', 'success')
+      await recarregar()
+    } catch (e) {
+      toast.show(mensagemErro(e, 'Erro ao atualizar o pagamento.'), 'error')
+    }
+  }
+
   // Editar é a ação primária (fica visível); o resto entra no menu. Assinatura
   // cancelada não tem Editar nem Cancelar — só Duplicar, Nota/Tags e Excluir,
   // como antes.
-  function acoesDaLinha(d: DespesaComTags): AcaoLinha[] {
+  function acoesDaLinha(d: DespesaComTags, o: OcorrenciaDoMes): AcaoLinha[] {
     const ehAssinatura = d.tipo === 'Assinatura'
     const acoes: AcaoLinha[] = []
 
@@ -225,6 +252,13 @@ export default function SaidasPage() {
       if (d.ativa) acoes.push({ label: 'Editar', onClick: () => setEditandoAssinatura(d) })
     } else {
       acoes.push({ label: 'Editar', onClick: () => setEditandoDespesa(d) })
+    }
+
+    if (o.faturaId === null) {
+      acoes.push({
+        label: o.statusParcela === 'Paga' ? 'Desmarcar pagamento' : 'Marcar como paga',
+        onClick: () => alternarPagamento(o)
+      })
     }
 
     acoes.push({ label: 'Duplicar', onClick: () => duplicar(d) })
@@ -639,8 +673,14 @@ export default function SaidasPage() {
                               <CelulaDeCompra ocorrencia={o} />
                             </td>
                             <td className={styles.colParcela}>
-                              <span className={`${styles.parcelaRotulo} mono`}>
-                                {o.rotuloParcela}
+                              <span className={styles.parcelaComSelo}>
+                                <span className={`${styles.parcelaRotulo} mono`}>
+                                  {o.rotuloParcela}
+                                </span>
+                                {/* Só quando paga. Carimbar "Pendente" em toda
+                                    linha diria o padrão em voz alta e afogaria
+                                    a exceção, que é o que a leitura procura. */}
+                                {o.statusParcela === 'Paga' && <Badge variant="paid" />}
                               </span>
                             </td>
                             {/* Duas colunas de dinheiro numa só célula: o impacto
@@ -662,7 +702,10 @@ export default function SaidasPage() {
                             </td>
                             <td className={styles.colAcoes}>
                               {despesa && (
-                                <RowActions acoes={acoesDaLinha(despesa)} contexto={o.descricao} />
+                                <RowActions
+                                  acoes={acoesDaLinha(despesa, o)}
+                                  contexto={o.descricao}
+                                />
                               )}
                             </td>
                           </tr>

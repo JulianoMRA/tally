@@ -39,7 +39,9 @@ import type {
   ListarOcorrenciasInput,
   ExcluirDespesaInput,
   AtualizarDespesaInput,
-  DefinirNotaETagsInput
+  DefinirNotaETagsInput,
+  MarcarOcorrenciaPagaInput,
+  DesmarcarOcorrenciaPagaInput
 } from '@shared/ipc/despesa'
 import type {
   CriarRendaRecorrenteInput,
@@ -192,7 +194,11 @@ contextBridge.exposeInMainWorld('api', {
     atualizar: (input: AtualizarDespesaInput) =>
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.atualizar, input),
     definirNotaETags: (input: DefinirNotaETagsInput) =>
-      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.definirNotaETags, input)
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.definirNotaETags, input),
+    marcarOcorrenciaPaga: (input: MarcarOcorrenciaPagaInput) =>
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.marcarOcorrenciaPaga, input),
+    desmarcarOcorrenciaPaga: (input: DesmarcarOcorrenciaPagaInput) =>
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.desmarcarOcorrenciaPaga, input)
   },
   fatura: {
     listarPorCartao: (cartaoId: number) =>
