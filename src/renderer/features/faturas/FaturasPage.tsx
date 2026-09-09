@@ -35,10 +35,11 @@ export default function FaturasPage() {
   const [faturaId, setFaturaId] = useState<number | null>(pedido.faturaId)
   const [linkQuebrado, setLinkQuebrado] = useState(false)
 
-  const { cartoes, loading: loadingCartoes } = useCartoesAtivos()
+  const { cartoes, loading: loadingCartoes, error: erroCartoes } = useCartoesAtivos()
   const {
     grupos,
     loading: loadingGrupos,
+    erro: erroGrupos,
     refetch: refetchGrupos
   } = useFaturasDeTodosCartoes(cartoes)
 
@@ -85,7 +86,12 @@ export default function FaturasPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grupoEmFoco, mesAtual, deepLinkPendente, precisaResolver])
 
-  const { detalhe, loading: loadingDetalhe, refetch: refetchDetalhe } = useFaturaDetalhe(faturaId)
+  const {
+    detalhe,
+    loading: loadingDetalhe,
+    erro: erroDetalhe,
+    refetch: refetchDetalhe
+  } = useFaturaDetalhe(faturaId)
 
   // Mantém a URL em dia sem criar entrada de histórico.
   useEffect(() => {
@@ -128,6 +134,10 @@ export default function FaturasPage() {
     indiceAtual >= 0 && indiceAtual < ordenadas.length - 1 ? ordenadas[indiceAtual + 1] : undefined
 
   const carregando = loadingCartoes || loadingGrupos
+  // Falha na carga do trilho não pode cair no estado vazio: "Nenhum cartão
+  // cadastrado" afirma sobre os dados do usuário algo que não se sabe, e é
+  // justamente o oposto do que houve.
+  const erroDaPagina = erroCartoes ?? erroGrupos
 
   return (
     <PageContainer>
@@ -139,7 +149,9 @@ export default function FaturasPage() {
       <div className={styles.corpo}>
         {carregando && <p className={styles.empty}>Carregando…</p>}
 
-        {!carregando && grupos.length === 0 && (
+        {!carregando && erroDaPagina && <p className={styles.erro}>{erroDaPagina}</p>}
+
+        {!carregando && !erroDaPagina && grupos.length === 0 && (
           <EmptyState
             title="Nenhum cartão cadastrado"
             description="Cadastre um cartão para que as faturas comecem a ser geradas."
@@ -169,6 +181,10 @@ export default function FaturasPage() {
             )}
 
             {faturaId !== null && loadingDetalhe && <p className={styles.empty}>Carregando…</p>}
+
+            {faturaId !== null && !loadingDetalhe && erroDetalhe && (
+              <p className={styles.erro}>{erroDetalhe}</p>
+            )}
 
             {faturaId !== null && !loadingDetalhe && detalhe && grupoEmFoco && (
               <>
