@@ -40,11 +40,16 @@ if (TEMA !== 'claro' && TEMA !== 'escuro') {
   process.exit(1)
 }
 
+// Precisa acompanhar as rotas de `src/renderer/router.tsx`, como as listas de
+// `a11y.spec.ts` e `alinhamento-paginas.spec.ts`. Simulacao entrou na v1.12.0 e
+// aquelas duas foram atualizadas; esta ficou para tras e a tela nova passou
+// quatro releases fora da revisao visual.
 const ROTAS = [
   ['visao-mensal', '#/mensal'],
   ['faturas', '#/faturas'],
   ['saidas', '#/saidas'],
   ['rendas', '#/rendas'],
+  ['simulacao', '#/simulacao'],
   ['cartoes', '#/cartoes'],
   ['categorias', '#/categorias'],
   ['importar', '#/importar'],
@@ -100,11 +105,71 @@ async function redimensionar(largura, altura = 900) {
   await page.waitForTimeout(500)
 }
 
+/**
+ * Espera os graficos terminarem de se desenhar.
+ *
+ * O recharts anima a entrada da linha por `stroke-dasharray` (1500ms), e o
+ * `ir()` esperava 1000ms fixos — ou seja, TODA captura de grafico saia pela
+ * metade. Medido: em t=1000ms o dasharray e "531px, 878px" numa linha de 878px;
+ * em t=4000ms, "878px, 878px".
+ *
+ * Isso importa porque uma linha cortada no meio le como grafico quebrado — e o
+ * risco maior e o inverso: um grafico de fato quebrado ser descartado como "e
+ * so a animacao". Folha de revisao que mente em silencio e o pior defeito que
+ * ela pode ter.
+ *
+ * Mesmo principio do `data-print-pronto` da exportacao em PDF: esperar o
+ * marcador, nao dormir um numero. Rota sem grafico resolve na hora.
+ *
+ * O criterio e a ESTABILIDADE do dasharray, e nao "o comprimento desenhado
+ * chegou ao fim". A linha do Saldo tem `strokeDasharray="4 2"` fixo, e o
+ * recharts a anima gerando um padrao longo ("4px, 2px, 4px, 2px, ...") em vez
+ * de um unico segmento crescente: comparar o primeiro numero com o comprimento
+ * total nunca fecharia para ela. Esperar o desenho parar de mudar vale para as
+ * duas formas de animacao, e continuaria valendo se o recharts trocar a sua.
+ */
+async function esperarGraficos() {
+  const lerDasharrays = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('.recharts-line-curve')]
+        .map((c) => window.getComputedStyle(c).strokeDasharray)
+        .join('|')
+    )
+
+  let anterior = await lerDasharrays()
+  if (anterior === '') return // rota sem grafico
+
+  const limite = Date.now() + 8000
+  for (;;) {
+    await page.waitForTimeout(250)
+    const atual = await lerDasharrays()
+    if (atual === anterior) return
+    anterior = atual
+    if (Date.now() > limite) {
+      problemas.push('[graficos] a animacao nao estabilizou em 8s; a captura pode sair pela metade')
+      return
+    }
+  }
+}
+
 async function ir(hash) {
   await page.evaluate((h) => {
     window.location.hash = h
   }, hash)
   await page.waitForTimeout(1000)
+  await esperarGraficos()
+}
+
+/**
+ * A aba Analise nao e rota: e estado da Visao mensal. Sem este passo os dois
+ * graficos do app e o painel de orcamento nunca entram na folha — e foi
+ * exatamente nesse ponto cego que o eixo Y cortado sobreviveu ate set/2026.
+ */
+async function abrirAnalise() {
+  await ir('#/mensal')
+  await page.getByRole('tab', { name: /an[aá]lise/i }).first().click({ timeout: 5000 })
+  await page.waitForTimeout(600)
+  await esperarGraficos()
 }
 
 async function capturar(nome) {
@@ -277,6 +342,10 @@ for (const largura of LARGURAS) {
     await ir(hash)
     await capturar(`cheio-${largura}-${nome}`)
   }
+  // Nas tres larguras, e nao uma vez so: os graficos sao o conteudo mais
+  // sensivel a largura da tela inteira.
+  await abrirAnalise()
+  await capturar(`cheio-${largura}-visao-mensal-analise`)
 }
 
 console.log('estados sob interação:')
