@@ -68,4 +68,52 @@ test.describe('Saídas — nota e tags', () => {
       'Reembolsável pelo trabalho'
     )
   })
+  /**
+   * RF-DES-13 no cadastro. Antes disto, etiquetar exigia salvar a despesa,
+   * achar a linha, abrir o menu e só então o modal — quatro passos depois do
+   * momento em que a informação estava fresca.
+   */
+  test('grava nota e tags já no cadastro, sem passar pelo modal', async ({ app }) => {
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+
+    await criarCartao(page, 'Inter Cadastro E2E')
+    await criarCategoria(page, 'Casa Cadastro E2E')
+
+    await page.getByRole('link', { name: 'Saídas' }).click()
+    await abrirCadastroDeSaida(page)
+    const painel = page.getByRole('dialog', { name: 'Nova saída' })
+
+    await painel.getByLabel('Descrição').fill('Notebook Cadastro E2E')
+    await painel.getByLabel('Categoria').selectOption({ label: 'Casa Cadastro E2E' })
+    await painel.getByLabel('Cartão').selectOption({ label: 'Inter Cadastro E2E' })
+    await painel.getByLabel('Valor (R$)').fill('500,00')
+    await painel.getByLabel('Data da compra').fill('2026-06-03')
+
+    // Colapsado por padrão: os campos não existem antes do clique.
+    await expect(painel.getByLabel('Nota')).toHaveCount(0)
+    await painel.getByRole('button', { name: /nota e tags/i }).click()
+
+    await painel.getByLabel('Nota').fill('Reembolsável pelo trabalho')
+    await painel.getByLabel('Nova tag').fill('trabalho')
+    await painel.getByLabel('Nova tag').press('Enter')
+
+    // Enter dentro de um <form> submeteria. O painel tem de continuar aberto.
+    await expect(painel).toBeVisible()
+
+    await painel.getByLabel('Nova tag').fill('eletronicos')
+    await painel.getByLabel('Nova tag').press('Enter')
+    await painel.getByRole('button', { name: 'Registrar despesa' }).click()
+
+    // A linha já nasce etiquetada — nenhum passo extra.
+    const linha = page.getByRole('row').filter({ hasText: 'Notebook Cadastro E2E' })
+    await expect(linha.getByText('trabalho')).toBeVisible()
+    await expect(linha.getByText('eletronicos')).toBeVisible()
+
+    // E a nota chegou ao banco: o modal de edição a encontra.
+    await acionarNoMenuDaLinha(page, linha, 'Nota/Tags')
+    await expect(page.getByRole('dialog', { name: 'Nota e tags' }).getByLabel('Nota')).toHaveValue(
+      'Reembolsável pelo trabalho'
+    )
+  })
 })

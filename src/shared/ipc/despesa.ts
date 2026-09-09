@@ -289,6 +289,12 @@ export const definirNotaETagsInputSchema = z.object({
 export type DefinirNotaETagsInput = z.infer<typeof definirNotaETagsInputSchema>
 
 /**
+ * Nota e tags sem o alvo — o que o formulário de cadastro carrega antes de a
+ * despesa existir e, portanto, antes de haver um `despesaId`.
+ */
+export type NotaETags = Omit<DefinirNotaETagsInput, 'despesaId'>
+
+/**
  * RF-DES-21 — marcar/desmarcar ocorrência sem fatura.
  *
  * `dataPagamento` é obrigatória ao marcar e ausente ao desmarcar: o inverso de

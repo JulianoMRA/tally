@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { createContext, useContext, useState } from 'react'
 import { z } from 'zod'
 import {
   useForm,
@@ -21,7 +21,8 @@ import {
   type DespesaEmAndamentoInput,
   type DespesaAssinaturaCreditoInput,
   type DespesaAssinaturaForaCartaoInput,
-  type DespesaUnicaForaCartaoInput
+  type DespesaUnicaForaCartaoInput,
+  type NotaETags
 } from '@shared/ipc/despesa'
 import type { Cartao } from '@domain/entities/cartao'
 import type { Categoria } from '@domain/entities/categoria'
@@ -40,6 +41,8 @@ import {
   type ModoValorParcela
 } from './parcela-valor'
 import { PreviaDestino } from './PreviaDestino'
+import { EditorNotaETags } from '../saidas/EditorNotaETags'
+import { pluralizar } from '../../lib/pluralizar'
 import styles from './despesas.module.css'
 import { parseCentavos, valorReaisSchema } from '../../lib/dinheiro'
 
@@ -108,15 +111,96 @@ type Props = {
   cartoes: Cartao[]
   categorias: Categoria[]
   preenchimento?: PreenchimentoDespesa
-  onSalvarUnica: (input: DespesaUnicaCreditoInput) => Promise<void>
-  onSalvarUnicaForaCartao: (input: DespesaUnicaForaCartaoInput) => Promise<void>
-  onSalvarParcelada: (input: DespesaParceladaCreditoInput) => Promise<void>
-  onSalvarEmAndamento: (input: DespesaEmAndamentoInput) => Promise<void>
-  onSalvarAssinatura: (input: DespesaAssinaturaCreditoInput) => Promise<void>
-  onSalvarAssinaturaForaCartao: (input: DespesaAssinaturaForaCartaoInput) => Promise<void>
+  // O segundo argumento carrega a nota e as tags digitadas no bloco colapsado,
+  // que o DespesaForm injeta: os subformularios nao as conhecem.
+  onSalvarUnica: (input: DespesaUnicaCreditoInput, meta: NotaETags) => Promise<void>
+  onSalvarUnicaForaCartao: (input: DespesaUnicaForaCartaoInput, meta: NotaETags) => Promise<void>
+  onSalvarParcelada: (input: DespesaParceladaCreditoInput, meta: NotaETags) => Promise<void>
+  onSalvarEmAndamento: (input: DespesaEmAndamentoInput, meta: NotaETags) => Promise<void>
+  onSalvarAssinatura: (input: DespesaAssinaturaCreditoInput, meta: NotaETags) => Promise<void>
+  onSalvarAssinaturaForaCartao: (
+    input: DespesaAssinaturaForaCartaoInput,
+    meta: NotaETags
+  ) => Promise<void>
 }
 
 type FormaPagamento = 'Credito' | 'Pix' | 'Debito' | 'Dinheiro'
+
+/**
+ * A assinatura que os subformularios enxergam: sem o segundo argumento.
+ *
+ * Quem injeta nota e tags e o `DespesaForm`, via `comNotaETags`. Derivar daqui
+ * em vez de repetir o tipo de entrada mantem uma fonte so — mudar o contrato de
+ * criacao continua propagando sozinho para os seis.
+ */
+type SemMeta<F> = F extends (input: infer I, meta: NotaETags) => Promise<void>
+  ? (input: I) => Promise<void>
+  : never
+
+/**
+ * Nota e tags no cadastro (RF-DES-13).
+ *
+ * Vive em contexto, e não em prop, por causa da forma desta tela: são seis
+ * subformulários irmãos, cada um com o seu `<form>` e o seu botão, e o bloco
+ * precisa aparecer DENTRO de cada um — logo acima do botão — para não ficar
+ * depois dele no documento. Passar `nota`/`tags`/`onChange` por prop custaria
+ * quatro entradas a mais em seis listas de props que já são longas.
+ *
+ * O estado ser único, e não por aba, é decisão: trocar de aba não descarta o
+ * que já foi digitado aqui. E o `key={dupSeq}` do chamador remonta o formulário
+ * a cada abertura do painel, então não sobra resíduo entre um cadastro e outro.
+ */
+type ContextoNotaETags = {
+  nota: string
+  tags: string[]
+  setNota: (v: string) => void
+  setTags: (v: string[]) => void
+}
+
+const NotaETagsContext = createContext<ContextoNotaETags | null>(null)
+
+/**
+ * Colapsado por padrão. Nota e tags são metadados opcionais que a maioria dos
+ * lançamentos não usa, e abrir os dois campos em todo cadastro cobraria altura
+ * de quem só quer registrar a compra. O resumo no rótulo evita ter de expandir
+ * para lembrar o que já foi preenchido.
+ */
+function BlocoNotaETags() {
+  const ctx = useContext(NotaETagsContext)
+  const [aberto, setAberto] = useState(false)
+  if (!ctx) return null
+
+  const preenchidos: string[] = []
+  if (ctx.nota.trim().length > 0) preenchidos.push('nota')
+  if (ctx.tags.length > 0) {
+    preenchidos.push(`${ctx.tags.length} ${pluralizar('tag', ctx.tags.length)}`)
+  }
+  const resumo = preenchidos.length > 0 ? ` · ${preenchidos.join(', ')}` : ''
+
+  return (
+    <div className={styles.notaETagsBloco}>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        aria-expanded={aberto}
+        onClick={() => setAberto((v) => !v)}
+      >
+        {aberto ? 'Ocultar' : 'Adicionar'} nota e tags{resumo}
+      </Button>
+
+      {aberto && (
+        <EditorNotaETags
+          nota={ctx.nota}
+          tags={ctx.tags}
+          onNotaChange={ctx.setNota}
+          onTagsChange={ctx.setTags}
+          idPrefixo="cadastro-despesa"
+        />
+      )}
+    </div>
+  )
+}
 
 function CamposComuns<T extends FieldValues>({
   register,
@@ -185,7 +269,7 @@ function FormUnicaCredito({
 }: {
   cartoes: Cartao[]
   categorias: Categoria[]
-  onSalvar: Props['onSalvarUnica']
+  onSalvar: SemMeta<Props['onSalvarUnica']>
   defaultValues?: Partial<UniqueValues>
 }) {
   const {
@@ -233,6 +317,8 @@ function FormUnicaCredito({
         dataCompra={watch('dataCompra')}
       />
 
+      <BlocoNotaETags />
+
       <div className={styles.formActions}>
         <Button type="submit" variant="primary" disabled={isSubmitting}>
           {isSubmitting ? 'Registrando…' : 'Registrar despesa'}
@@ -250,7 +336,7 @@ function FormUnicaForaCartao({
 }: {
   categorias: Categoria[]
   formaPagamento: 'Pix' | 'Debito' | 'Dinheiro'
-  onSalvar: Props['onSalvarUnicaForaCartao']
+  onSalvar: SemMeta<Props['onSalvarUnicaForaCartao']>
   defaultValues?: Partial<UnicaForaCartaoValues>
 }) {
   const {
@@ -307,6 +393,8 @@ function FormUnicaForaCartao({
         </Field>
       </div>
 
+      <BlocoNotaETags />
+
       <div className={styles.formActions}>
         <Button type="submit" variant="primary" disabled={isSubmitting}>
           {isSubmitting ? 'Registrando…' : `Registrar ${formaPagamento.toLowerCase()}`}
@@ -327,8 +415,8 @@ function FormUnica({
 }: {
   cartoes: Cartao[]
   categorias: Categoria[]
-  onSalvarCredito: Props['onSalvarUnica']
-  onSalvarForaCartao: Props['onSalvarUnicaForaCartao']
+  onSalvarCredito: SemMeta<Props['onSalvarUnica']>
+  onSalvarForaCartao: SemMeta<Props['onSalvarUnicaForaCartao']>
   formaInicial?: FormaPagamento
   defaultsCredito?: Partial<UniqueValues>
   defaultsForaCartao?: Partial<UnicaForaCartaoValues>
@@ -382,7 +470,7 @@ function FormParcelada({
 }: {
   cartoes: Cartao[]
   categorias: Categoria[]
-  onSalvar: Props['onSalvarParcelada']
+  onSalvar: SemMeta<Props['onSalvarParcelada']>
   defaultValues?: Partial<ParceladaValues>
 }) {
   const {
@@ -465,6 +553,8 @@ function FormParcelada({
         sujeito="A 1ª parcela"
       />
 
+      <BlocoNotaETags />
+
       <div className={styles.formActions}>
         <Button type="submit" variant="primary" disabled={isSubmitting}>
           {isSubmitting ? 'Registrando…' : 'Registrar parcelada'}
@@ -481,7 +571,7 @@ function FormEmAndamento({
 }: {
   cartoes: Cartao[]
   categorias: Categoria[]
-  onSalvar: Props['onSalvarEmAndamento']
+  onSalvar: SemMeta<Props['onSalvarEmAndamento']>
 }) {
   const {
     register,
@@ -549,6 +639,8 @@ function FormEmAndamento({
         </Field>
       </div>
 
+      <BlocoNotaETags />
+
       <div className={styles.formActions}>
         <Button type="submit" variant="primary" disabled={isSubmitting}>
           {isSubmitting ? 'Registrando…' : 'Registrar em andamento'}
@@ -566,7 +658,7 @@ function FormAssinatura({
 }: {
   cartoes: Cartao[]
   categorias: Categoria[]
-  onSalvar: Props['onSalvarAssinatura']
+  onSalvar: SemMeta<Props['onSalvarAssinatura']>
   defaultValues?: Partial<AssinaturaValues>
 }) {
   const {
@@ -619,6 +711,8 @@ function FormAssinatura({
         sujeito="A 1ª mensalidade"
       />
 
+      <BlocoNotaETags />
+
       <div className={styles.formActions}>
         <Button type="submit" variant="primary" disabled={isSubmitting}>
           {isSubmitting ? 'Registrando…' : 'Registrar assinatura'}
@@ -648,7 +742,7 @@ function FormAssinaturaForaCartao({
 }: {
   categorias: Categoria[]
   formaPagamento: 'Pix' | 'Debito' | 'Dinheiro'
-  onSalvar: Props['onSalvarAssinaturaForaCartao']
+  onSalvar: SemMeta<Props['onSalvarAssinaturaForaCartao']>
 }) {
   const [duracao, setDuracao] = useState<'sempre' | 'ate'>('sempre')
   const {
@@ -734,6 +828,8 @@ function FormAssinaturaForaCartao({
           : 'A última ocorrência é a que cair até a data limite, inclusive.'}
       </p>
 
+      <BlocoNotaETags />
+
       <div className={styles.formActions}>
         <Button type="submit" variant="primary" disabled={isSubmitting}>
           {isSubmitting ? 'Registrando…' : 'Registrar recorrente'}
@@ -757,8 +853,8 @@ function AbaAssinatura({
 }: {
   cartoes: Cartao[]
   categorias: Categoria[]
-  onSalvarCredito: Props['onSalvarAssinatura']
-  onSalvarForaCartao: Props['onSalvarAssinaturaForaCartao']
+  onSalvarCredito: SemMeta<Props['onSalvarAssinatura']>
+  onSalvarForaCartao: SemMeta<Props['onSalvarAssinaturaForaCartao']>
   defaultsCredito?: Partial<AssinaturaValues>
 }) {
   const [forma, setForma] = useState<FormaPagamento>('Credito')
@@ -814,6 +910,20 @@ export function DespesaForm({
   onSalvarAssinaturaForaCartao
 }: Props) {
   const [tipo, setTipo] = useState<TipoDespesa>(preenchimento?.tipo ?? 'unica')
+  const [nota, setNota] = useState('')
+  const [tags, setTags] = useState<string[]>([])
+
+  /**
+   * Fecha sobre a nota e as tags atuais e injeta como segundo argumento.
+   *
+   * Os seis subformulários chamam `onSalvar(input)` e não conhecem os
+   * metadados — quem os conhece é este componente, que hospeda o estado. A
+   * nota vira `null` quando é só espaço em branco, que é o mesmo tratamento do
+   * modal de edição.
+   */
+  function comNotaETags<I>(salvar: (input: I, meta: NotaETags) => Promise<void>) {
+    return (input: I) => salvar(input, { nota: nota.trim().length > 0 ? nota : null, tags })
+  }
 
   const tipoLabels: readonly OpcaoSegmentada<TipoDespesa>[] = [
     { valor: 'unica', rotulo: 'Única' },
@@ -827,82 +937,88 @@ export function DespesaForm({
   const preAssinatura = preenchimento?.tipo === 'assinatura' ? preenchimento : undefined
 
   return (
-    <div className={styles.form}>
-      <SegmentedControl
-        opcoes={tipoLabels}
-        valor={tipo}
-        onChange={setTipo}
-        label="Tipo de despesa"
-        size="md"
-      />
+    <NotaETagsContext.Provider value={{ nota, tags, setNota, setTags }}>
+      <div className={styles.form}>
+        <SegmentedControl
+          opcoes={tipoLabels}
+          valor={tipo}
+          onChange={setTipo}
+          label="Tipo de despesa"
+          size="md"
+        />
 
-      {tipo === 'unica' && (
-        <FormUnica
-          cartoes={cartoes}
-          categorias={categorias}
-          onSalvarCredito={onSalvarUnica}
-          onSalvarForaCartao={onSalvarUnicaForaCartao}
-          formaInicial={preUnica?.forma ?? 'Credito'}
-          defaultsCredito={
-            preUnica && preUnica.forma === 'Credito'
-              ? {
-                  descricao: preUnica.descricao,
-                  categoriaId: preUnica.categoriaId,
-                  cartaoId: cartaoIdDefault(preUnica.cartaoId),
-                  valorReais: preUnica.valorReais
-                }
-              : undefined
-          }
-          defaultsForaCartao={
-            preUnica && preUnica.forma !== 'Credito'
-              ? {
-                  descricao: preUnica.descricao,
-                  categoriaId: preUnica.categoriaId,
-                  valorReais: preUnica.valorReais
-                }
-              : undefined
-          }
-        />
-      )}
-      {tipo === 'parcelada' && (
-        <FormParcelada
-          cartoes={cartoes}
-          categorias={categorias}
-          onSalvar={onSalvarParcelada}
-          defaultValues={
-            preParcelada
-              ? {
-                  descricao: preParcelada.descricao,
-                  categoriaId: preParcelada.categoriaId,
-                  cartaoId: cartaoIdDefault(preParcelada.cartaoId),
-                  valorReais: preParcelada.valorReais,
-                  totalParcelas: preParcelada.totalParcelas ?? undefined
-                }
-              : undefined
-          }
-        />
-      )}
-      {tipo === 'em-andamento' && (
-        <FormEmAndamento cartoes={cartoes} categorias={categorias} onSalvar={onSalvarEmAndamento} />
-      )}
-      {tipo === 'assinatura' && (
-        <AbaAssinatura
-          cartoes={cartoes}
-          categorias={categorias}
-          onSalvarCredito={onSalvarAssinatura}
-          onSalvarForaCartao={onSalvarAssinaturaForaCartao}
-          defaultsCredito={
-            preAssinatura
-              ? {
-                  descricao: preAssinatura.descricao,
-                  categoriaId: preAssinatura.categoriaId,
-                  cartaoId: cartaoIdDefault(preAssinatura.cartaoId),
-                  valorReais: preAssinatura.valorReais
-                }
-              : undefined
-          }
-        />
-      )}
-    </div>
+        {tipo === 'unica' && (
+          <FormUnica
+            cartoes={cartoes}
+            categorias={categorias}
+            onSalvarCredito={comNotaETags(onSalvarUnica)}
+            onSalvarForaCartao={comNotaETags(onSalvarUnicaForaCartao)}
+            formaInicial={preUnica?.forma ?? 'Credito'}
+            defaultsCredito={
+              preUnica && preUnica.forma === 'Credito'
+                ? {
+                    descricao: preUnica.descricao,
+                    categoriaId: preUnica.categoriaId,
+                    cartaoId: cartaoIdDefault(preUnica.cartaoId),
+                    valorReais: preUnica.valorReais
+                  }
+                : undefined
+            }
+            defaultsForaCartao={
+              preUnica && preUnica.forma !== 'Credito'
+                ? {
+                    descricao: preUnica.descricao,
+                    categoriaId: preUnica.categoriaId,
+                    valorReais: preUnica.valorReais
+                  }
+                : undefined
+            }
+          />
+        )}
+        {tipo === 'parcelada' && (
+          <FormParcelada
+            cartoes={cartoes}
+            categorias={categorias}
+            onSalvar={comNotaETags(onSalvarParcelada)}
+            defaultValues={
+              preParcelada
+                ? {
+                    descricao: preParcelada.descricao,
+                    categoriaId: preParcelada.categoriaId,
+                    cartaoId: cartaoIdDefault(preParcelada.cartaoId),
+                    valorReais: preParcelada.valorReais,
+                    totalParcelas: preParcelada.totalParcelas ?? undefined
+                  }
+                : undefined
+            }
+          />
+        )}
+        {tipo === 'em-andamento' && (
+          <FormEmAndamento
+            cartoes={cartoes}
+            categorias={categorias}
+            onSalvar={comNotaETags(onSalvarEmAndamento)}
+          />
+        )}
+        {tipo === 'assinatura' && (
+          <AbaAssinatura
+            cartoes={cartoes}
+            categorias={categorias}
+            onSalvarCredito={comNotaETags(onSalvarAssinatura)}
+            onSalvarForaCartao={comNotaETags(onSalvarAssinaturaForaCartao)}
+            defaultsCredito={
+              preAssinatura
+                ? {
+                    descricao: preAssinatura.descricao,
+                    categoriaId: preAssinatura.categoriaId,
+                    cartaoId: cartaoIdDefault(preAssinatura.cartaoId),
+                    valorReais: preAssinatura.valorReais
+                  }
+                : undefined
+            }
+          />
+        )}
+      </div>
+    </NotaETagsContext.Provider>
   )
 }
