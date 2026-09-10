@@ -6,10 +6,30 @@ import { CONFIG_DEFAULTS, type Config } from '@shared/ipc/config'
 import { ToastProvider } from '../../../components/ui'
 import AjustesPage from '../AjustesPage'
 
+/**
+ * `config.get` do mock resolve com ATRASO, de propósito.
+ *
+ * O `useForm` desta tela recebe `defaultValues` assíncrono: os inputs nascem
+ * vazios e só são preenchidos quando o `get` resolve. Com um mock que resolve
+ * no microtask seguinte, a corrida quase nunca aparece — os testes passavam por
+ * sorte de escalonamento, e só ficavam vermelhos sob carga real.
+ *
+ * Com o atraso, a ordem passa a ser exercitada em toda execução: quem interage
+ * com um campo sem esperar o VALOR chegar digita algo que o preenchimento
+ * assíncrono vai sobrescrever, e o teste acusa. É o mesmo princípio de esperar
+ * o marcador em vez de dormir um número — só que aqui o atraso está do lado do
+ * dublê, para tornar a corrida determinística em vez de rara.
+ */
+const ATRASO_CARGA_MS = 20
+
 function instalarApiMock(configInicial: Config = CONFIG_DEFAULTS) {
   const api = {
     config: {
-      get: vi.fn().mockResolvedValue(configInicial),
+      get: vi
+        .fn()
+        .mockImplementation(
+          () => new Promise<Config>((r) => setTimeout(() => r(configInicial), ATRASO_CARGA_MS))
+        ),
       set: vi.fn().mockImplementation((c: Config) => Promise.resolve(c)),
       escolherPastaBackup: vi.fn(),
       listarBackups: vi.fn().mockResolvedValue([]),
@@ -29,6 +49,21 @@ function renderPagina() {
   )
 }
 
+/**
+ * Espera o campo existir **e estar preenchido**.
+ *
+ * `findByLabelText` sozinho espera só o ELEMENTO, que existe desde o primeiro
+ * render — interagir aí digita num campo que o preenchimento assíncrono ainda
+ * vai sobrescrever. Todo teste que mexe num campo desta tela passa por aqui.
+ */
+async function campoCarregado(rotulo: string, valorEsperado: string): Promise<HTMLInputElement> {
+  const campo = (await screen.findByLabelText(rotulo)) as HTMLInputElement
+  await waitFor(() => expect(campo.value).toBe(valorEsperado))
+  return campo
+}
+
+const RETENCAO = 'Quantidade de backups mantidos'
+
 describe('AjustesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -40,13 +75,7 @@ describe('AjustesPage', () => {
     instalarApiMock({ ...CONFIG_DEFAULTS, retencaoBackups: 25 })
     renderPagina()
 
-    // `waitFor` no VALOR, e nao so no elemento: o `useForm` desta tela recebe
-    // `defaultValues` assincrono, entao os inputs nascem vazios no primeiro
-    // render e so sao preenchidos quando o `config.get()` resolve. O
-    // `findByLabelText` espera o elemento, que existe desde o inicio — sob
-    // carga a assercao chegava antes do preenchimento e lia string vazia.
-    const retencao = await screen.findByLabelText('Quantidade de backups mantidos')
-    await waitFor(() => expect((retencao as HTMLInputElement).value).toBe('25'))
+    await campoCarregado(RETENCAO, '25')
     expect((screen.getByLabelText('Pasta de backups') as HTMLInputElement).value).toContain(
       'Padrão'
     )
@@ -57,7 +86,7 @@ describe('AjustesPage', () => {
     const user = userEvent.setup()
     renderPagina()
 
-    const retencao = await screen.findByLabelText('Quantidade de backups mantidos')
+    const retencao = await campoCarregado(RETENCAO, '10')
     await user.clear(retencao)
     await user.type(retencao, '30')
     await user.click(screen.getByLabelText(/Fazer backup ao sair/))
@@ -77,7 +106,7 @@ describe('AjustesPage', () => {
     const user = userEvent.setup()
     renderPagina()
 
-    await screen.findByLabelText('Quantidade de backups mantidos')
+    await campoCarregado(RETENCAO, '10')
     await user.click(screen.getByRole('button', { name: 'Salvar ajustes' }))
 
     expect(await screen.findByText('Disco cheio')).toBeTruthy()
@@ -88,7 +117,7 @@ describe('AjustesPage', () => {
     const user = userEvent.setup()
     renderPagina()
 
-    const retencao = await screen.findByLabelText('Quantidade de backups mantidos')
+    const retencao = await campoCarregado(RETENCAO, '10')
     await user.clear(retencao)
     await user.type(retencao, '0')
     await user.click(screen.getByRole('button', { name: 'Salvar ajustes' }))
@@ -103,7 +132,9 @@ describe('AjustesPage', () => {
     instalarApiMock()
     renderPagina()
 
-    await screen.findByLabelText('Quantidade de backups mantidos')
+    // Esperar o VALOR, e não só o campo, é o que dá sentido à asserção: com o
+    // formulário ainda vazio "não há alterações" seria verdade por vacuidade.
+    await campoCarregado(RETENCAO, '10')
 
     expect(screen.queryByText('Alterações não salvas')).toBeNull()
   })
@@ -113,7 +144,7 @@ describe('AjustesPage', () => {
     const user = userEvent.setup()
     renderPagina()
 
-    const retencao = await screen.findByLabelText('Quantidade de backups mantidos')
+    const retencao = await campoCarregado(RETENCAO, '10')
     await user.clear(retencao)
     await user.type(retencao, '30')
 
@@ -131,7 +162,9 @@ describe('AjustesPage', () => {
     const user = userEvent.setup()
     renderPagina()
 
-    await screen.findByLabelText('Quantidade de backups mantidos')
+    // Sem esperar a carga, o `reset` dos defaultValues chegaria DEPOIS do
+    // clique e devolveria a pasta padrão por cima do caminho escolhido.
+    await campoCarregado(RETENCAO, '10')
     await user.click(screen.getByRole('button', { name: 'Escolher pasta…' }))
 
     const pasta = (await screen.findByLabelText('Pasta de backups')) as HTMLInputElement
