@@ -43,7 +43,7 @@ import { useOrdenacao } from '../../lib/use-ordenacao'
 import { DespesaForm } from '../despesas/DespesaForm'
 import { EditarDespesaModal } from '../faturas/EditarDespesaModal'
 import { EditarAssinaturaModal } from '../assinaturas/EditarAssinaturaModal'
-import { agruparSeAplicavel, descreverDataDaOcorrencia } from './descrever-data-da-ocorrencia'
+import { descreverDataDaOcorrencia } from './descrever-data-da-ocorrencia'
 import { agruparOcorrencias } from './agrupar-ocorrencias'
 import { filtrarPorDescricao } from './filtrar-saidas'
 import { montarPreenchimentoDespesa, type PreenchimentoDespesa } from './montar-preenchimento'
@@ -193,7 +193,7 @@ export default function SaidasPage() {
 
   // Duplicar abre o painel já preenchido. Antes rolava a página até o topo para
   // revelar o formulário fixo — com o painel, o formulário vem até o usuário.
-  function duplicar(despesa: Despesa) {
+  function duplicar(despesa: DespesaComTags) {
     setPreenchimento(montarPreenchimentoDespesa(despesa))
     setDupSeq((n) => n + 1)
     setCadastroAberto(true)
@@ -285,11 +285,23 @@ export default function SaidasPage() {
     'desc'
   )
 
-  // Ordenar por Compra achata os grupos. Enquanto o agrupamento por cartão
-  // vale, a ordenação age só DENTRO de cada grupo, e "o mês inteiro em ordem
-  // cronológica" não existe. Sair de Compra devolve o agrupamento e os
-  // subtotais — sem a volta, o subtotal por cartão seria de mão única.
-  const agrupado = agruparSeAplicavel(sortBy)
+  /**
+   * O agrupamento por origem virou controle próprio, ligado por padrão.
+   *
+   * Antes ele era função da ordenação: ordenar por Compra achatava os grupos.
+   * Cada metade se justificava sozinha — "ordenar por Compra é o pedido
+   * explícito pela leitura cronológica" e "a tela abre por Compra, decrescente"
+   * —, mas juntas produziam algo que ninguém escolheu: **a tela abria sem o
+   * agrupamento**, e a seção por cartão com subtotal, que é o que faz o número
+   * bater com o total da fatura (RF-DES-14), só aparecia depois de clicar em
+   * outro cabeçalho.
+   *
+   * Separar as duas coisas resolve nos dois sentidos: o agrupamento fica
+   * visível na abertura, e a leitura cronológica achatada continua alcançável —
+   * agora por um controle que a nomeia, em vez de por um efeito colateral de
+   * ordenar. A ordenação segue agindo dentro de cada grupo quando agrupado.
+   */
+  const [agrupado, setAgrupado] = useState(true)
 
   const grupos = useMemo(
     () =>
@@ -620,6 +632,16 @@ export default function SaidasPage() {
                 aria-label="Buscar saídas"
               />
             </div>
+            {/* Ao lado dos outros filtros porque é da mesma família: muda como
+                a lista se apresenta, não o que ela contém. */}
+            <label className={styles.agruparToggle}>
+              <input
+                type="checkbox"
+                checked={agrupado}
+                onChange={(e) => setAgrupado(e.target.checked)}
+              />
+              Agrupar por origem
+            </label>
           </div>
 
           {loading ? (

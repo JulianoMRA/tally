@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { OcorrenciaDoMes } from '@shared/ipc/despesa'
-import { descreverDataDaOcorrencia, agruparSeAplicavel } from '../descrever-data-da-ocorrencia'
+import { descreverDataDaOcorrencia } from '../descrever-data-da-ocorrencia'
 
 function ocorrencia(overrides: Partial<OcorrenciaDoMes> = {}): OcorrenciaDoMes {
   return {
@@ -74,26 +74,5 @@ describe('descreverDataDaOcorrencia', () => {
 
     expect(d.texto).toBe('—')
     expect(d.apoio).toBe(true)
-  })
-})
-
-describe('agruparSeAplicavel', () => {
-  // O agrupamento por cartão existe para o subtotal reconciliar com o total da
-  // fatura (decisão da F4). Mas ele impede "o mês inteiro em ordem
-  // cronológica": ordenar por data só valia DENTRO de cada grupo.
-  it('ordenar por compra achata os grupos', () => {
-    expect(agruparSeAplicavel('compra')).toBe(false)
-  })
-
-  it('as demais ordenações mantêm o agrupamento por cartão', () => {
-    expect(agruparSeAplicavel('valor')).toBe(true)
-    expect(agruparSeAplicavel('descricao')).toBe(true)
-  })
-
-  // Guard da ida e volta: o agrupamento tem que VOLTAR ao sair de "compra",
-  // senão o subtotal por cartão vira uma função de mão única.
-  it('voltar de compra para valor devolve o agrupamento', () => {
-    expect(agruparSeAplicavel('compra')).toBe(false)
-    expect(agruparSeAplicavel('valor')).toBe(true)
   })
 })

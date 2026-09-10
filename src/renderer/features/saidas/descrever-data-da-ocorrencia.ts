@@ -36,19 +36,3 @@ export function descreverDataDaOcorrencia(ocorrencia: OcorrenciaDoMes): DataDaOc
 
   return { texto: formatarDataIso(ocorrencia.dataCompra), apoio: false }
 }
-
-/**
- * Se a lista deve agrupar por cartão, dada a coluna de ordenação ativa.
- *
- * Os dois recortes brigam: o agrupamento por origem faz o subtotal reconciliar
- * com o total da fatura (decisão da F4, e é o padrão da tela), mas enquanto ele
- * vale a ordenação só age DENTRO de cada grupo — "o mês inteiro em ordem
- * cronológica" simplesmente não existia.
- *
- * Ordenar por Compra é o pedido explícito por essa leitura, então ela achata os
- * grupos. Qualquer outra ordenação devolve o agrupamento: sem a volta, o
- * subtotal por cartão viraria uma função de mão única.
- */
-export function agruparSeAplicavel(sortBy: string): boolean {
-  return sortBy !== 'compra'
-}

@@ -73,7 +73,16 @@ test.describe('Saídas — coluna Compra', () => {
     await expect(compra).toHaveAttribute('aria-sort', 'ascending')
   })
 
-  test('ordenar por Compra achata os grupos, e sair dela devolve o agrupamento', async ({
+  /**
+   * O agrupamento por origem deixou de ser efeito colateral da ordenação e
+   * virou controle próprio, ligado por padrão.
+   *
+   * Antes, "a tela abre por Compra" e "ordenar por Compra achata os grupos"
+   * — cada uma defensável sozinha — produziam juntas algo que ninguém
+   * escolheu: a tela abria SEM o agrupamento, e a seção por cartão com
+   * subtotal só aparecia depois de clicar em outro cabeçalho.
+   */
+  test('abre agrupada por origem, e o agrupamento é alternável sem mexer na ordenação', async ({
     app
   }) => {
     const page = await app.firstWindow()
@@ -81,25 +90,29 @@ test.describe('Saídas — coluna Compra', () => {
     await semearMes(page)
 
     const cabecalhoDoCartao = page.getByRole('cell', { name: /Inter Data E2E/ })
+    const alternar = page.getByLabel('Agrupar por origem')
 
-    // Ordenado por Compra: bloco único, sem cabeçalho de seção por cartão.
-    await expect(cabecalhoDoCartao).toHaveCount(0)
-
-    // Qualquer outra ordenação devolve o agrupamento e o subtotal — sem a
-    // volta, o subtotal por cartão seria uma função de mão única.
-    await page
-      .getByRole('columnheader', { name: /Neste mês/ })
-      .getByRole('button')
-      .click()
+    // Na abertura: agrupado, sem precisar de clique nenhum.
+    await expect(alternar).toBeChecked()
     await expect(cabecalhoDoCartao).toBeVisible()
 
+    // Ordenar NÃO mexe mais no agrupamento — a ordenação age dentro dos grupos.
     await page
       .getByRole('columnheader', { name: /Compra/ })
       .getByRole('button')
       .click()
-    await expect(cabecalhoDoCartao).toHaveCount(0)
-  })
+    await expect(cabecalhoDoCartao).toBeVisible()
+    await expect(alternar).toBeChecked()
 
+    // A leitura cronológica achatada continua alcançável, agora por um controle
+    // que a nomeia.
+    await alternar.uncheck()
+    await expect(cabecalhoDoCartao).toHaveCount(0)
+
+    // E volta: sem a ida e volta, o subtotal por cartão seria de mão única.
+    await alternar.check()
+    await expect(cabecalhoDoCartao).toBeVisible()
+  })
   // A coluna Tipo saiu: o rótulo da parcela ("à vista", "1/12", "mensal") já
   // diz o mesmo, e o agrupamento por cartão diz o resto.
   test('a coluna Tipo saiu sem levar a informação junto', async ({ app }) => {

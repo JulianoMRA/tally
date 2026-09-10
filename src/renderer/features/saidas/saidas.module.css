@@ -302,3 +302,15 @@
   color: var(--ink-2);
   line-height: 1.5;
 }
+
+/* Alterna o agrupamento por origem (RF-DES-14). Vive na faixa de filtros
+   porque muda como a lista se apresenta, não o que ela contém. */
+.agruparToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-2);
+  color: var(--ink-2);
+  white-space: nowrap;
+  cursor: pointer;
+}
