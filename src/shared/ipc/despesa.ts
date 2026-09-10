@@ -322,6 +322,39 @@ export const listarOcorrenciasInputSchema = z.object({
 
 export type ListarOcorrenciasInput = z.infer<typeof listarOcorrenciasInputSchema>
 
+const mesSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Mês deve estar no formato YYYY-MM')
+
+/**
+ * RF-DES-22 — intervalo fechado de meses para a busca.
+ *
+ * O teto de 120 meses existe pelo mesmo motivo do teto de linhas da importação:
+ * o resultado é peneirado em memória no renderer, e uma janela sem limite
+ * transformaria um engano de digitação (`0026-01`) numa varredura do banco
+ * inteiro. Dez anos é o horizonte que a RNF-04 já promete atender.
+ */
+export const buscarOcorrenciasInputSchema = z
+  .object({
+    mesInicio: mesSchema,
+    mesFim: mesSchema
+  })
+  .refine((v) => v.mesInicio <= v.mesFim, {
+    message: 'O mês inicial não pode ser posterior ao final',
+    path: ['mesInicio']
+  })
+  .refine((v) => mesesNoIntervalo(v.mesInicio, v.mesFim) <= 120, {
+    message: 'O intervalo da busca é de no máximo 120 meses',
+    path: ['mesFim']
+  })
+
+export type BuscarOcorrenciasInput = z.infer<typeof buscarOcorrenciasInputSchema>
+
+/** Quantidade de meses de um intervalo fechado "YYYY-MM".."YYYY-MM". */
+function mesesNoIntervalo(inicio: string, fim: string): number {
+  const [aAno, aMes] = inicio.split('-').map(Number)
+  const [bAno, bMes] = fim.split('-').map(Number)
+  return (bAno - aAno) * 12 + (bMes - aMes) + 1
+}
+
 /**
  * RF-DES-14 — uma ocorrência de despesa em um mês.
  *
@@ -385,6 +418,7 @@ export type DespesaApi = {
   excluir: (input: ExcluirDespesaInput) => Promise<ResultadoExcluirDespesa>
   atualizar: (input: AtualizarDespesaInput) => Promise<Despesa>
   definirNotaETags: (input: DefinirNotaETagsInput) => Promise<Despesa>
+  buscarOcorrencias: (input: BuscarOcorrenciasInput) => Promise<OcorrenciaDoMes[]>
   marcarOcorrenciaPaga: (input: MarcarOcorrenciaPagaInput) => Promise<Parcela>
   desmarcarOcorrenciaPaga: (input: DesmarcarOcorrenciaPagaInput) => Promise<Parcela>
 }

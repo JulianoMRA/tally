@@ -9,6 +9,7 @@ const VisaoMensalPage = lazy(() => import('./features/visao-mensal/VisaoMensalPa
 const CartoesPage = lazy(() => import('./features/cartoes/CartoesPage'))
 const CategoriasPage = lazy(() => import('./features/categorias/CategoriasPage'))
 const SaidasPage = lazy(() => import('./features/saidas/SaidasPage'))
+const BuscaPage = lazy(() => import('./features/busca/BuscaPage'))
 const FaturasPage = lazy(() => import('./features/faturas/FaturasPage'))
 const RendasPage = lazy(() => import('./features/rendas/RendasPage'))
 const SimulacaoPage = lazy(() => import('./features/simulacao/SimulacaoPage'))
@@ -42,6 +43,7 @@ export const router = createHashRouter([
       { path: 'cartoes', element: <CartoesPage />, handle: { titulo: 'Cartões' } },
       { path: 'categorias', element: <CategoriasPage />, handle: { titulo: 'Categorias' } },
       { path: 'saidas', element: <SaidasPage />, handle: { titulo: 'Saídas' } },
+      { path: 'busca', element: <BuscaPage />, handle: { titulo: 'Busca' } },
       { path: 'faturas', element: <FaturasPage />, handle: { titulo: 'Faturas' } },
       { path: 'rendas', element: <RendasPage />, handle: { titulo: 'Rendas' } },
       { path: 'simulacao', element: <SimulacaoPage />, handle: { titulo: 'Simulação' } },

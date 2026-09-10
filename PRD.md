@@ -153,6 +153,16 @@ prevista; entram no escopo quando forem priorizadas.
   - **Esta regra não alimenta nenhum cálculo.** RN-08, o ranking de categorias e o orçamento contam a ocorrência pela `data_referencia`, sem olhar o status — conferido nas três consultas. O status é informação e trava de edição, não aritmética. Por isso RF-DES-21 é requisito funcional e não RN nova.
   - Na lista de Saídas o selo **"Paga"** aparece só quando paga. Carimbar "Pendente" em toda linha diria o padrão em voz alta e afogaria a exceção, que é o que a leitura procura.
 
+- **RF-DES-22** — **Busca que atravessa meses.** Tela própria (`/busca`) que consulta lançamentos em um intervalo de meses, filtrando por descrição, categoria e tag, com o total do que foi encontrado.
+
+  > Existe por uma consequência que RF-DES-14 aceitou explicitamente: a lista de Saídas mostra **um mês de cada vez**, porque o agrupamento por cartão é a fatura daquele mês e o subtotal precisa bater com o total da fatura. Isso é certo para operar, e deixava o app sem resposta para duas perguntas que o uso diário faz — "onde está aquela compra de fevereiro?" e "quanto gastei com isso no ano?".
+  - **Não substitui Saídas.** Aqui não se registra, não se edita e não se agrupa por origem: é consulta, e o resultado é uma lista plana com um total. Saídas continua sendo onde se opera o mês.
+  - **O recorte do mês é o mesmo de RF-DES-14**: ocorrência com fatura pertence ao mês da fatura; sem fatura, ao mês da `data_referencia`. Usar `data_compra` faria uma compra posterior ao fechamento aparecer num mês em que não impacta nada — e divergiria da lista de Saídas para a mesma linha.
+  - **Abre nos últimos 12 meses**, contando o corrente, e **não consulta nada até que se peça**. Olhar para trás é o padrão porque a pergunta que motiva a busca é sobre o passado; varrer doze meses ao abrir a tela seria trabalho que ninguém pediu, com a peneira de texto ainda em branco.
+  - **Meses futuros só trazem o que já foi projetado** — o horizonte preguiçoso (RF-VIS-04) gera ocorrências conforme se navega. A tela diz isso no estado inicial, em vez de deixar o recorte parecer completo.
+  - **O SQL filtra por período e nada mais.** Descrição, categoria e tag são peneirados no renderer, sobre o resultado já enriquecido: a busca por texto ignora acento e caixa (o mesmo `filtrarPorDescricao` de Saídas — duas cópias fariam as telas divergirem para a mesma consulta), e a tag já veio no resultado. O volume fica limitado pelo intervalo, que quem busca escolhe.
+  - **Teto de 120 meses** no intervalo, pelo mesmo motivo do teto de linhas da importação (RF-IMP): a peneira roda em memória, e sem limite um engano de digitação no ano viraria uma varredura do banco inteiro. Dez anos é o horizonte que a RNF-04 já promete atender. Intervalo invertido é recusado na tela, antes de chamar o main.
+
 ### 4.4 Faturas (RF-FAT)
 
 - **RF-FAT-01** — Faturas são geradas automaticamente para cada cartão a cada mês de referência conforme parcelas vão sendo vinculadas.

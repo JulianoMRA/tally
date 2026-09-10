@@ -6,7 +6,8 @@ import {
   despesaEmAndamentoInputSchema,
   despesaAssinaturaCreditoInputSchema,
   despesaUnicaForaCartaoInputSchema,
-  atualizarDespesaInputSchema
+  atualizarDespesaInputSchema,
+  buscarOcorrenciasInputSchema
 } from '../despesa'
 
 const unicaCredito = {
@@ -161,5 +162,55 @@ describe('atualizarDespesaInputSchema', () => {
 
   it('rejeita dataCompra de calendário impossível', () => {
     expect(() => atualizarDespesaInputSchema.parse({ ...base, dataCompra: '2026-04-31' })).toThrow()
+  })
+})
+
+/**
+ * RF-DES-22 — o schema do intervalo da busca.
+ *
+ * O teto de 120 meses protege a peneira em memória do renderer: sem ele, um
+ * engano de digitação no ano (`0026-01`) viraria uma varredura do banco
+ * inteiro. Mesmo argumento do teto de linhas da importação.
+ */
+describe('buscarOcorrenciasInputSchema', () => {
+  const ok = { mesInicio: '2026-01', mesFim: '2026-09' }
+
+  it('aceita intervalo normal', () => {
+    expect(() => buscarOcorrenciasInputSchema.parse(ok)).not.toThrow()
+  })
+
+  it('aceita intervalo de um mês só', () => {
+    expect(() =>
+      buscarOcorrenciasInputSchema.parse({ mesInicio: '2026-09', mesFim: '2026-09' })
+    ).not.toThrow()
+  })
+
+  it('rejeita mês fora do formato', () => {
+    expect(() => buscarOcorrenciasInputSchema.parse({ ...ok, mesInicio: '2026-00' })).toThrow()
+    expect(() => buscarOcorrenciasInputSchema.parse({ ...ok, mesFim: '2026-13' })).toThrow()
+    expect(() => buscarOcorrenciasInputSchema.parse({ ...ok, mesFim: 'setembro' })).toThrow()
+  })
+
+  it('rejeita intervalo invertido', () => {
+    expect(() =>
+      buscarOcorrenciasInputSchema.parse({ mesInicio: '2026-09', mesFim: '2026-01' })
+    ).toThrow(/posterior/i)
+  })
+
+  // A fronteira exata: 120 passa, 121 não.
+  it('aceita 120 meses e rejeita 121', () => {
+    expect(() =>
+      buscarOcorrenciasInputSchema.parse({ mesInicio: '2017-01', mesFim: '2026-12' })
+    ).not.toThrow()
+    expect(() =>
+      buscarOcorrenciasInputSchema.parse({ mesInicio: '2016-12', mesFim: '2026-12' })
+    ).toThrow(/120 meses/)
+  })
+
+  it('conta o intervalo atravessando a virada de ano', () => {
+    // dez/2025 a jan/2026 são 2 meses, não 11 nem -10.
+    expect(() =>
+      buscarOcorrenciasInputSchema.parse({ mesInicio: '2025-12', mesFim: '2026-01' })
+    ).not.toThrow()
   })
 })

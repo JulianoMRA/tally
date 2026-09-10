@@ -52,13 +52,14 @@ function titulosDasPaginas(): string[] {
  * Agora não aparece em lugar nenhum — é este teste que denuncia.
  *
  * Lê o código-fonte em vez de importar os módulos de propósito: importar
- * `router.tsx` arrastaria as oito páginas e o Electron junto, e a `NAV` da
+ * `router.tsx` arrastaria as páginas e o Electron junto, e a `NAV` da
  * Sidebar não é exportada.
  */
 describe('títulos de rota', () => {
-  it('cobre as nove rotas de tela', () => {
+  it('cobre as dez rotas de tela', () => {
     expect(Object.keys(titulosDoRouter()).sort()).toEqual([
       'ajustes',
+      'busca',
       'cartoes',
       'categorias',
       'faturas',
@@ -78,7 +79,7 @@ describe('títulos de rota', () => {
     const daRota = Object.values(titulosDoRouter())
     const daPagina = titulosDasPaginas()
 
-    expect(daPagina.length).toBeGreaterThanOrEqual(9)
+    expect(daPagina.length).toBeGreaterThanOrEqual(10)
     for (const titulo of daPagina) {
       expect(daRota).toContain(titulo)
     }

@@ -44,6 +44,7 @@ export const DESPESA_IPC_CHANNELS = {
   excluir: 'despesa:excluir',
   atualizar: 'despesa:atualizar',
   definirNotaETags: 'despesa:definir-nota-e-tags',
+  buscarOcorrencias: 'despesa:buscar-ocorrencias',
   marcarOcorrenciaPaga: 'despesa:marcar-ocorrencia-paga',
   desmarcarOcorrenciaPaga: 'despesa:desmarcar-ocorrencia-paga'
 } as const

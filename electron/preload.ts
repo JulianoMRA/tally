@@ -40,6 +40,7 @@ import type {
   ExcluirDespesaInput,
   AtualizarDespesaInput,
   DefinirNotaETagsInput,
+  BuscarOcorrenciasInput,
   MarcarOcorrenciaPagaInput,
   DesmarcarOcorrenciaPagaInput
 } from '@shared/ipc/despesa'
@@ -195,6 +196,8 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.atualizar, input),
     definirNotaETags: (input: DefinirNotaETagsInput) =>
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.definirNotaETags, input),
+    buscarOcorrencias: (input: BuscarOcorrenciasInput) =>
+      ipcRenderer.invoke(DESPESA_IPC_CHANNELS.buscarOcorrencias, input),
     marcarOcorrenciaPaga: (input: MarcarOcorrenciaPagaInput) =>
       ipcRenderer.invoke(DESPESA_IPC_CHANNELS.marcarOcorrenciaPaga, input),
     desmarcarOcorrenciaPaga: (input: DesmarcarOcorrenciaPagaInput) =>

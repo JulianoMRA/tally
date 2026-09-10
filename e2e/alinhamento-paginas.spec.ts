@@ -20,6 +20,7 @@ const ROTAS = [
   'Visão mensal',
   'Faturas',
   'Saídas',
+  'Busca',
   'Rendas',
   'Simulação',
   'Cartões',

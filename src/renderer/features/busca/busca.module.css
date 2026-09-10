@@ -1,0 +1,52 @@
+/* Busca (RF-DES-22). O painel de filtros é um formulário de consulta, não de
+   cadastro: nada aqui grava, então o botão é "Buscar" e não há confirmação. */
+.filtros {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Dois campos lado a lado no mesmo assunto — o par de meses e o par
+   categoria/tag. Colapsa numa coluna quando não cabe, sem breakpoint fixo. */
+.linhaPeriodo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.acoes {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.erro {
+  color: var(--expense);
+  font-size: var(--text-3);
+  padding: 8px 0;
+  margin: 0;
+}
+
+.colValor {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* As tags acompanham a descrição, como na lista de Saídas: são o que faz o
+   resultado ser reconhecido quando a descrição sozinha não basta. */
+.tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.tag {
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  background: var(--bg-sunk);
+  border: 1px solid var(--rule);
+  font-size: var(--text-1);
+  color: var(--ink-2);
+  white-space: nowrap;
+}

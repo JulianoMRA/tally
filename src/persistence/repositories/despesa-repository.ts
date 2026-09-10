@@ -654,6 +654,27 @@ export class DespesaRepository implements Repository {
    * criada do zero de uma criada em andamento — ver `descreverOcorrencia`.
    */
   listarOcorrenciasDoMes(mesReferencia: string): OcorrenciaRow[] {
+    return this.listarOcorrenciasNoPeriodo(mesReferencia, mesReferencia)
+  }
+
+  /**
+   * RF-DES-22 — ocorrências de um intervalo fechado de meses.
+   *
+   * O recorte é o MESMO de RF-DES-14: ocorrência com fatura pertence ao mês da
+   * fatura; sem fatura, ao mês da `data_referencia`. Usar `data_compra` aqui
+   * faria uma compra posterior ao fechamento aparecer num mês em que ela não
+   * impacta nada — e divergiria da lista de Saídas para a mesma linha.
+   *
+   * Filtra por PERÍODO e nada mais. Descrição, categoria e tag são peneirados
+   * no renderer, sobre o resultado já enriquecido: a busca por texto é
+   * tolerante a acento (`filtrarPorDescricao`), o que o SQLite não faz sem
+   * extensão, e a tag já vem no mesmo mapa que a lista de Saídas monta. O
+   * volume fica limitado pelo intervalo, que é escolhido por quem busca.
+   */
+  listarOcorrenciasNoPeriodo(mesInicio: string, mesFim: string): OcorrenciaRow[] {
+    if (mesInicio > mesFim) {
+      throw new Error(`Intervalo invertido: início (${mesInicio}) é posterior ao fim (${mesFim}).`)
+    }
     return this.db
       .prepare(
         `SELECT
@@ -680,10 +701,12 @@ export class DespesaRepository implements Repository {
          FROM parcela p
          JOIN despesa d ON d.id = p.despesa_id
          LEFT JOIN fatura f ON f.id = p.fatura_id
-         WHERE COALESCE(f.mes_referencia, substr(p.data_referencia, 1, 7)) = ?
-         ORDER BY d.data_compra DESC, p.id DESC`
+         WHERE COALESCE(f.mes_referencia, substr(p.data_referencia, 1, 7)) BETWEEN ? AND ?
+         ORDER BY COALESCE(f.mes_referencia, substr(p.data_referencia, 1, 7)) DESC,
+                  d.data_compra DESC,
+                  p.id DESC`
       )
-      .all(mesReferencia) as OcorrenciaRow[]
+      .all(mesInicio, mesFim) as OcorrenciaRow[]
   }
 
   listarDespesas(filtro?: {

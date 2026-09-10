@@ -26,6 +26,7 @@ export type Rota =
   | 'Visão mensal'
   | 'Faturas'
   | 'Saídas'
+  | 'Busca'
   | 'Rendas'
   | 'Simulação'
   | 'Cartões'

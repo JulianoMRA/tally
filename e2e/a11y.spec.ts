@@ -12,6 +12,7 @@ const PAGINAS = [
   { link: 'Visão mensal', heading: 'Visão mensal' },
   { link: 'Faturas', heading: 'Faturas' },
   { link: 'Saídas', heading: 'Saídas' },
+  { link: 'Busca', heading: 'Busca' },
   { link: 'Rendas', heading: 'Rendas' },
   { link: 'Simulação', heading: 'Simulação' },
   { link: 'Cartões', heading: 'Cartões' },
