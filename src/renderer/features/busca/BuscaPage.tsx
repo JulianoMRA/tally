@@ -1,9 +1,21 @@
 import { useMemo, useState } from 'react'
 import type { Cartao } from '@domain/entities/cartao'
 import type { Categoria } from '@domain/entities/categoria'
+import type { OcorrenciaDoMes } from '@shared/ipc/despesa'
 import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
-import { Button, EmptyState, Field, Input, Panel, Select, Table } from '../../components/ui'
+import {
+  Button,
+  EmptyState,
+  Field,
+  Input,
+  Panel,
+  Select,
+  SortableHeader,
+  Table
+} from '../../components/ui'
+import { alfabetico, porData, porNumero, type Comparador } from '../../lib/comparadores'
+import { useOrdenacao } from '../../lib/use-ordenacao'
 import { useCargaAuxiliar } from '../../hooks/use-carga-auxiliar'
 import { formatBRL } from '../../lib/format-brl'
 import { formatarMesReferencia } from '../../lib/formatar-data'
@@ -15,6 +27,16 @@ import { MENSAGEM_PROBLEMA, periodoPadrao, validarPeriodo } from './periodo-busc
 import styles from './busca.module.css'
 
 const TODAS = ''
+
+/**
+ * O mes ordena pela `dataReferencia`, e nao pelo rotulo por extenso: "abril"
+ * vem antes de "janeiro" em ordem alfabetica, e a coluna e cronologica.
+ */
+const COMPARADORES: Record<string, Comparador<OcorrenciaDoMes>> = {
+  mes: porData((o) => o.dataReferencia),
+  descricao: alfabetico((o) => o.descricao),
+  valor: porNumero((o) => o.impactoCentavos)
+}
 
 /**
  * RF-DES-22 — busca que atravessa meses.
@@ -75,9 +97,23 @@ export default function BuscaPage() {
     return filtrarPorDescricao(porFiltro, texto)
   }, [resultados, categoriaId, tag, texto])
 
+  /**
+   * Ordenação por cabeçalho, como em Saídas.
+   *
+   * `useOrdenacao` não aceita `null`, e "ainda não buscou" precisa ser
+   * distinguível de "buscou e não achou" — daí a lista vazia aqui e o `null`
+   * preservado em `filtrados` para o estado inicial da tela.
+   */
+  const { itensOrdenados, sortBy, sortDir, handleSort } = useOrdenacao(
+    filtrados ?? [],
+    COMPARADORES,
+    'mes',
+    'desc'
+  )
+
   const totalCentavos = useMemo(
-    () => (filtrados ?? []).reduce((s, o) => s + o.impactoCentavos, 0),
-    [filtrados]
+    () => itensOrdenados.reduce((s, o) => s + o.impactoCentavos, 0),
+    [itensOrdenados]
   )
 
   async function submeter(e: React.FormEvent) {
@@ -177,16 +213,32 @@ export default function BuscaPage() {
             <Table densidade="compacta">
               <thead>
                 <tr>
-                  <th>Mês</th>
-                  <th>Descrição</th>
+                  <SortableHeader
+                    rotulo="Mês"
+                    ativo={sortBy === 'mes'}
+                    direcao={sortDir}
+                    onSort={() => handleSort('mes')}
+                  />
+                  <SortableHeader
+                    rotulo="Descrição"
+                    ativo={sortBy === 'descricao'}
+                    direcao={sortDir}
+                    onSort={() => handleSort('descricao')}
+                  />
                   <th>Categoria</th>
                   <th>Origem</th>
                   <th>Parcela</th>
-                  <th className={styles.colValor}>Impacto</th>
+                  <SortableHeader
+                    rotulo="Impacto"
+                    ativo={sortBy === 'valor'}
+                    direcao={sortDir}
+                    onSort={() => handleSort('valor')}
+                    className={styles.colValor}
+                  />
                 </tr>
               </thead>
               <tbody>
-                {filtrados.map((o) => (
+                {itensOrdenados.map((o) => (
                   <tr key={o.parcelaId}>
                     <td className="tnum">{formatarMesReferencia(o.dataReferencia.slice(0, 7))}</td>
                     <td>
