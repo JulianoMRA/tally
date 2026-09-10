@@ -419,15 +419,6 @@
    homônimo usa `nowrap` + `flex-shrink: 0` e precisou de um container rolável.
    Não uniformize os dois módulos sem antes medir. Protegido por
    e2e/faturas-acoes-visiveis.spec.ts. */
-.totalLabel {
-  font-size: var(--text-2);
-  font-weight: 600;
-  color: var(--ink-2);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-family: var(--font-mono);
-}
-
 /* Modal de adiantamento */
 .modalFields {
   display: flex;
@@ -442,36 +433,6 @@
   font-size: var(--text-2);
   color: var(--ink-2);
   cursor: pointer;
-}
-
-/* Ajudas */
-/* Rodapé de totais bruto / ajudas / líquido */
-.totaisFooter {
-  padding: var(--dens-3) 16px;
-  border-top: 1px solid var(--rule);
-  background: var(--bg-sunk);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.totalLinha {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.totalLiquidoLinha {
-  padding-top: 6px;
-  border-top: 1px solid var(--rule);
-  margin-top: 4px;
-}
-
-.totalLiquidoValor {
-  font-size: var(--text-5);
-  font-weight: 800;
-  color: var(--ink);
-  letter-spacing: -0.02em;
 }
 
 /* Navegação entre as faturas do cartão. Fica acima do painel porque é ele que

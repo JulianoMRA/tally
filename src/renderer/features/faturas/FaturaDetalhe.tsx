@@ -26,6 +26,7 @@ import {
 import { formatBRL } from '../../lib/format-brl'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { mensagemErro } from '../../lib/mensagem-erro'
+import { pluralizar } from '../../lib/pluralizar'
 import { rotuloVencida } from './aviso-fechamento'
 import { statusVariant } from './status-variant'
 import styles from './faturas.module.css'
@@ -222,9 +223,17 @@ export function FaturaDetalhe({
           que vem primeiro — e o que se veio ver são as parcelas, não o resumo.
           Nesta ordem a sequência de foco bate com a visual nos DOIS layouts. */}
       <div className={styles.areaMain}>
+        {/* O total vem para o cabeçalho do painel, no formato que Saídas e
+            Busca já usam ("N lançamentos · R$ X"). Antes ele vivia numa faixa
+            própria no rodapé da tabela, e a mesma quantia aparecia de novo no
+            card de resumo logo abaixo, como "Total da fatura". Lado a lado
+            (>=1360px) a repetição passava; empilhado — que é o layout do
+            viewport padrão do app, 1266px — eram dois totais idênticos a poucos
+            centímetros um do outro. O do resumo é o que fica: ele senta junto do
+            status e do botão de pagar, que é onde o número vira decisão. */}
         <Panel
           title="Parcelas"
-          meta={`${parcelas.length} lançamento${parcelas.length !== 1 ? 's' : ''}`}
+          meta={`${parcelas.length} ${pluralizar('lançamento', parcelas.length)} · ${formatBRL(totalCentavos)}`}
           flush
         >
           {parcelas.length === 0 ? (
@@ -297,14 +306,6 @@ export function FaturaDetalhe({
                   ))}
                 </tbody>
               </Table>
-              <div className={styles.totaisFooter}>
-                <div className={`${styles.totalLinha} ${styles.totalLiquidoLinha}`}>
-                  <span className={styles.totalLabel}>Total</span>
-                  <span className={`${styles.totalLiquidoValor} tnum`}>
-                    {formatBRL(totalCentavos)}
-                  </span>
-                </div>
-              </div>
             </>
           )}
         </Panel>
