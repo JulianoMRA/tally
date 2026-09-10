@@ -6,6 +6,34 @@ vista técnico.
 
 ---
 
+## v1.15.0 — Duas fricções do uso diário (set/2026)
+
+---
+
+**O que esta versão é.** Duas features, e as duas nasceram da mesma pergunta: onde o app cobra um passo que não precisava cobrar. Nenhuma migration; nenhuma regra de negócio nova.
+
+**Nota e tags deixam de ser um segundo episódio (RF-DES-13).** Etiquetar uma despesa exigia salvar, achar a linha na lista, abrir o menu de ações e só então o modal — quatro passos depois do momento em que a informação estava fresca. O cadastro passa a oferecer os mesmos campos, num bloco **colapsado** comum às quatro abas: metadado opcional que a maioria dos lançamentos não usa não pode cobrar altura de quem só quer registrar a compra, e o rótulo resume o que já foi preenchido ("nota, 2 tags") para não obrigar a expandir de novo. O que foi digitado **sobrevive à troca de aba** — quem escreveu a nota e depois percebeu que a compra era parcelada não perde o texto.
+
+O editor saiu do modal e virou `EditorNotaETags`, usado pelos dois. Duas cópias fariam a regra de "tag repetida não entra, ignorando caixa" divergir entre criar e editar, que é o tipo de divergência que este projeto já pagou em modais (v1.6.1) e em tabelas (v1.6.2). O `idPrefixo` existe porque as duas instâncias podem coexistir na árvore, e `id` duplicado quebra o `<label for>`.
+
+**A gravação são duas chamadas, e vale dizer por quê.** Fazer numa só exigiria `nota` e `tags` nos seis schemas de criação e nos seis métodos do repositório; reusar `definirNotaETags`, que já é o caminho do modal e já tem teste, custa um round-trip local e nenhuma mudança de contrato. O preço é não ser atômico, e é aceitável **aqui** precisamente porque são metadados — RF-DES-13 os define assim: se a segunda chamada falhar, a despesa está criada e correta, o usuário é avisado e pode etiquetar pelo menu. **A mesma folga não valeria para valor ou data**, e isso está escrito no código. Detalhe que o `<form>` impõe: Enter no campo de tag chama `preventDefault`, senão adicionar a primeira tag registraria a despesa — os testes foram verificados removendo esse `preventDefault`, e dois ficam vermelhos.
+
+**Busca que atravessa meses (RF-DES-22).** Saídas mostra um mês de cada vez, por decisão (RF-DES-14): o agrupamento por cartão é a fatura daquele mês, e o subtotal precisa bater com o total da fatura. Isso é certo para operar, e deixava o app sem resposta para duas perguntas que o uso diário faz — "onde está aquela compra de fevereiro?" e "quanto gastei com isso no ano?". A tela nova consulta um intervalo de meses filtrando por descrição, categoria e tag, e mostra o total do que encontrou. **Não substitui Saídas**: aqui não se registra, não se edita e não se agrupa por origem.
+
+**O recorte do mês é o mesmo de RF-DES-14**, e este é o ponto que mais importava acertar: ocorrência com fatura pertence ao mês da fatura, sem fatura ao mês da `data_referencia`. Usar `data_compra` faria uma compra posterior ao fechamento aparecer num mês em que não impacta nada — e a mesma linha teria dois meses diferentes conforme a tela que a exibe. O teste disso foi verificado trocando o critério para `data_compra`: dois casos ficam vermelhos.
+
+**Uma SQL só, e um enriquecimento só.** `listarOcorrenciasDoMes` passou a delegar para `listarOcorrenciasNoPeriodo(mes, mes)` em vez de duplicar 25 linhas de SELECT, e os testes existentes da consulta mensal seguem guardando as duas. No handler, o enriquecimento com `descreverOcorrencia` e tags virou função compartilhada pelo mesmo motivo: duas cópias fariam o rótulo da parcela ou o impacto divergirem entre as telas.
+
+**O SQL filtra por período e nada mais.** Descrição, categoria e tag são peneirados no renderer sobre o resultado já enriquecido: a busca por texto ignora acento e caixa — o mesmo `filtrarPorDescricao` de Saídas, que o SQLite não faria sem extensão —, e a tag já veio no resultado. O volume fica limitado pelo intervalo, com teto de 120 meses pelo mesmo motivo do teto de linhas da importação: sem ele, um engano de digitação no ano viraria varredura do banco inteiro. A tela **abre nos últimos 12 meses e não consulta nada até que se peça**, e diz que meses futuros só trazem o que já foi projetado (RF-VIS-04) em vez de deixar o recorte parecer completo.
+
+**O critério de verificação da v1.14.0 foi exercitado, e funcionou.** A rota nova toca **cinco listas compartilhadas** — as duas de acessibilidade, a de alinhamento, o tipo `Rota` da fixture de E2E e a folha de contato do `smoke:visual`. O guard de títulos de rota pegou uma delas sozinho, antes de qualquer execução, e o typecheck dos specs pegou outra. A suíte completa foi rodada nas duas features, e não o recorte do que se tocou — que é exatamente o que a versão anterior aprendeu a fazer depois de duas falhas.
+
+**O piso de cobertura também cobrou, e de novo a correção foi teste.** O helper de contagem de meses do schema de busca não tinha teste e derrubou o piso de funções de `src/shared/**`. Baixar o número resolveria o sintoma e desligaria a catraca; o que entrou foram seis casos cobrindo formato, inversão e a fronteira exata dos 120 meses.
+
+**1349 → 1383 testes unitários**, 138 → 141 arquivos. **124 specs E2E**, todos verdes, incluindo a varredura axe-core na rota nova e os guards de alinhamento nas três larguras.
+
+---
+
 ## v1.14.0 — Leitura aberta do repositório: defeitos, instrumento e duas features (set/2026)
 
 ---
