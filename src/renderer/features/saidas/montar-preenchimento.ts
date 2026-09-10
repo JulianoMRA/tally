@@ -1,11 +1,20 @@
-import type { Despesa } from '@domain/entities/despesa'
+import type { DespesaComTags } from '@shared/ipc/despesa'
 import { centavosParaReais } from '../../lib/dinheiro'
 
 // Pré-preenchimento do DespesaForm ao duplicar uma saída. Discriminado pela
 // aba do formulário. `dataCompra` NÃO é copiada (duplicar = nova compra hoje);
 // assinatura em andamento não é duplicável como "em-andamento" — vira nova.
 
-export type PreenchimentoUnica = {
+/**
+ * As tags acompanham a cópia (RF-DES-11): elas classificam o gasto, e uma
+ * compra repetida cai na mesma classificação. A NOTA não vem junto — ela
+ * costuma ser sobre aquele lançamento específico ("reembolsável pela viagem de
+ * março"), e herdar texto assim seria afirmar algo que o usuário não escreveu
+ * para esta compra.
+ */
+type ComTags = { tags: string[] }
+
+export type PreenchimentoUnica = ComTags & {
   tipo: 'unica'
   forma: 'Credito' | 'Pix' | 'Debito' | 'Dinheiro'
   descricao: string
@@ -14,7 +23,7 @@ export type PreenchimentoUnica = {
   valorReais: string
 }
 
-export type PreenchimentoParcelada = {
+export type PreenchimentoParcelada = ComTags & {
   tipo: 'parcelada'
   descricao: string
   categoriaId: number
@@ -23,7 +32,7 @@ export type PreenchimentoParcelada = {
   totalParcelas: number | null
 }
 
-export type PreenchimentoAssinatura = {
+export type PreenchimentoAssinatura = ComTags & {
   tipo: 'assinatura'
   descricao: string
   categoriaId: number
@@ -41,7 +50,7 @@ export type PreenchimentoDespesa =
  * despesa. Pura — a descrição ganha sufixo " (cópia)" para deixar claro que é
  * um novo lançamento.
  */
-export function montarPreenchimentoDespesa(despesa: Despesa): PreenchimentoDespesa {
+export function montarPreenchimentoDespesa(despesa: DespesaComTags): PreenchimentoDespesa {
   const descricao = `${despesa.descricao} (cópia)`
   // `centavosParaReais`, não `formatarValorCsv`: o destino é um campo de tela,
   // e a gramática do formulário garante que o campo abre com um texto que ele
@@ -57,7 +66,8 @@ export function montarPreenchimentoDespesa(despesa: Despesa): PreenchimentoDespe
       descricao,
       categoriaId: despesa.categoriaId,
       cartaoId: despesa.cartaoId,
-      valorReais
+      valorReais,
+      tags: despesa.tags
     }
   }
   if (despesa.tipo === 'Parcelada') {
@@ -67,7 +77,8 @@ export function montarPreenchimentoDespesa(despesa: Despesa): PreenchimentoDespe
       categoriaId: despesa.categoriaId,
       cartaoId: despesa.cartaoId,
       valorReais,
-      totalParcelas: despesa.totalParcelas
+      totalParcelas: despesa.totalParcelas,
+      tags: despesa.tags
     }
   }
   return {
@@ -76,6 +87,7 @@ export function montarPreenchimentoDespesa(despesa: Despesa): PreenchimentoDespe
     descricao,
     categoriaId: despesa.categoriaId,
     cartaoId: despesa.cartaoId,
-    valorReais
+    valorReais,
+    tags: despesa.tags
   }
 }

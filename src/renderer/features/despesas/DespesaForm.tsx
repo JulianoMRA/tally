@@ -911,7 +911,8 @@ export function DespesaForm({
 }: Props) {
   const [tipo, setTipo] = useState<TipoDespesa>(preenchimento?.tipo ?? 'unica')
   const [nota, setNota] = useState('')
-  const [tags, setTags] = useState<string[]>([])
+  // Duplicar traz as tags da origem (RF-DES-11); a nota nao vem junto.
+  const [tags, setTags] = useState<string[]>(preenchimento?.tags ?? [])
 
   /**
    * Fecha sobre a nota e as tags atuais e injeta como segundo argumento.
