@@ -173,6 +173,18 @@ async function abrirAnalise() {
   await esperarGraficos()
 }
 
+/**
+ * A Busca nao consulta nada ao abrir, de proposito (RF-DES-22). Sem clicar em
+ * Buscar, a folha registra so o formulario — e a tabela de resultados, que e o
+ * que a tela existe para mostrar, nunca aparece na revisao visual. Mesmo ponto
+ * cego que a aba Analise tinha antes de `abrirAnalise`.
+ */
+async function buscarNaBusca() {
+  await ir('#/busca')
+  await page.getByRole('button', { name: 'Buscar' }).first().click({ timeout: 5000 })
+  await page.waitForTimeout(800)
+}
+
 async function capturar(nome) {
   await page.screenshot({ path: join(SAIDA, `${nome}.png`) })
   console.log('  ·', nome)
@@ -347,6 +359,9 @@ for (const largura of LARGURAS) {
   // sensivel a largura da tela inteira.
   await abrirAnalise()
   await capturar(`cheio-${largura}-visao-mensal-analise`)
+
+  await buscarNaBusca()
+  await capturar(`cheio-${largura}-busca-resultados`)
 }
 
 console.log('estados sob interação:')
