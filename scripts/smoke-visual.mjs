@@ -48,6 +48,7 @@ const ROTAS = [
   ['visao-mensal', '#/mensal'],
   ['faturas', '#/faturas'],
   ['saidas', '#/saidas'],
+  ['busca', '#/busca'],
   ['rendas', '#/rendas'],
   ['simulacao', '#/simulacao'],
   ['cartoes', '#/cartoes'],

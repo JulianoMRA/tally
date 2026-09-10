@@ -24,6 +24,7 @@ import {
   excluirDespesaInputSchema,
   atualizarDespesaInputSchema,
   definirNotaETagsInputSchema,
+  buscarOcorrenciasInputSchema,
   marcarOcorrenciaPagaInputSchema,
   desmarcarOcorrenciaPagaInputSchema,
   DESPESA_IPC_CHANNELS
@@ -116,52 +117,72 @@ export function registerDespesaHandlers(db: Database, ipcMain: IpcMain): void {
     }
   )
 
+  /**
+   * Enriquece as linhas cruas do JOIN com o que o domain calcula
+   * (`descreverOcorrencia`) e com as tags.
+   *
+   * Compartilhado pela lista mensal (RF-DES-14) e pela busca por período
+   * (RF-DES-22): as duas devolvem `OcorrenciaDoMes`, e duas cópias fariam o
+   * rótulo da parcela ou o impacto divergirem entre as telas para a MESMA
+   * linha — que é o defeito que este projeto ja pagou em modais e tabelas.
+   */
+  function enriquecer(linhas: ReturnType<typeof repo.listarOcorrenciasDoMes>): OcorrenciaDoMes[] {
+    const tagsMap = new TagRepository(db).tagsPorDespesaIds(linhas.map((l) => l.despesa_id))
+
+    return linhas.map((l) => {
+      const { impactoCentavos, origemCentavos, rotuloParcela, progressoPct } = descreverOcorrencia(
+        {
+          tipo: l.tipo,
+          valorCentavos: l.despesa_valor_centavos,
+          totalParcelas: l.total_parcelas
+        },
+        {
+          numero: l.numero,
+          total: l.total,
+          valorCentavos: l.parcela_valor_centavos,
+          dataReferencia: l.data_referencia,
+          status: l.status
+        },
+        l.menor_numero
+      )
+
+      return {
+        parcelaId: l.parcela_id,
+        despesaId: l.despesa_id,
+        descricao: l.descricao,
+        categoriaId: l.categoria_id,
+        cartaoId: l.cartao_id,
+        formaPagamento: l.forma_pagamento,
+        tipo: l.tipo,
+        dataCompra: l.data_compra,
+        dataReferencia: l.data_referencia,
+        faturaId: l.fatura_id,
+        statusParcela: l.status,
+        ativa: l.ativa === 1,
+        nota: l.nota ?? null,
+        tags: tagsMap.get(l.despesa_id) ?? [],
+        impactoCentavos,
+        origemCentavos,
+        rotuloParcela,
+        progressoPct
+      }
+    })
+  }
+
   ipcMain.handle(
     DESPESA_IPC_CHANNELS.listarOcorrenciasDoMes,
     (_event, payload: unknown): OcorrenciaDoMes[] => {
       const { mesReferencia } = listarOcorrenciasInputSchema.parse(payload)
-      const linhas = repo.listarOcorrenciasDoMes(mesReferencia)
-      const tagsMap = new TagRepository(db).tagsPorDespesaIds(linhas.map((l) => l.despesa_id))
+      return enriquecer(repo.listarOcorrenciasDoMes(mesReferencia))
+    }
+  )
 
-      return linhas.map((l) => {
-        const { impactoCentavos, origemCentavos, rotuloParcela, progressoPct } =
-          descreverOcorrencia(
-            {
-              tipo: l.tipo,
-              valorCentavos: l.despesa_valor_centavos,
-              totalParcelas: l.total_parcelas
-            },
-            {
-              numero: l.numero,
-              total: l.total,
-              valorCentavos: l.parcela_valor_centavos,
-              dataReferencia: l.data_referencia,
-              status: l.status
-            },
-            l.menor_numero
-          )
-
-        return {
-          parcelaId: l.parcela_id,
-          despesaId: l.despesa_id,
-          descricao: l.descricao,
-          categoriaId: l.categoria_id,
-          cartaoId: l.cartao_id,
-          formaPagamento: l.forma_pagamento,
-          tipo: l.tipo,
-          dataCompra: l.data_compra,
-          dataReferencia: l.data_referencia,
-          faturaId: l.fatura_id,
-          statusParcela: l.status,
-          ativa: l.ativa === 1,
-          nota: l.nota ?? null,
-          tags: tagsMap.get(l.despesa_id) ?? [],
-          impactoCentavos,
-          origemCentavos,
-          rotuloParcela,
-          progressoPct
-        }
-      })
+  // RF-DES-22 — a mesma forma de resultado, num intervalo de meses.
+  ipcMain.handle(
+    DESPESA_IPC_CHANNELS.buscarOcorrencias,
+    (_event, payload: unknown): OcorrenciaDoMes[] => {
+      const { mesInicio, mesFim } = buscarOcorrenciasInputSchema.parse(payload)
+      return enriquecer(repo.listarOcorrenciasNoPeriodo(mesInicio, mesFim))
     }
   )
 
