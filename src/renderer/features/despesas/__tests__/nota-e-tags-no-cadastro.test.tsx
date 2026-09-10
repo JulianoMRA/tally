@@ -31,6 +31,22 @@ function montar(overrides: Partial<Parameters<typeof DespesaForm>[0]> = {}) {
   return { onSalvarUnica }
 }
 
+/**
+ * `delay: null` desliga a pausa artificial que o userEvent coloca ENTRE cada
+ * tecla. Estes testes digitam o formulário inteiro — descrição, valor, data,
+ * nota e duas tags —, e a pausa por tecla é o custo dominante: o teste mais
+ * pesado caía de 1,7s para 0,6s. Isolado sempre passou; na suíte completa com
+ * instrumentação de cobertura ele estourava os 5s de timeout.
+ *
+ * Não é afrouxar a espera: nenhuma asserção muda, e o formulário não tem
+ * debounce nem timer para o atraso exercitar — conferido antes de mexer. O que
+ * sai é tempo ocioso do dublê, não sincronização real. Um teste que só passa
+ * quando a máquina está folgada é vermelho adiado.
+ */
+function usuario() {
+  return userEvent.setup({ delay: null })
+}
+
 async function preencherMinimo(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(/Descrição/), 'Notebook')
   await user.selectOptions(screen.getByLabelText(/Categoria/), '7')
@@ -56,7 +72,7 @@ describe('nota e tags no cadastro de despesa', () => {
   })
 
   it('entrega nota e tags junto do input ao salvar', async () => {
-    const user = userEvent.setup()
+    const user = usuario()
     const { onSalvarUnica } = montar()
 
     await preencherMinimo(user)
@@ -75,7 +91,7 @@ describe('nota e tags no cadastro de despesa', () => {
   // Enter dentro de um <form> submete. Sem o preventDefault do editor, tentar
   // adicionar a primeira tag registraria a despesa.
   it('Enter no campo de tag adiciona a tag e NÃO submete o formulário', async () => {
-    const user = userEvent.setup()
+    const user = usuario()
     const { onSalvarUnica } = montar()
 
     await preencherMinimo(user)
@@ -87,7 +103,7 @@ describe('nota e tags no cadastro de despesa', () => {
   })
 
   it('nota só de espaços vira null, e não uma nota em branco no banco', async () => {
-    const user = userEvent.setup()
+    const user = usuario()
     const { onSalvarUnica } = montar()
 
     await preencherMinimo(user)
@@ -100,7 +116,7 @@ describe('nota e tags no cadastro de despesa', () => {
   })
 
   it('tag repetida não entra duas vezes, ignorando caixa', async () => {
-    const user = userEvent.setup()
+    const user = usuario()
     const { onSalvarUnica } = montar()
 
     await preencherMinimo(user)
@@ -118,7 +134,7 @@ describe('nota e tags no cadastro de despesa', () => {
    * percebeu que a compra era parcelada não deveria perder o que escreveu.
    */
   it('preserva o que foi digitado ao trocar de aba', async () => {
-    const user = userEvent.setup()
+    const user = usuario()
     montar()
 
     await user.click(screen.getByRole('button', { name: /nota e tags/i }))
@@ -131,7 +147,7 @@ describe('nota e tags no cadastro de despesa', () => {
   })
 
   it('resume o que já foi preenchido no rótulo do gatilho', async () => {
-    const user = userEvent.setup()
+    const user = usuario()
     montar()
 
     await user.click(screen.getByRole('button', { name: /nota e tags/i }))
