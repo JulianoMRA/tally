@@ -6,6 +6,34 @@ vista técnico.
 
 ---
 
+## v1.16.0 — Controles que existiam por acidente (set/2026)
+
+---
+
+**O que esta versão é.** Nenhuma feature nova; nenhuma migration; nenhuma regra de negócio nova. Quatro lugares onde o app decidia por conta própria algo que o usuário deveria poder pedir, e duas dívidas de teste que só apareceriam sob carga. É o lote que sobrou depois de oito fases de melhoria — o tipo de coisa que nenhuma auditoria lista porque nada está quebrado.
+
+**O agrupamento de Saídas era efeito colateral de ordenar (RF-DES-14).** Até aqui, ordenar por Compra **desligava o agrupamento por cartão**. Não havia controle: ver o mês inteiro em ordem cronológica e ver o mês inteiro numa lista plana eram a mesma ação, e nenhuma das duas era pedível separadamente. Quem queria a lista plana ordenada por Impacto não tinha como chegar lá; quem clicava em Compra só para ordenar perdia os subtotais sem ter pedido. A tela passa a abrir agrupada, com uma caixa "Agrupar por origem" ao lado dos filtros, independente da ordenação — quatro combinações onde havia duas, ao custo de uma caixa. `agruparSeAplicavel`, que existia só para implementar o acoplamento, foi removida.
+
+**A Busca não ordenava por coluna (RF-DES-22).** A tela nascia com ordem fixa, e numa consulta de doze meses isso obriga a varrer a lista com o olho para achar o maior gasto — que é metade da razão de ter buscado. Ganha ordenação por Mês, Descrição e Impacto, reusando `useOrdenacao` e `SortableHeader`, os mesmos de Saídas: duas implementações fariam o mesmo clique se comportar diferente em duas telas. A coluna Mês ordena pela `dataReferencia`, **não** pelo rótulo por extenso — em ordem alfabética "abril" viria antes de "janeiro", e a coluna é cronológica.
+
+**Duplicar não copiava as tags (RF-DES-11).** Copiava descrição, categoria, cartão, valor e forma, e deixava as tags para trás. Tag classifica o gasto, e uma compra repetida cai na mesma classificação — é o mesmo raciocínio que já justificava copiar a categoria. **A nota continua não vindo junto**, de propósito: ela costuma ser sobre aquele lançamento específico ("reembolsável pela viagem de março"), e herdar texto assim seria afirmar, em nome do usuário, algo que ele não escreveu para esta compra. As três variantes de preenchimento passam a intersectar um tipo comum com `tags`, de modo que uma variante nova não nasce sem elas.
+
+**O detalhe da fatura mostrava o mesmo total duas vezes.** No card de resumo, em destaque, e de novo num rodapé da tabela de parcelas. Lado a lado (>=1360px) a repetição passava; empilhado — que é o layout do viewport padrão do app, 1266px — eram dois números idênticos a poucos centímetros um do outro, e dois números iguais assim não confirmam nada: convidam a conferir se são mesmo iguais. Ficou o do resumo, que senta junto do status e do botão de pagar, onde o número vira decisão. A contagem de lançamentos, que era o que o rodapé tinha de próprio, foi para a meta do painel, no formato que Saídas e Busca já usam.
+
+**A corrida conhecida em `ajustes-page`, e por que o mock ficou lento de propósito.** `AjustesPage` recebe `defaultValues` assíncrono: os inputs nascem vazios e só são preenchidos quando `config.get` resolve. `findByLabelText` espera apenas o **elemento**, que existe desde o primeiro render — então `clear` e `type` podiam rodar antes do preenchimento, que em seguida sobrescrevia o que foi digitado. Quatro testes faziam isso e passavam por sorte de escalonamento.
+
+A correção tem duas partes, e a primeira é a que importa: **o dublê passa a resolver com atraso deliberado de 20ms**. Com um mock que resolve no microtask seguinte, a corrida quase nunca aparece, e um guard que só acusa em máquina ocupada não é guard. É o mesmo princípio de esperar o marcador em vez de dormir um número — só que aqui o atraso vai do lado do dublê, para tornar a ordem determinística em vez de rara. A segunda parte é o helper `campoCarregado(rótulo, valor)`, que espera o campo existir **e estar preenchido**. Verificado revertendo um teste ao padrão antigo: sob o atraso ele fica vermelho, e o submit nem chega a acontecer.
+
+**Um teste que passava sozinho e estourava na suíte cheia.** `nota-e-tags-no-cadastro` digita o formulário inteiro, e a pausa artificial que o `userEvent` coloca entre cada tecla era o custo dominante: o caso mais pesado batia nos 5s de timeout sob instrumentação de cobertura. `delay: null` derruba de 1,7s para 0,6s. **Não é afrouxar espera** — nenhuma asserção muda, e o formulário não tem debounce nem timer para o atraso exercitar, o que foi conferido antes de mexer. Antes de tratá-lo como problema de latência, a suíte completa foi rodada na base limpa para confirmar que ela estava verde: o teste não era uma regressão do lote, era uma bomba-relógio que o lote acionou.
+
+**A folha de contato tinha um ponto cego novo.** A Busca não consulta nada ao abrir, de propósito — e a consequência para o instrumento é que o `smoke:visual` registrava só o formulário. A tabela de resultados, que é o que a tela existe para mostrar, nunca entrava na revisão visual, e a ordenação recém-adicionada nasceria fora dela. `buscarNaBusca()` clica em Buscar antes da captura, nas três larguras, pelo mesmo motivo de `abrirAnalise()`: estado que só existe sob interação é ponto cego até alguém clicar por ele. É a terceira vez nesta série que o instrumento de revisão precisa ser corrigido junto com o produto.
+
+**O E2E rodou em recorte, por decisão, e o recorte encontrou duas quebras reais.** Ambas consequência do lote, nenhuma por fragilidade de teste: Saídas abrindo agrupada faz a linha de subtotal existir na primeira renderização, e um locator tolerante de valor passou a casar com ela **e** com a célula de valor ao mesmo tempo; e o rodapé removido era exatamente o que um teste olhava — olhando **só o rótulo**, nunca o número, o que a asserção corrigida passou a cobrar. O spec que as continha só estava no recorte porque a mudança das tags tocava o `DespesaForm`: foi sorte de raciocínio, não cobertura. Depois de encontrá-las, os 34 specs foram varridos pelos dois padrões, e o único candidato fora do recorte foi incluído.
+
+> **Lacuna registrada: a suíte E2E completa não rodou nesta versão.** Rodaram **75 casos** dos 124, no recorte descrito acima, e a main resultante do merge não foi exercitada pelo E2E — só pelo pipeline unitário (lint, typecheck, `tsc` dos specs, 1384 testes, build), que ficou verde. Os 124 casos que o README anuncia foram conferidos por **enumeração** (`playwright test --list`), não por execução. A regra 10 existe para que essa lacuna fique escrita em vez de implícita: quem decide quando pagar o gate é o usuário, e nesta versão a decisão foi não pagar.
+
+---
+
 ## v1.15.0 — Duas fricções do uso diário (set/2026)
 
 ---
