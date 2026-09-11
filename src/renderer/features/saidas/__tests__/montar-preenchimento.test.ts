@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import type { Despesa } from '@domain/entities/despesa'
+import type { DespesaComTags } from '@shared/ipc/despesa'
 import { montarPreenchimentoDespesa } from '../montar-preenchimento'
 import { parseCentavos } from '../../../lib/dinheiro'
 
-function despesa(over: Partial<Despesa>): Despesa {
+function despesa(over: Partial<DespesaComTags>): DespesaComTags {
   return {
     id: 1,
     descricao: 'Base',
@@ -20,6 +20,7 @@ function despesa(over: Partial<Despesa>): Despesa {
     ativa: true,
     createdAt: '2026-06-02',
     updatedAt: '2026-06-02',
+    tags: [],
     ...over
   }
 }
@@ -33,7 +34,8 @@ describe('montarPreenchimentoDespesa', () => {
       descricao: 'Mercado (cópia)',
       categoriaId: 3,
       cartaoId: 5,
-      valorReais: '180,00'
+      valorReais: '180,00',
+      tags: []
     })
   })
 
@@ -54,7 +56,8 @@ describe('montarPreenchimentoDespesa', () => {
       categoriaId: 3,
       cartaoId: 5,
       valorReais: '1200,00',
-      totalParcelas: 12
+      totalParcelas: 12,
+      tags: []
     })
   })
 
@@ -67,7 +70,8 @@ describe('montarPreenchimentoDespesa', () => {
       descricao: 'Base (cópia)',
       categoriaId: 3,
       cartaoId: 5,
-      valorReais: '39,90'
+      valorReais: '39,90',
+      tags: []
     })
   })
 })
@@ -94,5 +98,37 @@ describe('montarPreenchimentoDespesa — o valor volta legivel para o formulario
     const preenchimento = montarPreenchimentoDespesa(despesa({ valorCentavos: 123456789 }))
 
     expect(preenchimento.valorReais).toBe('1234567,89')
+  })
+})
+
+/**
+ * RF-DES-11 — as tags acompanham a cópia; a nota, não.
+ *
+ * Tag classifica o gasto, e uma compra repetida cai na mesma classificação.
+ * Nota costuma ser sobre aquele lançamento específico, e herdá-la afirmaria
+ * algo que o usuário não escreveu para esta compra.
+ */
+describe('montarPreenchimentoDespesa — tags', () => {
+  it('copia as tags da despesa de origem', () => {
+    const p = montarPreenchimentoDespesa(despesa({ tags: ['trabalho', 'eletronicos'] }))
+    expect(p.tags).toEqual(['trabalho', 'eletronicos'])
+  })
+
+  it('copia as tags também em parcelada e assinatura', () => {
+    expect(montarPreenchimentoDespesa(despesa({ tipo: 'Parcelada', tags: ['casa'] })).tags).toEqual(
+      ['casa']
+    )
+    expect(
+      montarPreenchimentoDespesa(despesa({ tipo: 'Assinatura', tags: ['streaming'] })).tags
+    ).toEqual(['streaming'])
+  })
+
+  it('despesa sem tags produz lista vazia, e não undefined', () => {
+    expect(montarPreenchimentoDespesa(despesa({})).tags).toEqual([])
+  })
+
+  it('não carrega a nota da origem', () => {
+    const p = montarPreenchimentoDespesa(despesa({ nota: 'Reembolsável pela viagem de março' }))
+    expect(p).not.toHaveProperty('nota')
   })
 })

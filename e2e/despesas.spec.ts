@@ -49,8 +49,14 @@ test.describe('Despesa única + Fatura', () => {
     await expect(page.getByText('1/1')).toBeVisible()
     await expect(page.getByRole('cell', { name: /R\$\s*50,00/ })).toBeVisible()
 
-    // Total da fatura
-    await expect(page.getByText(/^Total$/)).toBeVisible()
+    // O total vive no card de resumo, junto do status e do botao de pagar.
+    // Ate set/2026 havia tambem um rodape na tabela repetindo a mesma quantia,
+    // e era o rotulo dele que este teste olhava — so o rotulo, nunca o numero.
+    // Com o rodape removido, a assercao passa a cobrar as duas coisas.
+    // A linha inteira, e nao o numero solto: "R$ 50,00" aparece tambem na
+    // celula da parcela, e um `getByText` exato casaria com as duas.
+    const linhaTotal = page.getByText('Total da fatura').locator('..')
+    await expect(linhaTotal).toContainText('R$ 50,00')
   })
   test('aceita separador de milhar no campo de valor', async ({ app }) => {
     // A gramatica de valor era duplicada em dezoito lugares e o ponto
@@ -79,6 +85,10 @@ test.describe('Despesa única + Fatura', () => {
     // Nao basta o formulario aceitar: o valor tem de chegar gravado certo.
     // '1.234,56' vale R$ 1.234,56 — nao R$ 1,23 nem R$ 123.456,00.
     await expect(page.getByRole('cell', { name: 'Notebook E2E' })).toBeVisible()
-    await expect(page.getByRole('cell', { name: /R\$\s*1\.234,56/ })).toBeVisible()
+    // `exact`, e nao substring: desde que Saidas abre agrupada, a linha de
+    // subtotal do cartao ("Inter Milhar E2E ... R$ 1.234,56") tambem e uma
+    // celula, e o regex tolerante casava com as duas. A celula de valor e a que
+    // interessa aqui — e a que prova que o separador de milhar chegou gravado.
+    await expect(page.getByRole('cell', { name: 'R$ 1.234,56', exact: true })).toBeVisible()
   })
 })
