@@ -1,10 +1,16 @@
+import type { Cartao } from '@domain/entities/cartao'
+import type { Categoria } from '@domain/entities/categoria'
 import type { OcorrenciaDoMes } from '@shared/ipc/despesa'
 
+/** Uma seção da tabela de Saídas: o cabeçalho com subtotal e as linhas dele. */
 export type GrupoOcorrencias = {
-  /** `cartao-<id>` ou `fora-do-cartao`. Estável para usar como key. */
+  /** `cartao-<id>`, `fora-do-cartao` ou `categoria-<id>`. Estável para usar como key. */
   chave: string
   rotulo: string
-  cartaoId: number | null
+  /** Cor da bolinha: do cartão ou da categoria. Ausente em "Fora do cartão". */
+  cor?: string
+  /** Só no agrupamento por categoria: a arquivada leva o selo (RF-CAT-02). */
+  arquivada?: boolean
   itens: OcorrenciaDoMes[]
   totalCentavos: number
 }
@@ -21,6 +27,39 @@ export function chaveDeOrigem(ocorrencia: Pick<OcorrenciaDoMes, 'cartaoId'>): st
 }
 
 /**
+ * Junta as ocorrências por chave, na ordem de primeira aparição, somando o
+ * IMPACTO — nunca o valor de origem: é o que faz o subtotal de um cartão bater
+ * com o total da fatura, e o de uma categoria com o ranking da Visão mensal.
+ */
+function juntarPorChave(
+  itens: readonly OcorrenciaDoMes[],
+  chaveDe: (o: OcorrenciaDoMes) => string,
+  cabecalhoDe: (o: OcorrenciaDoMes) => Pick<GrupoOcorrencias, 'rotulo' | 'cor' | 'arquivada'>
+): GrupoOcorrencias[] {
+  const porChave = new Map<string, GrupoOcorrencias>()
+
+  for (const item of itens) {
+    const chave = chaveDe(item)
+    const grupo = porChave.get(chave)
+
+    if (grupo) {
+      grupo.itens.push(item)
+      grupo.totalCentavos += item.impactoCentavos
+      continue
+    }
+
+    porChave.set(chave, {
+      chave,
+      ...cabecalhoDe(item),
+      itens: [item],
+      totalCentavos: item.impactoCentavos
+    })
+  }
+
+  return [...porChave.values()]
+}
+
+/**
  * Agrupa as ocorrências do mês por origem do dinheiro: uma seção por cartão
  * (a fatura daquele mês) e uma para o que sai direto da conta.
  *
@@ -34,34 +73,50 @@ export function chaveDeOrigem(ocorrencia: Pick<OcorrenciaDoMes, 'cartaoId'>): st
  * ordenada por data de compra; "Fora do cartão" é empurrado para o fim por ser
  * o único que não tem prazo de fechamento a acompanhar.
  */
-export function agruparOcorrencias(
+export function agruparPorOrigem(
   itens: readonly OcorrenciaDoMes[],
-  nomeCartao: (id: number) => string
+  cartoes: readonly Cartao[]
 ): GrupoOcorrencias[] {
-  const porChave = new Map<string, GrupoOcorrencias>()
+  const cartaoPorId = new Map(cartoes.map((c) => [c.id, c]))
 
-  for (const item of itens) {
-    const chave = chaveDeOrigem(item)
-    const grupo = porChave.get(chave)
+  const grupos = juntarPorChave(itens, chaveDeOrigem, (o) => {
+    if (o.cartaoId === null) return { rotulo: 'Fora do cartão' }
+    const cartao = cartaoPorId.get(o.cartaoId)
+    return { rotulo: cartao?.nome ?? `#${o.cartaoId}`, cor: cartao?.cor }
+  })
 
-    if (grupo) {
-      grupo.itens.push(item)
-      grupo.totalCentavos += item.impactoCentavos
-      continue
-    }
-
-    porChave.set(chave, {
-      chave,
-      rotulo: item.cartaoId === null ? 'Fora do cartão' : nomeCartao(item.cartaoId),
-      cartaoId: item.cartaoId,
-      itens: [item],
-      totalCentavos: item.impactoCentavos
-    })
-  }
-
-  const grupos = [...porChave.values()]
   return [
     ...grupos.filter((g) => g.chave !== FORA_DO_CARTAO),
     ...grupos.filter((g) => g.chave === FORA_DO_CARTAO)
   ]
+}
+
+/**
+ * Agrupa as ocorrências do mês por categoria, da maior soma para a menor — a
+ * ordem do ranking "Para onde foi" da Visão mensal, e com o mesmo número: as
+ * duas contas recortam o mês pelo mesmo critério (fatura quando há, data de
+ * referência quando não). Empate vai pelo nome.
+ *
+ * A ordem das linhas dentro de cada seção é a que chegou: é a ordenação
+ * escolhida no cabeçalho, que age dentro dos grupos.
+ */
+export function agruparPorCategoria(
+  itens: readonly OcorrenciaDoMes[],
+  categorias: readonly Categoria[]
+): GrupoOcorrencias[] {
+  const categoriaPorId = new Map(categorias.map((c) => [c.id, c]))
+
+  const grupos = juntarPorChave(
+    itens,
+    (o) => `categoria-${o.categoriaId}`,
+    (o) => {
+      const categoria = categoriaPorId.get(o.categoriaId)
+      if (!categoria) return { rotulo: `#${o.categoriaId}` }
+      return { rotulo: categoria.nome, cor: categoria.cor, arquivada: !categoria.ativo }
+    }
+  )
+
+  return grupos.sort(
+    (a, b) => b.totalCentavos - a.totalCentavos || a.rotulo.localeCompare(b.rotulo, 'pt-BR')
+  )
 }

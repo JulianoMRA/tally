@@ -360,3 +360,86 @@ describe('SaidasPage — filtros (RF-DES-23)', () => {
     expect(selectDe('Filtrar por tag').value).toBe('viagem')
   })
 })
+
+/** Rótulos dos cabeçalhos de seção, na ordem da tabela. */
+function cabecalhosDeSecao(): string[] {
+  return [...document.querySelectorAll('tr[data-grupo]')].map(
+    (tr) => tr.querySelector('td')?.textContent ?? ''
+  )
+}
+
+function colunas(): string[] {
+  return screen.getAllByRole('columnheader').map((th) => th.textContent ?? '')
+}
+
+describe('SaidasPage — agrupar por (RF-DES-14)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+  afterEach(cleanup)
+
+  const doMes = [
+    ocorrencia({
+      descricao: 'Mercado',
+      categoriaId: MORADIA.id,
+      cartaoId: INTER.id,
+      impactoCentavos: 10000
+    }),
+    ocorrencia({
+      descricao: 'Feira',
+      categoriaId: MORADIA.id,
+      cartaoId: null,
+      formaPagamento: 'Pix',
+      faturaId: null,
+      impactoCentavos: 5000
+    }),
+    ocorrencia({
+      descricao: 'Notebook',
+      tipo: 'Parcelada',
+      rotuloParcela: '2/10',
+      categoriaId: TRANSPORTE.id,
+      cartaoId: INTER.id,
+      impactoCentavos: 30000
+    })
+  ]
+
+  /** Abre a tela e espera as categorias carregarem, que nomeiam as seções. */
+  async function abrir() {
+    instalarApi(doMes)
+    renderizar()
+    const linha = await screen.findByRole('row', { name: /Mercado/ })
+    await waitFor(() => expect(within(linha).getByText('Moradia')).toBeTruthy())
+  }
+
+  it('abre agrupada por origem, com a coluna Categoria', async () => {
+    await abrir()
+
+    expect(selectDe('Agrupar por').value).toBe('origem')
+    expect(cabecalhosDeSecao()).toEqual(['Inter', 'Fora do cartão'])
+    expect(colunas()).toContain('Categoria')
+    expect(colunas()).not.toContain('Origem')
+  })
+
+  it('por categoria: seções da maior soma para a menor, e Origem no lugar de Categoria', async () => {
+    const usuario = userEvent.setup()
+    await abrir()
+
+    await usuario.selectOptions(selectDe('Agrupar por'), 'categoria')
+
+    expect(cabecalhosDeSecao()).toEqual(['Transporte', 'Moradia'])
+    expect(colunas()).toContain('Origem')
+    expect(colunas()).not.toContain('Categoria')
+  })
+
+  it('sem agrupamento: sem seções, com Categoria e Origem, e a origem diz cartão ou forma', async () => {
+    const usuario = userEvent.setup()
+    await abrir()
+
+    await usuario.selectOptions(selectDe('Agrupar por'), 'nenhum')
+
+    expect(cabecalhosDeSecao()).toEqual([])
+    expect(colunas()).toEqual(expect.arrayContaining(['Categoria', 'Origem']))
+    expect(within(screen.getByRole('row', { name: /Feira/ })).getByText('Pix')).toBeTruthy()
+    expect(within(screen.getByRole('row', { name: /Mercado/ })).getByText('Inter')).toBeTruthy()
+  })
+})

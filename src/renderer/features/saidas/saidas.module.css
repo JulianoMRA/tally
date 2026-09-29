@@ -88,8 +88,17 @@
    principal e tem especificidade maior que uma classe sozinha — foi a folha de
    contato que mostrou as datas ainda claras com `.colCompra { color }`. */
 tbody td.colCategoria,
+tbody td.colOrigem,
 tbody td.colCompra {
   color: var(--ink-2);
+}
+
+/* Coluna Origem (agrupado por categoria ou sem agrupamento): a bolinha sem
+   cor, nas linhas sem cartão, reserva o lugar e o texto fica alinhado. */
+.origemCelula {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* Data cabe em 92px com o formato DD/MM/AAAA; "desde 03/2024" cabe no mesmo. */
@@ -334,15 +343,22 @@ tr:focus-within > .colAcoes {
   line-height: 1.5;
 }
 
-/* Alterna o agrupamento por origem (RF-DES-14). Vive na faixa de filtros
-   porque muda como a lista se apresenta, não o que ela contém. */
-.agruparToggle {
+/* "Agrupar por" (RF-DES-14). Vive na faixa de filtros porque muda como a
+   lista se apresenta, não o que ela contém; fecha a segunda linha à direita. */
+.agrupar {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   margin-left: auto;
+}
+
+.agruparRotulo {
   font-size: var(--text-2);
   color: var(--ink-2);
   white-space: nowrap;
-  cursor: pointer;
+}
+
+.agruparSelect {
+  flex: 0 0 auto;
+  width: 130px;
 }
