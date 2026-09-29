@@ -3,11 +3,13 @@ import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
 import { Button, Field, Input, Modal, SegmentedControl, Select } from '../../components/ui'
 import type { OpcaoSegmentada } from '../../components/ui'
+import { categoriasParaEdicao, rotuloDeCategoria } from '../../lib/categorias'
 import { centavosParaReais, ehValorValido, parseCentavos } from '../../lib/dinheiro'
 import styles from './assinaturas.module.css'
 
 type Props = {
   assinatura: Despesa
+  /** Todas, inclusive as arquivadas: o modal decide o que oferecer. */
   categorias: Categoria[]
   onConfirmar: (input: {
     descricao: string
@@ -108,9 +110,9 @@ export function EditarAssinaturaModal({
 
       <Field label="Categoria">
         <Select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
-          {categorias.map((c) => (
+          {categoriasParaEdicao(categorias, assinatura.categoriaId).map((c) => (
             <option key={c.id} value={c.id}>
-              {c.nome}
+              {rotuloDeCategoria(c)}
             </option>
           ))}
         </Select>

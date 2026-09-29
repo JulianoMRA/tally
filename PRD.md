@@ -105,6 +105,10 @@ prevista; entram no escopo quando forem priorizadas.
 
 - **RF-CAT-02** — Editar e arquivar categorias. Despesas vinculadas a categoria arquivada continuam exibindo a categoria com indicador de inativa. Como em RF-CAR-02, arquivar pede confirmação explícita e vive no menu de ações; arquivadas aparecem esmaecidas ao fim da lista.
 
+  **Onde o indicador vale.** Até set/2026, Saídas e Busca carregavam só as categorias ativas, e a parcela de uma categoria arquivada aparecia como `#7`. As duas passam a carregar todas e mostram o nome com o selo **"Arquivada"**. Na Busca, as arquivadas entram no fim do filtro de categoria, marcadas "(arquivada)": o que se procura pode estar numa categoria arquivada depois da compra.
+
+  Nos **modais de edição** (Saídas e detalhe da fatura), o select oferece as ativas mais a categoria atual, mesmo arquivada, marcada "(arquivada)". Sem ela entre as opções, o `<select>` mostrava a primeira da lista como se fosse a categoria da despesa — o valor salvo seguia certo, a tela não. As outras arquivadas ficam de fora: mover uma despesa **para** uma categoria arquivada é o que arquivar impede, e pelo mesmo motivo o cadastro de nova saída só oferece ativas.
+
 ### 4.3 Despesas (RF-DES)
 
 - **RF-DES-01** — Cadastrar despesa **única** com: descrição, categoria, forma de pagamento (Crédito, Débito, Pix, Dinheiro), cartão (se crédito), valor, data da compra.

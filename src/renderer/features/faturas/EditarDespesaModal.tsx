@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { categoriasParaEdicao, rotuloDeCategoria } from '../../lib/categorias'
 import { centavosParaReais, ehValorValido, parseCentavos } from '../../lib/dinheiro'
 import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
@@ -7,6 +8,7 @@ import styles from './faturas.module.css'
 
 type Props = {
   despesa: Despesa
+  /** Todas, inclusive as arquivadas: o modal decide o que oferecer. */
   categorias: Categoria[]
   onConfirmar: (input: {
     descricao: string
@@ -98,9 +100,9 @@ export function EditarDespesaModal({ despesa, categorias, onConfirmar, onCancela
 
       <Field label="Categoria">
         <Select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
-          {categorias.map((c) => (
+          {categoriasParaEdicao(categorias, despesa.categoriaId).map((c) => (
             <option key={c.id} value={c.id}>
-              {c.nome}
+              {rotuloDeCategoria(c)}
             </option>
           ))}
         </Select>
