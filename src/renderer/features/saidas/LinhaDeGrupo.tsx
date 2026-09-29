@@ -1,3 +1,4 @@
+import { BolinhaDeCor } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
 import styles from './saidas.module.css'
 
@@ -26,14 +27,7 @@ export function LinhaDeGrupo({ rotulo, cor, totalCentavos, colunasDoRotulo }: Pr
     <tr className={styles.grupo}>
       <td colSpan={colunasDoRotulo}>
         <span className={styles.grupoRotulo}>
-          {/* Sem cor, a bolinha continua ocupando o lugar: o texto de todos os
-              grupos começa na mesma posição. */}
-          <span
-            aria-hidden="true"
-            className={styles.bolinha}
-            data-bolinha={cor ? 'cor' : 'vazia'}
-            style={cor ? { background: cor } : undefined}
-          />
+          <BolinhaDeCor cor={cor} />
           {rotulo}
         </span>
       </td>
