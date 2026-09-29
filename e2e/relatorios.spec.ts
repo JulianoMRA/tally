@@ -33,7 +33,7 @@ test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06, RF-VIS-08)', () =>
     await irPara(page, 'Saídas')
     await abrirCadastroDeSaida(page)
     await page.getByLabel('Descrição').fill('Compra mercado')
-    await page.getByLabel('Categoria').selectOption({ label: 'Mercado E2E' })
+    await page.getByLabel(/^Categoria/).selectOption({ label: 'Mercado E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Rel E2E' })
     await page.getByLabel('Valor (R$)').fill('80,00')
     await page.getByLabel('Data da compra').fill(dataMercado)
@@ -42,7 +42,7 @@ test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06, RF-VIS-08)', () =>
 
     await abrirCadastroDeSaida(page)
     await page.getByLabel('Descrição').fill('Cinema')
-    await page.getByLabel('Categoria').selectOption({ label: 'Lazer E2E' })
+    await page.getByLabel(/^Categoria/).selectOption({ label: 'Lazer E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Rel E2E' })
     await page.getByLabel('Valor (R$)').fill('30,00')
     await page.getByLabel('Data da compra').fill(dataLazer)

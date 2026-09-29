@@ -21,7 +21,7 @@ test.describe('Faturas — chegada sem escolher cartão', () => {
     await page.getByRole('link', { name: 'Saídas' }).click()
     await abrirCadastroDeSaida(page)
     await page.getByLabel('Descrição').fill('Mercado Overview E2E')
-    await page.getByLabel('Categoria').selectOption({ label: 'Alimentação Overview E2E' })
+    await page.getByLabel(/^Categoria/).selectOption({ label: 'Alimentação Overview E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Overview E2E' })
     await page.getByLabel('Valor (R$)').fill('80,00')
     await page.getByLabel('Data da compra').fill('2026-06-03')

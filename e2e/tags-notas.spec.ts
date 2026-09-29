@@ -21,7 +21,7 @@ test.describe('Saídas — nota e tags', () => {
     ] as const) {
       await abrirCadastroDeSaida(page)
       await page.getByLabel('Descrição').fill(descricao)
-      await page.getByLabel('Categoria').selectOption({ label: 'Mercado Tag E2E' })
+      await page.getByLabel(/^Categoria/).selectOption({ label: 'Mercado Tag E2E' })
       await page.getByLabel('Cartão').selectOption({ label: 'Inter Tag E2E' })
       await page.getByLabel('Valor (R$)').fill(valor)
       await page.getByLabel('Data da compra').fill('2026-06-03')
@@ -85,7 +85,7 @@ test.describe('Saídas — nota e tags', () => {
     const painel = page.getByRole('dialog', { name: 'Nova saída' })
 
     await painel.getByLabel('Descrição').fill('Notebook Cadastro E2E')
-    await painel.getByLabel('Categoria').selectOption({ label: 'Casa Cadastro E2E' })
+    await painel.getByLabel(/^Categoria/).selectOption({ label: 'Casa Cadastro E2E' })
     await painel.getByLabel('Cartão').selectOption({ label: 'Inter Cadastro E2E' })
     await painel.getByLabel('Valor (R$)').fill('500,00')
     await painel.getByLabel('Data da compra').fill('2026-06-03')

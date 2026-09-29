@@ -48,7 +48,7 @@ async function semear(app: ElectronApplication): Promise<Page> {
   await page.getByRole('radio', { name: 'Parcelada', exact: true }).click()
   // Descrição longa de propósito: é o pior caso para a largura da tabela.
   await page.getByLabel('Descrição').fill('Notebook Dell comprado em doze vezes sem juros')
-  await page.getByLabel('Categoria').selectOption({ label: 'Mercado Geometria E2E' })
+  await page.getByLabel(/^Categoria/).selectOption({ label: 'Mercado Geometria E2E' })
   await page.getByLabel('Cartão').selectOption({ label: 'Inter Geometria E2E' })
   await page.getByLabel('Valor total (R$)').fill('3600,00')
   await page.getByLabel('Total de parcelas').fill('6')

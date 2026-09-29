@@ -21,7 +21,7 @@ test.describe('Saídas — QoL (busca e duplicar)', () => {
     ] as const) {
       await abrirCadastroDeSaida(page)
       await page.getByLabel('Descrição').fill(descricao)
-      await page.getByLabel('Categoria').selectOption({ label: 'Mercado QoL E2E' })
+      await page.getByLabel(/^Categoria/).selectOption({ label: 'Mercado QoL E2E' })
       await page.getByLabel('Cartão').selectOption({ label: 'Inter QoL E2E' })
       await page.getByLabel('Valor (R$)').fill(valor)
       await page.getByLabel('Data da compra').fill(dia)
@@ -66,7 +66,7 @@ test.describe('Saídas — QoL (busca e duplicar)', () => {
     await abrirCadastroDeSaida(page)
     await page.getByRole('radio', { name: 'Assinatura', exact: true }).click()
     await page.getByLabel('Descrição').fill('Streaming QoL')
-    await page.getByLabel('Categoria').selectOption({ label: 'Lazer QoL E2E' })
+    await page.getByLabel(/^Categoria/).selectOption({ label: 'Lazer QoL E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Nubank QoL E2E' })
     await page.getByLabel('Valor mensal (R$)').fill('39,90')
     await page.getByLabel('Data de início').fill('2026-06-01')

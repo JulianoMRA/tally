@@ -38,7 +38,7 @@ test.describe('Fatura vencida', () => {
     await ir(page, 'Saídas')
     await abrirCadastroDeSaida(page)
     await page.getByLabel('Descrição').fill('Compra retroativa de maio')
-    await page.getByLabel('Categoria').selectOption({ label: 'Mercado Vencida E2E' })
+    await page.getByLabel(/^Categoria/).selectOption({ label: 'Mercado Vencida E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Vencida E2E' })
     await page.getByLabel('Valor (R$)').fill('523,40')
     await page.getByLabel('Data da compra').fill('2026-05-03')

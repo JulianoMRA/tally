@@ -23,7 +23,7 @@ test.describe('Despesa única + Fatura', () => {
 
     await abrirCadastroDeSaida(page)
     await page.getByLabel('Descrição').fill('Supermercado E2E')
-    await page.getByLabel('Categoria').selectOption({ label: 'Alimentação E2E' })
+    await page.getByLabel(/^Categoria/).selectOption({ label: 'Alimentação E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter E2E' })
     await page.getByLabel('Valor (R$)').fill('50,00')
     // Seta data_compra para dia 03 (< fechamento 05 → fatura do mesmo mês)
@@ -76,7 +76,7 @@ test.describe('Despesa única + Fatura', () => {
 
     await abrirCadastroDeSaida(page)
     await page.getByLabel('Descrição').fill('Notebook E2E')
-    await page.getByLabel('Categoria').selectOption({ label: 'Eletronicos E2E' })
+    await page.getByLabel(/^Categoria/).selectOption({ label: 'Eletronicos E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Milhar E2E' })
     await page.getByLabel('Valor (R$)').fill('1.234,56')
     await page.getByLabel('Data da compra').fill('2026-06-03')

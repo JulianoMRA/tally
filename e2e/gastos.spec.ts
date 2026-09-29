@@ -18,7 +18,7 @@ test.describe('Gastos fora de cartão (RF-DES-01)', () => {
     await page.getByRole('radio', { name: 'Pix', exact: true }).click()
 
     await page.getByLabel('Descrição').fill('Feira E2E')
-    await page.getByLabel('Categoria').selectOption({ label: 'Mercado E2E' })
+    await page.getByLabel(/^Categoria/).selectOption({ label: 'Mercado E2E' })
     await page.getByLabel('Valor (R$)').fill('35,00')
     await page.getByLabel('Data da compra').fill('2026-06-10')
     await page.getByRole('button', { name: 'Registrar pix' }).click()
