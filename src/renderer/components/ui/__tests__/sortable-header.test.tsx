@@ -51,4 +51,39 @@ describe('SortableHeader', () => {
     const indicador = container.querySelector('[aria-hidden="true"]')
     expect(indicador?.textContent).toBe('↑')
   })
+
+  describe('alinhamento', () => {
+    it('alinha à esquerda por padrão, com a seta depois do rótulo', () => {
+      renderizar({ ativo: true, direcao: 'asc' })
+
+      const botao = screen.getByRole('button')
+      expect(screen.getByRole('columnheader').dataset.alinhamento).toBe('esquerda')
+      expect(botao.firstChild?.textContent).toBe('Valor')
+      expect(botao.lastChild?.textContent).toBe('↑')
+    })
+
+    // O CSS alinha o botão pela célula: `text-align` herdado não move item de
+    // flex, e o rótulo de toda coluna de valor ficava na borda esquerda.
+    it('declara na célula o alinhamento à direita, que o CSS consome', () => {
+      renderizar({ alinhamento: 'direita' })
+
+      expect(screen.getByRole('columnheader').dataset.alinhamento).toBe('direita')
+    })
+
+    // Com a seta à direita, ordenar pela coluna empurraria o rótulo para a
+    // esquerda e ele deixaria de terminar na borda dos valores.
+    it('em coluna à direita, põe a seta antes do rótulo', () => {
+      renderizar({ alinhamento: 'direita', ativo: true, direcao: 'desc' })
+
+      const botao = screen.getByRole('button')
+      expect(botao.firstChild?.textContent).toBe('↓')
+      expect(botao.lastChild?.textContent).toBe('Valor')
+    })
+
+    it('em coluna à direita e inativa, o botão tem só o rótulo', () => {
+      renderizar({ alinhamento: 'direita' })
+
+      expect(screen.getByRole('button').childNodes).toHaveLength(1)
+    })
+  })
 })

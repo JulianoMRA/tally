@@ -22,6 +22,17 @@
   user-select: none;
 }
 
+/* O `text-align: right` que a feature põe na célula não alcança o rótulo: ele é
+   item de flex, e quem posiciona item de flex é `justify-content`. Por isso o
+   alinhamento é declarado no próprio componente, e não herdado. */
+.th[data-alinhamento='direita'] {
+  text-align: right;
+}
+
+.th[data-alinhamento='direita'] .botao {
+  justify-content: flex-end;
+}
+
 .botao:hover {
   color: var(--ink);
 }

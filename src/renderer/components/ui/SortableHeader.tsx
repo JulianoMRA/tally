@@ -9,6 +9,13 @@ interface SortableHeaderProps {
   onSort: () => void
   /** Classe da célula, para alinhamento e largura definidos pela feature. */
   className?: string
+  /**
+   * Lado em que o rótulo encosta. `direita` é para coluna alinhada à direita
+   * (valor, status): sem isto o rótulo ficava na borda esquerda da coluna, longe
+   * do que nomeia — o `text-align` que a feature põe na célula não move o
+   * conteúdo do botão, que é flex.
+   */
+  alinhamento?: 'esquerda' | 'direita'
 }
 
 /**
@@ -23,22 +30,37 @@ interface SortableHeaderProps {
  * O `<button>` interno traz Enter e Espaço de graça, e `aria-sort` na célula
  * informa a leitores de tela por qual coluna e em que sentido a tabela está.
  */
-export function SortableHeader({ rotulo, ativo, direcao, onSort, className }: SortableHeaderProps) {
+export function SortableHeader({
+  rotulo,
+  ativo,
+  direcao,
+  onSort,
+  className,
+  alinhamento = 'esquerda'
+}: SortableHeaderProps) {
+  // Só na coluna ativa: reservar espaço fixo em todas engordava a tabela de
+  // parcelas o suficiente para transbordar o painel em 1280px.
+  const indicador = ativo && (
+    <span aria-hidden="true" className={styles.indicador}>
+      {direcao === 'asc' ? '↑' : '↓'}
+    </span>
+  )
+  // Em coluna à direita a seta vai ANTES do rótulo: depois dele, ordenar pela
+  // coluna empurraria o rótulo para a esquerda, e ele deixaria de terminar na
+  // mesma borda dos valores justamente quando a coluna está em foco.
+  const direita = alinhamento === 'direita'
+
   return (
     <th
       scope="col"
       className={[styles.th, className].filter(Boolean).join(' ')}
       aria-sort={ativo ? (direcao === 'asc' ? 'ascending' : 'descending') : 'none'}
+      data-alinhamento={alinhamento}
     >
       <button type="button" className={styles.botao} onClick={onSort}>
+        {direita && indicador}
         {rotulo}
-        {/* Só na coluna ativa: reservar espaço fixo em todas engordava a tabela
-            de parcelas o suficiente para transbordar o painel em 1280px. */}
-        {ativo && (
-          <span aria-hidden="true" className={styles.indicador}>
-            {direcao === 'asc' ? '↑' : '↓'}
-          </span>
-        )}
+        {!direita && indicador}
       </button>
     </th>
   )
