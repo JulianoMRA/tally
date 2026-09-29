@@ -66,7 +66,7 @@ export function RankingCategorias({ linhas, totalCentavos }: Props) {
                   {linha.limite.usoPct}% do limite
                 </span>
               ) : (
-                <span className={`${styles.rankUso} tnum`}>{Math.round(linha.fatiaPct)}%</span>
+                <span className={`${styles.rankUso} tnum`}>{linha.fatiaPctExibida}%</span>
               )}
             </li>
           ))}
