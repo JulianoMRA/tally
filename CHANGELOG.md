@@ -6,6 +6,28 @@ vista técnico.
 
 ---
 
+## v1.17.0 — A pizza volta, e o motivo da saída vira regra (set/2026)
+
+---
+
+**O que esta versão é.** Uma feature, **RF-VIS-08**: a pizza de gastos do mês por categoria volta à Visão mensal, como sexto card da aba Mês ("Divisão dos gastos"). Nenhuma migration, nenhum IPC novo, nenhuma dependência nova. Reverte, de forma consciente, uma decisão de ago/2026 — e por isso a entrada começa pelo motivo da decisão anterior.
+
+**Por que ela tinha saído, e o que mudou para poder voltar.** O refactor visual de ago/2026 removeu a pizza por dois motivos, registrados no PRD: repetia o dado do ranking "Para onde foi", e com sete fatias deixava de ser legível. Os dois viraram requisito em vez de serem ignorados. **No máximo seis fatias**: até seis categorias, uma cada; a partir de sete, as cinco maiores e **"Outros"** com a soma do resto, num cinza que não é cor de nenhuma categoria. E um card **ligado** ao ranking, não uma segunda cópia dele: mesma cor por categoria, mesma ordem (a maior começa às 12h, em sentido horário, então duas categorias da mesma cor ainda se distinguem pela posição) e os mesmos percentuais. O ranking responde "quanto"; a pizza, "que parte do todo".
+
+**O card.** Fica na coluna direita, abaixo de "Fora do cartão", no espaço que sobrava ao lado do ranking — fora de cartão costuma ter poucas linhas e a coluna principal é a mais longa, então a tela não ficou mais alta a partir de 1180px. A legenda leva nome e percentual, sem R$, que já está no ranking. Passar o mouse numa fatia **ou** na linha da legenda acende o par, esmaece o resto e abre uma dica com valor, nome e percentual; em "Outros", também quais categorias foram agrupadas, resumidas em três nomes e "e mais N". Categoria com total R$ 0,00 fica fora da pizza e continua no ranking.
+
+**Os percentuais do ranking passam a somar 100.** Ele arredondava cada linha isoladamente: três categorias iguais apareciam como 33% + 33% + 33%. Se a pizza fechasse em 100 com outro método, a mesma categoria mostraria 34% num card e 33% no outro. `arredondarPercentuais()` aplica o maior resto — os pontos que faltam vão para os maiores restos, empate para quem vem primeiro, que no ranking é a categoria maior — e os dois cards usam a mesma conta. Efeito visível no ranking: no máximo 1 ponto, e só nas linhas sem limite de orçamento.
+
+**Arredondar antes de agrupar, não depois.** Arredondar as seis fatias já agrupadas também soma 100, e parece equivalente — mas diverge do ranking. Com Saúde em 7,5% e Presentes em 6,5%, os pontos que sobram vão para elas antes de Mercado (20,4%); somadas em "Outros" (14,0%), o ponto iria para Mercado, que apareceria com 21% na pizza e 20% no ranking. Há um teste com esse caso, e ele é o único que mata o mutante "arredonda depois" — conferido aplicando o mutante, porque o teste com sete categorias genéricas passava nas duas versões por coincidência dos números.
+
+**SVG próprio, não recharts.** A aba Mês não baixava o chunk de gráficos, que continua só na aba Análise. O desenho sai pronto de `montarPizza()`, uma função pura escrita com TDD — agrupamento, percentuais, ângulos pelo valor exato e o caminho de cada fatia, com a categoria única em dois semicírculos porque um arco só não fecha 360°. E não há animação de entrada para a folha de contato fotografar pela metade, o equívoco que ela já cometeu com o recharts. Um token novo, `--fatia-outros`, com par no guard de contraste nos dois temas (3,50:1 e 3,56:1 contra o card, mínimo de componente gráfico 3:1); separador de 2px na cor do card e contorno do disco, porque a cor padrão de categoria, quase preta, sumiria no tema escuro.
+
+**A folha de contato achou o único defeito visual, e precisou de conserto para achá-lo.** A semente criava cinco categorias, e "Outros" só nasce a partir da sétima. Não bastava criar duas: os gastos semeados caem em meses diferentes conforme o dia em que o script roda, porque dependem do fechamento de cada cartão — no dia 28, só duas das cinco caíam no mês corrente. Os gastos novos são do dia 1 no Nubank (fecha no 3, vence no 10), que conta no mês corrente em qualquer dia; de brinde, os três estados do orçamento aparecem juntos. Com isso a captura mostrou a dica, ancorada no centro do gráfico, **vazando pela borda do card** — algo que o jsdom não tem como ver. Ela passou a ficar presa ao quadro do gráfico, na metade oposta à fatia, e ganhou captura própria em 1024px, onde a pizza fica abaixo da dobra.
+
+**Suíte E2E completa: 124 de 124**, sem retentativa, na branch da feature. `relatorios.spec.ts` trocou a asserção "a pizza saiu" pela verificação da pizza. Pipeline unitário: 145 arquivos, **1421 testes**, pisos por camada atendidos. Fica registrado o que não foi visto: uma categoria na cor padrão no tema escuro, que a semente não usa — o contorno do disco existe para esse caso, mas não foi visto funcionando.
+
+---
+
 ## v1.16.0 — Controles que existiam por acidente (set/2026)
 
 ---
