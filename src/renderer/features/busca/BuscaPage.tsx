@@ -14,6 +14,7 @@ import {
   SortableHeader,
   Table
 } from '../../components/ui'
+import { ordenarParaFiltro, rotuloDeCategoria } from '../../lib/categorias'
 import { alfabetico, porData, porNumero, type Comparador } from '../../lib/comparadores'
 import { useOrdenacao } from '../../lib/use-ordenacao'
 import { useCargaAuxiliar } from '../../hooks/use-carga-auxiliar'
@@ -21,6 +22,7 @@ import { formatBRL } from '../../lib/format-brl'
 import { formatarMesReferencia } from '../../lib/formatar-data'
 import { mesAtualReferencia } from '../../lib/mes-atual'
 import { pluralizar } from '../../lib/pluralizar'
+import { RotuloCategoria } from '../categorias/RotuloCategoria'
 import { filtrarPorDescricao } from '../saidas/filtrar-saidas'
 import { useBusca } from './hooks/use-busca'
 import { MENSAGEM_PROBLEMA, periodoPadrao, validarPeriodo } from './periodo-busca'
@@ -66,13 +68,24 @@ export default function BuscaPage() {
     setCartoes,
     'Erro ao listar cartões.'
   )
-  useCargaAuxiliar(() => window.api.categoria.list(), setCategorias, 'Erro ao listar categorias.')
+  // Com as arquivadas: o que se busca pode estar numa categoria arquivada
+  // depois da compra, e sem ela a linha mostrava "#7" (RF-CAT-02).
+  useCargaAuxiliar(
+    () => window.api.categoria.list({ incluirArquivados: true }),
+    setCategorias,
+    'Erro ao listar categorias.'
+  )
   useCargaAuxiliar(() => window.api.despesa.listarTags(), setTagsConhecidas, 'Erro ao listar tags.')
 
   const problema = validarPeriodo(periodo)
 
-  function nomeCategoria(id: number): string {
-    return categorias.find((c) => c.id === id)?.nome ?? `#${id}`
+  const opcoesDeCategoria = useMemo(() => ordenarParaFiltro(categorias), [categorias])
+  const categoriaPorId = useMemo(() => new Map(categorias.map((c) => [c.id, c])), [categorias])
+
+  function celulaDeCategoria(id: number) {
+    const categoria = categoriaPorId.get(id)
+    if (!categoria) return `#${id}`
+    return <RotuloCategoria nome={categoria.nome} arquivada={!categoria.ativo} />
   }
 
   /** A origem do dinheiro: o cartão, quando há; a forma, quando não. */
@@ -163,9 +176,9 @@ export default function BuscaPage() {
             <Field label="Categoria">
               <Select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
                 <option value={TODAS}>Todas as categorias</option>
-                {categorias.map((c) => (
+                {opcoesDeCategoria.map((c) => (
                   <option key={c.id} value={String(c.id)}>
-                    {c.nome}
+                    {rotuloDeCategoria(c)}
                   </option>
                 ))}
               </Select>
@@ -254,7 +267,7 @@ export default function BuscaPage() {
                         </span>
                       )}
                     </td>
-                    <td>{nomeCategoria(o.categoriaId)}</td>
+                    <td>{celulaDeCategoria(o.categoriaId)}</td>
                     <td>{origem(o)}</td>
                     <td className="mono">{o.rotuloParcela}</td>
                     <td className={`${styles.colValor} tnum`}>{formatBRL(o.impactoCentavos)}</td>

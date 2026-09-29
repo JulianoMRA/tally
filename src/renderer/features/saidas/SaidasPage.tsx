@@ -43,6 +43,7 @@ import { useOrdenacao } from '../../lib/use-ordenacao'
 import { DespesaForm } from '../despesas/DespesaForm'
 import { EditarDespesaModal } from '../faturas/EditarDespesaModal'
 import { EditarAssinaturaModal } from '../assinaturas/EditarAssinaturaModal'
+import { RotuloCategoria } from '../categorias/RotuloCategoria'
 import { descreverDataDaOcorrencia } from './descrever-data-da-ocorrencia'
 import { agruparOcorrencias } from './agrupar-ocorrencias'
 import { filtrarPorDescricao } from './filtrar-saidas'
@@ -134,9 +135,18 @@ export default function SaidasPage() {
     setCartoes,
     'Erro ao listar cartões.'
   )
-  useCargaAuxiliar(() => window.api.categoria.list(), setCategorias, 'Erro ao listar categorias.')
+  // Com as arquivadas, como os cartões: uma parcela de categoria arquivada
+  // aparecia como "#7" (RF-CAT-02). Quem só pode escolher entre ativas — o
+  // cadastro — recebe `categoriasAtivas`; os modais de edição filtram sozinhos.
+  useCargaAuxiliar(
+    () => window.api.categoria.list({ incluirArquivados: true }),
+    setCategorias,
+    'Erro ao listar categorias.'
+  )
 
   const cartoesAtivos = useMemo(() => cartoes.filter((c) => c.ativo), [cartoes])
+  const categoriasAtivas = useMemo(() => categorias.filter((c) => c.ativo), [categorias])
+  const categoriaPorId = useMemo(() => new Map(categorias.map((c) => [c.id, c])), [categorias])
 
   function nomeCartao(id: number | null): string {
     if (id === null) return '—'
@@ -147,8 +157,10 @@ export default function SaidasPage() {
     return cartoes.find((c) => c.id === id)?.cor
   }
 
-  function nomeCategoria(id: number): string {
-    return categorias.find((c) => c.id === id)?.nome ?? `#${id}`
+  function celulaDeCategoria(id: number) {
+    const categoria = categoriaPorId.get(id)
+    if (!categoria) return `#${id}`
+    return <RotuloCategoria nome={categoria.nome} arquivada={!categoria.ativo} />
   }
 
   const despesaPorId = useMemo(() => new Map(despesas.map((d) => [d.id, d])), [despesas])
@@ -718,7 +730,7 @@ export default function SaidasPage() {
                                 </div>
                               )}
                             </td>
-                            <td>{nomeCategoria(o.categoriaId)}</td>
+                            <td>{celulaDeCategoria(o.categoriaId)}</td>
                             <td className={styles.colCompra}>
                               <CelulaDeCompra ocorrencia={o} />
                             </td>
@@ -780,7 +792,7 @@ export default function SaidasPage() {
           <DespesaForm
             key={dupSeq}
             cartoes={cartoesAtivos}
-            categorias={categorias}
+            categorias={categoriasAtivas}
             preenchimento={preenchimento ?? undefined}
             onSalvarUnica={handleSalvarUnica}
             onSalvarUnicaForaCartao={handleSalvarUnicaForaCartao}

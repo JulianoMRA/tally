@@ -127,3 +127,12 @@
   gap: 8px;
   margin-top: 4px;
 }
+
+/* `RotuloCategoria`: nome e selo de arquivada numa célula de tabela. Quebra
+   para baixo em vez de estourar a coluna quando o nome é longo. */
+.rotuloCategoria {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
