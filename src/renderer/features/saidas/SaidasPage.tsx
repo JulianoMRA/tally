@@ -46,7 +46,15 @@ import { EditarAssinaturaModal } from '../assinaturas/EditarAssinaturaModal'
 import { RotuloCategoria } from '../categorias/RotuloCategoria'
 import { descreverDataDaOcorrencia } from './descrever-data-da-ocorrencia'
 import { agruparOcorrencias } from './agrupar-ocorrencias'
-import { filtrarPorDescricao } from './filtrar-saidas'
+import {
+  FILTROS_PADRAO,
+  contarPorTipo,
+  filtrarOcorrencias,
+  temFiltroAtivo,
+  type FiltroDeTipo,
+  type FiltrosDeSaidas
+} from './filtrar-saidas'
+import { opcoesDeCategoria, opcoesDeOrigem, opcoesDeTag } from './opcoes-de-filtro'
 import { LinhaDeGrupo } from './LinhaDeGrupo'
 import { resumoDoPainel } from './resumo-do-painel'
 import { montarPreenchimentoDespesa, type PreenchimentoDespesa } from './montar-preenchimento'
@@ -55,8 +63,6 @@ import { useOcorrencias } from './hooks/use-ocorrencias'
 import { useSaidas } from './hooks/use-saidas'
 import styles from './saidas.module.css'
 import { useCargaAuxiliar } from '../../hooks/use-carga-auxiliar'
-
-type Filtro = 'todas' | 'foraCartao' | 'parcelada' | 'assinatura'
 
 type UltimaRegistrada = {
   descricao: string
@@ -77,8 +83,6 @@ const COMPARADORES: Record<string, Comparador<OcorrenciaDoMes>> = {
   valor: porNumero((o) => o.impactoCentavos)
 }
 
-type ClassificavelPorTipo = Pick<Despesa, 'tipo' | 'formaPagamento'>
-
 /**
  * Célula da coluna Compra. O tom de apoio separa "aconteceu neste dia" de
  * "corre desde", que é a diferença entre uma compra e uma assinatura.
@@ -88,22 +92,14 @@ function CelulaDeCompra({ ocorrencia }: { ocorrencia: OcorrenciaDoMes }) {
   return <span className={apoio ? styles.compraApoio : 'tnum'}>{texto}</span>
 }
 
-function pertenceAoFiltro(d: ClassificavelPorTipo, filtro: Filtro): boolean {
-  switch (filtro) {
-    case 'todas':
-      return true
-    case 'foraCartao':
-      return d.tipo === 'Unica' && d.formaPagamento !== 'Credito'
-    case 'parcelada':
-      return d.tipo === 'Parcelada'
-    case 'assinatura':
-      return d.tipo === 'Assinatura'
-  }
-}
-
-const FILTROS: readonly { valor: Filtro; rotulo: string }[] = [
+/**
+ * Abas por tipo, que partem o mês: somadas, dão "Todas". A origem ("Fora do
+ * cartão") saiu daqui para um filtro próprio — as abas antigas misturavam os
+ * dois eixos e não somavam.
+ */
+const FILTROS_DE_TIPO: readonly { valor: FiltroDeTipo; rotulo: string }[] = [
   { valor: 'todas', rotulo: 'Todas' },
-  { valor: 'foraCartao', rotulo: 'Fora do cartão' },
+  { valor: 'avista', rotulo: 'À vista' },
   { valor: 'parcelada', rotulo: 'Parceladas' },
   { valor: 'assinatura', rotulo: 'Assinaturas' }
 ]
@@ -118,9 +114,9 @@ export default function SaidasPage() {
   const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [ultimaRegistrada, setUltimaRegistrada] = useState<UltimaRegistrada | null>(null)
-  const [filtro, setFiltro] = useState<Filtro>('todas')
-  const [busca, setBusca] = useState('')
-  const [tagFiltro, setTagFiltro] = useState('')
+  // Sobrevive à troca de mês (acompanhar uma categoria mês a mês) e volta ao
+  // padrão ao sair da tela, como antes.
+  const [filtros, setFiltros] = useState<FiltrosDeSaidas>(FILTROS_PADRAO)
   const [preenchimento, setPreenchimento] = useState<PreenchimentoDespesa | null>(null)
   const [dupSeq, setDupSeq] = useState(0)
   const [cadastroAberto, setCadastroAberto] = useState(false)
@@ -168,32 +164,37 @@ export default function SaidasPage() {
 
   const despesaPorId = useMemo(() => new Map(despesas.map((d) => [d.id, d])), [despesas])
 
+  function mudarFiltro<K extends keyof FiltrosDeSaidas>(campo: K, valor: FiltrosDeSaidas[K]) {
+    setFiltros((atuais) => ({ ...atuais, [campo]: valor }))
+  }
+
+  function limparFiltros() {
+    setFiltros(FILTROS_PADRAO)
+  }
+
   // A contagem entra no rótulo do próprio filtro: dizer "Parceladas 2" antes do
   // clique poupa o clique quando a resposta é zero, e dá a composição do mês de
-  // relance.
-  const filtrosComContagem = useMemo(
-    () =>
-      FILTROS.map((f) => ({
-        valor: f.valor,
-        rotulo: `${f.rotulo} ${ocorrencias.filter((o) => pertenceAoFiltro(o, f.valor)).length}`
-      })),
-    [ocorrencias]
+  // relance. Ela respeita os outros filtros — é o que apareceria com o clique.
+  const opcoesDeTipo = useMemo(() => {
+    const contagem = contarPorTipo(ocorrencias, filtros)
+    return FILTROS_DE_TIPO.map((f) => ({
+      valor: f.valor,
+      rotulo: `${f.rotulo} ${contagem[f.valor]}`
+    }))
+  }, [ocorrencias, filtros])
+
+  const origensDoMes = useMemo(
+    () => opcoesDeOrigem(ocorrencias, cartoes, filtros.origem),
+    [ocorrencias, cartoes, filtros.origem]
   )
+  const categoriasDoMes = useMemo(
+    () => opcoesDeCategoria(ocorrencias, categorias, filtros.categoria),
+    [ocorrencias, categorias, filtros.categoria]
+  )
+  const tagsDoMes = useMemo(() => opcoesDeTag(ocorrencias, filtros.tag), [ocorrencias, filtros.tag])
 
-  const tagsDisponiveis = useMemo(() => {
-    const set = new Set<string>()
-    for (const o of ocorrencias) for (const t of o.tags) set.add(t)
-    return [...set].sort((a, b) => a.localeCompare(b, 'pt-BR'))
-  }, [ocorrencias])
-
-  const filtradas = useMemo(() => {
-    const porTipo = ocorrencias.filter((o) => {
-      if (!pertenceAoFiltro(o, filtro)) return false
-      if (tagFiltro && !o.tags.includes(tagFiltro)) return false
-      return true
-    })
-    return filtrarPorDescricao(porTipo, busca)
-  }, [ocorrencias, filtro, busca, tagFiltro])
+  const filtradas = useMemo(() => filtrarOcorrencias(ocorrencias, filtros), [ocorrencias, filtros])
+  const filtroAtivo = temFiltroAtivo(filtros)
 
   // `dupSeq` remonta o DespesaForm: ele guarda o estado dos campos internamente
   // e sem a troca de key um segundo "Nova saída" reabriria com o que sobrou do
@@ -636,53 +637,107 @@ export default function SaidasPage() {
           }
           flush
         >
+          {/* Duas linhas: o tipo e a busca, que valem para qualquer mês, em
+              cima; os filtros que vêm do mês (origem, categoria, tag) embaixo,
+              com o agrupamento fechando à direita. Não cabem numa linha só na
+              janela padrão. */}
           <div className={styles.filtros}>
-            <SegmentedControl
-              opcoes={filtrosComContagem}
-              valor={filtro}
-              onChange={setFiltro}
-              label="Filtrar lançamentos por tipo"
-            />
-            {tagsDisponiveis.length > 0 && (
+            <div className={styles.filtrosLinha}>
+              <SegmentedControl
+                opcoes={opcoesDeTipo}
+                valor={filtros.tipo}
+                onChange={(tipo) => mudarFiltro('tipo', tipo)}
+                label="Filtrar lançamentos por tipo"
+              />
+              <div className={styles.buscaWrap}>
+                <Input
+                  type="search"
+                  value={filtros.busca}
+                  onChange={(e) => mudarFiltro('busca', e.target.value)}
+                  placeholder="Buscar por descrição…"
+                  aria-label="Buscar saídas"
+                />
+              </div>
+            </div>
+            <div className={styles.filtrosLinha}>
               <Select
-                value={tagFiltro}
-                onChange={(e) => setTagFiltro(e.target.value)}
-                aria-label="Filtrar por tag"
-                className={styles.filtroTag}
+                value={filtros.origem}
+                onChange={(e) => mudarFiltro('origem', e.target.value)}
+                aria-label="Filtrar por origem"
+                className={styles.filtroSelect}
               >
-                <option value="">Todas as tags</option>
-                {tagsDisponiveis.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
+                <option value="">Todas as origens</option>
+                {origensDoMes.map((o) => (
+                  <option key={o.valor} value={o.valor}>
+                    {o.rotulo}
                   </option>
                 ))}
               </Select>
-            )}
-            <div className={styles.buscaWrap}>
-              <Input
-                type="search"
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar por descrição…"
-                aria-label="Buscar saídas"
-              />
+              <Select
+                value={filtros.categoria}
+                onChange={(e) => mudarFiltro('categoria', e.target.value)}
+                aria-label="Filtrar por categoria"
+                className={styles.filtroSelect}
+              >
+                <option value="">Todas as categorias</option>
+                {categoriasDoMes.map((c) => (
+                  <option key={c.valor} value={c.valor}>
+                    {c.rotulo}
+                  </option>
+                ))}
+              </Select>
+              {/* Só com tag no mês ou uma tag escolhida: quem não usa tag não
+                  paga um select vazio, e quem filtrou continua vendo o filtro
+                  num mês sem tags. */}
+              {tagsDoMes.length > 0 && (
+                <Select
+                  value={filtros.tag}
+                  onChange={(e) => mudarFiltro('tag', e.target.value)}
+                  aria-label="Filtrar por tag"
+                  className={styles.filtroSelect}
+                >
+                  <option value="">Todas as tags</option>
+                  {tagsDoMes.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </Select>
+              )}
+              {filtroAtivo && (
+                <Button variant="ghost" size="sm" onClick={limparFiltros}>
+                  Limpar filtros
+                </Button>
+              )}
+              {/* Ao lado dos filtros porque é da mesma família: muda como a
+                  lista se apresenta, não o que ela contém. */}
+              <label className={styles.agruparToggle}>
+                <input
+                  type="checkbox"
+                  checked={agrupado}
+                  onChange={(e) => setAgrupado(e.target.checked)}
+                />
+                Agrupar por origem
+              </label>
             </div>
-            {/* Ao lado dos outros filtros porque é da mesma família: muda como
-                a lista se apresenta, não o que ela contém. */}
-            <label className={styles.agruparToggle}>
-              <input
-                type="checkbox"
-                checked={agrupado}
-                onChange={(e) => setAgrupado(e.target.checked)}
-              />
-              Agrupar por origem
-            </label>
           </div>
 
+          {/* Dois vazios diferentes: o mês não tem lançamento (nada a limpar),
+              ou os filtros esconderam tudo. A tela usava a segunda frase nos
+              dois casos, inclusive sem filtro nenhum. */}
           {loading ? (
             <EmptyState title="Carregando…" />
+          ) : ocorrencias.length === 0 ? (
+            <EmptyState title={`Nenhuma saída em ${formatarMesReferencia(mes)}.`} />
           ) : itensOrdenados.length === 0 ? (
-            <EmptyState title="Nenhuma saída para este filtro." />
+            <EmptyState
+              title="Nenhuma saída para este filtro."
+              action={
+                <Button variant="secondary" size="sm" onClick={limparFiltros}>
+                  Limpar filtros
+                </Button>
+              }
+            />
           ) : (
             <div className={styles.tabelaWrap}>
               <Table densidade="compacta">

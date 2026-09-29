@@ -42,19 +42,24 @@
    inferior é a mesma do cabeçalho — os dois se leem como um bloco só. */
 .filtros {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
-  flex-wrap: wrap;
   padding: var(--dens-3) 16px;
   border-bottom: 1px solid var(--rule);
 }
 
-/* O Select não tem largura própria e, com a lista agora em largura inteira,
-   esticava sozinho até o fim da linha — empurrando busca e "+ Nova saída" para
-   uma terceira linha. */
-.filtroTag {
+.filtrosLinha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* O Select não tem largura própria e, com a lista em largura inteira, esticava
+   sozinho até o fim da linha — empurrando o resto para uma linha a mais. */
+.filtroSelect {
   flex: 0 0 auto;
-  width: 170px;
+  width: 180px;
 }
 
 /* Fecha a régua de filtros à direita: filtrar por tipo, por tag e por texto
@@ -335,6 +340,7 @@ tr:focus-within > .colAcoes {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  margin-left: auto;
   font-size: var(--text-2);
   color: var(--ink-2);
   white-space: nowrap;

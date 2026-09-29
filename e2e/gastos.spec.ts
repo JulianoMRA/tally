@@ -26,8 +26,10 @@ test.describe('Gastos fora de cartão (RF-DES-01)', () => {
     // Banner cita Pix
     await expect(page.getByRole('strong').filter({ hasText: 'Pix' })).toBeVisible()
 
-    // --- Filtro "Fora do cartão" mostra a despesa ---
-    await page.getByRole('radio', { name: /^Fora do cartão/ }).click()
+    // --- Origem "Fora do cartão" mostra a despesa ---
+    // Era uma aba, que misturava origem com tipo; virou o filtro de origem,
+    // com o mesmo critério do agrupamento (o que não tem cartão).
+    await page.getByLabel('Filtrar por origem').selectOption({ label: 'Fora do cartão' })
     await expect(page.getByRole('cell', { name: 'Feira E2E' })).toBeVisible()
     await expect(
       page
@@ -39,7 +41,9 @@ test.describe('Gastos fora de cartão (RF-DES-01)', () => {
     // --- Seletor de mês: 2026-07 não tem lançamentos ---
     // `exact: true` porque "Mês anterior" e "Próximo mês" também casam com o
     // rótulo parcial, agora que a tela tem navegação de mês própria.
+    // Mês sem lançamento diz o mês, e não "para este filtro": com o mês vazio,
+    // não há filtro a culpar.
     await page.getByLabel('Mês', { exact: true }).fill('2026-07')
-    await expect(page.getByText('Nenhuma saída para este filtro.')).toBeVisible()
+    await expect(page.getByText('Nenhuma saída em julho de 2026.')).toBeVisible()
   })
 })

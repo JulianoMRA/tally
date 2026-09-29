@@ -9,7 +9,16 @@ export type GrupoOcorrencias = {
   totalCentavos: number
 }
 
-const FORA_DO_CARTAO = 'fora-do-cartao'
+export const FORA_DO_CARTAO = 'fora-do-cartao'
+
+/**
+ * Chave da origem do dinheiro: `cartao-<id>` ou `fora-do-cartao`. É a mesma no
+ * agrupamento e no filtro de origem — "Fora do cartão" tem um significado só
+ * na tela, o que não tem cartão, e inclui a recorrente no Pix.
+ */
+export function chaveDeOrigem(ocorrencia: Pick<OcorrenciaDoMes, 'cartaoId'>): string {
+  return ocorrencia.cartaoId === null ? FORA_DO_CARTAO : `cartao-${ocorrencia.cartaoId}`
+}
 
 /**
  * Agrupa as ocorrências do mês por origem do dinheiro: uma seção por cartão
@@ -32,7 +41,7 @@ export function agruparOcorrencias(
   const porChave = new Map<string, GrupoOcorrencias>()
 
   for (const item of itens) {
-    const chave = item.cartaoId === null ? FORA_DO_CARTAO : `cartao-${item.cartaoId}`
+    const chave = chaveDeOrigem(item)
     const grupo = porChave.get(chave)
 
     if (grupo) {

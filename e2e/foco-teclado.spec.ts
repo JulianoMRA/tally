@@ -124,7 +124,7 @@ test.describe('Navegação por teclado', () => {
     await page.keyboard.press('ArrowRight')
 
     // Roving tabindex: a opção escolhida acompanha a seta.
-    await expect(grupo.getByRole('radio', { name: /^Fora do cartão/ })).toHaveAttribute(
+    await expect(grupo.getByRole('radio', { name: /^À vista/ })).toHaveAttribute(
       'aria-checked',
       'true'
     )
