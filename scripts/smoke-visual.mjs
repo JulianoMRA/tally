@@ -333,6 +333,34 @@ await page.evaluate(async () => {
   })
   await api.categoria.arquivar(viagem.id)
 
+  // Uma parcelada e uma recorrente no Pix no mês corrente, e tags: sem elas a
+  // folha nunca mostra "1/4 de R$ 480,00", "mensal" fora do cartão nem o filtro
+  // de tag de Saídas. Transporte não tem limite de orçamento, então os três
+  // estados montados acima (Mercado folgado, Casa perto, Lazer estourado) ficam
+  // como estão.
+  const pneus = await api.despesa.criarParceladaCredito({
+    descricao: 'Pneus novos',
+    categoriaId: cats.Transporte.id,
+    cartaoId: nubank.id,
+    totalParcelas: 4,
+    valorTotalCentavos: 48000,
+    dataCompra: primeiroDiaDeMesesAtras(0)
+  })
+  await api.despesa.definirNotaETags({
+    despesaId: pneus.despesa.id,
+    nota: null,
+    tags: ['carro']
+  })
+  await api.despesa.criarAssinaturaForaCartao({
+    descricao: 'Aluguel da garagem',
+    categoriaId: cats.Transporte.id,
+    formaPagamento: 'Pix',
+    valorMensalCentavos: 15000,
+    mesInicial: primeiroDiaDeMesesAtras(2).slice(0, 7),
+    diaCobranca: 5,
+    recorreAte: null
+  })
+
   await api.despesa.criarUnicaForaCartao({
     descricao: 'Feira no Pix',
     categoriaId: cats.Mercado.id,
