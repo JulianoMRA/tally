@@ -11,7 +11,7 @@ async function cadastrarUnica(
   await abrirCadastroDeSaida(page)
   const painel = page.getByRole('dialog', { name: 'Nova saída' })
   await painel.getByLabel('Descrição').fill(opcoes.descricao)
-  await painel.getByLabel('Categoria').selectOption({ label: opcoes.categoria })
+  await painel.getByLabel(/^Categoria/).selectOption({ label: opcoes.categoria })
   await painel.getByLabel('Cartão').selectOption({ label: opcoes.cartao })
   await painel.getByLabel('Valor (R$)').fill(opcoes.valor)
   await painel.getByLabel('Data da compra').fill(opcoes.data)

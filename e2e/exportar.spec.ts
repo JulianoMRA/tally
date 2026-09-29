@@ -16,7 +16,7 @@ test.describe('Exportação — rota de impressão', () => {
     await abrirCadastroDeSaida(page)
     await page.getByRole('radio', { name: 'Pix', exact: true }).click()
     await page.getByLabel('Descrição').fill('Feira Print E2E')
-    await page.getByLabel('Categoria').selectOption({ label: 'Mercado Print E2E' })
+    await page.getByLabel(/^Categoria/).selectOption({ label: 'Mercado Print E2E' })
     await page.getByLabel('Valor (R$)').fill('42,00')
     await page.getByLabel('Data da compra').fill('2026-06-10')
     await page.getByRole('button', { name: 'Registrar pix' }).click()

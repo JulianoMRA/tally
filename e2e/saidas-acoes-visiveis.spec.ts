@@ -31,7 +31,7 @@ async function semear(app: ElectronApplication): Promise<Page> {
   // Descrição longa de propósito: é o pior caso para a largura da tabela.
   await abrirCadastroDeSaida(page)
   await page.getByLabel('Descrição').fill('Compra grande do mes no supermercado do bairro')
-  await page.getByLabel('Categoria').selectOption({ label: 'Mercado Acoes E2E' })
+  await page.getByLabel(/^Categoria/).selectOption({ label: 'Mercado Acoes E2E' })
   await page.getByLabel('Cartão').selectOption({ label: 'Inter Acoes E2E' })
   await page.getByLabel('Valor (R$)').fill('1234,56')
   await page.getByLabel('Data da compra').fill('2026-06-03')
@@ -45,7 +45,7 @@ async function semear(app: ElectronApplication): Promise<Page> {
   await abrirCadastroDeSaida(page)
   await page.getByRole('radio', { name: 'Assinatura', exact: true }).click()
   await page.getByLabel('Descrição').fill('Streaming de video mensal')
-  await page.getByLabel('Categoria').selectOption({ label: 'Mercado Acoes E2E' })
+  await page.getByLabel(/^Categoria/).selectOption({ label: 'Mercado Acoes E2E' })
   await page.getByLabel('Cartão').selectOption({ label: 'Inter Acoes E2E' })
   await page.getByLabel('Valor mensal (R$)').fill('39,90')
   await page.getByLabel('Data de início').fill('2026-06-01')

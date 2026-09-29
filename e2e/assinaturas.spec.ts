@@ -26,7 +26,7 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     await page.getByRole('radio', { name: 'Assinatura', exact: true }).click()
 
     await page.getByLabel('Descrição').fill('Spotify E2E')
-    await page.getByLabel('Categoria').selectOption({ label: 'Streaming E2E' })
+    await page.getByLabel(/^Categoria/).selectOption({ label: 'Streaming E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Assinatura E2E' })
     await page.getByLabel('Valor mensal (R$)').fill('21,90')
     await page.getByLabel('Data de início').fill('2026-06-03')

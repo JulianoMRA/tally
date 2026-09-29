@@ -15,7 +15,7 @@ async function cadastrarRecorrente(
   await painel.getByRole('radio', { name: 'Pix', exact: true }).click()
 
   await painel.getByLabel('Descrição').fill(opcoes.descricao)
-  await painel.getByLabel('Categoria').selectOption({ label: opcoes.categoria })
+  await painel.getByLabel(/^Categoria/).selectOption({ label: opcoes.categoria })
   await painel.getByLabel('Valor mensal (R$)').fill(opcoes.valor)
   await painel.getByLabel('Primeira cobrança').fill(opcoes.mes)
   await painel.getByLabel('Todo dia').fill(opcoes.dia)
@@ -76,7 +76,7 @@ test.describe('Despesa recorrente fora de cartão (RF-DES-16, RN-08)', () => {
     await painel.getByRole('radio', { name: 'Assinatura' }).click()
     await painel.getByRole('radio', { name: 'Pix', exact: true }).click()
     await painel.getByLabel('Descrição').fill('Curso Recorrente E2E')
-    await painel.getByLabel('Categoria').selectOption({ label: 'Contrato Recorrente E2E' })
+    await painel.getByLabel(/^Categoria/).selectOption({ label: 'Contrato Recorrente E2E' })
     await painel.getByLabel('Valor mensal (R$)').fill('300,00')
     await painel.getByLabel('Primeira cobrança').fill('2026-10')
     await painel.getByLabel('Todo dia').fill('20')

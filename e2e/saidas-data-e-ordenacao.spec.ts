@@ -28,7 +28,7 @@ async function semearMes(page: Page): Promise<void> {
   ] as const) {
     await abrirCadastroDeSaida(page)
     await page.getByLabel('Descrição').fill(descricao)
-    await page.getByLabel('Categoria').selectOption({ label: 'Mercado Data E2E' })
+    await page.getByLabel(/^Categoria/).selectOption({ label: 'Mercado Data E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Data E2E' })
     await page.getByLabel('Valor (R$)').fill(valor)
     await page.getByLabel('Data da compra').fill(`2026-06-${dia}`)

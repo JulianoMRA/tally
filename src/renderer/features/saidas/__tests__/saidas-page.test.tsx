@@ -6,29 +6,35 @@ import { MemoryRouter } from 'react-router-dom'
 import type { OcorrenciaDoMes } from '@shared/ipc/despesa'
 import { ToastProvider } from '../../../components/ui'
 import { formatBRL } from '../../../lib/format-brl'
+import { formatarMesReferencia } from '../../../lib/formatar-data'
+import { mesAtualReferencia } from '../../../lib/mes-atual'
 import { cartao, categoria, ocorrencia } from '../../../__tests__/__fixtures__/builders'
 import SaidasPage from '../SaidasPage'
 
 const INTER = cartao({ id: 1, nome: 'Inter' })
 const MORADIA = categoria({ id: 1, nome: 'Moradia' })
 const VIAGEM = categoria({ id: 2, nome: 'Viagem', ativo: false })
+const TRANSPORTE = categoria({ id: 3, nome: 'Transporte' })
 
 /**
  * Dublê do `window.api` com o que a tela carrega ao abrir. Cada teste passa as
- * ocorrências do mês; o resto é o cenário comum: um cartão, uma categoria
- * ativa e uma arquivada.
+ * ocorrências — uma lista para qualquer mês, ou uma função do mês quando o
+ * teste navega; o resto é o cenário comum: um cartão, duas categorias ativas e
+ * uma arquivada.
  */
-function instalarApi(ocorrencias: OcorrenciaDoMes[]) {
+function instalarApi(ocorrencias: OcorrenciaDoMes[] | ((mes: string) => OcorrenciaDoMes[])) {
   const api = {
     cartao: { list: vi.fn().mockResolvedValue([INTER]) },
     // Como o repositório: as arquivadas só vêm quando pedidas.
     categoria: {
       list: vi.fn(async (opcoes?: { incluirArquivados?: boolean }) =>
-        opcoes?.incluirArquivados ? [MORADIA, VIAGEM] : [MORADIA]
+        opcoes?.incluirArquivados ? [MORADIA, VIAGEM, TRANSPORTE] : [MORADIA, TRANSPORTE]
       )
     },
     despesa: {
-      listarOcorrenciasDoMes: vi.fn().mockResolvedValue(ocorrencias),
+      listarOcorrenciasDoMes: vi.fn(async ({ mesReferencia }: { mesReferencia: string }) =>
+        typeof ocorrencias === 'function' ? ocorrencias(mesReferencia) : ocorrencias
+      ),
       listarComTags: vi.fn().mockResolvedValue([])
     }
   }
@@ -190,5 +196,167 @@ describe('SaidasPage — linhas e topo do painel', () => {
     const categoria = within(linha).getAllByRole('cell')[1]
     const bolinha = categoria?.querySelector<HTMLElement>('[data-bolinha]')
     expect(bolinha?.style.background).toBe('rgb(91, 122, 94)')
+  })
+})
+
+function selectDe(rotulo: string): HTMLSelectElement {
+  return screen.getByLabelText(rotulo) as HTMLSelectElement
+}
+
+describe('SaidasPage — filtros (RF-DES-23)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+  afterEach(cleanup)
+
+  const doMes = [
+    ocorrencia({ descricao: 'Mercado', categoriaId: MORADIA.id, cartaoId: INTER.id }),
+    ocorrencia({
+      descricao: 'Feira',
+      categoriaId: MORADIA.id,
+      cartaoId: null,
+      formaPagamento: 'Pix',
+      faturaId: null
+    }),
+    ocorrencia({
+      descricao: 'Notebook',
+      tipo: 'Parcelada',
+      rotuloParcela: '2/10',
+      categoriaId: TRANSPORTE.id,
+      cartaoId: INTER.id
+    }),
+    ocorrencia({
+      descricao: 'Aluguel',
+      tipo: 'Assinatura',
+      rotuloParcela: 'mensal',
+      categoriaId: MORADIA.id,
+      cartaoId: null,
+      formaPagamento: 'Pix',
+      faturaId: null
+    })
+  ]
+
+  // As abas antigas misturavam tipo com origem e não somavam: as compras à
+  // vista no crédito não tinham aba.
+  it('as abas de tipo somam Todas, e À vista inclui a compra fora do cartão', async () => {
+    instalarApi(doMes)
+    renderizar()
+    await screen.findByRole('row', { name: /Mercado/ })
+
+    expect(screen.getByRole('radio', { name: 'Todas 4' })).toBeTruthy()
+    expect(screen.getByRole('radio', { name: 'À vista 2' })).toBeTruthy()
+    expect(screen.getByRole('radio', { name: 'Parceladas 1' })).toBeTruthy()
+    expect(screen.getByRole('radio', { name: 'Assinaturas 1' })).toBeTruthy()
+  })
+
+  it('filtrar por categoria mostra só as saídas dela, e as abas acompanham', async () => {
+    const usuario = userEvent.setup()
+    instalarApi(doMes)
+    renderizar()
+    await screen.findByRole('row', { name: /Mercado/ })
+    await waitFor(() => expect(selectDe('Filtrar por categoria').options.length).toBe(3))
+
+    await usuario.selectOptions(selectDe('Filtrar por categoria'), String(TRANSPORTE.id))
+
+    expect(screen.getByRole('row', { name: /Notebook/ })).toBeTruthy()
+    expect(screen.queryByRole('row', { name: /Mercado/ })).toBeNull()
+    expect(screen.getByRole('radio', { name: 'Todas 1' })).toBeTruthy()
+    expect(screen.getByRole('radio', { name: 'Parceladas 1' })).toBeTruthy()
+  })
+
+  // O defeito 7: a recorrente no Pix aparecia no grupo "Fora do cartão" e
+  // sumia da aba de mesmo nome.
+  it('a origem "Fora do cartão" inclui a recorrente no Pix', async () => {
+    const usuario = userEvent.setup()
+    instalarApi(doMes)
+    renderizar()
+    await screen.findByRole('row', { name: /Mercado/ })
+
+    await usuario.selectOptions(selectDe('Filtrar por origem'), 'fora-do-cartao')
+
+    expect(screen.getByRole('row', { name: /Aluguel/ })).toBeTruthy()
+    expect(screen.getByRole('row', { name: /Feira/ })).toBeTruthy()
+    expect(screen.queryByRole('row', { name: /Mercado/ })).toBeNull()
+  })
+
+  it('"Limpar filtros" só aparece com filtro ativo, e devolve a lista inteira', async () => {
+    const usuario = userEvent.setup()
+    instalarApi(doMes)
+    renderizar()
+    await screen.findByRole('row', { name: /Mercado/ })
+    expect(screen.queryByRole('button', { name: 'Limpar filtros' })).toBeNull()
+
+    await usuario.click(screen.getByRole('radio', { name: /^Parceladas/ }))
+    await usuario.click(screen.getByRole('button', { name: 'Limpar filtros' }))
+
+    expect(screen.getByRole('row', { name: /Mercado/ })).toBeTruthy()
+    expect(screen.getByRole('radio', { name: /^Todas/ }).getAttribute('aria-checked')).toBe('true')
+    expect(screen.queryByRole('button', { name: 'Limpar filtros' })).toBeNull()
+  })
+
+  // "Nenhuma saída para este filtro." aparecia também sem filtro nenhum.
+  it('mês sem lançamento diz o mês, sem oferecer limpar', async () => {
+    instalarApi([])
+    renderizar()
+
+    const mes = formatarMesReferencia(mesAtualReferencia())
+    expect(await screen.findByText(`Nenhuma saída em ${mes}.`)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Limpar filtros' })).toBeNull()
+  })
+
+  it('filtro que esconde tudo diz isso e oferece limpar', async () => {
+    const usuario = userEvent.setup()
+    instalarApi(doMes)
+    renderizar()
+    await screen.findByRole('row', { name: /Mercado/ })
+
+    await usuario.type(screen.getByLabelText('Buscar saídas'), 'xyz')
+
+    const aviso = screen.getByText('Nenhuma saída para este filtro.')
+    const estadoVazio = aviso.parentElement as HTMLElement
+    await usuario.click(within(estadoVazio).getByRole('button', { name: 'Limpar filtros' }))
+    expect(screen.getByRole('row', { name: /Mercado/ })).toBeTruthy()
+  })
+
+  // Acompanhar uma categoria mês a mês: o filtro fica, e o select continua
+  // mostrando o que filtra mesmo num mês sem aquela categoria.
+  it('o filtro sobrevive à troca de mês e continua visível no select', async () => {
+    const usuario = userEvent.setup()
+    const agora = mesAtualReferencia()
+    instalarApi((mes) =>
+      mes === agora
+        ? [ocorrencia({ descricao: 'Hotel', categoriaId: TRANSPORTE.id, cartaoId: INTER.id })]
+        : [ocorrencia({ descricao: 'Padaria', categoriaId: MORADIA.id, cartaoId: INTER.id })]
+    )
+    renderizar()
+    await screen.findByRole('row', { name: /Hotel/ })
+    await waitFor(() => expect(selectDe('Filtrar por categoria').options.length).toBe(2))
+    await usuario.selectOptions(selectDe('Filtrar por categoria'), String(TRANSPORTE.id))
+
+    await usuario.click(screen.getByRole('button', { name: 'Próximo mês' }))
+
+    expect(await screen.findByText('Nenhuma saída para este filtro.')).toBeTruthy()
+    const select = selectDe('Filtrar por categoria')
+    expect(select.value).toBe(String(TRANSPORTE.id))
+    expect(select.selectedOptions[0]?.textContent).toBe('Transporte')
+  })
+
+  // O defeito: num mês sem tags o select sumia e o filtro seguia valendo.
+  it('a tag escolhida continua no select num mês sem tags', async () => {
+    const usuario = userEvent.setup()
+    const agora = mesAtualReferencia()
+    instalarApi((mes) =>
+      mes === agora
+        ? [ocorrencia({ descricao: 'Hotel', tags: ['viagem'], cartaoId: INTER.id })]
+        : [ocorrencia({ descricao: 'Padaria', cartaoId: INTER.id })]
+    )
+    renderizar()
+    await screen.findByRole('row', { name: /Hotel/ })
+    await usuario.selectOptions(selectDe('Filtrar por tag'), 'viagem')
+
+    await usuario.click(screen.getByRole('button', { name: 'Próximo mês' }))
+
+    expect(await screen.findByText('Nenhuma saída para este filtro.')).toBeTruthy()
+    expect(selectDe('Filtrar por tag').value).toBe('viagem')
   })
 })

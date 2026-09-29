@@ -34,7 +34,7 @@ test.describe('Simulação (RF-SIM, RN-09)', () => {
     await abrirCadastroDeSaida(page)
     await page.getByRole('radio', { name: 'Pix', exact: true }).click()
     await page.getByLabel('Descrição').fill('Pix Simulacao E2E')
-    await page.getByLabel('Categoria').selectOption({ label: 'Geral Simulacao E2E' })
+    await page.getByLabel(/^Categoria/).selectOption({ label: 'Geral Simulacao E2E' })
     await page.getByLabel('Valor (R$)').fill('100,00')
     await page.getByLabel('Data da compra').fill('2026-06-10')
     await page.getByRole('button', { name: 'Registrar pix' }).click()

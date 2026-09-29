@@ -24,7 +24,7 @@ test.describe('Orçamento por categoria (Bloco D)', () => {
     await irPara(page, 'Saídas')
     await abrirCadastroDeSaida(page)
     await page.getByLabel('Descrição').fill('Compra Orc E2E')
-    await page.getByLabel('Categoria').selectOption({ label: 'Mercado Orc E2E' })
+    await page.getByLabel(/^Categoria/).selectOption({ label: 'Mercado Orc E2E' })
     await page.getByLabel('Cartão').selectOption({ label: 'Inter Orc E2E' })
     await page.getByLabel('Valor (R$)').fill('80,00')
     await page.getByLabel('Data da compra').fill('2026-06-03')
@@ -45,7 +45,7 @@ test.describe('Orçamento por categoria (Bloco D)', () => {
       .locator('..')
       .locator('..')
 
-    await orcPanel.getByLabel('Categoria').selectOption({ label: 'Mercado Orc E2E' })
+    await orcPanel.getByLabel(/^Categoria/).selectOption({ label: 'Mercado Orc E2E' })
     await orcPanel.getByLabel('Limite (R$)').fill('100,00')
     await orcPanel.getByRole('button', { name: 'Definir limite' }).click()
 
@@ -58,7 +58,7 @@ test.describe('Orçamento por categoria (Bloco D)', () => {
 
     // --- Fase 8: limite só deste mês sobrepõe o global ---
     await orcPanel.getByRole('radio', { name: 'Só este mês' }).click()
-    await orcPanel.getByLabel('Categoria').selectOption({ label: 'Mercado Orc E2E' })
+    await orcPanel.getByLabel(/^Categoria/).selectOption({ label: 'Mercado Orc E2E' })
     await orcPanel.getByLabel('Limite (R$)').fill('200,00')
     await orcPanel.getByRole('button', { name: 'Definir limite' }).click()
 
