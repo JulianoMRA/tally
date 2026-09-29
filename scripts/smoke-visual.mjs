@@ -458,6 +458,19 @@ try {
   await capturar('estado-painel-parcelada')
   await page.keyboard.press('Escape')
 
+  // Os dois modos que a tela não abre sozinha: agrupada por categoria (seções
+  // na ordem do ranking, coluna Origem no lugar da Categoria) e com filtro
+  // ativo ("N de M lançamentos" e "Limpar filtros"). Sem eles, a folha só vê
+  // a tabela padrão.
+  await page.getByLabel('Agrupar por').selectOption('categoria', { timeout: 5000 })
+  await page.waitForTimeout(300)
+  await capturar('estado-saidas-por-categoria')
+  await page.getByLabel('Agrupar por').selectOption('origem')
+  await page.getByLabel('Filtrar por origem').selectOption({ label: 'Fora do cartão' })
+  await page.waitForTimeout(300)
+  await capturar('estado-saidas-filtrada')
+  await page.getByRole('button', { name: 'Limpar filtros' }).first().click()
+
   // O cadastro de avulso virou painel na F6; sem este estado ele fica fora da
   // folha de contato, como o de Saídas ficava antes.
   await ir('#/rendas')
