@@ -234,6 +234,7 @@ export default function BuscaPage() {
                     direcao={sortDir}
                     onSort={() => handleSort('valor')}
                     className={styles.colValor}
+                    alinhamento="direita"
                   />
                 </tr>
               </thead>

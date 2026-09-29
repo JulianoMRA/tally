@@ -253,6 +253,7 @@ export default function VisaoMensalPage() {
                               direcao={gastos.sortDir}
                               onSort={() => gastos.handleSort('valor')}
                               className={styles.colValor}
+                              alinhamento="direita"
                             />
                           </tr>
                         </thead>
@@ -312,6 +313,7 @@ export default function VisaoMensalPage() {
                           direcao={recebimentos.sortDir}
                           onSort={() => recebimentos.handleSort('status')}
                           className={styles.colStatus}
+                          alinhamento="direita"
                         />
                         <SortableHeader
                           rotulo="Valor"
@@ -319,6 +321,7 @@ export default function VisaoMensalPage() {
                           direcao={recebimentos.sortDir}
                           onSort={() => recebimentos.handleSort('valor')}
                           className={styles.colValor}
+                          alinhamento="direita"
                         />
                       </tr>
                     </thead>

@@ -207,6 +207,12 @@ badge "Paga" exige uma fatura fechada **e** paga, que o seed nunca criava. Ver
 - `SortableHeader` — cabeçalho de coluna ordenável: `<button>` interno (Enter e Espaço de
   graça) e `aria-sort` na célula. Antes era `<th onClick>` sem role, tabIndex nem teclado —
   ordenar era exclusivo de mouse, e o axe não pegava porque `<th>` clicável não viola regra
+  - **Coluna alinhada à direita pede `alinhamento="direita"`** — valor, e também status em
+    Recebimentos. O `text-align: right` da célula não alcança o rótulo, que é item de flex:
+    sem a prop ele fica na borda esquerda da coluna, longe do conteúdo. Com ela, a seta de
+    ordenação vai para a **esquerda** do rótulo, para a borda direita não andar quando a
+    coluna fica ativa. A medida é geométrica e vive em `e2e/alinhamento-de-valores.spec.ts` —
+    o jsdom não faz layout
 - `SegmentedControl` — escolha única em pílula, com `radiogroup`/`radio` (padrão) ou
   `tablist`/`tab` quando troca o conteúdo da tela. Setas, Home/End e roving tabindex.
   **Substituiu sete implementações** quase idênticas espalhadas pelas features

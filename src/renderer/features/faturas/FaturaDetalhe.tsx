@@ -267,6 +267,7 @@ export function FaturaDetalhe({
                       direcao={sortDir}
                       onSort={() => handleSort('valor')}
                       className={styles.colValor}
+                      alinhamento="direita"
                     />
                     <SortableHeader
                       rotulo="Status"
