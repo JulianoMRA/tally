@@ -44,6 +44,26 @@ describe('LinhaDeGrupo', () => {
     expect(screen.getByRole('cell', { name: 'Inter' })).toBeTruthy()
   })
 
+  // Sem agrupamento por origem, o nome do cartão aparece também na coluna
+  // Origem das linhas: o cabeçalho da seção precisa de uma marca própria.
+  it('marca a linha como cabeçalho de seção', () => {
+    renderizar()
+
+    expect(screen.getByRole('row').hasAttribute('data-grupo')).toBe(true)
+  })
+
+  it('categoria arquivada leva o selo no cabeçalho da seção', () => {
+    renderizar({ rotulo: 'Viagem', arquivada: true })
+
+    expect(screen.getByText('Arquivada')).toBeTruthy()
+  })
+
+  it('sem arquivada, sem selo', () => {
+    renderizar()
+
+    expect(screen.queryByText('Arquivada')).toBeNull()
+  })
+
   describe('bolinha de cor', () => {
     it('pinta a bolinha com a cor do grupo, escondida de leitores de tela', () => {
       const { container } = renderizar({ cor: '#a88454' })

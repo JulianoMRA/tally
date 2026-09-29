@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useId, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Cartao } from '@domain/entities/cartao'
 import type { Categoria } from '@domain/entities/categoria'
@@ -18,6 +18,7 @@ import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
 import {
   Badge,
+  BolinhaDeCor,
   Button,
   ConfirmDialog,
   EmptyState,
@@ -45,7 +46,8 @@ import { EditarDespesaModal } from '../faturas/EditarDespesaModal'
 import { EditarAssinaturaModal } from '../assinaturas/EditarAssinaturaModal'
 import { RotuloCategoria } from '../categorias/RotuloCategoria'
 import { descreverDataDaOcorrencia } from './descrever-data-da-ocorrencia'
-import { agruparOcorrencias } from './agrupar-ocorrencias'
+import { agruparPorCategoria, agruparPorOrigem, type GrupoOcorrencias } from './agrupar-ocorrencias'
+import { colunasDoAgrupamento, origemDaOcorrencia, type Agrupamento } from './colunas-de-saidas'
 import {
   FILTROS_PADRAO,
   contarPorTipo,
@@ -74,8 +76,11 @@ type UltimaRegistrada = {
 
 type Confirmacao = { tipo: 'cancelar'; despesa: Despesa } | { tipo: 'excluir'; despesa: Despesa }
 
-/** Descrição, Categoria, Compra e Parcela: a largura do rótulo de cada grupo. */
-const COLUNAS_ANTES_DO_VALOR = 4
+const AGRUPAMENTOS: readonly { valor: Agrupamento; rotulo: string }[] = [
+  { valor: 'origem', rotulo: 'Origem' },
+  { valor: 'categoria', rotulo: 'Categoria' },
+  { valor: 'nenhum', rotulo: 'Nenhum' }
+]
 
 const COMPARADORES: Record<string, Comparador<OcorrenciaDoMes>> = {
   descricao: alfabetico((o) => o.descricao),
@@ -144,14 +149,11 @@ export default function SaidasPage() {
   const cartoesAtivos = useMemo(() => cartoes.filter((c) => c.ativo), [cartoes])
   const categoriasAtivas = useMemo(() => categorias.filter((c) => c.ativo), [categorias])
   const categoriaPorId = useMemo(() => new Map(categorias.map((c) => [c.id, c])), [categorias])
+  const cartaoPorId = useMemo(() => new Map(cartoes.map((c) => [c.id, c])), [cartoes])
 
   function nomeCartao(id: number | null): string {
     if (id === null) return '—'
-    return cartoes.find((c) => c.id === id)?.nome ?? `#${id}`
-  }
-
-  function corCartao(id: number): string | undefined {
-    return cartoes.find((c) => c.id === id)?.cor
+    return cartaoPorId.get(id)?.nome ?? `#${id}`
   }
 
   function celulaDeCategoria(id: number) {
@@ -159,6 +161,18 @@ export default function SaidasPage() {
     if (!categoria) return `#${id}`
     return (
       <RotuloCategoria nome={categoria.nome} arquivada={!categoria.ativo} cor={categoria.cor} />
+    )
+  }
+
+  // A bolinha sem cor reserva o lugar: "Pix" começa na mesma posição que o nome
+  // de um cartão.
+  function celulaDeOrigem(o: OcorrenciaDoMes) {
+    const { texto, cor } = origemDaOcorrencia(o, cartaoPorId)
+    return (
+      <span className={styles.origemCelula}>
+        <BolinhaDeCor cor={cor} />
+        {texto}
+      </span>
     )
   }
 
@@ -305,7 +319,7 @@ export default function SaidasPage() {
   )
 
   /**
-   * O agrupamento por origem virou controle próprio, ligado por padrão.
+   * O agrupamento é controle próprio: Origem (padrão), Categoria ou Nenhum.
    *
    * Antes ele era função da ordenação: ordenar por Compra achatava os grupos.
    * Cada metade se justificava sozinha — "ordenar por Compra é o pedido
@@ -316,33 +330,26 @@ export default function SaidasPage() {
    * outro cabeçalho.
    *
    * Separar as duas coisas resolve nos dois sentidos: o agrupamento fica
-   * visível na abertura, e a leitura cronológica achatada continua alcançável —
-   * agora por um controle que a nomeia, em vez de por um efeito colateral de
-   * ordenar. A ordenação segue agindo dentro de cada grupo quando agrupado.
+   * visível na abertura, e a leitura cronológica achatada continua alcançável
+   * por um controle que a nomeia. A ordenação segue agindo dentro de cada
+   * grupo. Por categoria, as seções respondem "para onde foi o dinheiro" com
+   * as linhas embaixo — o ranking da Visão mensal dá os números, não as linhas.
    */
-  const [agrupado, setAgrupado] = useState(true)
+  const [agrupamento, setAgrupamento] = useState<Agrupamento>('origem')
+  const idAgrupamento = useId()
 
-  const grupos = useMemo(
-    () =>
-      agrupado
-        ? agruparOcorrencias(itensOrdenados, nomeCartao)
-        : // Bloco único e sem rótulo: a lista cronológica não tem cabeçalho de
-          // seção nem subtotal, porque somar "o mês inteiro" já é o meta do
-          // painel logo acima.
-          [
-            {
-              chave: 'cronologico',
-              rotulo: '',
-              cartaoId: null,
-              itens: [...itensOrdenados],
-              totalCentavos: 0
-            }
-          ],
-    // `nomeCartao` fecha sobre `cartoes`; recriar o índice a cada render seria
-    // pior que depender da lista.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [itensOrdenados, cartoes, agrupado]
-  )
+  const grupos: GrupoOcorrencias[] = useMemo(() => {
+    if (agrupamento === 'origem') return agruparPorOrigem(itensOrdenados, cartoes)
+    if (agrupamento === 'categoria') return agruparPorCategoria(itensOrdenados, categorias)
+    // Bloco único e sem rótulo: a lista cronológica não tem cabeçalho de seção
+    // nem subtotal, porque somar "o mês inteiro" já é o resumo do painel.
+    return [{ chave: 'cronologico', rotulo: '', itens: [...itensOrdenados], totalCentavos: 0 }]
+  }, [itensOrdenados, cartoes, categorias, agrupamento])
+
+  const colunas = colunasDoAgrupamento(agrupamento)
+  const mostraCategoria = colunas.includes('categoria')
+  const mostraOrigem = colunas.includes('origem')
+  const colunasAntesDoValor = colunas.indexOf('valor')
 
   // Soma IMPACTO, não valor de compra: é o que torna o número somável e o que
   // faz o subtotal de cada cartão bater com o total da fatura.
@@ -711,14 +718,27 @@ export default function SaidasPage() {
               )}
               {/* Ao lado dos filtros porque é da mesma família: muda como a
                   lista se apresenta, não o que ela contém. */}
-              <label className={styles.agruparToggle}>
-                <input
-                  type="checkbox"
-                  checked={agrupado}
-                  onChange={(e) => setAgrupado(e.target.checked)}
-                />
-                Agrupar por origem
-              </label>
+              <div className={styles.agrupar}>
+                <label htmlFor={idAgrupamento} className={styles.agruparRotulo}>
+                  Agrupar por
+                </label>
+                <Select
+                  id={idAgrupamento}
+                  value={agrupamento}
+                  onChange={(e) =>
+                    setAgrupamento(
+                      AGRUPAMENTOS.find((a) => a.valor === e.target.value)?.valor ?? 'origem'
+                    )
+                  }
+                  className={styles.agruparSelect}
+                >
+                  {AGRUPAMENTOS.map((a) => (
+                    <option key={a.valor} value={a.valor}>
+                      {a.rotulo}
+                    </option>
+                  ))}
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -750,7 +770,8 @@ export default function SaidasPage() {
                       onSort={() => handleSort('descricao')}
                       className={styles.colDescricao}
                     />
-                    <th>Categoria</th>
+                    {mostraCategoria && <th>Categoria</th>}
+                    {mostraOrigem && <th>Origem</th>}
                     <SortableHeader
                       rotulo="Compra"
                       ativo={sortBy === 'compra'}
@@ -778,9 +799,10 @@ export default function SaidasPage() {
                       {grupo.rotulo !== '' && (
                         <LinhaDeGrupo
                           rotulo={grupo.rotulo}
-                          cor={grupo.cartaoId !== null ? corCartao(grupo.cartaoId) : undefined}
+                          cor={grupo.cor}
+                          arquivada={grupo.arquivada}
                           totalCentavos={grupo.totalCentavos}
-                          colunasDoRotulo={COLUNAS_ANTES_DO_VALOR}
+                          colunasDoRotulo={colunasAntesDoValor}
                         />
                       )}
                       {grupo.itens.map((o) => {
@@ -805,9 +827,14 @@ export default function SaidasPage() {
                                 </div>
                               )}
                             </td>
-                            <td className={styles.colCategoria}>
-                              {celulaDeCategoria(o.categoriaId)}
-                            </td>
+                            {mostraCategoria && (
+                              <td className={styles.colCategoria}>
+                                {celulaDeCategoria(o.categoriaId)}
+                              </td>
+                            )}
+                            {mostraOrigem && (
+                              <td className={styles.colOrigem}>{celulaDeOrigem(o)}</td>
+                            )}
                             <td className={styles.colCompra}>
                               <CelulaDeCompra ocorrencia={o} />
                             </td>

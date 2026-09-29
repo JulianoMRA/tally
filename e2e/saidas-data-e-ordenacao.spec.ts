@@ -89,28 +89,31 @@ test.describe('Saídas — coluna Compra', () => {
     await page.waitForLoadState('domcontentloaded')
     await semearMes(page)
 
-    const cabecalhoDoCartao = page.getByRole('cell', { name: /Inter Data E2E/ })
-    const alternar = page.getByLabel('Agrupar por origem')
+    // Pela marca de cabeçalho de seção, e não por `getByRole('cell')` pelo
+    // nome: sem agrupamento, o nome do cartão aparece também na coluna Origem
+    // de cada linha, e o localizador acharia as duas coisas.
+    const cabecalhoDoCartao = page.locator('tr[data-grupo]').filter({ hasText: 'Inter Data E2E' })
+    const agrupar = page.getByLabel('Agrupar por')
 
-    // Na abertura: agrupado, sem precisar de clique nenhum.
-    await expect(alternar).toBeChecked()
+    // Na abertura: agrupado por origem, sem precisar de clique nenhum.
+    await expect(agrupar).toHaveValue('origem')
     await expect(cabecalhoDoCartao).toBeVisible()
 
-    // Ordenar NÃO mexe mais no agrupamento — a ordenação age dentro dos grupos.
+    // Ordenar NÃO mexe no agrupamento — a ordenação age dentro dos grupos.
     await page
       .getByRole('columnheader', { name: /Compra/ })
       .getByRole('button')
       .click()
     await expect(cabecalhoDoCartao).toBeVisible()
-    await expect(alternar).toBeChecked()
+    await expect(agrupar).toHaveValue('origem')
 
-    // A leitura cronológica achatada continua alcançável, agora por um controle
-    // que a nomeia.
-    await alternar.uncheck()
+    // A leitura cronológica achatada continua alcançável, por um controle que
+    // a nomeia.
+    await agrupar.selectOption('nenhum')
     await expect(cabecalhoDoCartao).toHaveCount(0)
 
     // E volta: sem a ida e volta, o subtotal por cartão seria de mão única.
-    await alternar.check()
+    await agrupar.selectOption('origem')
     await expect(cabecalhoDoCartao).toBeVisible()
   })
   // A coluna Tipo saiu: o rótulo da parcela ("à vista", "1/12", "mensal") já
