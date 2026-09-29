@@ -220,13 +220,19 @@ prevista; entram no escopo quando forem priorizadas.
 ### 4.9 Visão Mensal e Multi-Mês (RF-VIS)
 
 - **RF-VIS-01** — Mês de referência segue o calendário (Junho/2026 agrupa fatura Inter venc 12/06, fatura Nubank venc 22/06, gastos fora de cartão de 01–30/06 e recebimentos de 01–30/06).
-- **RF-VIS-02** — Tela mensal separa **operação** de **análise** em duas abas. A aba **Mês** mostra o saldo do mês como resposta principal, a agenda do horizonte (RF-VIS-07), as faturas do mês, o ranking de categorias e os gastos fora de cartão. A aba **Análise** concentra o que é histórico ou configuração: evolução do saldo (RF-VIS-05), evolução por categoria (RF-VIS-06) e o painel de orçamento (RF-ORC-02).
+- **RF-VIS-02** — Tela mensal separa **operação** de **análise** em duas abas. A aba **Mês** mostra o saldo do mês como resposta principal, a agenda do horizonte (RF-VIS-07), as faturas do mês, o ranking de categorias, os gastos fora de cartão e a divisão dos gastos em pizza (RF-VIS-08). A aba **Análise** concentra o que é histórico ou configuração: evolução do saldo (RF-VIS-05), evolução por categoria (RF-VIS-06) e o painel de orçamento (RF-ORC-02).
 - **RF-VIS-03** — Navegação entre meses (anterior/próximo) e seletor direto de mês/ano.
 - **RF-VIS-04** — Projeção: visualizar mês futuro com parcelas e assinaturas ativas já calculadas e recebimentos recorrentes esperados.
 - **RF-VIS-05** — Comparativo: visualizar últimos 6 ou 12 meses com gráfico de evolução de entradas, gastos e saldo.
 - **RF-VIS-06** — Relatórios por categoria: ranking de categorias no mês e evolução temporal de uma categoria específica.
-  > A pizza de gastos do mês existiu até ago/2026 e foi removida no refactor visual: mostrava o mesmo dado do ranking, que já ordena, e com sete fatias deixava de ser legível. O ranking absorveu a leitura de proporção.
+  > A pizza de gastos do mês existiu até ago/2026 e foi removida no refactor visual: mostrava o mesmo dado do ranking, que já ordena, e com sete fatias deixava de ser legível. Voltou em set/2026 como card próprio (RF-VIS-08), e o motivo da remoção virou requisito: no máximo seis fatias.
 - **RF-VIS-07** — **Agenda do horizonte** ("Ainda vai acontecer"): lista os eventos futuros que compõem o saldo projetado — fechamento e vencimento de fatura, e recebimentos ainda esperados — ordenados por data. Fatura Paga e fatura sem lançamentos não entram (não movem mais o saldo); fatura Fechada emite só o vencimento. O rótulo do horizonte depende de onde o mês exibido está em relação a hoje: **"próximos N dias" só no mês corrente**, "os N dias do mês" num mês que ainda não começou — ancorar o futuro em hoje faria dezembro visto em setembro anunciar "próximos 31 dias", que a partir de hoje seriam setembro e outubro — e "mês encerrado" no passado. Torna o número projetado do RN-08 auditável: sem a lista, ele só pode ser aceito, não conferido.
+- **RF-VIS-08** — **Divisão dos gastos** (pizza), na aba Mês, abaixo dos gastos fora de cartão. Usa o mesmo dado e o mesmo recorte do ranking de categorias (RF-VIS-06) — parcelas das faturas do mês e gastos fora de cartão — e acompanha o seletor de mês, inclusive em projeção. O ranking responde "quanto"; a pizza, "que parte do todo".
+  - **No máximo seis fatias.** Até seis categorias, uma fatia cada; a partir de sete, as cinco maiores e uma fatia **"Outros"** com a soma do resto, em cor neutra que não é de nenhuma categoria.
+  - Cada fatia tem a cor da própria categoria, a mesma da barra do ranking, e a ordem é a do ranking: a maior começa às 12h e as demais seguem em sentido horário. Com duas categorias da mesma cor (o app permite), a posição ainda casa com a lista ao lado.
+  - A legenda mostra nome e percentual, nunca o valor em R$, que já está no ranking. **Os percentuais são os mesmos nos dois cards e somam 100** (maior resto sobre a lista inteira, antes de agrupar); "Outros" é a soma exata do que agrupa. O desenho usa o valor exato, não o arredondado.
+  - Passar o mouse numa fatia ou na linha da legenda destaca o par e mostra valor, nome e percentual; em "Outros", também as categorias agrupadas.
+  - Categoria com total R$ 0,00 fica fora da pizza e continua no ranking. Mês sem gasto mostra o estado vazio, como o ranking.
 
 ### 4.10 Orçamento (RF-ORC)
 

@@ -54,6 +54,21 @@ describe('montarRanking — escala das barras', () => {
     expect(linhas[1]?.fatiaPct).toBe(25)
   })
 
+  // A pizza ao lado mostra os mesmos percentuais (RF-VIS-08). Arredondar cada
+  // linha isoladamente daria 33/33/33 aqui e 34/33/33 lá.
+  it('exibe percentuais inteiros que somam 100, os mesmos da pizza', () => {
+    const linhas = montarRanking(
+      [
+        total({ categoriaId: 1, totalCentavos: 10000 }),
+        total({ categoriaId: 2, categoriaNome: 'Mercado', totalCentavos: 10000 }),
+        total({ categoriaId: 3, categoriaNome: 'Lazer', totalCentavos: 10000 })
+      ],
+      []
+    )
+
+    expect(linhas.map((l) => l.fatiaPctExibida)).toEqual([34, 33, 33])
+  })
+
   it('preserva a ordem recebida — quem ordena é a query', () => {
     const linhas = montarRanking(
       [
@@ -162,5 +177,6 @@ describe('montarRanking — bordas', () => {
 
     expect(linhas[0]?.larguraPct).toBe(0)
     expect(linhas[0]?.fatiaPct).toBe(0)
+    expect(linhas[0]?.fatiaPctExibida).toBe(0)
   })
 })

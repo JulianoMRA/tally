@@ -1,6 +1,7 @@
 import type { StatusOrcamento } from '@domain/services/calcular-orcamento'
 import type { LinhaOrcamentoComOrigem } from '@shared/ipc/orcamento'
 import type { TotalPorCategoria } from '@shared/ipc/relatorio'
+import { arredondarPercentuais } from '../../lib/arredondar-percentuais'
 
 export type LimiteNoRanking = {
   limiteCentavos: number
@@ -22,6 +23,8 @@ export type LinhaRanking = {
   larguraPct: number
   /** Fatia da categoria no gasto total do mês. */
   fatiaPct: number
+  /** `fatiaPct` inteiro, somando 100 com as demais linhas — o mesmo da pizza. */
+  fatiaPctExibida: number
   limite: LimiteNoRanking | null
 }
 
@@ -58,8 +61,9 @@ export function montarRanking(
 
   const gastoTotal = totais.reduce((s, t) => s + t.totalCentavos, 0)
   const escala = totais.reduce((m, t) => Math.max(m, t.totalCentavos), 0)
+  const pctsExibidos = arredondarPercentuais(totais.map((t) => t.totalCentavos))
 
-  return totais.map((total) => {
+  return totais.map((total, indice) => {
     const linha = limitePorCategoria.get(total.categoriaId)
     const posicaoBruta = linha ? pct(linha.limiteCentavos, escala) : 0
 
@@ -70,6 +74,7 @@ export function montarRanking(
       totalCentavos: total.totalCentavos,
       larguraPct: pct(total.totalCentavos, escala),
       fatiaPct: pct(total.totalCentavos, gastoTotal),
+      fatiaPctExibida: pctsExibidos[indice] ?? 0,
       limite:
         linha && linha.limiteCentavos > 0
           ? {

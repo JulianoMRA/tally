@@ -229,7 +229,9 @@ await page.evaluate(async () => {
     ['Transporte', '#a88454'],
     ['Lazer', '#8c3b2e'],
     ['Casa', '#3f6e47'],
-    ['Assinaturas', '#5a4a8a']
+    ['Assinaturas', '#5a4a8a'],
+    ['Saúde', '#1f6f8b'],
+    ['Presentes', '#ff7a00']
   ]) {
     cats[nome] = await api.categoria.create({ nome, cor })
   }
@@ -293,6 +295,29 @@ await page.evaluate(async () => {
         dataCompra: primeiroDiaDeMesesAtras(n)
       })
     }
+  }
+
+  // Sete categorias com gasto no mês corrente: a pizza da aba Mês (RF-VIS-08)
+  // agrupa a partir da sétima em "Outros", e sem isto a fatia nunca entra na
+  // folha. Os gastos acima caem em meses diferentes conforme o dia em que o
+  // script roda (dependem do fechamento de cada cartão); dia 1 cai antes dos
+  // dois fechamentos e conta sempre no mês corrente. Casa e Lazer chegam perto
+  // e passam do limite de propósito: com Mercado folgado, os três estados do
+  // orçamento aparecem juntos.
+  for (const [descricao, cat, valor] of [
+    ['Show no fim de semana', 'Lazer', 26000],
+    ['Conserto do chuveiro', 'Casa', 25000],
+    ['Revisao do carro', 'Transporte', 12000],
+    ['Farmacia', 'Saúde', 6000],
+    ['Presente de aniversario', 'Presentes', 4500]
+  ]) {
+    await api.despesa.criarUnicaCredito({
+      descricao,
+      categoriaId: cats[cat].id,
+      cartaoId: nubank.id,
+      valorCentavos: valor,
+      dataCompra: primeiroDiaDeMesesAtras(0)
+    })
   }
 
   await api.despesa.criarUnicaForaCartao({
@@ -409,6 +434,22 @@ try {
   await capturar('estado-painel-novo-cartao')
   await page.getByRole('radio', { name: 'Bronze' }).focus()
   await capturar('estado-foco-de-teclado')
+  await page.keyboard.press('Escape')
+
+  // A dica da pizza (RF-VIS-08) só existe sob o mouse. "Outros" é o caso mais
+  // comprido dela, porque lista as categorias agrupadas. Em 1024 de propósito:
+  // em coluna única a pizza fica abaixo da dobra e nenhuma captura em repouso
+  // a mostra; aqui ela entra rolada para a vista.
+  await redimensionar(1024)
+  await ir('#/mensal')
+  const outros = page
+    .getByRole('list', { name: 'Legenda' })
+    .getByRole('listitem')
+    .filter({ hasText: 'Outros' })
+  await outros.scrollIntoViewIfNeeded({ timeout: 5000 })
+  await outros.hover({ timeout: 5000 })
+  await page.waitForTimeout(300)
+  await capturar('estado-pizza-dica-outros')
 } catch (e) {
   problemas.push(`[interação] ${e.message}`)
 }

@@ -100,6 +100,11 @@
   /* Marca do limite de orçamento sobre a barra do ranking (RF-ORC-02). */
   --limite-marca: #0f1a14;
 
+  /* Fatia "Outros" da pizza de categorias (RF-VIS-08). Cinza quente, fora das
+     sugestões de cor de categoria, para não se ler como mais uma categoria.
+     3,50:1 contra o card — o mínimo de componente gráfico é 3:1. */
+  --fatia-outros: #878172;
+
   /* Escala de tipo — seis degraus (ponto 17).
      Eram ONZE tamanhos soltos no CSS de feature: 10, 11, 12, 13, 14, 15, 16,
      18, 20, 22 e 26, em 189 declarações. Doze e onze pixels lado a lado não se
@@ -202,7 +207,7 @@
    componente sabe que este bloco existe. Token esquecido aqui herda o valor
    claro — o que é bom, porque erro herdado aparece na hora (cor clara sobre
    fundo escuro) em vez de sumir sem deixar rastro. O guard de contraste em
-   __tests__/contraste.test.ts confere os 22 pares de texto e superfície nos
+   __tests__/contraste.test.ts confere os 23 pares de texto e superfície nos
    dois temas.
 
    A escolha de temperatura foi entre três paletas medidas. Esta mantém o calor
@@ -277,6 +282,9 @@
 
   /* Marca do limite sobre o trilho do ranking, que aqui é --bg-sunk. */
   --limite-marca: #efe7d4;
+
+  /* Fatia "Outros" da pizza: 3,56:1 contra o card daqui. */
+  --fatia-outros: #7a7363;
 
   /* Elevação no escuro se comunica por superfície e borda, não por sombra:
      uma sombra creme não existe, e preto sobre preto não aparece. Estas ficam
