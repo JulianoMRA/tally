@@ -320,6 +320,19 @@ await page.evaluate(async () => {
     })
   }
 
+  // Categoria arquivada com gasto no mês: Saídas e Busca mostram o nome com o
+  // selo "Arquivada" (RF-CAT-02), e sem ela o selo nunca entra na folha.
+  // Arquiva DEPOIS de lançar — já arquivada, o cadastro nem a ofereceria.
+  const viagem = await api.categoria.create({ nome: 'Viagem', cor: '#2f7f7a' })
+  await api.despesa.criarUnicaCredito({
+    descricao: 'Passagem de onibus',
+    categoriaId: viagem.id,
+    cartaoId: nubank.id,
+    valorCentavos: 3500,
+    dataCompra: primeiroDiaDeMesesAtras(0)
+  })
+  await api.categoria.arquivar(viagem.id)
+
   await api.despesa.criarUnicaForaCartao({
     descricao: 'Feira no Pix',
     categoriaId: cats.Mercado.id,
