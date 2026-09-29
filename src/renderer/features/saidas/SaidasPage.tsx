@@ -46,6 +46,7 @@ import { EditarAssinaturaModal } from '../assinaturas/EditarAssinaturaModal'
 import { descreverDataDaOcorrencia } from './descrever-data-da-ocorrencia'
 import { agruparOcorrencias } from './agrupar-ocorrencias'
 import { filtrarPorDescricao } from './filtrar-saidas'
+import { LinhaDeGrupo } from './LinhaDeGrupo'
 import { montarPreenchimentoDespesa, type PreenchimentoDespesa } from './montar-preenchimento'
 import { NotaETagsModal } from './NotaETagsModal'
 import { useOcorrencias } from './hooks/use-ocorrencias'
@@ -64,6 +65,9 @@ type UltimaRegistrada = {
 }
 
 type Confirmacao = { tipo: 'cancelar'; despesa: Despesa } | { tipo: 'excluir'; despesa: Despesa }
+
+/** Descrição, Categoria, Compra e Parcela: a largura do rótulo de cada grupo. */
+const COLUNAS_ANTES_DO_VALOR = 4
 
 const COMPARADORES: Record<string, Comparador<OcorrenciaDoMes>> = {
   descricao: alfabetico((o) => o.descricao),
@@ -139,9 +143,8 @@ export default function SaidasPage() {
     return cartoes.find((c) => c.id === id)?.nome ?? `#${id}`
   }
 
-  function corCartao(id: number | null): string | undefined {
-    if (id === null) return 'var(--ink-3)'
-    return cartoes.find((c) => c.id === id)?.cor ?? 'var(--ink-3)'
+  function corCartao(id: number): string | undefined {
+    return cartoes.find((c) => c.id === id)?.cor
   }
 
   function nomeCategoria(id: number): string {
@@ -675,6 +678,7 @@ export default function SaidasPage() {
                       direcao={sortDir}
                       onSort={() => handleSort('valor')}
                       className={styles.colValor}
+                      alinhamento="direita"
                     />
                     <th className={styles.colAcoes} aria-label="Ações" />
                   </tr>
@@ -685,24 +689,12 @@ export default function SaidasPage() {
                       {/* Rótulo vazio é o bloco cronológico: sem cabeçalho de
                           seção, porque não há seção. */}
                       {grupo.rotulo !== '' && (
-                        <tr className={styles.grupoDia}>
-                          <td colSpan={6}>
-                            <div className={styles.grupoDiaConteudo}>
-                              <span className={styles.grupoDiaData}>
-                                {grupo.cartaoId !== null && (
-                                  <span
-                                    className={styles.chip}
-                                    style={{ background: corCartao(grupo.cartaoId) }}
-                                  />
-                                )}
-                                {grupo.rotulo}
-                              </span>
-                              <span className={styles.grupoDiaTotal}>
-                                {formatBRL(grupo.totalCentavos)}
-                              </span>
-                            </div>
-                          </td>
-                        </tr>
+                        <LinhaDeGrupo
+                          rotulo={grupo.rotulo}
+                          cor={grupo.cartaoId !== null ? corCartao(grupo.cartaoId) : undefined}
+                          totalCentavos={grupo.totalCentavos}
+                          colunasDoRotulo={COLUNAS_ANTES_DO_VALOR}
+                        />
                       )}
                       {grupo.itens.map((o) => {
                         const despesa = despesaPorId.get(o.despesaId)

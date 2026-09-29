@@ -127,36 +127,47 @@
   margin-right: 8px;
 }
 
-/* Cabeçalho de grupo. É `<tr>` dentro da mesma tabela, não uma lista separada,
-   para os `getByRole('cell')` da suíte E2E continuarem valendo e a coluna de
-   valor seguir alinhada entre os grupos. */
-.grupoDia > td {
-  background: var(--bg-sunk);
-  padding: 7px 16px;
+/* Cabeçalho de seção (`LinhaDeGrupo`). Tinha o mesmo fundo, a mesma fonte mono,
+   a mesma caixa alta e o mesmo espaçamento do cabeçalho da tabela, e as duas
+   faixas se liam como um cabeçalho duplo. Agora é o degrau do meio: o fundo
+   fica entre o do cabeçalho (`--bg-sunk`) e o das linhas (`--bg-elev`), e o
+   rótulo é texto de seção, não de coluna. */
+.grupo > td {
+  background: var(--bg);
+  padding: var(--dens-1) 16px;
   border-bottom: 1px solid var(--rule);
 }
 
-.grupoDiaConteudo {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.grupoDiaData {
-  font-size: var(--text-2);
+.grupoRotulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-3);
   font-weight: 600;
-  color: var(--ink-2);
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  color: var(--ink);
 }
 
-.grupoDiaTotal {
-  font-size: var(--text-2);
+/* Mesma fonte e tamanho dos valores das linhas, um degrau mais pesada. */
+.grupoTotal {
   font-weight: 700;
   color: var(--ink);
-  font-variant-numeric: tabular-nums;
+}
+
+/* `inline-block` é a correção: a bolinha era um `span` vazio com largura e
+   altura, que não valem para elemento inline — ela nunca foi desenhada. O anel
+   é o mesmo da legenda da pizza: a cor padrão de categoria, quase preta, some
+   no tema escuro sem ele. */
+.bolinha {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px var(--rule-strong);
+}
+
+.bolinha[data-bolinha='vazia'] {
+  visibility: hidden;
 }
 
 .erro {
@@ -189,13 +200,6 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-}
-
-.chip {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
 }
 
 /* width:1% + nowrap faz o auto-layout da tabela encolher a coluna até o

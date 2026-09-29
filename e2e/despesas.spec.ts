@@ -85,10 +85,11 @@ test.describe('Despesa única + Fatura', () => {
     // Nao basta o formulario aceitar: o valor tem de chegar gravado certo.
     // '1.234,56' vale R$ 1.234,56 — nao R$ 1,23 nem R$ 123.456,00.
     await expect(page.getByRole('cell', { name: 'Notebook E2E' })).toBeVisible()
-    // `exact`, e nao substring: desde que Saidas abre agrupada, a linha de
-    // subtotal do cartao ("Inter Milhar E2E ... R$ 1.234,56") tambem e uma
-    // celula, e o regex tolerante casava com as duas. A celula de valor e a que
-    // interessa aqui — e a que prova que o separador de milhar chegou gravado.
-    await expect(page.getByRole('cell', { name: 'R$ 1.234,56', exact: true })).toBeVisible()
+    // Dentro da linha da despesa, e nao na tabela toda: o subtotal do cartao
+    // ganhou celula propria na coluna de valor, e com uma compra so ele mostra o
+    // mesmo "R$ 1.234,56" — nem o `exact` separa as duas. A celula da linha e a
+    // que prova que o separador de milhar chegou gravado.
+    const linha = page.getByRole('row').filter({ hasText: 'Notebook E2E' })
+    await expect(linha.getByRole('cell', { name: 'R$ 1.234,56', exact: true })).toBeVisible()
   })
 })
