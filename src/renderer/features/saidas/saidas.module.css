@@ -74,6 +74,19 @@
   min-width: 168px;
 }
 
+/* Tons por coluna. Descrição e valor ficam no tom principal; categoria, origem
+   e data descem um degrau. Com as quatro colunas na mesma cor, a linha se lia
+   como cinco informações de peso igual e o olho não tinha por onde entrar —
+   no tema escuro, uma parede de creme.
+
+   `tbody td.x`, e não `.x`: o `.tabela td` do Table pinta toda célula com o tom
+   principal e tem especificidade maior que uma classe sozinha — foi a folha de
+   contato que mostrou as datas ainda claras com `.colCompra { color }`. */
+tbody td.colCategoria,
+tbody td.colCompra {
+  color: var(--ink-2);
+}
+
 /* Data cabe em 92px com o formato DD/MM/AAAA; "desde 03/2024" cabe no mesmo. */
 .colCompra {
   width: 92px;
@@ -105,6 +118,12 @@
   color: var(--ink-2);
 }
 
+/* "à vista" é a maioria das linhas de um mês. No mesmo tom da parcela, ele
+   afogava "1/8" e "mensal", que são o que a coluna existe para mostrar. */
+.parcelaRotulo[data-tom='apoio'] {
+  color: var(--ink-3);
+}
+
 /* O trilho de progresso saiu da tabela. Ele nasceu em bloco, somando 7px de
    altura a toda linha parcelada; inline, em 28px, 8% preenchido e 100% ficam
    indistinguíveis — vira artefato, como o ponto tracejado da F6. O rótulo
@@ -118,13 +137,19 @@
   color: var(--ink);
 }
 
-/* Mesma linha do impacto, não abaixo dele: a segunda altura custava uma linha
-   inteira em toda parcelada. O peso continua separando os dois — o impacto é
-   600 e escuro, a origem é apoio. */
+/* Valor da compra, ao lado da parcela que ele explica ("1/8 de R$ 979,92"). Na
+   coluna de valor ele ficava colado ao impacto e se lia como parte dele. */
 .origem {
   font-size: var(--text-2);
   color: var(--ink-3);
-  margin-right: 8px;
+}
+
+/* O total do mês no topo do painel. Era o número mais importante da tela e o
+   menos visível: cinza, pequeno e sem destaque ao lado da contagem. */
+.metaTotal {
+  font-size: var(--text-3);
+  font-weight: 600;
+  color: var(--ink);
 }
 
 /* Cabeçalho de seção (`LinhaDeGrupo`). Tinha o mesmo fundo, a mesma fonte mono,
@@ -151,23 +176,6 @@
 .grupoTotal {
   font-weight: 700;
   color: var(--ink);
-}
-
-/* `inline-block` é a correção: a bolinha era um `span` vazio com largura e
-   altura, que não valem para elemento inline — ela nunca foi desenhada. O anel
-   é o mesmo da legenda da pizza: a cor padrão de categoria, quase preta, some
-   no tema escuro sem ele. */
-.bolinha {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  box-shadow: 0 0 0 1px var(--rule-strong);
-}
-
-.bolinha[data-bolinha='vazia'] {
-  visibility: hidden;
 }
 
 .erro {
@@ -207,6 +215,20 @@
 .colAcoes {
   width: 1%;
   white-space: nowrap;
+}
+
+/* Ações em tom de apoio: "Editar" repetido em toda linha formava uma coluna de
+   palavras iguais disputando atenção com os valores. Elas continuam na tela e
+   alcançáveis por Tab — só sobem de tom com o mouse na linha ou o foco dentro
+   dela. A variável fica na célula para os estados próprios dos botões
+   (hover, menu aberto), mais específicos que esta regra, seguirem valendo. */
+.colAcoes button {
+  color: var(--tom-acao, var(--ink-3));
+}
+
+tr:hover > .colAcoes,
+tr:focus-within > .colAcoes {
+  --tom-acao: var(--ink-2);
 }
 
 /* Sem isto os botões encolhem como itens flex e os rótulos ficam elipsados. */

@@ -84,6 +84,9 @@ const PARES: ReadonlyArray<readonly [string, string, number, string]> = [
   ['--ink', '--bg', 4.5, 'corpo sobre o fundo da página'],
   ['--ink', '--bg-elev', 4.5, 'corpo sobre card'],
   ['--ink-2', '--bg', 4.5, 'texto secundário'],
+  // Categoria, origem e data nas linhas de Saídas: o tom secundário passou a
+  // ser o de quase toda célula de tabela, e o par não era conferido.
+  ['--ink-2', '--bg-elev', 4.5, 'texto secundário sobre card'],
   ['--ink-3', '--bg', 4.5, 'texto terciário sobre o fundo'],
   ['--ink-3', '--bg-elev', 4.5, 'texto terciário sobre card'],
   ['--ink-3', '--bg-sunk', 4.5, 'texto terciário na sidebar e no thead'],
