@@ -1,0 +1,15 @@
+/* `inline-block` é o que a faz existir: largura e altura não valem para
+   elemento inline. O anel é o mesmo da legenda da pizza — a cor padrão de
+   categoria, quase preta, some no tema escuro sem ele. */
+.bolinha {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px var(--rule-strong);
+}
+
+.bolinha[data-bolinha='vazia'] {
+  visibility: hidden;
+}

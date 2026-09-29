@@ -48,6 +48,7 @@ import { descreverDataDaOcorrencia } from './descrever-data-da-ocorrencia'
 import { agruparOcorrencias } from './agrupar-ocorrencias'
 import { filtrarPorDescricao } from './filtrar-saidas'
 import { LinhaDeGrupo } from './LinhaDeGrupo'
+import { resumoDoPainel } from './resumo-do-painel'
 import { montarPreenchimentoDespesa, type PreenchimentoDespesa } from './montar-preenchimento'
 import { NotaETagsModal } from './NotaETagsModal'
 import { useOcorrencias } from './hooks/use-ocorrencias'
@@ -160,7 +161,9 @@ export default function SaidasPage() {
   function celulaDeCategoria(id: number) {
     const categoria = categoriaPorId.get(id)
     if (!categoria) return `#${id}`
-    return <RotuloCategoria nome={categoria.nome} arquivada={!categoria.ativo} />
+    return (
+      <RotuloCategoria nome={categoria.nome} arquivada={!categoria.ativo} cor={categoria.cor} />
+    )
   }
 
   const despesaPorId = useMemo(() => new Map(despesas.map((d) => [d.id, d])), [despesas])
@@ -346,6 +349,8 @@ export default function SaidasPage() {
     () => itensOrdenados.reduce((s, o) => s + o.impactoCentavos, 0),
     [itensOrdenados]
   )
+
+  const resumo = resumoDoPainel(itensOrdenados.length, ocorrencias.length, totalDoMesCentavos)
 
   /**
    * RF-DES-13 no cadastro — grava nota e tags logo após criar a despesa.
@@ -602,7 +607,14 @@ export default function SaidasPage() {
             nenhum com as colunas. */}
         <div className={styles.toolbar}>
           <SeletorMes valor={mes} onChange={setMes} label="Mês" />
-          <Button size="sm" className={styles.acaoPrimaria} onClick={abrirCadastro}>
+          {/* Primária, como "+ Novo avulso" em Rendas: é a ação mais usada da
+              tela, e secundária ela perdia para a aba ativa dos filtros. */}
+          <Button
+            variant="primary"
+            size="sm"
+            className={styles.acaoPrimaria}
+            onClick={abrirCadastro}
+          >
             + Nova saída
           </Button>
         </div>
@@ -613,7 +625,15 @@ export default function SaidasPage() {
               mostrava nove lançamentos soltos e nenhuma soma. */}
         <Panel
           title="Lançamentos"
-          meta={`${itensOrdenados.length} · ${formatBRL(totalDoMesCentavos)}`}
+          meta={
+            resumo && (
+              <>
+                <span>{resumo.contagem}</span>
+                {' · '}
+                <span className={styles.metaTotal}>{formatBRL(resumo.totalCentavos)}</span>
+              </>
+            )
+          }
           flush
         >
           <div className={styles.filtros}>
@@ -730,36 +750,42 @@ export default function SaidasPage() {
                                 </div>
                               )}
                             </td>
-                            <td>{celulaDeCategoria(o.categoriaId)}</td>
+                            <td className={styles.colCategoria}>
+                              {celulaDeCategoria(o.categoriaId)}
+                            </td>
                             <td className={styles.colCompra}>
                               <CelulaDeCompra ocorrencia={o} />
                             </td>
                             <td className={styles.colParcela}>
                               <span className={styles.parcelaComSelo}>
-                                <span className={`${styles.parcelaRotulo} mono`}>
+                                {/* "à vista" é o caso comum e vai em tom de
+                                    apoio: é a parcela e a mensalidade que a
+                                    leitura procura, mesmo princípio do selo
+                                    "Paga" logo abaixo. */}
+                                <span
+                                  className={`${styles.parcelaRotulo} mono`}
+                                  data-tom={o.tipo === 'Unica' ? 'apoio' : undefined}
+                                >
                                   {o.rotuloParcela}
                                 </span>
+                                {/* O valor da compra mora aqui, ao lado da
+                                    parcela que ele explica: "1/8 de R$ 979,92".
+                                    Na coluna de valor ele se lia colado ao
+                                    impacto, e a coluna tinha dois números em
+                                    umas linhas e um nas outras. */}
+                                {o.origemCentavos !== null && (
+                                  <span className={`${styles.origem} tnum`}>
+                                    {' '}
+                                    de {formatBRL(o.origemCentavos)}
+                                  </span>
+                                )}
                                 {/* Só quando paga. Carimbar "Pendente" em toda
                                     linha diria o padrão em voz alta e afogaria
                                     a exceção, que é o que a leitura procura. */}
                                 {o.statusParcela === 'Paga' && <Badge variant="paid" />}
                               </span>
                             </td>
-                            {/* Duas colunas de dinheiro numa só célula: o impacto
-                                do mês é o número somável, e o valor da compra
-                                desce para contexto. Antes os dois disputavam a
-                                mesma linha como se fossem comparáveis. */}
                             <td className={`${styles.colValor} tnum`}>
-                              {/* A origem vem ANTES do impacto: depois dele, ela
-                                  empurrava o número principal para a esquerda e
-                                  os impactos deixavam de alinhar entre linhas —
-                                  que é exatamente o que uma coluna de dinheiro
-                                  alinhada à direita existe para permitir. */}
-                              {o.origemCentavos !== null && (
-                                <span className={styles.origem}>
-                                  de {formatBRL(o.origemCentavos)}
-                                </span>
-                              )}
                               <span className={styles.impacto}>{formatBRL(o.impactoCentavos)}</span>
                             </td>
                             <td className={styles.colAcoes}>

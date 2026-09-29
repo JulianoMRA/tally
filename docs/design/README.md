@@ -169,6 +169,11 @@ badge "Paga" exige uma fatura fechada **e** paga, que o seed nunca criava. Ver
 - `Card` — `bg-elev`, raio 12px, `shadow-1`; padding: `none | sm | md`
 - `Panel` — container com cabeçalho (`title` + `meta` + `actions`) e corpo (`flush` opcional)
 - `Badge` — semânticos: `open | closed | paid | pending | income | expense | active | archived | projection`
+- `BolinhaDeCor` — marcador de cor de cartão ou categoria antes do nome numa tabela. Sem `cor`,
+  reserva o lugar invisível para o texto ao lado continuar alinhado. Leva o anel de 1px em
+  `--rule-strong`: a cor padrão de categoria, quase preta, some no tema escuro sem ele. Nasceu
+  de um defeito: a bolinha do cabeçalho de grupo de Saídas era um `span` inline com largura e
+  altura, que o navegador ignora — nunca foi desenhada
 - `Input` — input estilizado com estado de erro e focus ring
 - `Select` — select com chevron SVG customizado
 - `Field` — wrapper label + children + hint/erro
