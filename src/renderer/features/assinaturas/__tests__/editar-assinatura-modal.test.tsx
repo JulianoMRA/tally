@@ -4,6 +4,7 @@ import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
+import { categoria } from '../../../__tests__/__fixtures__/builders'
 import { EditarAssinaturaModal } from '../EditarAssinaturaModal'
 
 const CATEGORIAS: Categoria[] = [
@@ -121,5 +122,28 @@ describe('EditarAssinaturaModal — limite de recorrência (RF-DES-19)', () => {
     expect(screen.getByText('Informe a data limite.')).toBeTruthy()
     expect(onConfirmar).not.toHaveBeenCalled()
     expect(onAlterarLimite).not.toHaveBeenCalled()
+  })
+})
+
+describe('EditarAssinaturaModal — categoria arquivada (RF-CAT-02)', () => {
+  afterEach(cleanup)
+
+  // Mesmo defeito do modal de despesa: com a categoria atual arquivada, o
+  // select mostrava a primeira da lista.
+  it('mostra a categoria atual arquivada, marcada, sem oferecer as outras arquivadas', () => {
+    const lazer = categoria({ id: 5, nome: 'Lazer', ativo: false })
+    const antiga = categoria({ id: 6, nome: 'Antiga', ativo: false })
+    render(
+      <EditarAssinaturaModal
+        assinatura={assinatura({ categoriaId: lazer.id })}
+        categorias={[antiga, ...CATEGORIAS, lazer]}
+        onConfirmar={vi.fn()}
+        onCancelar={vi.fn()}
+      />
+    )
+
+    const select = screen.getByLabelText('Categoria') as HTMLSelectElement
+    expect(select.value).toBe(String(lazer.id))
+    expect([...select.options].map((o) => o.textContent)).toEqual(['Moradia', 'Lazer (arquivada)'])
   })
 })

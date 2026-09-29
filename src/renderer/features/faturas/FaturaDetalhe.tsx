@@ -94,7 +94,13 @@ export function FaturaDetalhe({
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const toast = useToast()
 
-  useCargaAuxiliar(() => window.api.categoria.list(), setCategorias, 'Erro ao listar categorias.')
+  // Com as arquivadas: o modal de edição precisa da categoria atual mesmo
+  // arquivada, e é ele quem decide o que oferecer (RF-CAT-02).
+  useCargaAuxiliar(
+    () => window.api.categoria.list({ incluirArquivados: true }),
+    setCategorias,
+    'Erro ao listar categorias.'
+  )
 
   const parcelasOrdenadas = useMemo(() => {
     const copia = [...parcelas]
