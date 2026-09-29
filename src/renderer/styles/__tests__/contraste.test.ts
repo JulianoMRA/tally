@@ -103,7 +103,8 @@ const PARES: ReadonlyArray<readonly [string, string, number, string]> = [
   // Fatias são superfície, não texto: o mínimo de componente gráfico é 3:1.
   ['--fatia-entradas', '--forest', 3, 'fatia de entradas na barra do hero'],
   ['--fatia-faturas', '--forest', 3, 'fatia de faturas na barra do hero'],
-  ['--fatia-fora-cartao', '--forest', 3, 'fatia de fora do cartão na barra do hero']
+  ['--fatia-fora-cartao', '--forest', 3, 'fatia de fora do cartão na barra do hero'],
+  ['--fatia-outros', '--bg-elev', 3, 'fatia "Outros" da pizza de categorias sobre card']
 ]
 
 /** Um token "carrega cor" se o valor tem hex ou rgb()/rgba() literal. */

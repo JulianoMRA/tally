@@ -39,7 +39,11 @@
   gap: 16px;
 }
 
-.colunaPrincipal {
+/* A coluna lateral empilha "Fora do cartão" e a pizza (RF-VIS-08): a pizza usa
+   o espaço que sobrava ao lado do ranking, porque fora de cartão costuma ter
+   poucas linhas e a coluna principal é a mais longa. */
+.colunaPrincipal,
+.colunaLateral {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -385,6 +389,146 @@
 .usoEstourado {
   color: var(--expense);
   font-weight: 600;
+}
+
+/* Pizza de categorias (RF-VIS-08). Legenda ao lado do disco; quando o card
+   estreita, ela desce para baixo dele em vez de espremer os nomes. */
+.pizzaCorpo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+  padding: 16px;
+}
+
+.pizzaGrafico {
+  position: relative;
+  flex: 0 0 auto;
+  width: 152px;
+  height: 152px;
+}
+
+.pizzaGrafico svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* O separador é a cor do card: fatias vizinhas da mesma cor (o app permite)
+   continuam distinguíveis. `non-scaling-stroke` mantém os 2px de tela, seja
+   qual for o tamanho do SVG. */
+.pizzaFatia {
+  stroke: var(--bg-elev);
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+  transition: opacity 120ms ease;
+}
+
+.pizzaFatia[data-apagada='true'] {
+  opacity: 0.35;
+}
+
+.pizzaFatiaOutros {
+  fill: var(--fatia-outros);
+}
+
+.pizzaContorno {
+  fill: none;
+  stroke: var(--rule-strong);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+/* A dica fica presa ao quadro do gráfico: no máximo a largura dele, e colada
+   no topo ou na base, na metade oposta à fatia. Ancorada no centro, ela
+   vazava pela borda do card na folha de contato — e com mais categorias em
+   "Outros" sairia dele. */
+.pizzaDica {
+  position: absolute;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-2);
+  box-shadow: var(--shadow-2);
+  font-size: var(--text-2);
+  color: var(--ink-3);
+  pointer-events: none;
+}
+
+.pizzaDica[data-posicao='acima'] {
+  top: 0;
+}
+
+.pizzaDica[data-posicao='abaixo'] {
+  bottom: 0;
+}
+
+.pizzaDicaValor {
+  font-size: var(--text-3);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* Teto de largura: em card largo o percentual ia parar na borda, longe do
+   nome que ele qualifica. */
+.pizzaLegenda {
+  flex: 1 1 150px;
+  min-width: 0;
+  max-width: 280px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pizzaLegendaItem {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: var(--r-1);
+  font-size: var(--text-3);
+}
+
+.pizzaLegendaItem[data-ativa='true'] {
+  background: var(--bg-sunk);
+}
+
+/* Mesmo anel do contorno do disco: a cor padrão de categoria some no escuro. */
+.pizzaChip {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--rule-strong);
+}
+
+.pizzaChipOutros {
+  background: var(--fatia-outros);
+}
+
+.pizzaLegendaNome {
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pizzaLegendaPct {
+  font-size: var(--text-2);
+  color: var(--ink-3);
+  text-align: right;
 }
 
 .rodapeAnalise {

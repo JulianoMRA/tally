@@ -30,7 +30,9 @@ import { useOrcamento } from '../relatorios/hooks/use-orcamento'
 import { useTotaisCategoria } from '../relatorios/hooks/use-totais-categoria'
 import { AgendaPanel } from './AgendaPanel'
 import { FaturasCardCompacto } from './FaturasCardCompacto'
+import { montarPizza } from './montar-pizza'
 import { montarRanking } from './montar-ranking'
+import { PizzaCategorias } from './PizzaCategorias'
 import { PrimeiroUso } from './PrimeiroUso'
 import { RankingCategorias } from './RankingCategorias'
 import { SaldoHero } from './SaldoHero'
@@ -128,6 +130,10 @@ export default function VisaoMensalPage() {
     [totaisCategoria, orcamento]
   )
 
+  // Mesmo dado do ranking, sem IPC novo: a pizza é outra leitura dos mesmos
+  // totais (RF-VIS-08).
+  const pizza = useMemo(() => montarPizza(totaisCategoria), [totaisCategoria])
+
   const gastoTotalCategorias = totaisCategoria.reduce((s, t) => s + t.totalCentavos, 0)
 
   // Base ainda sem nada: sem isso a tela era R$ 0,00 em tudo, sem dizer por
@@ -215,55 +221,59 @@ export default function VisaoMensalPage() {
                   <RankingCategorias linhas={ranking} totalCentavos={gastoTotalCategorias} />
                 </div>
 
-                <Panel title="Fora do cartão" meta={formatBRL(totalForaCartaoCentavos)} flush>
-                  {detalhe.gastosForaCartao.length === 0 ? (
-                    <EmptyState title="Nenhum gasto fora de cartão neste mês." />
-                  ) : (
-                    <Table>
-                      <thead>
-                        <tr>
-                          <SortableHeader
-                            rotulo="Descrição"
-                            ativo={gastos.sortBy === 'descricao'}
-                            direcao={gastos.sortDir}
-                            onSort={() => gastos.handleSort('descricao')}
-                          />
-                          <SortableHeader
-                            rotulo="Forma"
-                            ativo={gastos.sortBy === 'forma'}
-                            direcao={gastos.sortDir}
-                            onSort={() => gastos.handleSort('forma')}
-                          />
-                          <SortableHeader
-                            rotulo="Data"
-                            ativo={gastos.sortBy === 'data'}
-                            direcao={gastos.sortDir}
-                            onSort={() => gastos.handleSort('data')}
-                          />
-                          <SortableHeader
-                            rotulo="Valor"
-                            ativo={gastos.sortBy === 'valor'}
-                            direcao={gastos.sortDir}
-                            onSort={() => gastos.handleSort('valor')}
-                            className={styles.colValor}
-                          />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {gastos.itensOrdenados.map((g) => (
-                          <tr key={g.id}>
-                            <td>{g.descricao}</td>
-                            <td className="mono">{g.formaPagamento}</td>
-                            <td className="mono">{formatarDataIso(g.data)}</td>
-                            <td className={`${styles.colValor} tnum`}>
-                              {formatBRL(g.valorCentavos)}
-                            </td>
+                <div className={styles.colunaLateral}>
+                  <Panel title="Fora do cartão" meta={formatBRL(totalForaCartaoCentavos)} flush>
+                    {detalhe.gastosForaCartao.length === 0 ? (
+                      <EmptyState title="Nenhum gasto fora de cartão neste mês." />
+                    ) : (
+                      <Table>
+                        <thead>
+                          <tr>
+                            <SortableHeader
+                              rotulo="Descrição"
+                              ativo={gastos.sortBy === 'descricao'}
+                              direcao={gastos.sortDir}
+                              onSort={() => gastos.handleSort('descricao')}
+                            />
+                            <SortableHeader
+                              rotulo="Forma"
+                              ativo={gastos.sortBy === 'forma'}
+                              direcao={gastos.sortDir}
+                              onSort={() => gastos.handleSort('forma')}
+                            />
+                            <SortableHeader
+                              rotulo="Data"
+                              ativo={gastos.sortBy === 'data'}
+                              direcao={gastos.sortDir}
+                              onSort={() => gastos.handleSort('data')}
+                            />
+                            <SortableHeader
+                              rotulo="Valor"
+                              ativo={gastos.sortBy === 'valor'}
+                              direcao={gastos.sortDir}
+                              onSort={() => gastos.handleSort('valor')}
+                              className={styles.colValor}
+                            />
                           </tr>
-                        ))}
-                      </tbody>
-                    </Table>
-                  )}
-                </Panel>
+                        </thead>
+                        <tbody>
+                          {gastos.itensOrdenados.map((g) => (
+                            <tr key={g.id}>
+                              <td>{g.descricao}</td>
+                              <td className="mono">{g.formaPagamento}</td>
+                              <td className="mono">{formatarDataIso(g.data)}</td>
+                              <td className={`${styles.colValor} tnum`}>
+                                {formatBRL(g.valorCentavos)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Table>
+                    )}
+                  </Panel>
+
+                  <PizzaCategorias fatias={pizza} />
+                </div>
               </div>
 
               <p className={styles.rodapeAnalise}>
