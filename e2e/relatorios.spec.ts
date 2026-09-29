@@ -7,8 +7,8 @@ import {
   irPara
 } from './fixtures/navegacao'
 
-// RF-VIS-05 + RF-VIS-06 — relatórios: ranking por categoria + evolução
-test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
+// RF-VIS-05 + RF-VIS-06 + RF-VIS-08 — relatórios: ranking e pizza por categoria + evolução
+test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06, RF-VIS-08)', () => {
   test('cadastra 2 despesas em categorias distintas e valida ranking em /relatorios', async ({
     app
   }) => {
@@ -68,8 +68,26 @@ test.describe('Relatórios e gráficos (RF-VIS-05, RF-VIS-06)', () => {
     await expect(rankingMercado.getByText(/R\$\s*80,00/)).toBeVisible()
     await expect(rankingLazer.getByText(/R\$\s*30,00/)).toBeVisible()
 
-    // A pizza saiu (RF-VIS-06): dizia o mesmo que o ranking ao lado.
-    await expect(page.getByRole('heading', { name: 'Gastos do mês por categoria' })).toHaveCount(0)
+    // A pizza voltou como card próprio (RF-VIS-08), com o mesmo dado do
+    // ranking e os mesmos percentuais: 80 de 110 e 30 de 110.
+    await expect(page.getByRole('heading', { name: 'Divisão dos gastos' })).toBeVisible()
+    await expect(
+      page.getByRole('img', {
+        name: 'Divisão dos gastos por categoria: Mercado E2E 73%, Lazer E2E 27%',
+        exact: true
+      })
+    ).toBeVisible()
+
+    // A legenda leva nome e percentual; o valor em R$ aparece na dica. O hover
+    // vai na linha da legenda, não na fatia: o centro da caixa de uma fatia de
+    // 73% é o vértice comum a todas, e o alvo ali é ambíguo.
+    const legendaMercado = page
+      .getByRole('list', { name: 'Legenda' })
+      .getByRole('listitem')
+      .filter({ hasText: 'Mercado E2E' })
+    await expect(legendaMercado).toContainText('73%')
+    await legendaMercado.hover()
+    await expect(page.getByRole('tooltip')).toContainText(/R\$\s*80,00/)
 
     // Evolução do saldo continua existindo, agora atrás da aba Análise.
     await abrirAba(page, 'Análise')
