@@ -19,8 +19,14 @@ export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
   const faturaRepo = new FaturaRepository(db)
   const parcelaRepo = new ParcelaRepository(db)
 
+  // É o caminho de leitura da tela de Faturas, e por isso aplica o RN-06 antes
+  // de listar — como `VisaoMensalRepository.detalhar` faz na Visão mensal. A
+  // fatura nasce sempre Aberta, inclusive a de um lançamento retroativo, e sem
+  // isto seguia Aberta aqui até o boot ou o timer de uma hora, enquanto a Visão
+  // mensal já a mostrava Fechada.
   ipcMain.handle(FATURA_IPC_CHANNELS.listarResumoPorCartao, (_event, payload: unknown) => {
     const cartaoId = cartaoIdSchema.parse(payload)
+    faturaRepo.fecharVencidas(hojeIsoLocal())
     return faturaRepo.listarResumoPorCartao(cartaoId)
   })
 

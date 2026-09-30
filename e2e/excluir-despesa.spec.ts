@@ -156,8 +156,10 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     // (ponto 12). Estes testes usam cartão com uma fatura só, então é ela.
     await expect(page.getByText('1/1')).toBeVisible()
 
-    await page.getByRole('button', { name: 'Fechar fatura' }).click()
-    await confirmar(page, 'Fechar')
+    // A fatura de junho já chega Fechada: Faturas aplica o fechamento
+    // automático ao carregar (RN-06). Até set/2026 ela seguia Aberta aqui até o
+    // boot ou o timer, e este teste precisava fechá-la na mão.
+    await expect(page.getByRole('button', { name: 'Fechar fatura' })).toHaveCount(0)
     await page.getByRole('button', { name: 'Marcar como paga' }).click()
     await page.getByRole('button', { name: 'Confirmar pagamento' }).click()
 
