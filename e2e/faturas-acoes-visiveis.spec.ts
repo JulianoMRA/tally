@@ -12,14 +12,9 @@ import type { ElectronApplication, Page } from '@playwright/test'
  * Guarda de geometria para as ações da tabela de Parcelas do detalhe de fatura.
  *
  * Contexto: a tabela de Saídas teve suas ações decepadas pelo `overflow: hidden`
- * do Panel e precisou de um container rolável. O FaturaDetalhe NÃO tem esse
- * problema, mas só porque seu `.rowActions` usa `flex-wrap: wrap` — a coluna de
- * ações quebra em linhas e a tabela consegue comprimir.
- *
- * Essa dependência é frágil: os dois módulos têm uma classe `.rowActions` de
- * mesmo nome e propósito, e a de Saídas hoje usa `nowrap` + `flex-shrink: 0`.
- * Uniformizar os dois sem medir reintroduz o bug aqui. Este spec falha se isso
- * acontecer.
+ * do Panel e precisou de um container rolável. O detalhe da fatura não tem
+ * container rolável: qualquer transbordo da tabela vira corte permanente, e
+ * este spec falha se isso acontecer.
  */
 
 async function redimensionar(app: ElectronApplication, largura: number) {
@@ -61,14 +56,11 @@ async function semear(app: ElectronApplication): Promise<Page> {
   return page
 }
 
-// 1000, 1280 e 1600 cercam o breakpoint do detalhe pelos dois lados: abaixo
-// dele a tabela tem a largura toda, acima dela divide com o aside de 340px.
-//
-// O breakpoint era 1200px, e nessa largura o aside derrubava a área principal
-// de 698px para 629px — ALARGAR a janela deixava a tabela mais estreita. A
-// folga que restava era de poucos pixels, e a escala de tipo da F8 a consumiu:
-// foi este spec que denunciou. Subiu para 1360px, que é onde as duas colunas
-// de fato cabem.
+// Até set/2026 o detalhe tinha um card lateral de 340px a partir de 1360px, e
+// estas larguras cercavam esse breakpoint: numa versão anterior dele (1200px),
+// ALARGAR a janela deixava a tabela mais estreita, e foi este spec que
+// denunciou. O card virou a faixa de resumo acima da tabela, que passou a ter a
+// largura inteira em qualquer janela; as três larguras seguem como guarda.
 for (const largura of [1000, 1280, 1600] as const) {
   test(`ações da fatura continuam dentro do painel em ${largura}px`, async ({ app }) => {
     const page = await semear(app)
