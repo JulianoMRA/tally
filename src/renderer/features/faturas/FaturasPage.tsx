@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useCartoesAtivos } from '../despesas/hooks/use-cartoes-ativos'
-import { useFaturaDetalhe, useFaturasDeTodosCartoes } from './hooks/use-faturas'
+import { useCartoesDaTela, useFaturaDetalhe, useFaturasDeTodosCartoes } from './hooks/use-faturas'
+import { cartoesDoTrilho } from './cartoes-do-trilho'
 import { FaturaDetalhe } from './FaturaDetalhe'
 import { HistoricoFaturas } from './HistoricoFaturas'
 import { TrilhoCartoes } from './TrilhoCartoes'
@@ -35,13 +35,19 @@ export default function FaturasPage() {
   const [faturaId, setFaturaId] = useState<number | null>(pedido.faturaId)
   const [linkQuebrado, setLinkQuebrado] = useState(false)
 
-  const { cartoes, loading: loadingCartoes, error: erroCartoes } = useCartoesAtivos()
+  const { cartoes, loading: loadingCartoes, erro: erroCartoes } = useCartoesDaTela()
   const {
-    grupos,
+    grupos: todosOsGrupos,
     loading: loadingGrupos,
     erro: erroGrupos,
     refetch: refetchGrupos
   } = useFaturasDeTodosCartoes(cartoes)
+
+  // Arquivados entram enquanto tiverem fatura a pagar, ou enquanto estiverem em
+  // foco (RF-CAR-02). `cartaoId` nasce do link, então o cartão que o link pediu
+  // entra; e pagar a última fatura de um arquivado não o tira do trilho debaixo
+  // do painel — ele só sai quando outro cartão é escolhido.
+  const grupos = useMemo(() => cartoesDoTrilho(todosOsGrupos, cartaoId), [todosOsGrupos, cartaoId])
 
   const mesAtual = mesAtualReferencia()
 
@@ -133,7 +139,10 @@ export default function FaturasPage() {
   const proxima =
     indiceAtual >= 0 && indiceAtual < ordenadas.length - 1 ? ordenadas[indiceAtual + 1] : undefined
 
-  const carregando = loadingCartoes || loadingGrupos
+  // Os grupos trazem um item por cartão carregado; lista vazia com cartões na
+  // mão é o intervalo entre as duas cargas, e não um estado vazio.
+  const gruposPendentes = cartoes.length > 0 && todosOsGrupos.length === 0 && !erroGrupos
+  const carregando = loadingCartoes || loadingGrupos || gruposPendentes
   // Falha na carga do trilho não pode cair no estado vazio: "Nenhum cartão
   // cadastrado" afirma sobre os dados do usuário algo que não se sabe, e é
   // justamente o oposto do que houve.
@@ -151,10 +160,17 @@ export default function FaturasPage() {
 
         {!carregando && erroDaPagina && <p className={styles.erro}>{erroDaPagina}</p>}
 
-        {!carregando && !erroDaPagina && grupos.length === 0 && (
+        {!carregando && !erroDaPagina && cartoes.length === 0 && (
           <EmptyState
             title="Nenhum cartão cadastrado"
             description="Cadastre um cartão para que as faturas comecem a ser geradas."
+          />
+        )}
+
+        {!carregando && !erroDaPagina && cartoes.length > 0 && grupos.length === 0 && (
+          <EmptyState
+            title="Nenhum cartão ativo"
+            description="Cartões arquivados só aparecem aqui enquanto têm fatura a pagar."
           />
         )}
 

@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook, waitFor, cleanup } from '@testing-library/react'
 import type { Cartao } from '@domain/entities/cartao'
-import { useFaturaDetalhe, useFaturasDeTodosCartoes } from '../use-faturas'
+import { useCartoesDaTela, useFaturaDetalhe, useFaturasDeTodosCartoes } from '../use-faturas'
 
 function cartao(id: number, nome: string): Cartao {
   return {
@@ -17,8 +17,8 @@ function cartao(id: number, nome: string): Cartao {
   }
 }
 
-function instalarApi(fatura: Record<string, unknown>) {
-  vi.stubGlobal('window', Object.assign(window, { api: { fatura } }))
+function instalarApi(fatura: Record<string, unknown>, cartao: Record<string, unknown> = {}) {
+  vi.stubGlobal('window', Object.assign(window, { api: { fatura, cartao } }))
 }
 
 // Referência estável: o hook depende de `cartoes` direto no useCallback, e a
@@ -107,5 +107,34 @@ describe('useFaturaDetalhe', () => {
 
     await waitFor(() => expect(result.current.erro).toBeNull())
     expect(result.current.detalhe).toBeNull()
+  })
+})
+
+/**
+ * Faturas carregava só os cartões ativos (RF-CAR-02). O arquivado com fatura a
+ * pagar precisa chegar à tela, e quem decide se ele entra no trilho é
+ * `cartoesDoTrilho` — por isso a carga pede todos.
+ */
+describe('useCartoesDaTela', () => {
+  afterEach(cleanup)
+
+  it('pede os cartões com os arquivados e encerra o carregamento', async () => {
+    const list = vi.fn().mockResolvedValue(CARTOES)
+    instalarApi({}, { list })
+    const { result } = renderHook(() => useCartoesDaTela())
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(list).toHaveBeenCalledWith({ incluirArquivados: true })
+    expect(result.current.cartoes).toEqual(CARTOES)
+    expect(result.current.erro).toBeNull()
+  })
+
+  it('encerra o carregamento e informa o erro quando o IPC falha', async () => {
+    instalarApi({}, { list: rejeitando('Banco indisponível') })
+    const { result } = renderHook(() => useCartoesDaTela())
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.erro).toMatch(/Banco indisponível/)
+    expect(result.current.cartoes).toEqual([])
   })
 })
