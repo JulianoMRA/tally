@@ -167,8 +167,8 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await page.keyboard.press('Escape')
 
     // Reabrir uma fatura vencida resulta em Fechada (não Aberta): a parcela
-    // volta a Pendente (item habilita), mas o backend bloqueia a exclusão
-    // pela RN-06 — parcela em fatura Fechada preserva o histórico.
+    // volta a Pendente, mas a exclusão segue bloqueada pela RN-06 — parcela em
+    // fatura Fechada preserva o histórico.
     await page.getByRole('button', { name: 'Reabrir fatura' }).click()
     await page.getByRole('button', { name: 'Reabrir', exact: true }).click()
     // Escopado ao resumo do painel: o trilho também exibe o status do cartão,
@@ -176,11 +176,13 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     const resumo = page.getByText('Status', { exact: true }).locator('..')
     await expect(resumo.getByText('Fechada', { exact: true })).toBeVisible()
 
+    // Até set/2026 o item ficava habilitado, o diálogo "irreversível" abria e só
+    // então vinha "Exclusão bloqueada". A tela passou a saber do bloqueio antes
+    // (RF-DES-09): o item fica desabilitado e diz por quê.
     const excluir = await itemExcluirDaParcela(page)
-    await expect(excluir).toBeEnabled()
-    await excluir.click()
-    await page.getByRole('dialog').getByRole('button', { name: 'Excluir' }).click()
-    await expect(page.getByText(/Exclusão bloqueada/)).toBeVisible()
+    await expect(excluir).toBeDisabled()
+    await expect(excluir).toHaveAttribute('title', /fatura fechada/)
+    await page.keyboard.press('Escape')
     await expect(page.getByRole('cell', { name: 'Compra Vencida E2E' })).toBeVisible()
   })
 })
