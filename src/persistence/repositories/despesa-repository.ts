@@ -28,6 +28,7 @@ import {
   parcelasElegiveisParaRecalculo,
   podeDeletarDespesa,
   podeEditarDespesa,
+  type MotivoBloqueioExclusao,
   type ParcelaComStatusFatura
 } from '../../domain/services/regras-despesa'
 import { recalcularParcelasPendentes } from '../../domain/services/recalcular-parcelas'
@@ -1003,6 +1004,24 @@ export class DespesaRepository implements Repository {
         parcelasExcluidas: Number(infoP.changes)
       }
     })()
+  }
+
+  /**
+   * RF-DES-09 — por que a exclusão de cada despesa está bloqueada; a que pode
+   * ser excluída fica fora do mapa. É a mesma regra de `excluir`, para a tela
+   * desabilitar a ação em vez de oferecê-la e falhar depois do diálogo. Quem
+   * responde é o repositório porque a regra olha todas as parcelas da despesa,
+   * e a tela de Faturas só conhece as da fatura aberta.
+   */
+  bloqueiosDeExclusao(despesaIds: readonly number[]): Map<number, MotivoBloqueioExclusao> {
+    const parcelaRepo = new ParcelaRepository(this.db)
+    const bloqueios = new Map<number, MotivoBloqueioExclusao>()
+    for (const despesaId of new Set(despesaIds)) {
+      const parcelas = parcelaRepo.listarPorDespesa(despesaId)
+      const regra = podeDeletarDespesa(this.comStatusFatura(parcelas))
+      if (!regra.ok) bloqueios.set(despesaId, regra.motivo)
+    }
+    return bloqueios
   }
 
   /**

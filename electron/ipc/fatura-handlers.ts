@@ -54,11 +54,14 @@ export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
         if (d) despesasPorParcela[p.id] = d
       }
 
+      const exclusaoBloqueada = Object.fromEntries(despesaRepo.bloqueiosDeExclusao(despesaIds))
+
       return {
         fatura,
         parcelas,
         totalCentavos,
-        despesasPorParcela
+        despesasPorParcela,
+        exclusaoBloqueada
       }
     }
   )

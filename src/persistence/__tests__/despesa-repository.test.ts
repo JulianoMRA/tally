@@ -899,6 +899,83 @@ describe('DespesaRepository — assinatura (RF-DES-04, RF-DES-07, RF-DES-08, RN-
     })
   })
 
+  // A tela de Faturas oferecia Excluir em toda parcela pendente e só descobria
+  // o bloqueio depois do diálogo "irreversível". A regra olha TODAS as parcelas
+  // da despesa, e a fatura só conhece as dela: quem responde é o repositório.
+  describe('bloqueiosDeExclusao (RF-DES-09)', () => {
+    it('despesa que pode ser excluída fica fora do mapa', () => {
+      const r = repo.criarUnicaCredito({
+        descricao: 'Almoço',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 2500,
+        dataCompra: '2026-06-03'
+      })
+
+      expect(repo.bloqueiosDeExclusao([r.despesa.id]).size).toBe(0)
+    })
+
+    it('parcela paga bloqueia, com o motivo', () => {
+      const r = repo.criarUnicaCredito({
+        descricao: 'Almoço',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 2500,
+        dataCompra: '2026-06-03'
+      })
+      const faturaRepo = new FaturaRepository(db)
+      faturaRepo.fechar(r.fatura.id)
+      faturaRepo.pagar(r.fatura.id, '2026-06-12')
+
+      expect(repo.bloqueiosDeExclusao([r.despesa.id]).get(r.despesa.id)).toBe('has-parcela-paga')
+    })
+
+    // O caso que a tela não tinha como ver: a parcela 2/3 está numa fatura
+    // Aberta, mas a 1/3 já fechou.
+    it('parcela em fatura fechada bloqueia a despesa inteira, vista de qualquer fatura', () => {
+      const r = repo.criarParceladaCredito({
+        descricao: 'TV',
+        categoriaId: catId,
+        cartaoId,
+        totalParcelas: 3,
+        valorTotalCentavos: 3000,
+        dataCompra: '2026-06-03'
+      })
+      new FaturaRepository(db).fechar(r.parcelas[0].faturaId!)
+
+      expect(repo.bloqueiosDeExclusao([r.despesa.id]).get(r.despesa.id)).toBe(
+        'has-parcela-em-fatura-fechada'
+      )
+    })
+
+    it('responde várias despesas de uma vez', () => {
+      const livre = repo.criarUnicaCredito({
+        descricao: 'Almoço',
+        categoriaId: catId,
+        cartaoId,
+        valorCentavos: 2500,
+        dataCompra: '2026-07-03'
+      })
+      const presa = repo.criarParceladaCredito({
+        descricao: 'TV',
+        categoriaId: catId,
+        cartaoId,
+        totalParcelas: 3,
+        valorTotalCentavos: 3000,
+        dataCompra: '2026-06-03'
+      })
+      new FaturaRepository(db).fechar(presa.parcelas[0].faturaId!)
+
+      const bloqueios = repo.bloqueiosDeExclusao([livre.despesa.id, presa.despesa.id])
+
+      expect([...bloqueios.keys()]).toEqual([presa.despesa.id])
+    })
+
+    it('lista vazia devolve mapa vazio', () => {
+      expect(repo.bloqueiosDeExclusao([]).size).toBe(0)
+    })
+  })
+
   describe('atualizar (RF-DES-10)', () => {
     it('atualiza descricao, categoria e valor de despesa Unica + sua unica parcela', () => {
       const r = repo.criarUnicaCredito({

@@ -74,3 +74,90 @@ describe('EditarDespesaModal — categoria arquivada (RF-CAT-02)', () => {
     )
   })
 })
+
+// RF-DES-10 — numa fatura Fechada, a compra à vista não aceita mudança de valor
+// nem de data: o modal deixava editar os dois e a gravação era recusada.
+describe('EditarDespesaModal — valor e data travados', () => {
+  afterEach(cleanup)
+
+  function renderTravado(onConfirmar = vi.fn().mockResolvedValue(undefined)) {
+    render(
+      <EditarDespesaModal
+        despesa={despesa()}
+        categorias={[MORADIA]}
+        travaValorEData="A fatura desta compra está fechada."
+        onConfirmar={onConfirmar}
+        onCancelar={vi.fn()}
+      />
+    )
+    return onConfirmar
+  }
+
+  it('desabilita valor e data e diz por quê', () => {
+    renderTravado()
+
+    expect((screen.getByLabelText('Valor (R$)') as HTMLInputElement).disabled).toBe(true)
+    expect((screen.getByLabelText('Data da compra') as HTMLInputElement).disabled).toBe(true)
+    expect(screen.getByText('A fatura desta compra está fechada.')).toBeTruthy()
+  })
+
+  it('descrição segue editável e o salvar não manda a data', async () => {
+    const onConfirmar = renderTravado()
+    const usuario = userEvent.setup()
+
+    const descricao = screen.getByLabelText('Descrição')
+    await usuario.clear(descricao)
+    await usuario.type(descricao, 'Hotel da viagem')
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    await waitFor(() => expect(onConfirmar).toHaveBeenCalled())
+    expect(onConfirmar.mock.calls[0]![0]).toEqual({
+      descricao: 'Hotel da viagem',
+      categoriaId: MORADIA.id,
+      valorCentavos: 45000,
+      dataCompra: undefined
+    })
+  })
+})
+
+describe('EditarDespesaModal — erro ao salvar', () => {
+  afterEach(cleanup)
+
+  // O erro do main chega embrulhado pelo Electron, e o modal o mostrava cru.
+  it('mostra a mensagem sem o prefixo do Electron', async () => {
+    const onConfirmar = vi
+      .fn()
+      .mockRejectedValue(
+        new Error(
+          "Error invoking remote method 'despesa:atualizar': Error: Edição de valor bloqueada."
+        )
+      )
+    render(
+      <EditarDespesaModal
+        despesa={despesa()}
+        categorias={[MORADIA]}
+        onConfirmar={onConfirmar}
+        onCancelar={vi.fn()}
+      />
+    )
+    const usuario = userEvent.setup()
+
+    await usuario.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    expect(await screen.findByText('Edição de valor bloqueada.')).toBeTruthy()
+    expect(screen.queryByText(/Error invoking/)).toBeNull()
+  })
+
+  it('a parcelada diz que o valor novo vale só para as parcelas em fatura aberta', () => {
+    render(
+      <EditarDespesaModal
+        despesa={despesa({ tipo: 'Parcelada', totalParcelas: 3 })}
+        categorias={[MORADIA]}
+        onConfirmar={vi.fn()}
+        onCancelar={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText(/recalcula as parcelas em faturas abertas/)).toBeTruthy()
+  })
+})

@@ -1,12 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { FaturaComTotal } from '@shared/ipc/fatura'
 import type { StatusFatura } from '@domain/entities/fatura'
-import {
-  contarPorStatus,
-  filtrarPorStatus,
-  particionarPorMes,
-  somarTotais
-} from '../organizar-faturas'
+import { contarPorStatus, filtrarPorStatus, somarTotais } from '../organizar-faturas'
 
 function fatura(
   mesReferencia: string,
@@ -75,33 +70,6 @@ describe('contarPorStatus', () => {
 
   it('lista vazia conta zero em tudo', () => {
     expect(contarPorStatus([])).toEqual({ todas: 0, 'a-pagar': 0, pagas: 0 })
-  })
-})
-
-describe('particionarPorMes', () => {
-  it('põe o mês atual entre as correntes, não entre as anteriores', () => {
-    const lista = [fatura('2026-06'), fatura('2026-07'), fatura('2026-08'), fatura('2026-09')]
-
-    const { anteriores, correntes } = particionarPorMes(lista, '2026-08')
-
-    expect(anteriores.map((f) => f.mesReferencia)).toEqual(['2026-06', '2026-07'])
-    expect(correntes.map((f) => f.mesReferencia)).toEqual(['2026-08', '2026-09'])
-  })
-
-  it('lida com virada de ano comparando string ISO, não número', () => {
-    const lista = [fatura('2025-12'), fatura('2026-01')]
-
-    const { anteriores, correntes } = particionarPorMes(lista, '2026-01')
-
-    expect(anteriores.map((f) => f.mesReferencia)).toEqual(['2025-12'])
-    expect(correntes.map((f) => f.mesReferencia)).toEqual(['2026-01'])
-  })
-
-  it('devolve tudo em correntes quando não há passado', () => {
-    const { anteriores, correntes } = particionarPorMes([fatura('2026-08')], '2026-08')
-
-    expect(anteriores).toEqual([])
-    expect(correntes).toHaveLength(1)
   })
 })
 

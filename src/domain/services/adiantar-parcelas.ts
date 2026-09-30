@@ -27,10 +27,13 @@ export function selecionarParcelasParaAdiantar(
     .filter((p) => {
       if (p.status !== 'Pendente') return false
       if (p.faturaId === faturaDestino.id) return false
-      if (p.faturaId === null) return true
-      const fat = faturasIndex.get(p.faturaId)
-      if (!fat) return true
-      return fat.status.kind !== 'Paga' && fat.status.kind !== 'Fechada'
+      const fat = p.faturaId === null ? undefined : faturasIndex.get(p.faturaId)
+      if (fat && (fat.status.kind === 'Paga' || fat.status.kind === 'Fechada')) return false
+      // RN-03: adiantar traz parcelas para uma fatura mais próxima, e nunca
+      // leva uma parcela para depois. Sem a fatura no índice, o mês vem da
+      // data de referência, que acompanha o mês da fatura (migration 0010).
+      const mesDaParcela = fat?.mesReferencia ?? p.dataReferencia.slice(0, 7)
+      return mesDaParcela > faturaDestino.mesReferencia
     })
     .sort((a, b) => b.numero - a.numero)
 

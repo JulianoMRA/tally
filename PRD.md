@@ -123,7 +123,10 @@ prevista; entram no escopo quando forem priorizadas.
 - **RF-DES-07** — **Cancelar assinatura**: para de gerar ocorrências futuras a partir do mês seguinte ao cancelamento.
 - **RF-DES-08** — Editar valor das parcelas restantes (caso de reajuste de assinatura).
 - **RF-DES-09** — Excluir despesa: requer confirmação explícita. Exclusão é bloqueada se houver parcela paga ou parcela em fatura Fechada/Paga (apenas arquivamento).
-- **RF-DES-10** — Editar despesa (Única/Parcelada): descrição e categoria sempre; data apenas para Única em fatura Aberta (move fatura via RN-01). Bloqueia se houver parcela paga. Novo valor é redistribuído apenas entre parcelas pendentes em fatura Aberta ou sem fatura (parcelas em fatura Fechada/Paga preservam o valor). Única com a parcela em fatura Fechada não aceita mudança de valor nem de data.
+
+  **Na tela de Faturas, a ação bloqueada fica desabilitada e diz por quê** ("tem parcela paga" ou "tem parcela em fatura fechada ou paga"). A regra olha todas as parcelas da despesa, e a fatura só conhece as dela: o detalhe da fatura traz o bloqueio de cada despesa, calculado no main com a mesma regra que barra a exclusão. Até set/2026 a tela conferia só a parcela da linha e oferecia Excluir em toda parcela pendente — numa fatura Fechada, e numa parcelada cuja primeira parcela já tinha fechado, o usuário confirmava "Esta ação é irreversível" e só então recebia "Exclusão bloqueada".
+
+- **RF-DES-10** — Editar despesa (Única/Parcelada): descrição e categoria sempre; data apenas para Única em fatura Aberta (move fatura via RN-01). Bloqueia se houver parcela paga. Novo valor é redistribuído apenas entre parcelas pendentes em fatura Aberta ou sem fatura (parcelas em fatura Fechada/Paga preservam o valor). Única com a parcela em fatura Fechada não aceita mudança de valor nem de data — **e o modal de edição, aberto de Faturas, trava os dois campos e diz por quê**, em vez de deixar editar e recusar ao salvar. O texto da parcelada diz o que acontece com o valor novo: recalcula as parcelas em faturas abertas, e as demais ficam como estão.
 - **RF-DES-11** — Duplicar despesa: pré-preenche o formulário de nova despesa com descrição (sufixo " (cópia)"), categoria, cartão, valor, forma e **tags** da despesa de origem, na aba correspondente ao tipo. A data não é copiada (nova compra). Não cria nada até o usuário confirmar.
 
   **As tags vêm; a nota não.** Tag classifica o gasto (RF-DES-13), e uma compra repetida cai na mesma classificação — copiá-la é o mesmo raciocínio que já justificava copiar a categoria. A nota costuma ser sobre aquele lançamento específico ("reembolsável pela viagem de março"); herdá-la seria afirmar, em nome do usuário, algo que ele não escreveu para esta compra. Como as tags são gravadas na segunda chamada de RF-DES-13, duplicar uma despesa etiquetada herda também o preço daquele acordo: a despesa nasce correta mesmo se a etiquetagem falhar.
@@ -214,6 +217,9 @@ prevista; entram no escopo quando forem priorizadas.
   - **Deep-link** `?cartaoId=&faturaId=` mantém o formato, então links salvos continuam válidos. `faturaId` passa a significar qual fatura o painel exibe. Link para fatura inexistente **abre a fatura corrente do cartão e avisa**, em vez de exibir estado vazio — não há mais lista atrás para onde voltar.
 
 - **RF-FAT-04** — Marcar fatura como paga. Ação requer confirmação. Após paga, fatura não permite mais edição de parcelas nem recebe novas parcelas (inclusive cadastro retroativo — bloqueado com erro claro). A fatura paga **mostra quando foi paga** — no trilho, no resumo do painel e no histórico. Até set/2026 a data era gravada e não aparecia em lugar nenhum.
+
+  **A confirmação é um diálogo com a data de pagamento**, que começa em hoje, como já eram as de fechar e reabrir. "Confirmar pagamento" só habilita com uma data que existe no calendário, e um erro fica no diálogo, que só fecha quando o pagamento dá certo. Até set/2026 era um formulário inline no card de resumo: com a data apagada, a tela mandava uma string vazia ao main e mostrava o JSON do zod. O diálogo de fechar diz o que o fechamento trava (RN-06) — o texto antigo dizia o contrário, que "novas parcelas só entram via adiantamento".
+
 - **RF-FAT-05** — Reabrir fatura paga (caso de erro): requer confirmação. A fatura reabre como `Aberta` se a data de fechamento ainda não passou, ou como `Fechada` caso contrário (RN-06).
 
 ### 4.5 ~~Contribuidores e Ajudas (RF-AJU)~~
@@ -481,8 +487,9 @@ Ao cadastrar despesa parcelada com `total_parcelas = N` e parcela inicial = `K` 
 Ao adiantar M parcelas de uma despesa:
 
 - Adiantamento é exclusivo de despesa Parcelada de crédito (Única e Assinatura não adiantam).
-- Identifica as M parcelas pendentes mais futuras (maior numero). Parcelas Paga ou em fatura Fechada/Paga não são elegíveis.
-- Move o `fatura_id` dessas parcelas para a fatura de destino (default: fatura aberta corrente do mesmo cartão). A fatura de destino deve estar Aberta.
+- Identifica as M parcelas pendentes mais futuras (maior numero). Parcelas Paga ou em fatura Fechada/Paga não são elegíveis, e **só é elegível parcela de fatura posterior ao destino** — adiantar nunca leva uma parcela para depois. Até set/2026 a direção não era conferida, e escolher como destino uma fatura mais distante atrasava parcelas.
+- Move o `fatura_id` dessas parcelas para a fatura de destino (default: fatura aberta corrente do mesmo cartão). A fatura de destino deve estar Aberta. Na tela de Faturas, o padrão é **a fatura em tela**, e as opções são as faturas Abertas do cartão até ela; o modal a excluía, e quem via a fatura corrente recebia a seguinte como sugestão.
+- **O aviso diz quantas parcelas foram movidas** ("2 de 3 parcelas adiantadas.", ou que não havia o que adiantar). O repositório move só as elegíveis e devolve quais moveu; até set/2026 a tela repetia a quantidade pedida.
 - Mantém a numeração original.
 - Recalcula totais das faturas afetadas (origem e destino).
 
@@ -505,7 +512,7 @@ Em nenhum dos dois ramos a ocorrência sem cartão cria fatura: `fatura_id` fica
 ### RN-06 — Ciclo de vida da fatura
 
 - `Aberta`: data atual < `data_fechamento`. Aceita novas parcelas.
-- `Fechada`: `data_fechamento <= data atual < data_vencimento` ou usuário fechou manualmente. Não aceita novas parcelas (nem como destino de adiantamento). Parcelas dentro dela não recebem redistribuição de valor nem mudança de data, e a despesa correspondente não pode ser excluída.
+- `Fechada`: `data_fechamento <= data atual < data_vencimento` ou usuário fechou manualmente. Não é destino de adiantamento; lançamento novo só entra quando a data dele cai nela pela RN-01 (cadastro retroativo, para suportar migração de dados). Parcelas dentro dela não recebem redistribuição de valor nem mudança de data, e a despesa correspondente não pode ser excluída.
 - `Paga`: usuário registrou pagamento. Imutável exceto via reabertura. Não aceita novas parcelas — cadastro retroativo em mês de fatura paga exige reabrir a fatura antes (em fatura `Fechada` o cadastro retroativo é permitido, para suportar migração de dados).
 
 Pagar a fatura marca todas as parcelas dela como `Paga` (com a mesma data de pagamento); reabrir reverte as parcelas para `Pendente` e devolve a fatura para `Aberta` — ou para `Fechada`, quando `data_fechamento` já passou (a reabertura não pode ressuscitar uma fatura vencida como se ainda aceitasse compras). É essa sincronização que arma os bloqueios de RF-DES-09/10.

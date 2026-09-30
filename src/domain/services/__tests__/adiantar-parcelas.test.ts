@@ -98,7 +98,7 @@ describe('selecionarParcelasParaAdiantar (RN-03)', () => {
   describe('filtragem de elegíveis', () => {
     it('ignora parcelas já na fatura destino', () => {
       const faturas = new Map<number, Fatura>([
-        [10, fatura(10, '2026-05')],
+        [10, fatura(10, '2026-07')],
         [99, fatura(99, '2026-06')]
       ])
       const destino = fatura(99, '2026-06')
@@ -116,13 +116,15 @@ describe('selecionarParcelasParaAdiantar (RN-03)', () => {
       expect(numeros).toEqual([1, 3])
     })
 
+    // As faturas ficam depois do destino para isolar o filtro de status da regra
+    // de direção: antes do destino, a parcela já seria inelegível por isso.
     it('ignora parcelas de faturas com status Paga', () => {
       const faturas = new Map<number, Fatura>([
-        [10, fatura(10, '2026-04', { kind: 'Paga', pagaEm: '2026-05-01' })],
-        [11, fatura(11, '2026-05')],
-        [12, fatura(12, '2026-06')]
+        [10, fatura(10, '2026-05', { kind: 'Paga', pagaEm: '2026-05-01' })],
+        [11, fatura(11, '2026-06')],
+        [12, fatura(12, '2026-07')]
       ])
-      const destino = fatura(99, '2026-07')
+      const destino = fatura(99, '2026-04')
       const parcelas = [
         parcela(1, 1, 3, 10), // paga — inelegível
         parcela(2, 2, 3, 11),
@@ -138,10 +140,10 @@ describe('selecionarParcelasParaAdiantar (RN-03)', () => {
 
     it('ignora parcelas de faturas com status Fechada', () => {
       const faturas = new Map<number, Fatura>([
-        [10, fatura(10, '2026-04', { kind: 'Fechada' })],
-        [11, fatura(11, '2026-05')]
+        [10, fatura(10, '2026-05', { kind: 'Fechada' })],
+        [11, fatura(11, '2026-06')]
       ])
-      const destino = fatura(99, '2026-06')
+      const destino = fatura(99, '2026-04')
       const parcelas = [
         parcela(1, 1, 2, 10), // fechada — inelegível
         parcela(2, 2, 2, 11)
@@ -151,6 +153,53 @@ describe('selecionarParcelasParaAdiantar (RN-03)', () => {
 
       expect(resultado.mover).toHaveLength(1)
       expect(resultado.mover[0].numero).toBe(2)
+    })
+  })
+
+  // RN-03: adiantar traz parcelas para uma fatura mais próxima. Até set/2026 o
+  // domínio não olhava a direção, e escolher como destino uma fatura mais
+  // distante movia parcelas para depois — o contrário de adiantar.
+  describe('direção: adiantar nunca atrasa', () => {
+    it('não move parcela de fatura anterior ao destino', () => {
+      const faturas = new Map<number, Fatura>([
+        [10, fatura(10, '2026-05')],
+        [11, fatura(11, '2026-06')],
+        [12, fatura(12, '2026-07')]
+      ])
+      const destino = faturas.get(11)!
+      const parcelas = [parcela(1, 1, 3, 10), parcela(2, 2, 3, 11), parcela(3, 3, 3, 12)]
+
+      const resultado = selecionarParcelasParaAdiantar(parcelas, faturas, 2, destino)
+
+      expect(resultado.mover.map((p) => p.numero)).toEqual([3])
+      expect(resultado.razao).toBe('insuficientes')
+    })
+
+    // O caso de uso da tela: na fatura em que está a parcela atual, trazer as
+    // últimas para ela.
+    it('com a fatura da parcela atual como destino, traz as últimas para ela', () => {
+      const faturas = new Map<number, Fatura>([
+        [11, fatura(11, '2026-06')],
+        [12, fatura(12, '2026-07')],
+        [13, fatura(13, '2026-08')]
+      ])
+      const destino = faturas.get(11)!
+      const parcelas = [parcela(1, 1, 3, 11), parcela(2, 2, 3, 12), parcela(3, 3, 3, 13)]
+
+      const resultado = selecionarParcelasParaAdiantar(parcelas, faturas, 2, destino)
+
+      expect(resultado.mover.map((p) => p.numero).sort((a, b) => a - b)).toEqual([2, 3])
+      expect(resultado.razao).toBeUndefined()
+    })
+
+    it('sem a fatura no índice, usa o mês da data de referência da parcela', () => {
+      const destino = fatura(99, '2026-06')
+      const antes = { ...parcela(1, 1, 2, 10), dataReferencia: '2026-05-01' }
+      const depois = { ...parcela(2, 2, 2, 11), dataReferencia: '2026-07-01' }
+
+      const resultado = selecionarParcelasParaAdiantar([antes, depois], new Map(), 2, destino)
+
+      expect(resultado.mover.map((p) => p.numero)).toEqual([2])
     })
   })
 

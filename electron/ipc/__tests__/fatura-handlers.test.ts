@@ -3,7 +3,13 @@ import type { IpcMain } from 'electron'
 import type { Database } from '../../../src/persistence/database'
 import { openInMemoryDatabase } from '../../../src/persistence/database'
 import { runMigrations } from '../../../src/persistence/migrations/runner'
-import { FATURA_IPC_CHANNELS, type FaturaComTotal } from '../../../src/shared/ipc/fatura'
+import { DespesaRepository } from '../../../src/persistence/repositories/despesa-repository'
+import { FaturaRepository } from '../../../src/persistence/repositories/fatura-repository'
+import {
+  FATURA_IPC_CHANNELS,
+  type FaturaComTotal,
+  type FaturaDetalhada
+} from '../../../src/shared/ipc/fatura'
 import { registerFaturaHandlers } from '../fatura-handlers'
 
 type Handler = (evento: unknown, payload: unknown) => unknown
@@ -83,5 +89,75 @@ describe('listarResumoPorCartao fecha as faturas vencidas antes de listar', () =
     ) as FaturaComTotal[]
 
     expect(fatura?.fatura.status.kind).toBe('Aberta')
+  })
+})
+
+/**
+ * RF-DES-09 na fronteira do IPC: o detalhe da fatura diz, por despesa, se a
+ * exclusão está bloqueada. A tela oferecia Excluir em toda parcela pendente e
+ * só descobria o bloqueio depois do diálogo "irreversível".
+ */
+describe('detalharComParcelas traz o bloqueio de exclusão por despesa', () => {
+  let db: Database
+  let ipc: ReturnType<typeof ipcMainFalso>
+  let repo: DespesaRepository
+  let cartaoId: number
+  let categoriaId: number
+
+  beforeEach(() => {
+    db = openInMemoryDatabase()
+    runMigrations(db)
+    ipc = ipcMainFalso()
+    registerFaturaHandlers(db, ipc.ipcMain)
+    repo = new DespesaRepository(db)
+
+    cartaoId = Number(
+      db
+        .prepare(
+          "INSERT INTO cartao (nome, dia_fechamento, dia_vencimento, cor) VALUES ('Inter', 5, 12, '#f70')"
+        )
+        .run().lastInsertRowid
+    )
+    categoriaId = Number(
+      db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Casa', '#aaa')").run().lastInsertRowid
+    )
+  })
+
+  it('a parcelada cuja primeira parcela fechou vem bloqueada, vista da fatura seguinte', () => {
+    const r = repo.criarParceladaCredito({
+      descricao: 'TV',
+      categoriaId,
+      cartaoId,
+      totalParcelas: 3,
+      valorTotalCentavos: 3000,
+      dataCompra: '2099-06-03'
+    })
+    new FaturaRepository(db).fechar(r.parcelas[0]!.faturaId!)
+
+    const detalhe = ipc.invocar(
+      FATURA_IPC_CHANNELS.detalharComParcelas,
+      r.parcelas[1]!.faturaId
+    ) as FaturaDetalhada
+
+    expect(detalhe.exclusaoBloqueada).toEqual({
+      [r.despesa.id]: 'has-parcela-em-fatura-fechada'
+    })
+  })
+
+  it('despesa que pode ser excluída não aparece', () => {
+    const r = repo.criarUnicaCredito({
+      descricao: 'Almoço',
+      categoriaId,
+      cartaoId,
+      valorCentavos: 2500,
+      dataCompra: '2099-06-03'
+    })
+
+    const detalhe = ipc.invocar(
+      FATURA_IPC_CHANNELS.detalharComParcelas,
+      r.fatura.id
+    ) as FaturaDetalhada
+
+    expect(detalhe.exclusaoBloqueada).toEqual({})
   })
 })

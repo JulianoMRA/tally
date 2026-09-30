@@ -1,8 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { renderHook, waitFor, cleanup } from '@testing-library/react'
+import { renderHook, waitFor, cleanup, act } from '@testing-library/react'
 import type { Cartao } from '@domain/entities/cartao'
-import { useCartoesDaTela, useFaturaDetalhe, useFaturasDeTodosCartoes } from '../use-faturas'
+import {
+  useCartoesDaTela,
+  useCicloFatura,
+  useFaturaDetalhe,
+  useFaturasDeTodosCartoes
+} from '../use-faturas'
 
 function cartao(id: number, nome: string): Cartao {
   return {
@@ -136,5 +141,46 @@ describe('useCartoesDaTela', () => {
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.erro).toMatch(/Banco indisponível/)
     expect(result.current.cartoes).toEqual([])
+  })
+})
+
+/**
+ * O ciclo da fatura mostrava `e.message` cru: o erro do main chega embrulhado
+ * pelo Electron ("Error invoking remote method…"), e com data vazia o card
+ * mostrava o JSON do zod. E o diálogo de pagamento precisa saber se pagar deu
+ * certo para fechar só nesse caso.
+ */
+describe('useCicloFatura', () => {
+  afterEach(cleanup)
+
+  it('pagar com sucesso avisa quem chamou e devolve true', async () => {
+    const paga = { id: 7, status: { kind: 'Paga', pagaEm: '2026-09-29' } }
+    instalarApi({ pagar: vi.fn().mockResolvedValue(paga) })
+    const onSucesso = vi.fn()
+    const { result } = renderHook(() => useCicloFatura(onSucesso))
+
+    let ok = false
+    await act(async () => {
+      ok = await result.current.pagar(7, '2026-09-29')
+    })
+
+    expect(ok).toBe(true)
+    expect(onSucesso).toHaveBeenCalledWith(paga)
+    expect(result.current.erro).toBeNull()
+  })
+
+  it('a falha devolve false e a mensagem sem o prefixo do Electron', async () => {
+    instalarApi({
+      pagar: rejeitando("Error invoking remote method 'fatura:pagar': Error: Fatura já está paga.")
+    })
+    const { result } = renderHook(() => useCicloFatura(vi.fn()))
+
+    let ok = true
+    await act(async () => {
+      ok = await result.current.pagar(7, '2026-09-29')
+    })
+
+    expect(ok).toBe(false)
+    expect(result.current.erro).toBe('Fatura já está paga.')
   })
 })

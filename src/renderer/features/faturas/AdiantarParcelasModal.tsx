@@ -14,6 +14,23 @@ type Props = {
   onCancelar: () => void
 }
 
+/**
+ * As faturas que podem receber o adiantamento (RN-03): as Abertas do cartão até
+ * a que está em tela, da mais recente para trás. A em tela vem primeiro e é o
+ * padrão — é a "fatura aberta corrente" do RN-03 no caso de uso da tela.
+ *
+ * O modal a excluía: quem via outubro recebia novembro como sugestão, a 6/6 ia
+ * para novembro e nada mudava na tela. Uma fatura depois da em tela receberia
+ * parcelas que vêm antes dela, o contrário de adiantar.
+ */
+function destinosPossiveis(todas: readonly Fatura[], faturaAtualId: number): Fatura[] {
+  const atual = todas.find((f) => f.id === faturaAtualId)
+  if (!atual) return []
+  return todas
+    .filter((f) => f.status.kind === 'Aberta' && f.mesReferencia <= atual.mesReferencia)
+    .sort((a, b) => b.mesReferencia.localeCompare(a.mesReferencia))
+}
+
 export function AdiantarParcelasModal({
   despesaId,
   descricao,
@@ -35,9 +52,9 @@ export function AdiantarParcelasModal({
       .listarPorCartao(cartaoId)
       .then((todas) => {
         if (!ativo) return
-        const candidatas = todas.filter((f) => f.id !== faturaAtualId && f.status.kind === 'Aberta')
+        const candidatas = destinosPossiveis(todas, faturaAtualId)
         setFaturasDestino(candidatas)
-        if (candidatas.length > 0) setFaturaDestinoId(String(candidatas[0].id))
+        if (candidatas[0]) setFaturaDestinoId(String(candidatas[0].id))
       })
       .catch((e) => {
         if (!ativo) return
@@ -67,7 +84,7 @@ export function AdiantarParcelasModal({
     try {
       await onConfirmar(despesaId, qtd, destino)
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Erro ao adiantar parcelas.')
+      setErro(mensagemErro(e, 'Erro ao adiantar parcelas.'))
     } finally {
       setLoading(false)
     }
