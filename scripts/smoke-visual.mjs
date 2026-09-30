@@ -394,6 +394,37 @@ await page.evaluate(async () => {
     })
   }
 
+  // Faturas no fim do ciclo e um cartão arquivado com fatura a pagar
+  // (RF-CAR-02, RF-FAT-06). Sem isto a folha nunca mostra "paga em", o
+  // histórico com as abas "A pagar" e "Pagas" nem o selo "Arquivado" no trilho.
+  // A fatura do mês passado do Inter é paga; a de quatro meses atrás fica a
+  // pagar, vencida. Fatura de mês passado nasce Aberta e só fecha com a
+  // manutenção: fecha antes de pagar, que é o ciclo do RN-06.
+  const pagarDoMes = async (cartaoId, mesesAtras) => {
+    const mes = primeiroDiaDeMesesAtras(mesesAtras).slice(0, 7)
+    const fatura = (await api.fatura.listarPorCartao(cartaoId)).find((f) => f.mesReferencia === mes)
+    if (!fatura) return
+    if (fatura.status.kind === 'Aberta') await api.fatura.fechar(fatura.id)
+    await api.fatura.pagar(fatura.id, fatura.dataVencimento)
+  }
+  await pagarDoMes(inter.id, 1)
+  await pagarDoMes(inter.id, 3)
+
+  const antigo = await api.cartao.create({
+    nome: 'Cartao antigo',
+    diaFechamento: 10,
+    diaVencimento: 17,
+    cor: '#8c3b2e'
+  })
+  await api.despesa.criarUnicaCredito({
+    descricao: 'Ultima compra no cartao antigo',
+    categoriaId: cats.Casa.id,
+    cartaoId: antigo.id,
+    valorCentavos: 27000,
+    dataCompra: primeiroDiaDeMesesAtras(1)
+  })
+  await api.cartao.arquivar(antigo.id)
+
   // Uma cópia de segurança: sem ela a lista de Ajustes só aparece vazia na
   // folha de contato, e o estado que a F9 mexeu — a linha com o menu de ações —
   // fica fora da revisão. Mesmo motivo da semeadura de meses passados acima.
@@ -470,6 +501,17 @@ try {
   await page.waitForTimeout(300)
   await capturar('estado-saidas-filtrada')
   await page.getByRole('button', { name: 'Limpar filtros' }).first().click()
+
+  // O histórico de Faturas nasce recolhido: sem abrir, as linhas com "Paga em"
+  // e "vencida há N dias" nunca entram na folha.
+  await ir('#/faturas')
+  await page
+    .getByRole('button', { name: /meses anteriores/ })
+    .first()
+    .click({ timeout: 5000 })
+  await page.getByRole('listitem').last().scrollIntoViewIfNeeded({ timeout: 5000 })
+  await page.waitForTimeout(300)
+  await capturar('estado-faturas-historico')
 
   // O cadastro de avulso virou painel na F6; sem este estado ele fica fora da
   // folha de contato, como o de Saídas ficava antes.
