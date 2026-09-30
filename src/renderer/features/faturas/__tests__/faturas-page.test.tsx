@@ -211,3 +211,38 @@ describe('FaturasPage — estados vazios', () => {
     expect(screen.queryByText('Nenhum cartão cadastrado')).toBeNull()
   })
 })
+
+// RF-FAT-06 — a navegação anda pelas faturas que existem, e as setas moram
+// junto do título, nomeando o destino.
+describe('FaturasPage — navegação entre faturas', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 29, 12))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+  })
+
+  it('a seta leva à próxima fatura que existe, pulando o mês sem fatura', async () => {
+    instalarApi([INTER], {
+      1: [
+        fatura(8, 1, '2026-08', { kind: 'Paga', pagaEm: '2026-08-10' }),
+        fatura(9, 1, '2026-09', { kind: 'Fechada' }),
+        fatura(11, 1, '2026-11', { kind: 'Aberta' })
+      ]
+    })
+    renderizar()
+    const usuario = userEvent.setup()
+
+    await screen.findByRole('heading', { name: 'Inter · Setembro de 2026' })
+    expect(screen.getByRole('button', { name: 'Fatura anterior: agosto de 2026' })).toBeTruthy()
+    await usuario.click(screen.getByRole('button', { name: 'Próxima fatura: novembro de 2026' }))
+
+    expect(await screen.findByRole('heading', { name: 'Inter · Novembro de 2026' })).toBeTruthy()
+    expect(
+      (screen.getByRole('button', { name: 'Sem próxima fatura' }) as HTMLButtonElement).disabled
+    ).toBe(true)
+  })
+})

@@ -1,7 +1,14 @@
 import { useMemo, useState } from 'react'
 import type { FaturaComTotal } from '@shared/ipc/fatura'
 import { hojeIsoLocal } from '@shared/datas-locais'
-import { Badge, Button, EmptyState, Panel, SegmentedControl } from '../../components/ui'
+import {
+  Badge,
+  BolinhaDeCor,
+  Button,
+  EmptyState,
+  Panel,
+  SegmentedControl
+} from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { pluralizar } from '../../lib/pluralizar'
@@ -140,7 +147,7 @@ function LinhaFatura({
   return (
     <li className={styles.itemBotao}>
       <button type="button" className={styles.faturaItem} onClick={() => onAbrir(item.fatura.id)}>
-        <span className={styles.cardChip} style={{ background: cor }} />
+        <BolinhaDeCor cor={cor} />
         <div className={styles.faturaInfo}>
           <span className={styles.faturaMes}>
             {formatarMesReferencia(item.mesReferencia, { capitalizar: true })}

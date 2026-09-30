@@ -155,7 +155,6 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-width: 1280px;
 }
 
 /* O <li> agora é só o item de lista; toda a aparência e a interação vivem no
@@ -193,13 +192,6 @@
 .faturaItem:hover {
   border-color: var(--rule-strong);
   box-shadow: var(--shadow-2);
-}
-
-.cardChip {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
 }
 
 /* Valor da fatura: era a informação que faltava na lista inteira. */
@@ -265,90 +257,94 @@
   margin: 0;
 }
 
-/* Detalhe — empilhado por padrão; em telas largas, tabela à esquerda e
-   painel de resumo à direita. DOM: header → main → aside, que é a ordem visual
-   dos DOIS layouts — o grid nomeia as áreas e não depende da ordem. */
+/* Detalhe da fatura: cabeçalho com as setas, faixa de resumo e parcelas, na
+   largura inteira do corpo — a mesma do trilho e do histórico. Era um grid de
+   duas colunas a partir de 1360px, com teto de 880px empilhado e 1280px lado a
+   lado, enquanto a navegação e o histórico ocupavam a largura toda: a tela
+   tinha três bordas direitas. */
 .detalhe {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  max-width: 880px;
+  gap: 16px;
+  min-width: 0;
 }
 
-/* 1360px, e não 1200: o aside custa 340px + 24px de gap, e a tabela de parcelas
-   precisa de ~700px para não transbordar o painel — que usa overflow hidden, de
-   modo que transbordo vira corte permanente. Em 1200px de viewport a área
-   principal caía para 629px, e ALARGAR a janela deixava a tabela mais estreita
-   do que na coluna única. `faturas-acoes-visiveis` é o guard disso, e foi ele
-   que denunciou quando a escala de tipo da F8 consumiu a folga que restava.
-   1360 - 208 (sidebar) - 64 (padding) - 364 (aside) = 724px para a tabela. */
-@media (min-width: 1360px) {
-  .detalhe {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 340px;
-    grid-template-areas:
-      'header header'
-      'main aside';
-    align-items: start;
-    gap: 20px 24px;
-    max-width: 1280px;
-  }
-
-  .areaHeader {
-    grid-area: header;
-  }
-
-  .areaMain {
-    grid-area: main;
-    min-width: 0;
-  }
-
-  .areaAside {
-    grid-area: aside;
-  }
+.cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.resumoCard {
+/* Faixa de resumo (RF-FAT-03/06): status, prazo e datas à esquerda; total e
+   ação do ciclo à direita. Quebra em duas linhas quando falta largura, com o
+   total e a ação juntos. */
+.faixa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  padding: 14px 16px;
   background: var(--bg-elev);
   border: 1px solid var(--rule);
   border-radius: var(--r-3);
   box-shadow: var(--shadow-1);
-  padding: 16px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
-.resumoLinha {
-  display: flex;
+.faixaStatus {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
 }
 
-.resumoLabel {
-  font-size: var(--text-2);
-  color: var(--ink-3);
+.faixaDatas {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 20px;
+  margin: 0;
+}
+
+.faixaData {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.faixaRotulo {
+  font-size: var(--text-1);
+  font-family: var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-family: var(--font-mono);
+  color: var(--ink-3);
 }
 
-.resumoValor {
+.faixaValor {
+  margin: 0;
   font-size: var(--text-3);
   font-weight: 600;
   color: var(--ink);
 }
 
-/* Coluna direita da linha de Status: badge + selo de vencida empilhados. */
-.statusValor {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
+.faixaFim {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  margin-left: auto;
 }
 
-/* Aviso de prazo e data do pagamento, abaixo do selo. Os tons são os do
+.faixaTotal {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.faixaTotalValor {
+  font-size: var(--text-5);
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+/* Aviso de prazo e data do pagamento, ao lado do selo. Os tons são os do
    trilho: o prazo que passou em vermelho, o que está chegando em âmbar. */
 .avisoPrazo {
   font-size: var(--text-2);
@@ -365,50 +361,12 @@
   color: var(--pending);
 }
 
-.resumoTotalLinha {
-  padding-top: 10px;
-  margin-top: 2px;
-  border-top: 1px solid var(--rule);
-}
-
-.resumoTotalValor {
-  font-size: var(--text-5);
-  font-weight: 800;
-  color: var(--ink);
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-
-.detalheHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.detalheTitle {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-
 .detalheTitleText {
   font-size: var(--text-5);
   font-weight: 700;
   color: var(--ink);
   letter-spacing: -0.02em;
-  margin: 0 0 3px;
-}
-
-/* Ações do ciclo de vida (dentro do card de resumo) */
-.cicloActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding-top: 12px;
-  margin-top: 2px;
-  border-top: 1px solid var(--rule);
+  margin: 0;
 }
 
 .erroAcao {
@@ -459,13 +417,4 @@
   font-size: var(--text-2);
   color: var(--ink-2);
   cursor: pointer;
-}
-
-/* Navegação entre as faturas do cartão. Fica acima do painel porque é ele que
-   ela controla, e as duas pontas ficam nas bordas para o alvo ser previsível. */
-.navMes {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
 }

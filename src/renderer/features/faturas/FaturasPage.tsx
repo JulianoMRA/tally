@@ -7,8 +7,7 @@ import { HistoricoFaturas } from './HistoricoFaturas'
 import { TrilhoCartoes } from './TrilhoCartoes'
 import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
-import { Button, EmptyState } from '../../components/ui'
-import { formatarMesReferencia } from '../../lib/formatar-data'
+import { EmptyState } from '../../components/ui'
 import { mesAtualReferencia } from '../../lib/mes-atual'
 import { buildFaturasSearch, parseFaturasSearch } from './faturas-search'
 import { resolverFaturaDoDeepLink } from './escolher-fatura-corrente'
@@ -204,28 +203,22 @@ export default function FaturasPage() {
 
             {faturaId !== null && !loadingDetalhe && detalhe && grupoEmFoco && (
               <>
-                <div className={styles.navMes}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={!anterior}
-                    onClick={() => anterior && abrirFatura(anterior.fatura.id)}
-                  >
-                    ← {anterior ? formatarMesReferencia(anterior.mesReferencia) : 'sem anterior'}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={!proxima}
-                    onClick={() => proxima && abrirFatura(proxima.fatura.id)}
-                  >
-                    {proxima ? formatarMesReferencia(proxima.mesReferencia) : 'sem próxima'} →
-                  </Button>
-                </div>
                 <FaturaDetalhe
                   detalhe={detalhe}
                   cartaoNome={grupoEmFoco.cartao.nome}
                   cartaoCor={grupoEmFoco.cartao.cor}
+                  anterior={
+                    anterior && {
+                      mesReferencia: anterior.mesReferencia,
+                      abrir: () => abrirFatura(anterior.fatura.id)
+                    }
+                  }
+                  proxima={
+                    proxima && {
+                      mesReferencia: proxima.mesReferencia,
+                      abrir: () => abrirFatura(proxima.fatura.id)
+                    }
+                  }
                   onFaturaAtualizada={() => {
                     refetchGrupos()
                     refetchDetalhe()
