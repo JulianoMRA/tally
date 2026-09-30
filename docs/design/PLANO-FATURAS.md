@@ -226,6 +226,11 @@ nos dois temas e o E2E **proposto** ao fim — roda só com o seu ok (regra 10).
 - **E2E:** spec novo `faturas-cartao-arquivado` (arquivar com fatura a pagar, o card
   continua; o link da Visão mensal abre a fatura certa; pagar tira o card).
   `excluir-despesa` perde o passo "Fechar fatura" na fatura retroativa (R3).
+  `assinaturas` também muda com o R3, e ficou fora deste mapeamento — o E2E achou:
+  ele cancelava uma assinatura retroativa esperando que ela sumisse de todos os
+  meses, o que só acontecia porque as faturas passadas seguiam Abertas por atraso
+  da manutenção. Passa a conferir o RF-DES-07 como escrito: a ocorrência em fatura
+  fechada fica, com o selo "Cancelada"; a de fatura aberta some.
 - **PRD:** RF-FAT-06 (regra, avisos, histórico, manutenção), RF-FAT-04 (data do
   pagamento), RF-CAR-02 (arquivado em Faturas).
 - **Folha de contato:** semente com um cartão arquivado com fatura a pagar e uma fatura
