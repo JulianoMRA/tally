@@ -4,18 +4,19 @@ import type { Despesa } from '@domain/entities/despesa'
 import type { Fatura } from '@domain/entities/fatura'
 import type { Parcela } from '@domain/entities/parcela'
 import type { FaturaDetalhada } from '@shared/ipc/fatura'
+import type { MotivoBloqueioExclusao } from '@domain/services/regras-despesa'
 import { hojeIsoLocal } from '@shared/datas-locais'
 import { useCicloFatura } from './hooks/use-faturas'
 import { AdiantarParcelasModal } from './AdiantarParcelasModal'
+import { avisoDoAdiantamento } from './aviso-adiantamento'
 import { dataParcelaExibida } from './data-parcela'
 import { EditarDespesaModal } from './EditarDespesaModal'
+import { PagarFaturaModal } from './PagarFaturaModal'
 import {
   Badge,
   Button,
   ConfirmDialog,
   EmptyState,
-  Field,
-  Input,
   Panel,
   RowActions,
   SortableHeader,
@@ -65,6 +66,22 @@ function compararParcelas(
   }
 }
 
+/**
+ * Por que Excluir está desabilitado nesta linha, ou null quando não está
+ * (RF-DES-09). O bloqueio vem do main, que olha todas as parcelas da despesa;
+ * antes a tela só conferia a parcela da linha e oferecia Excluir onde ele
+ * sempre falharia, depois do diálogo "irreversível".
+ */
+function motivoDoBloqueio(p: Parcela, bloqueio: MotivoBloqueioExclusao | undefined): string | null {
+  if (p.status === 'Paga' || bloqueio === 'has-parcela-paga') {
+    return 'Não dá para excluir: a despesa tem parcela paga.'
+  }
+  if (bloqueio === 'has-parcela-em-fatura-fechada') {
+    return 'Não dá para excluir: a despesa tem parcela em fatura fechada ou paga.'
+  }
+  return null
+}
+
 type Props = {
   detalhe: FaturaDetalhada
   cartaoNome: string
@@ -84,8 +101,7 @@ export function FaturaDetalhe({
   const kind = fatura.status.kind
   const aviso = avisoDePrazo(fatura, hojeIsoLocal())
 
-  const [modoPagar, setModoPagar] = useState(false)
-  const [dataPagamento, setDataPagamento] = useState(hojeIsoLocal)
+  const [pagando, setPagando] = useState(false)
   const [parcelaAdiantar, setParcelaAdiantar] = useState<Parcela | null>(null)
   const [despesaEditar, setDespesaEditar] = useState<Despesa | null>(null)
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -145,15 +161,13 @@ export function FaturaDetalhe({
       })
     }
 
+    const bloqueio = motivoDoBloqueio(p, detalhe.exclusaoBloqueada?.[p.despesaId])
     acoes.push({
       label: 'Excluir',
       onClick: () => setDialogo({ tipo: 'excluir', despesaId: p.despesaId }),
-      disabled: p.status === 'Paga',
+      disabled: bloqueio !== null,
       destrutiva: true,
-      title:
-        p.status === 'Paga'
-          ? 'Não é possível excluir uma despesa com parcela paga'
-          : 'Excluir despesa inteira'
+      title: bloqueio ?? 'Excluir despesa inteira'
     })
 
     return acoes
@@ -170,8 +184,15 @@ export function FaturaDetalhe({
   }
 
   async function handleAdiantar(despesaId: number, quantidade: number, faturaDestinoId: number) {
-    await window.api.despesa.adiantarParcelas({ despesaId, quantidade, faturaDestinoId })
-    toast.show(`${quantidade} parcela(s) adiantada(s).`, 'success')
+    // O aviso conta o que o main moveu: ele só move as elegíveis (RN-03), e
+    // repetir a quantidade pedida anunciava parcelas que não saíram do lugar.
+    const { movidas } = await window.api.despesa.adiantarParcelas({
+      despesaId,
+      quantidade,
+      faturaDestinoId
+    })
+    const aviso = avisoDoAdiantamento(movidas.length, quantidade)
+    toast.show(aviso.texto, aviso.tipo)
     setParcelaAdiantar(null)
     await recarregarDetalhe()
   }
@@ -209,8 +230,9 @@ export function FaturaDetalhe({
     }
   }
 
-  function handlePagarConfirmar() {
-    ciclo.pagar(fatura.id, dataPagamento).then(() => setModoPagar(false))
+  // O diálogo só fecha quando pagar deu certo; a falha fica nele.
+  async function confirmarPagamento(dataPagamento: string) {
+    if (await ciclo.pagar(fatura.id, dataPagamento)) setPagando(false)
   }
 
   return (
@@ -322,6 +344,11 @@ export function FaturaDetalhe({
         <EditarDespesaModal
           despesa={despesaEditar}
           categorias={categorias}
+          travaValorEData={
+            despesaEditar.tipo === 'Unica' && kind !== 'Aberta'
+              ? 'A fatura desta compra está fechada: valor e data não mudam mais.'
+              : undefined
+          }
           onConfirmar={handleConfirmarEditarDespesa}
           onCancelar={() => setDespesaEditar(null)}
         />
@@ -393,42 +420,15 @@ export function FaturaDetalhe({
                 Fechar fatura
               </Button>
             )}
-            {kind === 'Fechada' && !modoPagar && (
+            {kind === 'Fechada' && (
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => setModoPagar(true)}
+                onClick={() => setPagando(true)}
                 disabled={ciclo.loading}
               >
                 Marcar como paga
               </Button>
-            )}
-            {kind === 'Fechada' && modoPagar && (
-              <div className={styles.pagarForm}>
-                <Field label="Data de pagamento">
-                  <Input
-                    type="date"
-                    value={dataPagamento}
-                    onChange={(e) => setDataPagamento(e.target.value)}
-                  />
-                </Field>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handlePagarConfirmar}
-                  disabled={ciclo.loading}
-                >
-                  Confirmar pagamento
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setModoPagar(false)}
-                  disabled={ciclo.loading}
-                >
-                  Cancelar
-                </Button>
-              </div>
             )}
             {kind === 'Paga' && (
               <Button
@@ -440,15 +440,26 @@ export function FaturaDetalhe({
                 Reabrir fatura
               </Button>
             )}
-            {ciclo.erro && <p className={styles.erroAcao}>{ciclo.erro}</p>}
+            {ciclo.erro && !pagando && <p className={styles.erroAcao}>{ciclo.erro}</p>}
           </div>
         </div>
       </aside>
 
+      {pagando && (
+        <PagarFaturaModal
+          cartaoNome={cartaoNome}
+          mesReferencia={fatura.mesReferencia}
+          totalCentavos={totalCentavos}
+          loading={ciclo.loading}
+          erro={ciclo.erro}
+          onConfirmar={confirmarPagamento}
+          onCancelar={() => setPagando(false)}
+        />
+      )}
       {dialogo?.tipo === 'fechar' && (
         <ConfirmDialog
           title="Fechar fatura?"
-          body="Após fechada, novas parcelas só entram via adiantamento explícito."
+          body="Depois de fechada, a fatura não recebe mais adiantamentos, o valor das parcelas dela fica travado e as despesas dela não podem mais ser excluídas."
           confirmText="Fechar"
           onConfirm={() => {
             ciclo.fechar(fatura.id)

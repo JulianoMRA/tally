@@ -4,12 +4,19 @@ import { centavosParaReais, ehValorValido, parseCentavos } from '../../lib/dinhe
 import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
 import { Button, Field, Input, Modal, Select } from '../../components/ui'
+import { mensagemErro } from '../../lib/mensagem-erro'
 import styles from './faturas.module.css'
 
 type Props = {
   despesa: Despesa
   /** Todas, inclusive as arquivadas: o modal decide o que oferecer. */
   categorias: Categoria[]
+  /**
+   * Motivo de valor e data não poderem mudar (RF-DES-10): compra à vista cuja
+   * fatura não está Aberta. Com ele os dois campos ficam desabilitados e o
+   * motivo aparece; sem ele, o modal deixava editar e a gravação era recusada.
+   */
+  travaValorEData?: string
   onConfirmar: (input: {
     descricao: string
     categoriaId: number
@@ -19,7 +26,13 @@ type Props = {
   onCancelar: () => void
 }
 
-export function EditarDespesaModal({ despesa, categorias, onConfirmar, onCancelar }: Props) {
+export function EditarDespesaModal({
+  despesa,
+  categorias,
+  travaValorEData,
+  onConfirmar,
+  onCancelar
+}: Props) {
   const [descricao, setDescricao] = useState(despesa.descricao)
   const [categoriaId, setCategoriaId] = useState(String(despesa.categoriaId))
   const [valorReais, setValorReais] = useState(centavosParaReais(despesa.valorCentavos))
@@ -34,7 +47,7 @@ export function EditarDespesaModal({ despesa, categorias, onConfirmar, onCancela
     setDataCompra(despesa.dataCompra)
   }, [despesa])
 
-  const podeEditarData = despesa.tipo === 'Unica'
+  const podeEditarData = despesa.tipo === 'Unica' && !travaValorEData
 
   async function handleConfirmar() {
     if (!descricao.trim()) {
@@ -60,7 +73,7 @@ export function EditarDespesaModal({ despesa, categorias, onConfirmar, onCancela
         dataCompra: podeEditarData ? dataCompra : undefined
       })
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Erro ao salvar.')
+      setErro(mensagemErro(e, 'Erro ao salvar.'))
     } finally {
       setLoading(false)
     }
@@ -73,7 +86,7 @@ export function EditarDespesaModal({ despesa, categorias, onConfirmar, onCancela
         <>
           Tipo: <strong>{despesa.tipo}</strong>.{' '}
           {despesa.tipo === 'Parcelada'
-            ? 'Mudar o valor recalcula as parcelas pendentes (paga preserva).'
+            ? 'Mudar o valor recalcula as parcelas em faturas abertas; as demais ficam como estão.'
             : 'Edição direta.'}
         </>
       }
@@ -115,6 +128,8 @@ export function EditarDespesaModal({ despesa, categorias, onConfirmar, onCancela
             inputMode="decimal"
             value={valorReais}
             onChange={(e) => setValorReais(e.target.value)}
+            disabled={Boolean(travaValorEData)}
+            title={travaValorEData}
           />
         </Field>
 
@@ -128,11 +143,13 @@ export function EditarDespesaModal({ despesa, categorias, onConfirmar, onCancela
               type="date"
               value={dataCompra}
               disabled
-              title="Data não editável para Parcelada"
+              title={travaValorEData ?? 'Data não editável para Parcelada'}
             />
           </Field>
         )}
       </div>
+
+      {travaValorEData && <p className={styles.dicaTrava}>{travaValorEData}</p>}
 
       {erro && <p className={styles.erroAcao}>{erro}</p>}
     </Modal>

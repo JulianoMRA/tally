@@ -10,14 +10,19 @@ export function useCicloFatura(onSucesso: (fatura: Fatura) => void) {
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
-  async function executar(acao: () => Promise<Fatura>) {
+  // Devolve se deu certo: o diálogo de pagamento só fecha nesse caso, e o erro
+  // fica nele. `mensagemErro` tira o prefixo com que o Electron embrulha o erro
+  // do main — sem isso o resumo mostrava "Error invoking remote method…".
+  async function executar(acao: () => Promise<Fatura>): Promise<boolean> {
     setLoading(true)
     setErro(null)
     try {
       const fatura = await acao()
       onSucesso(fatura)
+      return true
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Erro inesperado')
+      setErro(mensagemErro(e, 'Erro ao atualizar a fatura.'))
+      return false
     } finally {
       setLoading(false)
     }
