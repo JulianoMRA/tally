@@ -513,6 +513,14 @@ try {
   await page.waitForTimeout(300)
   await capturar('estado-faturas-historico')
 
+  // Marcar como paga virou diálogo (RF-FAT-04). O Nubank da semente abre numa
+  // fatura Fechada, que é a única que oferece o botão.
+  await page.getByRole('button', { name: /^Nubank/ }).click({ timeout: 5000 })
+  await page.getByRole('button', { name: 'Marcar como paga' }).click({ timeout: 5000 })
+  await page.waitForTimeout(300)
+  await capturar('estado-modal-pagar-fatura')
+  await page.keyboard.press('Escape')
+
   // O cadastro de avulso virou painel na F6; sem este estado ele fica fora da
   // folha de contato, como o de Saídas ficava antes.
   await ir('#/rendas')
