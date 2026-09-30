@@ -33,3 +33,35 @@ export function rotuloVencida(fatura: Fatura, hoje: string): string | null {
   const dias = diferencaEmDias(fatura.dataVencimento, hoje)
   return dias === 1 ? 'vencida há 1 dia' : `vencida há ${dias} dias`
 }
+
+/**
+ * Rótulo "vence em N dias" para faturas Fechadas com vencimento próximo
+ * (0..7 dias, a mesma janela do "fecha em"). Aberta ainda não é pagável e Paga
+ * não vence; depois do vencimento quem fala é `rotuloVencida`.
+ */
+export function rotuloVencimento(fatura: Fatura, hoje: string): string | null {
+  if (fatura.status.kind !== 'Fechada') return null
+  const dias = diferencaEmDias(hoje, fatura.dataVencimento)
+  if (dias < 0 || dias > LIMIAR_AVISO_DIAS) return null
+  if (dias === 0) return 'vence hoje'
+  if (dias === 1) return 'vence amanhã'
+  return `vence em ${dias} dias`
+}
+
+export type AvisoDePrazo = {
+  texto: string
+  /** `alerta` é o prazo que passou; `atencao`, o que está chegando. */
+  tom: 'alerta' | 'atencao'
+}
+
+/**
+ * O aviso que acompanha o prazo de uma fatura, com o tom dele. Os três rótulos
+ * nunca valem juntos — "fecha em" é de Aberta, os outros dois de Fechada —,
+ * mas quem exibe não precisa saber disso para compô-los.
+ */
+export function avisoDePrazo(fatura: Fatura, hoje: string): AvisoDePrazo | null {
+  const vencida = rotuloVencida(fatura, hoje)
+  if (vencida) return { texto: vencida, tom: 'alerta' }
+  const chegando = rotuloVencimento(fatura, hoje) ?? rotuloFechamento(fatura, hoje)
+  return chegando ? { texto: chegando, tom: 'atencao' } : null
+}

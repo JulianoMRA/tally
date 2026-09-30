@@ -8,6 +8,14 @@ import {
 } from './fixtures/navegacao'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 
+/** Mês `n` meses depois do corrente, no formato do campo de mês (YYYY-MM). */
+function mesAdiante(n: number): string {
+  const data = new Date()
+  data.setDate(1)
+  data.setMonth(data.getMonth() + n)
+  return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`
+}
+
 // Requires a prior `npm run build` to generate out/main/index.cjs
 test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
   test('cadastrar, editar e cancelar uma assinatura na tela Saídas', async ({ app }) => {
@@ -55,11 +63,12 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
         .getByText(/R\$\s*24,90/)
     ).toBeVisible()
 
-    // --- Conferir na fatura junho/2026 ---
+    // --- Conferir em Faturas ---
+    // O cartão em foco abre a fatura a pagar mais próxima (RF-FAT-06), já com
+    // o valor reajustado. Abrir Faturas também fecha as faturas cujo
+    // fechamento passou (RN-06) — de junho até a do mês corrente, conforme o dia.
     await irPara(page, 'Faturas')
     await focarCartao(page, 'Inter Assinatura E2E')
-    // O cartão em foco já abre a fatura dele: não há mais lista para clicar
-    // (ponto 12). Estes testes usam cartão com uma fatura só, então é ela.
     await expect(page.getByText(/R\$\s*24,90/).first()).toBeVisible()
 
     // --- Cancelar assinatura pela tela Saídas ---
@@ -73,20 +82,23 @@ test.describe('Assinatura (RF-DES-04, RF-DES-07, RF-DES-08)', () => {
     // O ConfirmDialog usa o mesmo rótulo; o menu já fechou, então não colide.
     await page.getByRole('dialog').getByRole('button', { name: 'Cancelar assinatura' }).click()
 
-    // Cancelar apaga as ocorrências em fatura Aberta (RF-DES-07). Como a lista
-    // passou a mostrar ocorrências do mês, e não a despesa-mestre, a assinatura
-    // cancelada some dos meses cujas faturas ainda estavam abertas — aqui,
-    // todos eles. O badge "Cancelada" segue existindo, mas só aparece em mês
-    // cuja fatura já tinha fechado, onde a ocorrência sobrevive no histórico.
-    await expect(page.getByRole('row').filter({ hasText: 'Spotify E2E' })).toHaveCount(0)
-
+    // Cancelar apaga as ocorrências em fatura Aberta e preserva as de fatura
+    // fechada ou paga (RF-DES-07) — é o que o diálogo de cancelar diz. Até
+    // set/2026 este teste esperava a assinatura sumir de todos os meses: as
+    // faturas passadas seguiam Abertas em Faturas por atraso da manutenção, e
+    // o cancelamento as apagava. As asserções usam meses que não dependem do
+    // dia em que o teste roda.
+    //
+    // Junho está sempre no passado, com a fatura fechada: a ocorrência fica,
+    // com o selo.
     await page.getByLabel('Mês', { exact: true }).fill('2026-06')
-    await expect(page.getByRole('row').filter({ hasText: 'Spotify E2E' })).toHaveCount(0)
+    await expect(
+      page.getByRole('row').filter({ hasText: 'Spotify E2E' }).getByText('Cancelada')
+    ).toBeVisible()
 
-    // A fatura de junho perdeu a parcela junto — é o efeito que o cancelamento
-    // tem que produzir, e o que a tela de Faturas passa a mostrar.
-    await irPara(page, 'Faturas')
-    await focarCartao(page, 'Inter Assinatura E2E')
-    await expect(page.getByText(/R\$\s*24,90/)).toHaveCount(0)
+    // Dois meses adiante a fatura está Aberta em qualquer dia: a ocorrência
+    // sumiu.
+    await page.getByLabel('Mês', { exact: true }).fill(mesAdiante(2))
+    await expect(page.getByRole('row').filter({ hasText: 'Spotify E2E' })).toHaveCount(0)
   })
 })

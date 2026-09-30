@@ -1,6 +1,12 @@
 import type { FaturaComTotal } from '@shared/ipc/fatura'
 
-export type FiltroStatus = 'todas' | 'Aberta' | 'Fechada' | 'Paga'
+/**
+ * Abas do Histórico. Eram os três status do ciclo de vida, e "Abertas" quase
+ * nunca tinha item — mas podia ter: a fatura nasce Aberta e só fecha quando a
+ * manutenção roda. "A pagar" junta Aberta e Fechada e responde a pergunta que
+ * o filtro existe para responder: o que ficou para trás sem pagar.
+ */
+export type FiltroStatus = 'todas' | 'a-pagar' | 'pagas'
 
 /**
  * A visão geral despejava todas as faturas do cartão em ordem cronológica,
@@ -15,7 +21,14 @@ export function filtrarPorStatus(
   filtro: FiltroStatus
 ): FaturaComTotal[] {
   if (filtro === 'todas') return [...faturas]
-  return faturas.filter((f) => f.fatura.status.kind === filtro)
+  const querPagas = filtro === 'pagas'
+  return faturas.filter((f) => (f.fatura.status.kind === 'Paga') === querPagas)
+}
+
+/** Quantas faturas cada aba mostraria. As duas últimas somam a primeira. */
+export function contarPorStatus(faturas: readonly FaturaComTotal[]): Record<FiltroStatus, number> {
+  const pagas = faturas.filter((f) => f.fatura.status.kind === 'Paga').length
+  return { todas: faturas.length, 'a-pagar': faturas.length - pagas, pagas }
 }
 
 /**

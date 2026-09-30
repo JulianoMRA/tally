@@ -75,6 +75,34 @@
   font-family: var(--font-mono);
 }
 
+/* Mesmos tons do card de faturas da Visão mensal: o prazo que passou em
+   vermelho, o que está chegando em âmbar. */
+.trilhoPrazo[data-tom='alerta'] {
+  color: var(--expense);
+  font-weight: 700;
+}
+
+.trilhoPrazo[data-tom='atencao'] {
+  color: var(--pending);
+  font-weight: 700;
+}
+
+/* Cartão arquivado com fatura a pagar (RF-CAR-02). A borda tracejada é a de
+   Cartões; a opacidade de lá fica de fora de propósito — este card pode estar
+   dizendo "vencida", e esmaecer o aviso seria esconder o motivo de ele estar
+   aqui. */
+.trilhoItemArquivado {
+  border-style: dashed;
+}
+
+.trilhoLinhaEscopo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+}
+
 /* Nomeia a fatura que o card exibe. Sem isso o card e o painel mostram dois
    totais sem dizer que são de meses diferentes — e como o card é também o
    seletor do painel, a divergência lê como defeito em vez de decisão. Mesma
@@ -325,10 +353,21 @@
   gap: 4px;
 }
 
-.avisoVencida {
+/* Aviso de prazo e data do pagamento, abaixo do selo. Os tons são os do
+   trilho: o prazo que passou em vermelho, o que está chegando em âmbar. */
+.avisoPrazo {
   font-size: var(--text-2);
+  color: var(--ink-3);
+}
+
+.avisoPrazo[data-tom='alerta'] {
   font-weight: 700;
   color: var(--expense);
+}
+
+.avisoPrazo[data-tom='atencao'] {
+  font-weight: 700;
+  color: var(--pending);
 }
 
 .resumoTotalLinha {

@@ -103,4 +103,38 @@ describe('FaturasCardCompacto', () => {
 
     expect(screen.queryByText(/fecha em|fecha hoje|fecha amanhã/)).toBeNull()
   })
+
+  // RF-FAT-06 — o aviso novo, com o mesmo helper do trilho de Faturas: a fatura
+  // Fechada a dois dias do vencimento não dizia nada.
+  it('exibe "vence em N dias" para fatura Fechada com vencimento próximo, em tom de atenção', () => {
+    const base = faturaResumida({ id: 9, cartaoId: 3 })
+    renderCard([
+      {
+        ...base,
+        fatura: {
+          ...base.fatura,
+          status: { kind: 'Fechada' },
+          dataVencimento: somarDias(hojeIsoLocal(), 2)
+        }
+      }
+    ])
+
+    expect(screen.getByText('vence em 2 dias').getAttribute('data-tom')).toBe('atencao')
+  })
+
+  it('a fatura vencida avisa em tom de alerta', () => {
+    const base = faturaResumida({ id: 9, cartaoId: 3 })
+    renderCard([
+      {
+        ...base,
+        fatura: {
+          ...base.fatura,
+          status: { kind: 'Fechada' },
+          dataVencimento: somarDias(hojeIsoLocal(), -3)
+        }
+      }
+    ])
+
+    expect(screen.getByText('vencida há 3 dias').getAttribute('data-tom')).toBe('alerta')
+  })
 })

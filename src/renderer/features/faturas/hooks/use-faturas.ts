@@ -38,6 +38,38 @@ export function useCicloFatura(onSucesso: (fatura: Fatura) => void) {
   return { fechar, pagar, reabrir, loading, erro }
 }
 
+/**
+ * Cartões da tela de Faturas, arquivados inclusive (RF-CAR-02). Quem decide se
+ * o arquivado entra no trilho é `cartoesDoTrilho`, olhando as faturas dele —
+ * antes a tela carregava só os ativos, e a fatura de um cartão arquivado ficava
+ * sem ter onde ser paga.
+ */
+export function useCartoesDaTela() {
+  const [cartoes, setCartoes] = useState<Cartao[]>([])
+  const [loading, setLoading] = useState(true)
+  const [erro, setErro] = useState<string | null>(null)
+
+  useEffect(() => {
+    let ativo = true
+    window.api.cartao
+      .list({ incluirArquivados: true })
+      .then((data) => {
+        if (ativo) setCartoes(data)
+      })
+      .catch((e: unknown) => {
+        if (ativo) setErro(mensagemErro(e, 'Erro ao listar cartões.'))
+      })
+      .finally(() => {
+        if (ativo) setLoading(false)
+      })
+    return () => {
+      ativo = false
+    }
+  }, [])
+
+  return { cartoes, loading, erro }
+}
+
 // Casa cada cartão com a sua lista de faturas pelo índice (alinhado ao
 // Promise.all). Pura para permitir teste sem montar o hook.
 export function agruparFaturasPorCartao(

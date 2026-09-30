@@ -1,18 +1,28 @@
 import { useMemo, useState } from 'react'
 import type { FaturaComTotal } from '@shared/ipc/fatura'
+import { hojeIsoLocal } from '@shared/datas-locais'
 import { Badge, Button, EmptyState, Panel, SegmentedControl } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { pluralizar } from '../../lib/pluralizar'
-import { filtrarPorStatus, somarTotais, type FiltroStatus } from './organizar-faturas'
+import { rotuloVencida } from './aviso-fechamento'
+import {
+  contarPorStatus,
+  filtrarPorStatus,
+  somarTotais,
+  type FiltroStatus
+} from './organizar-faturas'
 import { statusVariant } from './status-variant'
 import styles from './faturas.module.css'
 
+/**
+ * "A pagar", e não "Não pagas": o `getByRole` do Playwright casa o nome por
+ * substring, e "Não pagas" responderia também por "Pagas".
+ */
 const FILTROS: readonly { valor: FiltroStatus; rotulo: string }[] = [
   { valor: 'todas', rotulo: 'Todas' },
-  { valor: 'Aberta', rotulo: 'Abertas' },
-  { valor: 'Fechada', rotulo: 'Fechadas' },
-  { valor: 'Paga', rotulo: 'Pagas' }
+  { valor: 'a-pagar', rotulo: 'A pagar' },
+  { valor: 'pagas', rotulo: 'Pagas' }
 ]
 
 type Props = {
@@ -52,17 +62,32 @@ export function HistoricoFaturas({ faturas, mesAtual, faturaAbertaId, cartaoCor,
 
   const passadas = useMemo(() => filtrarPorStatus(todasPassadas, filtro), [todasPassadas, filtro])
 
+  // A contagem entra no rótulo, como nas abas de Saídas: "A pagar 1" responde
+  // o que ficou para trás sem pagar sem precisar abrir a lista.
+  const opcoes = useMemo(() => {
+    const contagem = contarPorStatus(todasPassadas)
+    return FILTROS.map((f) => ({ valor: f.valor, rotulo: `${f.rotulo} ${contagem[f.valor]}` }))
+  }, [todasPassadas])
+
+  // Escolher uma aba é querer ver o que ela filtra: filtrar uma lista fechada
+  // só mudava um número.
+  function escolherFiltro(proximo: FiltroStatus) {
+    setFiltro(proximo)
+    setMostrarPassadas(true)
+  }
+
   if (todasPassadas.length === 0) return null
+
+  const hoje = hojeIsoLocal()
 
   return (
     <Panel
       title="Histórico deste cartão"
-      meta={`${passadas.length}`}
       actions={
         <SegmentedControl
-          opcoes={FILTROS}
+          opcoes={opcoes}
           valor={filtro}
-          onChange={setFiltro}
+          onChange={escolherFiltro}
           label="Filtrar faturas por status"
         />
       }
@@ -88,7 +113,7 @@ export function HistoricoFaturas({ faturas, mesAtual, faturaAbertaId, cartaoCor,
       {mostrarPassadas && passadas.length > 0 && (
         <ul className={styles.faturaList}>
           {passadas.map((f) => (
-            <LinhaFatura key={f.fatura.id} item={f} cor={cartaoCor} onAbrir={onAbrir} />
+            <LinhaFatura key={f.fatura.id} item={f} cor={cartaoCor} hoje={hoje} onAbrir={onAbrir} />
           ))}
         </ul>
       )}
@@ -101,12 +126,17 @@ export function HistoricoFaturas({ faturas, mesAtual, faturaAbertaId, cartaoCor,
 function LinhaFatura({
   item,
   cor,
+  hoje,
   onAbrir
 }: {
   item: FaturaComTotal
   cor: string
+  hoje: string
   onAbrir: (faturaId: number) => void
 }) {
+  const { status, dataFechamento, dataVencimento } = item.fatura
+  const vencida = rotuloVencida(item.fatura, hoje)
+
   return (
     <li className={styles.itemBotao}>
       <button type="button" className={styles.faturaItem} onClick={() => onAbrir(item.fatura.id)}>
@@ -115,9 +145,21 @@ function LinhaFatura({
           <span className={styles.faturaMes}>
             {formatarMesReferencia(item.mesReferencia, { capitalizar: true })}
           </span>
+          {/* Paga diz quando foi paga: o vencimento de uma fatura quitada não
+              pede mais nada. A não paga e vencida diz há quanto tempo. */}
           <span className={styles.faturaSub}>
-            Fecha {formatarDataIso(item.fatura.dataFechamento)} · Vence{' '}
-            {formatarDataIso(item.fatura.dataVencimento)}
+            Fecha {formatarDataIso(dataFechamento)} ·{' '}
+            {status.kind === 'Paga'
+              ? `Paga em ${formatarDataIso(status.pagaEm)}`
+              : `Vence ${formatarDataIso(dataVencimento)}`}
+            {vencida && (
+              <>
+                {' · '}
+                <span className={styles.avisoPrazo} data-tom="alerta">
+                  {vencida}
+                </span>
+              </>
+            )}
           </span>
         </div>
         <span className={`${styles.faturaTotal} tnum`}>{formatBRL(item.totalCentavos)}</span>

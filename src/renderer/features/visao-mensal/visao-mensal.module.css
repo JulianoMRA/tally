@@ -622,16 +622,19 @@
 
 /* Aviso "fecha em N dias" — segunda linha da célula de vencimento, para não
    alterar a contagem de colunas do grid do item. */
-.avisoFechamento {
+/* Aviso de prazo, com os tons do trilho de Faturas: o prazo que passou em
+   vermelho, o que está chegando (fecha ou vence em N dias) em âmbar. */
+.avisoPrazo {
   display: block;
-  color: var(--pending);
   font-weight: 700;
 }
 
-.avisoVencida {
-  display: block;
+.avisoPrazo[data-tom='alerta'] {
   color: var(--expense);
-  font-weight: 700;
+}
+
+.avisoPrazo[data-tom='atencao'] {
+  color: var(--pending);
 }
 
 .faturaCompactaTotal {
