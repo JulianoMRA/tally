@@ -5,7 +5,15 @@ import { escolherFaturaCorrente, resolverFaturaDoDeepLink } from '../escolher-fa
 
 let proximoId = 1
 
-function fatura(mesReferencia: string, status: StatusFatura['kind'] = 'Aberta'): FaturaComTotal {
+type Opcoes = {
+  status?: StatusFatura['kind']
+  /** Padrão: dia 12 do próprio mês, como um cartão que vence depois de fechar. */
+  vencimento?: string
+  totalCentavos?: number
+}
+
+function fatura(mesReferencia: string, opcoes: Opcoes = {}): FaturaComTotal {
+  const { status = 'Aberta', vencimento = `${mesReferencia}-12`, totalCentavos = 10000 } = opcoes
   const id = proximoId++
   return {
     fatura: {
@@ -13,48 +21,127 @@ function fatura(mesReferencia: string, status: StatusFatura['kind'] = 'Aberta'):
       cartaoId: 1,
       mesReferencia,
       dataFechamento: `${mesReferencia}-05`,
-      dataVencimento: `${mesReferencia}-12`,
-      status:
-        status === 'Paga' ? { kind: 'Paga', pagaEm: `${mesReferencia}-12` } : { kind: status },
+      dataVencimento: vencimento,
+      status: status === 'Paga' ? { kind: 'Paga', pagaEm: vencimento } : { kind: status },
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-01T00:00:00.000Z'
     },
     mesReferencia,
-    totalCentavos: 10000
+    totalCentavos
   }
 }
 
 describe('escolherFaturaCorrente', () => {
-  it('escolhe a fatura do mês atual quando ela existe', () => {
+  it('escolhe a fatura do mês atual quando ela é a única a pagar', () => {
     const escolhida = escolherFaturaCorrente(
-      [fatura('2026-07'), fatura('2026-08'), fatura('2026-09')],
+      [fatura('2026-07', { status: 'Paga' }), fatura('2026-08'), fatura('2026-09')],
       '2026-08'
     )
 
     expect(escolhida?.mesReferencia).toBe('2026-08')
   })
 
-  // Cartão sem compra no mês não tem fatura do mês. O que interessa nesse caso
-  // é a próxima a vencer, não a mais antiga esquecida lá atrás.
-  it('sem fatura do mês, escolhe a mais próxima no futuro', () => {
-    const escolhida = escolherFaturaCorrente([fatura('2026-06'), fatura('2026-10')], '2026-08')
+  // O caso que motivou a regra: cartão que fecha no dia 24 e vence no dia 01.
+  // A fatura de setembro vence em 01/10 — no dia 01 o mês atual já é outubro,
+  // e a regra antiga ("o mês atual primeiro") trocava o card pela fatura nova,
+  // Aberta, justo no dia de pagar a anterior.
+  it('no dia 01, o cartão que vence no mês seguinte continua na fatura que vence agora', () => {
+    const escolhida = escolherFaturaCorrente(
+      [
+        fatura('2026-09', { status: 'Fechada', vencimento: '2026-10-01' }),
+        fatura('2026-10', { vencimento: '2026-11-01' })
+      ],
+      '2026-10'
+    )
+
+    expect(escolhida?.mesReferencia).toBe('2026-09')
+  })
+
+  it('com a fatura do mês paga, escolhe a próxima, que é a que está acumulando', () => {
+    const escolhida = escolherFaturaCorrente(
+      [fatura('2026-09', { status: 'Paga' }), fatura('2026-10')],
+      '2026-09'
+    )
 
     expect(escolhida?.mesReferencia).toBe('2026-10')
   })
 
-  it('sem fatura do mês nem futura, escolhe a mais recente do passado', () => {
-    const escolhida = escolherFaturaCorrente([fatura('2026-05'), fatura('2026-06')], '2026-08')
+  it('a fatura vencida do mês anterior vem antes da do mês atual', () => {
+    const escolhida = escolherFaturaCorrente(
+      [fatura('2026-08', { status: 'Fechada' }), fatura('2026-09', { status: 'Fechada' })],
+      '2026-09'
+    )
+
+    expect(escolhida?.mesReferencia).toBe('2026-08')
+  })
+
+  // A janela de um mês existe por quem importou histórico ou não marca as
+  // faturas como pagas: sem ela, o card mostraria a fatura mais antiga do
+  // cartão, "vencida há 200 dias", até alguém pagar uma por uma. As dívidas
+  // mais antigas ficam no Histórico.
+  it('fatura não paga de dois meses atrás não toma o card', () => {
+    const escolhida = escolherFaturaCorrente(
+      [fatura('2026-07', { status: 'Fechada' }), fatura('2026-09')],
+      '2026-09'
+    )
+
+    expect(escolhida?.mesReferencia).toBe('2026-09')
+  })
+
+  // Fatura sem valor é resíduo — sobra de uma despesa excluída ou de um
+  // adiantamento — e não há o que pagar nela.
+  it('fatura sem valor não conta como a pagar', () => {
+    const escolhida = escolherFaturaCorrente(
+      [fatura('2026-09', { totalCentavos: 0 }), fatura('2026-10')],
+      '2026-09'
+    )
+
+    expect(escolhida?.mesReferencia).toBe('2026-10')
+  })
+
+  it('só com faturas futuras, escolhe a de vencimento mais próximo', () => {
+    const escolhida = escolherFaturaCorrente([fatura('2026-11'), fatura('2026-10')], '2026-08')
+
+    expect(escolhida?.mesReferencia).toBe('2026-10')
+  })
+
+  it('com vencimentos iguais, escolhe a de mês anterior', () => {
+    const escolhida = escolherFaturaCorrente(
+      [
+        fatura('2026-10', { vencimento: '2026-10-12' }),
+        fatura('2026-09', { status: 'Fechada', vencimento: '2026-10-12' })
+      ],
+      '2026-09'
+    )
+
+    expect(escolhida?.mesReferencia).toBe('2026-09')
+  })
+
+  it('sem nada a pagar na janela, escolhe a mais recente', () => {
+    const escolhida = escolherFaturaCorrente(
+      [fatura('2026-05', { status: 'Fechada' }), fatura('2026-06', { status: 'Fechada' })],
+      '2026-08'
+    )
 
     expect(escolhida?.mesReferencia).toBe('2026-06')
   })
 
-  it('não depende da ordem em que as faturas chegam', () => {
+  it('com tudo pago, escolhe a mais recente', () => {
     const escolhida = escolherFaturaCorrente(
-      [fatura('2026-09'), fatura('2026-08'), fatura('2026-07')],
-      '2026-08'
+      [fatura('2026-09', { status: 'Paga' }), fatura('2026-08', { status: 'Paga' })],
+      '2026-09'
     )
 
-    expect(escolhida?.mesReferencia).toBe('2026-08')
+    expect(escolhida?.mesReferencia).toBe('2026-09')
+  })
+
+  it('não depende da ordem em que as faturas chegam', () => {
+    const escolhida = escolherFaturaCorrente(
+      [fatura('2026-10'), fatura('2026-09'), fatura('2026-08', { status: 'Paga' })],
+      '2026-09'
+    )
+
+    expect(escolhida?.mesReferencia).toBe('2026-09')
   })
 
   it('cartão sem fatura nenhuma devolve null', () => {
@@ -70,7 +157,7 @@ describe('escolherFaturaCorrente', () => {
 })
 
 describe('resolverFaturaDoDeepLink', () => {
-  const LISTA = [fatura('2026-07'), fatura('2026-08')]
+  const LISTA = [fatura('2026-07', { status: 'Paga' }), fatura('2026-08')]
 
   it('abre a fatura pedida quando ela existe', () => {
     const alvo = LISTA[0]!.fatura.id

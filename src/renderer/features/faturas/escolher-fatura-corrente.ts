@@ -1,35 +1,43 @@
 import type { FaturaComTotal } from '@shared/ipc/fatura'
+import { mesReferenciaAnterior } from '@domain/services/mes-referencia'
 
 /**
- * A fatura que a tela abre por padrão para um cartão.
+ * A fatura que o card do trilho mostra e que o painel abre sem clique
+ * (RF-FAT-06): entre as não pagas e com valor, do mês anterior em diante, a de
+ * vencimento mais próximo — inclusive vencida. Sem nenhuma, a mais recente.
  *
- * Responde o ponto 12 do diagnóstico: hoje são três cliques até a fatura atual
- * (select de cartão → lista agrupada → item). Com lista e detalhe fundidos, o
- * padrão precisa ser bom o bastante para valer zero clique.
+ * Até set/2026 a preferência era o mês de referência atual, e isso falhava no
+ * cartão que vence no mês seguinte ao fechamento (fecha 24, vence 01): a
+ * fatura de setembro vence em 01/10, e no dia 01 o card trocava pela de
+ * outubro, Aberta, justo no dia de pagar a anterior. A mesma regra mantinha no
+ * card uma fatura já paga enquanto a próxima acumulava fora dele.
  *
- * A preferência é o mês corrente. Cartão sem compra no mês não tem fatura do
- * mês, e aí o que interessa é a próxima a vencer — não a mais antiga esquecida
- * atrás. Só quando não há nada à frente é que se olha para trás.
+ * A janela começa no mês anterior porque é até onde vai a fatura que pode
+ * vencer no mês atual. Sem ela, quem importou histórico ou não marca as
+ * faturas como pagas veria no card a mais antiga do cartão; essas dívidas
+ * ficam no Histórico, contadas em "A pagar".
  */
 export function escolherFaturaCorrente(
   faturas: readonly FaturaComTotal[],
   mesAtual: string
 ): FaturaComTotal | null {
-  if (faturas.length === 0) return null
-
-  const doMes = faturas.find((f) => f.mesReferencia === mesAtual)
-  if (doMes) return doMes
+  const inicioDaJanela = mesReferenciaAnterior(mesAtual)
 
   // `[...]` antes de ordenar: a lista vem do hook e é reusada pelo trilho.
-  const futuras = [...faturas]
-    .filter((f) => f.mesReferencia > mesAtual)
-    .sort((a, b) => a.mesReferencia.localeCompare(b.mesReferencia))
-  if (futuras[0]) return futuras[0]
+  const aPagar = faturas
+    .filter(
+      (f) =>
+        f.fatura.status.kind !== 'Paga' && f.totalCentavos > 0 && f.mesReferencia >= inicioDaJanela
+    )
+    .sort(
+      (a, b) =>
+        a.fatura.dataVencimento.localeCompare(b.fatura.dataVencimento) ||
+        a.mesReferencia.localeCompare(b.mesReferencia)
+    )
+  if (aPagar[0]) return aPagar[0]
 
-  const passadas = [...faturas]
-    .filter((f) => f.mesReferencia < mesAtual)
-    .sort((a, b) => b.mesReferencia.localeCompare(a.mesReferencia))
-  return passadas[0] ?? null
+  const recentes = [...faturas].sort((a, b) => b.mesReferencia.localeCompare(a.mesReferencia))
+  return recentes[0] ?? null
 }
 
 export type ResolucaoDeepLink = {
