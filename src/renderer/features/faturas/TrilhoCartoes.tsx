@@ -1,3 +1,4 @@
+import type { FaturaComTotal } from '@shared/ipc/fatura'
 import type { GrupoFaturasCartao } from './hooks/use-faturas'
 import { formatBRL } from '../../lib/format-brl'
 import { formatarDiaMes, formatarMesReferencia } from '../../lib/formatar-data'
@@ -5,7 +6,7 @@ import { hojeIsoLocal } from '@shared/datas-locais'
 import { mesAtualReferencia } from '../../lib/mes-atual'
 import { escolherFaturaCorrente } from './escolher-fatura-corrente'
 import { mesDivergenteDoPainel } from './escopo-do-trilho'
-import { rotuloFechamento, rotuloVencida } from './aviso-fechamento'
+import { avisoDePrazo, type AvisoDePrazo } from './aviso-fechamento'
 import { statusVariant } from './status-variant'
 import { Badge } from '../../components/ui'
 import styles from './faturas.module.css'
@@ -16,6 +17,18 @@ type Props = {
   /** Mês da fatura que o painel exibe, para o card admitir quando os dois divergem. */
   mesDoPainel: string | null
   onSelecionar: (cartaoId: number) => void
+}
+
+/**
+ * A última linha do card. Fatura paga diz quando foi paga — o vencimento dela
+ * não pede mais nada. As outras dizem o aviso de prazo, quando há um, ou o dia
+ * do vencimento.
+ */
+function textoDoPrazo(corrente: FaturaComTotal | null, aviso: AvisoDePrazo | null): string {
+  if (!corrente) return 'sem fatura'
+  const { status, dataVencimento } = corrente.fatura
+  if (status.kind === 'Paga') return `paga em ${formatarDiaMes(status.pagaEm)}`
+  return aviso?.texto ?? `vence ${formatarDiaMes(dataVencimento)}`
 }
 
 /**
@@ -48,9 +61,7 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
       {grupos.map(({ cartao, faturas }) => {
         const corrente = escolherFaturaCorrente(faturas, mesAtual)
         const ativo = cartao.id === cartaoSelecionadoId
-        const aviso = corrente
-          ? (rotuloVencida(corrente.fatura, hoje) ?? rotuloFechamento(corrente.fatura, hoje))
-          : null
+        const aviso = corrente ? avisoDePrazo(corrente.fatura, hoje) : null
         const divergencia = mesDivergenteDoPainel(
           corrente?.mesReferencia ?? null,
           mesDoPainel,
@@ -61,7 +72,13 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
           <button
             key={cartao.id}
             type="button"
-            className={`${styles.trilhoItem} ${ativo ? styles.trilhoItemAtivo : ''}`}
+            className={[
+              styles.trilhoItem,
+              ativo ? styles.trilhoItemAtivo : '',
+              cartao.ativo ? '' : styles.trilhoItemArquivado
+            ]
+              .filter(Boolean)
+              .join(' ')}
             aria-pressed={ativo}
             onClick={() => onSelecionar(cartao.id)}
           >
@@ -71,9 +88,16 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
               {corrente && <Badge variant={statusVariant(corrente.fatura.status.kind)} />}
             </span>
 
-            {corrente && (
-              <span className={styles.trilhoEscopo}>
-                {formatarMesReferencia(corrente.mesReferencia)}
+            {/* O selo de arquivado desce para a linha do mês: na de cima, com o
+                do status, o nome do cartão não cabia e virava "Cartao an…". */}
+            {(corrente || !cartao.ativo) && (
+              <span className={styles.trilhoLinhaEscopo}>
+                {corrente && (
+                  <span className={styles.trilhoEscopo}>
+                    {formatarMesReferencia(corrente.mesReferencia)}
+                  </span>
+                )}
+                {!cartao.ativo && <Badge variant="archived" />}
               </span>
             )}
 
@@ -81,10 +105,10 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
               {formatBRL(corrente?.totalCentavos ?? 0)}
             </span>
 
-            <span className={styles.trilhoPrazo}>
-              {corrente
-                ? (aviso ?? `vence ${formatarDiaMes(corrente.fatura.dataVencimento)}`)
-                : 'sem fatura'}
+            {/* O tom vem só com o aviso: "vencida há 19 dias" no cinza de
+                "vence 05/11" fazia o prazo mais urgente da tela parecer rotina. */}
+            <span className={styles.trilhoPrazo} data-tom={aviso?.tom}>
+              {textoDoPrazo(corrente, aviso)}
             </span>
 
             {divergencia && (

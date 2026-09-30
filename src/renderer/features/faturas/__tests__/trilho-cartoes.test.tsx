@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { render, screen, cleanup, within } from '@testing-library/react'
 import type { Cartao } from '@domain/entities/cartao'
 import type { FaturaComTotal } from '@shared/ipc/fatura'
+import type { StatusFatura } from '@domain/entities/fatura'
 import { mesAtualReferencia } from '@shared/datas-locais'
 import { proxMesReferencia } from '@domain/services/mes-referencia'
 import { formatarMesReferencia } from '../../../lib/formatar-data'
@@ -100,5 +101,85 @@ describe('TrilhoCartoes', () => {
     renderTrilho(MES_ADIANTE)
 
     expect(within(card('Nubank')).queryByText(/^painel em/)).toBeNull()
+  })
+})
+
+/**
+ * O prazo do card, com hoje fixo em 29/09/2026 (só o `Date` é falso: os timers
+ * do Testing Library seguem reais).
+ */
+describe('TrilhoCartoes — prazo', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 29, 12))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+  })
+
+  function faturaEm(status: StatusFatura, vencimento: string): FaturaComTotal {
+    return {
+      fatura: {
+        id: 90,
+        cartaoId: 1,
+        mesReferencia: '2026-09',
+        dataFechamento: '2026-09-24',
+        dataVencimento: vencimento,
+        status,
+        createdAt: '',
+        updatedAt: ''
+      },
+      mesReferencia: '2026-09',
+      totalCentavos: 183881
+    }
+  }
+
+  function renderUm(fatura: FaturaComTotal, ativo = true) {
+    const inter = { ...cartao(1, 'Inter'), ativo }
+    render(
+      <TrilhoCartoes
+        grupos={[{ cartao: inter, faturas: [fatura] }]}
+        cartaoSelecionadoId={1}
+        mesDoPainel="2026-09"
+        onSelecionar={() => {}}
+      />
+    )
+  }
+
+  // O caso do print: a fatura do Inter vence em 01/10 e o card dizia só "vence
+  // 01/10", no mesmo cinza de um prazo distante.
+  it('fatura Fechada perto do vencimento avisa, em tom de atenção', () => {
+    renderUm(faturaEm({ kind: 'Fechada' }, '2026-10-01'))
+
+    const aviso = within(card('Inter')).getByText('vence em 2 dias')
+    expect(aviso.getAttribute('data-tom')).toBe('atencao')
+  })
+
+  it('fatura vencida avisa em tom de alerta', () => {
+    renderUm(faturaEm({ kind: 'Fechada' }, '2026-09-10'))
+
+    const aviso = within(card('Inter')).getByText('vencida há 19 dias')
+    expect(aviso.getAttribute('data-tom')).toBe('alerta')
+  })
+
+  it('prazo distante fica neutro', () => {
+    renderUm(faturaEm({ kind: 'Fechada' }, '2026-10-20'))
+
+    const prazo = within(card('Inter')).getByText('vence 20/10')
+    expect(prazo.getAttribute('data-tom')).toBeNull()
+  })
+
+  it('fatura paga diz quando foi paga, e não quando vence', () => {
+    renderUm(faturaEm({ kind: 'Paga', pagaEm: '2026-09-20' }, '2026-10-01'))
+
+    expect(within(card('Inter')).getByText('paga em 20/09')).toBeTruthy()
+    expect(within(card('Inter')).queryByText(/^vence/)).toBeNull()
+  })
+
+  it('cartão arquivado leva o selo', () => {
+    renderUm(faturaEm({ kind: 'Fechada' }, '2026-10-20'), false)
+
+    expect(within(card('Inter')).getByText('Arquivado')).toBeTruthy()
   })
 })

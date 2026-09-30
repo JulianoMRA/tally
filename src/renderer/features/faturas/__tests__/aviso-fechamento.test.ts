@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import type { Fatura } from '@domain/entities/fatura'
-import { rotuloFechamento, estaVencida, rotuloVencida } from '../aviso-fechamento'
+import {
+  avisoDePrazo,
+  estaVencida,
+  rotuloFechamento,
+  rotuloVencida,
+  rotuloVencimento
+} from '../aviso-fechamento'
 
 function fatura(overrides: Partial<Fatura> = {}): Fatura {
   return {
@@ -85,6 +91,73 @@ describe('rotuloVencida', () => {
     expect(rotuloVencida(fechada(), '2026-07-20')).toBeNull()
     expect(
       rotuloVencida(fatura({ status: { kind: 'Paga', pagaEm: '2026-07-28' } }), '2026-07-30')
+    ).toBeNull()
+  })
+})
+
+// RF-FAT-06 — a fatura Fechada perto do vencimento não avisava nada: o card
+// dizia "vence 01/10" em cinza a dois dias do prazo, enquanto a notificação do
+// sistema já dizia "vence em 2 dias". Mesma janela do "fecha em".
+describe('rotuloVencimento', () => {
+  it('retorna "vence hoje" no dia do vencimento', () => {
+    expect(rotuloVencimento(fechada(), '2026-07-27')).toBe('vence hoje')
+  })
+
+  it('retorna "vence amanhã" na véspera', () => {
+    expect(rotuloVencimento(fechada(), '2026-07-26')).toBe('vence amanhã')
+  })
+
+  it('retorna "vence em N dias" dentro do limiar', () => {
+    expect(rotuloVencimento(fechada(), '2026-07-25')).toBe('vence em 2 dias')
+    expect(rotuloVencimento(fechada(), '2026-07-20')).toBe('vence em 7 dias')
+  })
+
+  it('retorna null fora do limiar e depois do vencimento', () => {
+    expect(rotuloVencimento(fechada(), '2026-07-19')).toBeNull()
+    expect(rotuloVencimento(fechada(), '2026-07-28')).toBeNull()
+  })
+
+  it('retorna null para fatura Aberta ou Paga', () => {
+    expect(rotuloVencimento(fatura(), '2026-07-26')).toBeNull()
+    expect(
+      rotuloVencimento(fatura({ status: { kind: 'Paga', pagaEm: '2026-07-20' } }), '2026-07-26')
+    ).toBeNull()
+  })
+})
+
+// O aviso que a tela mostra ao lado do prazo, com o tom dele. Os três rótulos
+// nunca valem juntos — "fecha em" é de Aberta, os outros dois de Fechada —, mas
+// quem exibe não deveria precisar saber disso para compô-los.
+describe('avisoDePrazo', () => {
+  it('fatura vencida é alerta', () => {
+    expect(avisoDePrazo(fechada(), '2026-07-30')).toEqual({
+      texto: 'vencida há 3 dias',
+      tom: 'alerta'
+    })
+  })
+
+  it('vencimento próximo é atenção', () => {
+    expect(avisoDePrazo(fechada(), '2026-07-25')).toEqual({
+      texto: 'vence em 2 dias',
+      tom: 'atencao'
+    })
+  })
+
+  it('fechamento próximo é atenção', () => {
+    expect(avisoDePrazo(fatura(), '2026-07-16')).toEqual({
+      texto: 'fecha em 4 dias',
+      tom: 'atencao'
+    })
+  })
+
+  it('sem prazo perto, não há aviso', () => {
+    expect(avisoDePrazo(fatura(), '2026-07-01')).toBeNull()
+    expect(avisoDePrazo(fechada(), '2026-07-10')).toBeNull()
+  })
+
+  it('fatura paga nunca tem aviso', () => {
+    expect(
+      avisoDePrazo(fatura({ status: { kind: 'Paga', pagaEm: '2026-07-20' } }), '2026-07-30')
     ).toBeNull()
   })
 })

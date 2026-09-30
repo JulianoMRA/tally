@@ -27,7 +27,7 @@ import { formatBRL } from '../../lib/format-brl'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { mensagemErro } from '../../lib/mensagem-erro'
 import { pluralizar } from '../../lib/pluralizar'
-import { rotuloVencida } from './aviso-fechamento'
+import { avisoDePrazo } from './aviso-fechamento'
 import { statusVariant } from './status-variant'
 import styles from './faturas.module.css'
 import { useCargaAuxiliar } from '../../hooks/use-carga-auxiliar'
@@ -82,7 +82,7 @@ export function FaturaDetalhe({
 }: Props) {
   const { fatura, parcelas, totalCentavos } = detalhe
   const kind = fatura.status.kind
-  const avisoVencida = rotuloVencida(fatura, hojeIsoLocal())
+  const aviso = avisoDePrazo(fatura, hojeIsoLocal())
 
   const [modoPagar, setModoPagar] = useState(false)
   const [dataPagamento, setDataPagamento] = useState(hojeIsoLocal)
@@ -361,7 +361,20 @@ export function FaturaDetalhe({
             <span className={styles.resumoLabel}>Status</span>
             <span className={styles.statusValor}>
               <Badge variant={statusVariant(kind)} />
-              {avisoVencida && <span className={styles.avisoVencida}>{avisoVencida}</span>}
+              {/* Paga diz quando foi paga: o `pagaEm` era gravado e não
+                  aparecia em lugar nenhum. As outras dizem o aviso de prazo,
+                  no tom do trilho. */}
+              {fatura.status.kind === 'Paga' ? (
+                <span className={styles.avisoPrazo}>
+                  Paga em {formatarDataIso(fatura.status.pagaEm)}
+                </span>
+              ) : (
+                aviso && (
+                  <span className={styles.avisoPrazo} data-tom={aviso.tom}>
+                    {aviso.texto}
+                  </span>
+                )
+              )}
             </span>
           </div>
           <div className={`${styles.resumoLinha} ${styles.resumoTotalLinha}`}>

@@ -5,7 +5,7 @@ import { Badge, EmptyState, Panel } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
 import { formatarDiaMes } from '../../lib/formatar-data'
 import { pluralizar } from '../../lib/pluralizar'
-import { rotuloFechamento, rotuloVencida } from '../faturas/aviso-fechamento'
+import { avisoDePrazo } from '../faturas/aviso-fechamento'
 import { buildFaturasSearch } from '../faturas/faturas-search'
 import { statusVariant } from '../faturas/status-variant'
 import styles from './visao-mensal.module.css'
@@ -29,8 +29,8 @@ export function FaturasCardCompacto({ faturas }: Props) {
         <ul className={styles.faturaCompactaList}>
           {faturas.map((f) => {
             const hoje = hojeIsoLocal()
-            const avisoFechamento = rotuloFechamento(f.fatura, hoje)
-            const avisoVencida = rotuloVencida(f.fatura, hoje)
+            // O mesmo aviso do trilho de Faturas, com o mesmo tom.
+            const aviso = avisoDePrazo(f.fatura, hoje)
             return (
               <li key={f.fatura.id} className={styles.faturaCompactaItem}>
                 <span className={styles.cardChip} style={{ background: f.cartaoCor }} />
@@ -46,10 +46,11 @@ export function FaturasCardCompacto({ faturas }: Props) {
                 </button>
                 <span className={styles.faturaCompactaVence}>
                   vence {formatarDiaMes(f.fatura.dataVencimento)}
-                  {avisoFechamento && (
-                    <span className={styles.avisoFechamento}>{avisoFechamento}</span>
+                  {aviso && (
+                    <span className={styles.avisoPrazo} data-tom={aviso.tom}>
+                      {aviso.texto}
+                    </span>
                   )}
-                  {avisoVencida && <span className={styles.avisoVencida}>{avisoVencida}</span>}
                 </span>
                 <span className={`${styles.faturaCompactaTotal} tnum`}>
                   {formatBRL(f.totalCentavos)}
