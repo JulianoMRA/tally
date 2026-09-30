@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { Despesa } from '../../domain/entities/despesa'
 import type { Fatura } from '../../domain/entities/fatura'
 import type { Parcela } from '../../domain/entities/parcela'
+import type { MotivoBloqueioExclusao } from '../../domain/services/regras-despesa'
 import { dataIsoSchema } from './date-schema'
 
 const idSchema = z.number().int().positive()
@@ -25,6 +26,13 @@ export type FaturaDetalhada = {
    * e pré-popular o EditarDespesaModal sem round-trip extra. Slice 14.1.
    */
   despesasPorParcela?: Record<number, Despesa>
+  /**
+   * RF-DES-09 — despesaId → por que a exclusão está bloqueada. A despesa
+   * ausente pode ser excluída. Vem do main porque a regra olha todas as
+   * parcelas da despesa, e a fatura só traz as dela: a tela oferecia Excluir
+   * em toda parcela pendente e descobria o bloqueio depois do diálogo.
+   */
+  exclusaoBloqueada?: Record<number, MotivoBloqueioExclusao>
 }
 
 /**

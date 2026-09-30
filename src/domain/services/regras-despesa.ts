@@ -16,6 +16,9 @@ export type PodeDeletarDespesaResult =
   | { ok: false; motivo: 'has-parcela-paga'; parcelasPagas: number[] }
   | { ok: false; motivo: 'has-parcela-em-fatura-fechada'; parcelasBloqueadas: number[] }
 
+/** Por que a exclusão de uma despesa está bloqueada (RF-DES-09). */
+export type MotivoBloqueioExclusao = Extract<PodeDeletarDespesaResult, { ok: false }>['motivo']
+
 /**
  * RF-DES-09 — regra pura de elegibilidade para exclusão de despesa.
  *
