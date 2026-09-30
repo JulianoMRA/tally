@@ -1,0 +1,29 @@
+/* Veio do SeletorMes, que era o único a ter setas de navegação. */
+.seta {
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  width: 34px;
+  height: 34px;
+  font-size: var(--text-4);
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.seta:hover:not(:disabled) {
+  border-color: var(--brand);
+}
+
+/* Sem período vizinho: a seta fica, mas apagada. Antes a navegação de faturas
+   dizia "← sem anterior" num botão de texto desabilitado. */
+.seta:disabled {
+  color: var(--ink-4);
+  cursor: default;
+}
