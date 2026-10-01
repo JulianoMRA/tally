@@ -1,6 +1,6 @@
 # Plano — Tela de Faturas (set/2026)
 
-> **Aprovado em 30/09/2026.** F1 e F2 mergeadas (#156, #157). F3 implementada na branch `feat/faturas-estrutura`; F4 pendente.
+> **Aprovado em 30/09/2026.** F1, F2 e F3 mergeadas (#156, #157, #158). F4 implementada na branch `feat/faturas-tabela`; falta a release.
 
 Origem: análise de 29/09/2026, pedida logo depois da v1.18.0 ("analise as melhorias
 feitas na tela de Saídas e proponha as melhorias na tela de Faturas"). Mesmo fluxo do

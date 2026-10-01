@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { Despesa } from '../../domain/entities/despesa'
 import type { Fatura } from '../../domain/entities/fatura'
 import type { Parcela } from '../../domain/entities/parcela'
+import type { Ocorrencia } from '../../domain/services/descrever-ocorrencia'
 import type { MotivoBloqueioExclusao } from '../../domain/services/regras-despesa'
 import { dataIsoSchema } from './date-schema'
 
@@ -33,6 +34,13 @@ export type FaturaDetalhada = {
    * em toda parcela pendente e descobria o bloqueio depois do diálogo.
    */
   exclusaoBloqueada?: Record<number, MotivoBloqueioExclusao>
+  /**
+   * RF-DES-14 — parcelaId → a ocorrência descrita por `descreverOcorrencia`, a
+   * mesma função da lista de Saídas: rótulo da parcela ("à vista", "mensal",
+   * "2/3") e o valor da compra quando ele é conhecido. A fatura montava o
+   * rótulo por conta própria, e a mesma parcela tinha um nome em cada tela.
+   */
+  ocorrenciaPorParcela?: Record<number, Ocorrencia>
 }
 
 /**

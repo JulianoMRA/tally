@@ -111,7 +111,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     // A linha "Mês" do resumo saiu (o título já diz o mês): confere-se o
     // título, em vez de clicar num texto que só repetia o que estava aberto.
     await expect(page.getByRole('heading', { name: new RegExp(labelMes) })).toBeVisible()
-    await expect(page.getByText('1/1')).toBeVisible()
+    await expect(page.getByRole('table').getByText('à vista')).toBeVisible()
 
     // Fecha e paga a fatura
     await page.getByRole('button', { name: 'Fechar fatura' }).click()
@@ -156,7 +156,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await focarCartao(page, 'Inter Vencida E2E')
     // O cartão em foco já abre a fatura dele: não há mais lista para clicar
     // (ponto 12). Estes testes usam cartão com uma fatura só, então é ela.
-    await expect(page.getByText('1/1')).toBeVisible()
+    await expect(page.getByRole('table').getByText('à vista')).toBeVisible()
 
     // A fatura de junho já chega Fechada: Faturas aplica o fechamento
     // automático ao carregar (RN-06). Até set/2026 ela seguia Aberta aqui até o

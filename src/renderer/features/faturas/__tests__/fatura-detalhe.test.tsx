@@ -400,3 +400,164 @@ describe('FaturaDetalhe — navegação junto do título', () => {
     ).toBe(true)
   })
 })
+
+/**
+ * A tabela de parcelas com o vocabulário e a hierarquia da lista de Saídas
+ * (RF-DES-14): a mesma parcela tinha um nome em cada tela.
+ */
+describe('FaturaDetalhe — tabela de parcelas', () => {
+  afterEach(cleanup)
+
+  const ocorrencia = (rotuloParcela: string, origemCentavos: number | null = null) => ({
+    impactoCentavos: 100000,
+    origemCentavos,
+    rotuloParcela,
+    progressoPct: null
+  })
+
+  function linhaDe(descricao: string) {
+    return screen.getByRole('row', { name: new RegExp(descricao) })
+  }
+
+  // Toda parcela de uma fatura tem o status dela: a coluna repetia "Pendente"
+  // em todas as linhas, e ordenar por ela não mudava nada.
+  it('tem as colunas de Saídas, sem Status', () => {
+    renderizarCom(comParcela({ kind: 'Aberta' }, despesa(), parcela()))
+
+    for (const nome of [/Descrição/, /Categoria/, /Compra/, /Parcela/, /Valor/, /Ações/]) {
+      expect(screen.getByRole('columnheader', { name: nome })).toBeTruthy()
+    }
+    expect(screen.queryByRole('columnheader', { name: /Status/ })).toBeNull()
+    expect(screen.queryByText('Pendente')).toBeNull()
+  })
+
+  it('compra à vista diz "à vista", em tom de apoio, e não "1/1"', () => {
+    const aVista = despesa({ tipo: 'Unica', totalParcelas: 1, valorCentavos: 5000 })
+    const p = parcela({ numero: 1, total: 1 })
+    renderizarCom(
+      comParcela({ kind: 'Aberta' }, aVista, p, {
+        ocorrenciaPorParcela: { [p.id]: ocorrencia('à vista') }
+      })
+    )
+
+    expect(screen.getByText('à vista').getAttribute('data-tom')).toBe('apoio')
+    expect(screen.queryByText('1/1')).toBeNull()
+  })
+
+  it('parcelada mostra o número e o valor da compra', () => {
+    const p = parcela()
+    renderizarCom(
+      comParcela({ kind: 'Aberta' }, despesa(), p, {
+        ocorrenciaPorParcela: { [p.id]: ocorrencia('2/3', 300000) }
+      })
+    )
+
+    const linha = linhaDe('Notebook')
+    expect(within(linha).getByText('2/3').getAttribute('data-tom')).toBeNull()
+    expect(within(linha).getByText(/de R\$\s*3\.000,00/)).toBeTruthy()
+  })
+
+  // A data da assinatura era a de referência, sempre dia 01: um dia inventado.
+  // E o selo ASSINATURA repetia o que "mensal" já diz.
+  it('assinatura diz "mensal" e "desde MM/AAAA", sem o selo nem o dia inventado', () => {
+    const assinatura = despesa({
+      descricao: 'iCloud+',
+      tipo: 'Assinatura',
+      totalParcelas: null,
+      dataCompra: '2024-03-10'
+    })
+    const p = parcela({ numero: 31, total: null, dataReferencia: '2026-09-01' })
+    renderizarCom(
+      comParcela({ kind: 'Aberta' }, assinatura, p, {
+        ocorrenciaPorParcela: { [p.id]: ocorrencia('mensal') }
+      })
+    )
+
+    const linha = linhaDe('iCloud')
+    expect(within(linha).getByText('mensal')).toBeTruthy()
+    expect(within(linha).getByText('desde 03/2024')).toBeTruthy()
+    expect(within(linha).queryByText('Assinatura')).toBeNull()
+    expect(within(linha).queryByText('01/09/2026')).toBeNull()
+  })
+
+  it('mostra a categoria da despesa, com o selo quando está arquivada', async () => {
+    const casa = {
+      id: 1,
+      nome: 'Casa',
+      cor: '#3f6e47',
+      ativo: false,
+      createdAt: '',
+      updatedAt: ''
+    }
+    renderizarCom(comParcela({ kind: 'Aberta' }, despesa(), parcela()), {
+      categoria: { list: vi.fn().mockResolvedValue([casa]) }
+    })
+
+    const linha = linhaDe('Notebook')
+    expect(await within(linha).findByText('Casa')).toBeTruthy()
+    expect(within(linha).getByText('Arquivada')).toBeTruthy()
+  })
+
+  // O "Editar" da assinatura ficava desabilitado ("se editam na tela Saídas"),
+  // mas o modal de assinatura é compartilhado e funciona daqui.
+  it('Editar de assinatura abre o modal de assinatura', async () => {
+    const assinatura = despesa({ descricao: 'iCloud+', tipo: 'Assinatura', totalParcelas: null })
+    renderizarCom(comParcela({ kind: 'Aberta' }, assinatura, parcela({ numero: 31, total: null })))
+    const usuario = userEvent.setup()
+
+    const editar = screen.getByRole('button', { name: 'Editar' }) as HTMLButtonElement
+    expect(editar.disabled).toBe(false)
+    await usuario.click(editar)
+
+    expect(screen.getByRole('dialog', { name: 'Editar assinatura' })).toBeTruthy()
+  })
+
+  describe('ordenação', () => {
+    function doisLancamentos(): FaturaDetalhada {
+      const cedo = despesa({ id: 5, descricao: 'Mercado', dataCompra: '2026-08-10' })
+      const tarde = despesa({ id: 6, descricao: 'Farmácia', dataCompra: '2026-08-20' })
+      const pCedo = parcela({ id: 50, despesaId: 5, valorCentavos: 90000 })
+      const pTarde = parcela({ id: 51, despesaId: 6, valorCentavos: 20000 })
+      return {
+        ...detalhe({ kind: 'Aberta' }),
+        parcelas: [pTarde, pCedo],
+        totalCentavos: 110000,
+        despesasPorParcela: { 50: cedo, 51: tarde }
+      }
+    }
+
+    function descricoes(): string[] {
+      return screen
+        .getAllByRole('row')
+        .slice(1)
+        .map((linha) => within(linha).getAllByRole('cell')[0]?.textContent ?? '')
+    }
+
+    // A ordem do extrato do banco: da compra mais antiga para a mais nova.
+    it('abre pela data da compra, crescente', () => {
+      renderizarCom(doisLancamentos())
+
+      expect(descricoes()).toEqual(['Mercado', 'Farmácia'])
+      expect(screen.getByRole('columnheader', { name: /Compra/ }).getAttribute('aria-sort')).toBe(
+        'ascending'
+      )
+    })
+
+    it('ordena por Valor no clique do cabeçalho', async () => {
+      renderizarCom(doisLancamentos())
+      const usuario = userEvent.setup()
+
+      await usuario.click(screen.getByRole('button', { name: 'Valor' }))
+
+      expect(descricoes()).toEqual(['Farmácia', 'Mercado'])
+    })
+
+    // "à vista", "mensal" e "1/6" não têm ordem natural.
+    it('Parcela não é ordenável', () => {
+      renderizarCom(doisLancamentos())
+
+      const parcelaTh = screen.getByRole('columnheader', { name: /Parcela/ })
+      expect(within(parcelaTh).queryByRole('button')).toBeNull()
+    })
+  })
+})

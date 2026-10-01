@@ -34,20 +34,22 @@ test.describe('Deep-link de faturas (query string)', () => {
     // A linha "Mês" do resumo saiu (o título já diz o mês): confere-se o
     // título, em vez de clicar num texto que só repetia o que estava aberto.
     await expect(page.getByRole('heading', { name: /Junho de 2026/ })).toBeVisible()
-    await expect(page.getByText('1/1')).toBeVisible()
+    await expect(page.getByRole('table').getByText('à vista')).toBeVisible()
 
     const hashDetalhe = await page.evaluate(() => window.location.hash)
     expect(hashDetalhe).toMatch(/cartaoId=\d+&faturaId=\d+/)
 
     // --- Navega para fora e volta pela URL: o detalhe deve reabrir sozinho ---
     await page.getByRole('link', { name: 'Visão mensal' }).click()
-    await expect(page.getByText('1/1')).toHaveCount(0)
+    // Fora de Faturas, a linha da compra some. (Era conferido pelo rótulo
+    // "1/1", que a fatura trocou por "à vista", o vocabulário de Saídas.)
+    await expect(page.getByRole('cell', { name: 'Mercado Deep E2E' })).toHaveCount(0)
 
     await page.evaluate((h) => {
       window.location.hash = h
     }, hashDetalhe)
 
-    await expect(page.getByText('1/1')).toBeVisible()
+    await expect(page.getByRole('table').getByText('à vista')).toBeVisible()
     await expect(page.getByRole('cell', { name: /R\$\s*50,00/ })).toBeVisible()
   })
 

@@ -161,3 +161,107 @@ describe('detalharComParcelas traz o bloqueio de exclusão por despesa', () => {
     expect(detalhe.exclusaoBloqueada).toEqual({})
   })
 })
+
+/**
+ * RF-DES-14 na fatura: a coluna Parcela usa o vocabulário de Saídas ("à vista",
+ * "mensal", "1/3 de R$ X"), que vem de `descreverOcorrencia`. O valor de origem
+ * só existe para a parcelada criada do zero, e isso depende do menor número de
+ * parcela da despesa — dado que a fatura, sozinha, não tem.
+ */
+describe('detalharComParcelas descreve a ocorrência de cada parcela', () => {
+  let db: Database
+  let ipc: ReturnType<typeof ipcMainFalso>
+  let repo: DespesaRepository
+  let cartaoId: number
+  let categoriaId: number
+
+  beforeEach(() => {
+    db = openInMemoryDatabase()
+    runMigrations(db)
+    ipc = ipcMainFalso()
+    registerFaturaHandlers(db, ipc.ipcMain)
+    repo = new DespesaRepository(db)
+
+    cartaoId = Number(
+      db
+        .prepare(
+          "INSERT INTO cartao (nome, dia_fechamento, dia_vencimento, cor) VALUES ('Inter', 5, 12, '#f70')"
+        )
+        .run().lastInsertRowid
+    )
+    categoriaId = Number(
+      db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Casa', '#aaa')").run().lastInsertRowid
+    )
+  })
+
+  function detalhar(faturaId: number | null): FaturaDetalhada {
+    return ipc.invocar(FATURA_IPC_CHANNELS.detalharComParcelas, faturaId) as FaturaDetalhada
+  }
+
+  it('compra à vista é "à vista", sem valor de origem', () => {
+    const r = repo.criarUnicaCredito({
+      descricao: 'Almoço',
+      categoriaId,
+      cartaoId,
+      valorCentavos: 2500,
+      dataCompra: '2099-06-03'
+    })
+
+    const ocorrencia = detalhar(r.fatura.id).ocorrenciaPorParcela?.[r.parcela.id]
+
+    expect(ocorrencia?.rotuloParcela).toBe('à vista')
+    expect(ocorrencia?.origemCentavos).toBeNull()
+  })
+
+  it('parcelada criada do zero traz o número e o valor da compra', () => {
+    const r = repo.criarParceladaCredito({
+      descricao: 'TV',
+      categoriaId,
+      cartaoId,
+      totalParcelas: 3,
+      valorTotalCentavos: 3000,
+      dataCompra: '2099-06-03'
+    })
+    const segunda = r.parcelas[1]!
+
+    const ocorrencia = detalhar(segunda.faturaId).ocorrenciaPorParcela?.[segunda.id]
+
+    expect(ocorrencia?.rotuloParcela).toBe('2/3')
+    expect(ocorrencia?.origemCentavos).toBe(3000)
+  })
+
+  // Cadastrada em andamento, a despesa guarda o saldo devedor, e não o preço
+  // da compra: mostrar "de R$ X" ali seria rotular dívida como preço.
+  it('parcelada cadastrada em andamento não traz valor de origem', () => {
+    const r = repo.criarParceladaEmAndamento({
+      descricao: 'Sofá',
+      categoriaId,
+      cartaoId,
+      totalParcelas: 10,
+      parcelaAtual: 4,
+      valorRestanteCentavos: 7000,
+      dataCompra: '2099-06-03'
+    })
+    const primeira = r.parcelas[0]!
+
+    const ocorrencia = detalhar(primeira.faturaId).ocorrenciaPorParcela?.[primeira.id]
+
+    expect(ocorrencia?.rotuloParcela).toBe('4/10')
+    expect(ocorrencia?.origemCentavos).toBeNull()
+  })
+
+  it('assinatura é "mensal"', () => {
+    const r = repo.criarAssinaturaCredito({
+      descricao: 'Streaming',
+      categoriaId,
+      cartaoId,
+      valorMensalCentavos: 3990,
+      dataInicio: '2099-06-03'
+    })
+    const primeira = r.parcelas[0]!
+
+    const ocorrencia = detalhar(primeira.faturaId).ocorrenciaPorParcela?.[primeira.id]
+
+    expect(ocorrencia?.rotuloParcela).toBe('mensal')
+  })
+})

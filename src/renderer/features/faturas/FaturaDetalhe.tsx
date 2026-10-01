@@ -9,7 +9,6 @@ import { hojeIsoLocal } from '@shared/datas-locais'
 import { useCicloFatura } from './hooks/use-faturas'
 import { AdiantarParcelasModal } from './AdiantarParcelasModal'
 import { avisoDoAdiantamento } from './aviso-adiantamento'
-import { dataParcelaExibida } from './data-parcela'
 import { EditarDespesaModal } from './EditarDespesaModal'
 import { PagarFaturaModal } from './PagarFaturaModal'
 import {
@@ -34,38 +33,42 @@ import { avisoDePrazo } from './aviso-fechamento'
 import { statusVariant } from './status-variant'
 import styles from './faturas.module.css'
 import { useCargaAuxiliar } from '../../hooks/use-carga-auxiliar'
+import { alfabetico, porData, porNumero, type Comparador } from '../../lib/comparadores'
+import { useOrdenacao } from '../../lib/use-ordenacao'
+import { EditarAssinaturaModal } from '../assinaturas/EditarAssinaturaModal'
+import { RotuloCategoria } from '../categorias/RotuloCategoria'
+import { descreverDataDaOcorrencia } from '../saidas/descrever-data-da-ocorrencia'
 
 type DialogoConfirma =
   | { tipo: 'fechar' }
   | { tipo: 'reabrir' }
   | { tipo: 'excluir'; despesaId: number }
 
-type SortBy = 'descricao' | 'parcela' | 'data' | 'valor' | 'status'
-type SortDir = 'asc' | 'desc'
+/** A parcela com a despesa dela: é o que cada linha da tabela mostra. */
+type Linha = { parcela: Parcela; despesa: Despesa | undefined }
 
-function compararParcelas(
-  a: Parcela,
-  b: Parcela,
-  by: SortBy,
-  despesas: FaturaDetalhada['despesasPorParcela']
-): number {
-  switch (by) {
-    case 'descricao': {
-      const da = despesas?.[a.id]?.descricao ?? `#${a.despesaId}`
-      const db = despesas?.[b.id]?.descricao ?? `#${b.despesaId}`
-      return da.localeCompare(db, 'pt-BR')
-    }
-    case 'parcela':
-      return a.numero - b.numero || (a.total ?? 0) - (b.total ?? 0)
-    case 'data':
-      return dataParcelaExibida(a, despesas?.[a.id]).localeCompare(
-        dataParcelaExibida(b, despesas?.[b.id])
-      )
-    case 'valor':
-      return a.valorCentavos - b.valorCentavos
-    case 'status':
-      return a.status.localeCompare(b.status)
-  }
+/**
+ * Mesmos comparadores e mesmo `useOrdenacao` de Saídas e da Busca: duas
+ * implementações fariam o mesmo clique se comportar diferente em duas telas.
+ * Parcela não entra — "à vista", "mensal" e "1/6" não têm ordem natural.
+ */
+const COMPARADORES: Record<string, Comparador<Linha>> = {
+  descricao: alfabetico((l) => l.despesa?.descricao ?? `#${l.parcela.despesaId}`),
+  compra: porData((l) => l.despesa?.dataCompra ?? l.parcela.dataReferencia),
+  valor: porNumero((l) => l.parcela.valorCentavos)
+}
+
+/**
+ * Célula da coluna Compra, como em Saídas: a data da compra, ou "desde
+ * MM/AAAA" em tom de apoio para assinatura. A fatura mostrava a data de
+ * referência da assinatura, que é sempre dia 01 — um dia que ninguém foi
+ * cobrado.
+ */
+function CelulaDeCompra({ linha }: { linha: Linha }) {
+  if (!linha.despesa)
+    return <span className="tnum">{formatarDataIso(linha.parcela.dataReferencia)}</span>
+  const { texto, apoio } = descreverDataDaOcorrencia(linha.despesa)
+  return <span className={apoio ? styles.compraApoio : 'tnum'}>{texto}</span>
 }
 
 /**
@@ -114,10 +117,9 @@ export function FaturaDetalhe({
   const [pagando, setPagando] = useState(false)
   const [parcelaAdiantar, setParcelaAdiantar] = useState<Parcela | null>(null)
   const [despesaEditar, setDespesaEditar] = useState<Despesa | null>(null)
+  const [assinaturaEditar, setAssinaturaEditar] = useState<Despesa | null>(null)
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [dialogo, setDialogo] = useState<DialogoConfirma | null>(null)
-  const [sortBy, setSortBy] = useState<SortBy>('data')
-  const [sortDir, setSortDir] = useState<SortDir>('asc')
   const toast = useToast()
 
   // Com as arquivadas: o modal de edição precisa da categoria atual mesmo
@@ -128,22 +130,29 @@ export function FaturaDetalhe({
     'Erro ao listar categorias.'
   )
 
-  const parcelasOrdenadas = useMemo(() => {
-    const copia = [...parcelas]
-    copia.sort((a, b) => {
-      const c = compararParcelas(a, b, sortBy, detalhe.despesasPorParcela)
-      return sortDir === 'asc' ? c : -c
-    })
-    return copia
-  }, [parcelas, sortBy, sortDir, detalhe.despesasPorParcela])
+  const linhas = useMemo(
+    () =>
+      parcelas.map(
+        (parcela): Linha => ({ parcela, despesa: detalhe.despesasPorParcela?.[parcela.id] })
+      ),
+    [parcelas, detalhe.despesasPorParcela]
+  )
+  // Abre pela data da compra, crescente: a ordem do extrato do banco.
+  const { itensOrdenados, sortBy, sortDir, handleSort } = useOrdenacao(
+    linhas,
+    COMPARADORES,
+    'compra',
+    'asc'
+  )
+  const categoriaPorId = useMemo(() => new Map(categorias.map((c) => [c.id, c])), [categorias])
 
-  function handleSort(col: SortBy) {
-    if (col === sortBy) {
-      setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortBy(col)
-      setSortDir('asc')
-    }
+  function celulaDeCategoria(despesa: Despesa | undefined) {
+    if (!despesa) return '—'
+    const categoria = categoriaPorId.get(despesa.categoriaId)
+    if (!categoria) return `#${despesa.categoriaId}`
+    return (
+      <RotuloCategoria nome={categoria.nome} arquivada={!categoria.ativo} cor={categoria.cor} />
+    )
   }
 
   // Editar é a primária; Adiantar só existe em parcelada pendente de fatura
@@ -153,13 +162,22 @@ export function FaturaDetalhe({
     const despesa = detalhe.despesasPorParcela?.[p.id]
     const acoes: AcaoLinha[] = []
 
-    if (p.status === 'Pendente' && despesa) {
+    // Assinatura abre o modal dela, o mesmo de Saídas. O "Editar" ficava
+    // desabilitado aqui ("Assinaturas se editam na tela Saídas"), de quando o
+    // modal não era compartilhado. Cancelada não tem Editar, como lá.
+    if (p.status === 'Pendente' && despesa?.tipo === 'Assinatura') {
+      if (despesa.ativa) {
+        acoes.push({
+          label: 'Editar',
+          onClick: () => setAssinaturaEditar(despesa),
+          title: 'Editar assinatura'
+        })
+      }
+    } else if (p.status === 'Pendente' && despesa) {
       acoes.push({
         label: 'Editar',
         onClick: () => setDespesaEditar(despesa),
-        disabled: despesa.tipo === 'Assinatura',
-        title:
-          despesa.tipo === 'Assinatura' ? 'Assinaturas se editam na tela Saídas' : 'Editar despesa'
+        title: 'Editar despesa'
       })
     }
 
@@ -226,6 +244,19 @@ export function FaturaDetalhe({
       toast.show(mensagemErro(e, 'Erro ao atualizar despesa.'), 'error')
       throw e
     }
+  }
+
+  // O erro sobe para o modal, que o mostra: como em Saídas.
+  async function handleConfirmarEditarAssinatura(input: {
+    descricao: string
+    categoriaId: number
+    valorCentavos: number
+  }) {
+    if (!assinaturaEditar) return
+    await window.api.despesa.atualizar({ despesaId: assinaturaEditar.id, ...input })
+    toast.show('Assinatura atualizada.', 'success')
+    setAssinaturaEditar(null)
+    await recarregarDetalhe()
   }
 
   async function confirmarExcluirDespesa(despesaId: number) {
@@ -360,8 +391,12 @@ export function FaturaDetalhe({
         {parcelas.length === 0 ? (
           <EmptyState title="Nenhuma parcela nesta fatura." />
         ) : (
-          <>
-            <Table>
+          // O Panel recorta o que passa da borda; aqui o excesso vira
+          // rolagem, como em Saídas.
+          <div className={styles.tabelaWrap}>
+            {/* Compacta, como Saídas e pelo mesmo motivo: uma fatura real
+                  passa de 30 lançamentos. */}
+            <Table densidade="compacta">
               <thead>
                 <tr>
                   <SortableHeader
@@ -369,19 +404,17 @@ export function FaturaDetalhe({
                     ativo={sortBy === 'descricao'}
                     direcao={sortDir}
                     onSort={() => handleSort('descricao')}
+                    className={styles.colDescricao}
                   />
+                  <th scope="col">Categoria</th>
                   <SortableHeader
-                    rotulo="Parcela"
-                    ativo={sortBy === 'parcela'}
+                    rotulo="Compra"
+                    ativo={sortBy === 'compra'}
                     direcao={sortDir}
-                    onSort={() => handleSort('parcela')}
+                    onSort={() => handleSort('compra')}
+                    className={styles.colCompra}
                   />
-                  <SortableHeader
-                    rotulo="Data"
-                    ativo={sortBy === 'data'}
-                    direcao={sortDir}
-                    onSort={() => handleSort('data')}
-                  />
+                  <th scope="col">Parcela</th>
                   <SortableHeader
                     rotulo="Valor"
                     ativo={sortBy === 'valor'}
@@ -390,45 +423,57 @@ export function FaturaDetalhe({
                     className={styles.colValor}
                     alinhamento="direita"
                   />
-                  <SortableHeader
-                    rotulo="Status"
-                    ativo={sortBy === 'status'}
-                    direcao={sortDir}
-                    onSort={() => handleSort('status')}
-                  />
-                  <th>Ações</th>
+                  {/* Sem texto visível, mas com nome: "Ações" repetido sobre
+                        "Editar" em toda linha era ruído. */}
+                  <th scope="col" className={styles.colAcoes}>
+                    <span className="sr-only">Ações</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {parcelasOrdenadas.map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      {detalhe.despesasPorParcela?.[p.id]?.descricao ?? `#${p.despesaId}`}
-                      {detalhe.despesasPorParcela?.[p.id]?.tipo === 'Assinatura' && (
-                        <span className={styles.tagAssinatura}>Assinatura</span>
-                      )}
-                    </td>
-                    <td className="mono">
-                      {p.total === null ? 'Mensal' : `${p.numero}/${p.total}`}
-                    </td>
-                    <td>
-                      {formatarDataIso(dataParcelaExibida(p, detalhe.despesasPorParcela?.[p.id]))}
-                    </td>
-                    <td className={`${styles.colValor} tnum`}>{formatBRL(p.valorCentavos)}</td>
-                    <td>
-                      <Badge variant={p.status === 'Paga' ? 'paid' : 'pending'} />
-                    </td>
-                    <td>
-                      <RowActions
-                        acoes={acoesDaParcela(p)}
-                        contexto={detalhe.despesasPorParcela?.[p.id]?.descricao}
-                      />
-                    </td>
-                  </tr>
-                ))}
+                {itensOrdenados.map((linha) => {
+                  const { parcela: p, despesa } = linha
+                  const ocorrencia = detalhe.ocorrenciaPorParcela?.[p.id]
+                  // Sem a descrição do main, cai no número cru.
+                  const rotulo =
+                    ocorrencia?.rotuloParcela ??
+                    (p.total === null ? 'mensal' : `${p.numero}/${p.total}`)
+                  return (
+                    <tr key={p.id}>
+                      <td>{despesa?.descricao ?? `#${p.despesaId}`}</td>
+                      <td className={styles.colCategoria}>{celulaDeCategoria(despesa)}</td>
+                      <td className={styles.colCompra}>
+                        <CelulaDeCompra linha={linha} />
+                      </td>
+                      <td>
+                        <span className={styles.parcelaCelula}>
+                          {/* "à vista" é a maioria das linhas e vai em tom
+                                de apoio, para "1/6" e "mensal" sobressaírem. */}
+                          <span
+                            className={`${styles.parcelaRotulo} mono`}
+                            data-tom={despesa?.tipo === 'Unica' ? 'apoio' : undefined}
+                          >
+                            {rotulo}
+                          </span>
+                          {ocorrencia && ocorrencia.origemCentavos !== null && (
+                            <span className={`${styles.origem} tnum`}>
+                              de {formatBRL(ocorrencia.origemCentavos)}
+                            </span>
+                          )}
+                        </span>
+                      </td>
+                      <td className={`${styles.colValor} tnum`}>
+                        <span className={styles.valor}>{formatBRL(p.valorCentavos)}</span>
+                      </td>
+                      <td className={styles.colAcoes}>
+                        <RowActions acoes={acoesDaParcela(p)} contexto={despesa?.descricao} />
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </Table>
-          </>
+          </div>
         )}
       </Panel>
 
@@ -443,6 +488,15 @@ export function FaturaDetalhe({
           }
           onConfirmar={handleConfirmarEditarDespesa}
           onCancelar={() => setDespesaEditar(null)}
+        />
+      )}
+
+      {assinaturaEditar && (
+        <EditarAssinaturaModal
+          assinatura={assinaturaEditar}
+          categorias={categorias}
+          onConfirmar={handleConfirmarEditarAssinatura}
+          onCancelar={() => setAssinaturaEditar(null)}
         />
       )}
 

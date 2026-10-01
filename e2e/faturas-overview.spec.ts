@@ -42,7 +42,7 @@ test.describe('Faturas — chegada sem escolher cartão', () => {
     // Junho é a única fatura e fica antes da janela da regra (do mês anterior
     // em diante, RF-FAT-06) — a resolução cai na mais recente.
     await expect(page.getByText('Inter Overview E2E · junho de 2026')).toBeVisible()
-    await expect(page.getByText('1/1')).toBeVisible()
+    await expect(page.getByRole('table').getByText('à vista')).toBeVisible()
     await expect(page.getByRole('cell', { name: /R\$\s*80,00/ })).toBeVisible()
 
     // O deep-link reflete o cartão e a fatura em foco, sem ninguém ter clicado

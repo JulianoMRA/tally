@@ -5,6 +5,10 @@ import { DespesaRepository } from '../../src/persistence/repositories/despesa-re
 import { FaturaRepository } from '../../src/persistence/repositories/fatura-repository'
 import { ParcelaRepository } from '../../src/persistence/repositories/parcela-repository'
 import { fecharFatura, pagarFatura, reabrirFatura } from '../../src/domain/services/ciclo-fatura'
+import {
+  descreverOcorrencia,
+  type Ocorrencia
+} from '../../src/domain/services/descrever-ocorrencia'
 import { hojeIsoLocal } from '../../src/shared/datas-locais'
 import {
   cartaoIdSchema,
@@ -56,12 +60,24 @@ export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
 
       const exclusaoBloqueada = Object.fromEntries(despesaRepo.bloqueiosDeExclusao(despesaIds))
 
+      // O mesmo enriquecimento da lista de Saídas, para a parcela ter o mesmo
+      // nome nas duas telas.
+      const menorNumero = parcelaRepo.menorNumeroPorDespesa(despesaIds)
+      const ocorrenciaPorParcela: Record<number, Ocorrencia> = {}
+      for (const p of parcelas) {
+        const d = despPorId.get(p.despesaId)
+        if (d) {
+          ocorrenciaPorParcela[p.id] = descreverOcorrencia(d, p, menorNumero.get(d.id) ?? p.numero)
+        }
+      }
+
       return {
         fatura,
         parcelas,
         totalCentavos,
         despesasPorParcela,
-        exclusaoBloqueada
+        exclusaoBloqueada,
+        ocorrenciaPorParcela
       }
     }
   )

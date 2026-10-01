@@ -23,7 +23,9 @@ export type DataDaOcorrencia = {
  * ficou. Não vale para exibir: saber que a parcela vem de uma compra de
  * fevereiro é justamente o contexto que faltava na linha.
  */
-export function descreverDataDaOcorrencia(ocorrencia: OcorrenciaDoMes): DataDaOcorrencia {
+export function descreverDataDaOcorrencia(
+  ocorrencia: Pick<OcorrenciaDoMes, 'dataCompra' | 'tipo'>
+): DataDaOcorrencia {
   if (!ocorrencia.dataCompra) return { texto: '—', apoio: true }
 
   // Assinatura não tem data de compra no sentido das outras: o início pode ser
