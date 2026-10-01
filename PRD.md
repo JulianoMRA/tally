@@ -206,6 +206,10 @@ prevista; entram no escopo quando forem priorizadas.
 
   > Até set/2026 o resumo era um card lateral a partir de 1360px e, abaixo disso — inclusive na janela padrão, de 1266px —, um card empilhado depois da tabela: o total e "Marcar como paga" ficavam abaixo de todas as parcelas. O card repetia o mês do título e a meta do painel repetia o total, que aparecia três vezes na tela. E o detalhe tinha teto de largura (880 ou 1280px) enquanto a navegação e o histórico ocupavam a largura inteira: três bordas direitas.
 
+  **Com pagamento parcial (RF-FAT-07), o destaque da faixa passa do total para o que falta pagar** (RN-10): "Total da fatura", "Pagamentos parciais" e, no tamanho que era do total, "Falta pagar" — "Restante pago" na fatura `Paga`. O total continua na faixa porque é dele que as parcelas abaixo dão conta; o que falta é o número que o banco cobra. Sem pagamento parcial a faixa é a de sempre, com o total em destaque e nenhum rótulo a mais. Havendo **pago a mais**, a faixa diz quanto, em tom de atenção, numa linha própria.
+
+  **Os pagamentos têm um painel próprio**, "Pagamentos parciais", entre a faixa e as parcelas, só quando existe algum: data, valor e a ação de excluir. É a lista que explica a conta da faixa.
+
   **A tabela de parcelas fala a língua da lista de Saídas** (RF-DES-14): Descrição, Categoria, Compra, Parcela e Valor — as colunas de Saídas agrupada por origem, na mesma ordem.
   - **Parcela** vem de `descreverOcorrencia`, a mesma função de Saídas, calculada no main: "à vista" em tom de apoio, "mensal", "2/3", e o valor da compra ao lado ("2/3 de R$ 979,92") na parcelada criada do zero.
   - **Compra** é a data da compra; assinatura mostra "desde MM/AAAA" em tom de apoio.
@@ -229,6 +233,7 @@ prevista; entram no escopo quando forem priorizadas.
 
     > Até set/2026 as abas eram os três status (`Abertas`/`Fechadas`/`Pagas`), sem contagem, com uma meta "3" sem rótulo no cabeçalho. "Abertas" quase nunca tinha item — mas podia ter, porque a fatura nasce Aberta —, e saber se algo ficou sem pagar exigia clicar. O rótulo é "A pagar" e não "Não pagas" também por um motivo de teste: o `getByRole` do Playwright casa o nome por substring, e "Não pagas" responderia por "Pagas".
 
+  - **Com pagamento parcial (RF-FAT-07), trilho e histórico mostram o que falta pagar** (RN-10), com o total como contexto: "R$ 200,00 pagos de R$ 800,00". A soma da barra do histórico acompanha. As abas seguem pelo status: fatura com pagamento parcial e ainda não marcada como paga continua em "A pagar". E a fatura `Fechada` cujos pagamentos cobrem o total **não avisa prazo** — nem "vence em N dias", nem "vencida há N dias", no trilho, na faixa e no histórico: não há o que pagar, só o que marcar. A `Aberta` na mesma situação segue avisando o fechamento, porque ainda recebe compra.
   - **Ao abrir, a tela aplica o fechamento automático** (RN-06), como a Visão mensal: a fatura nasce sempre Aberta, inclusive a de um lançamento retroativo, e até set/2026 seguia Aberta em Faturas até o boot ou o timer de uma hora — sem aviso de vencida e oferecendo "Fechar fatura" — enquanto a Visão mensal já a mostrava Fechada.
   - **Deep-link** `?cartaoId=&faturaId=` mantém o formato, então links salvos continuam válidos. `faturaId` passa a significar qual fatura o painel exibe. Link para fatura inexistente **abre a fatura corrente do cartão e avisa**, em vez de exibir estado vazio — não há mais lista atrás para onde voltar.
 
@@ -236,7 +241,16 @@ prevista; entram no escopo quando forem priorizadas.
 
   **A confirmação é um diálogo com a data de pagamento**, que começa em hoje, como já eram as de fechar e reabrir. "Confirmar pagamento" só habilita com uma data que existe no calendário, e um erro fica no diálogo, que só fecha quando o pagamento dá certo. Até set/2026 era um formulário inline no card de resumo: com a data apagada, a tela mandava uma string vazia ao main e mostrava o JSON do zod. O diálogo de fechar diz o que o fechamento trava (RN-06) — o texto antigo dizia o contrário, que "novas parcelas só entram via adiantamento".
 
-- **RF-FAT-05** — Reabrir fatura paga (caso de erro): requer confirmação. A fatura reabre como `Aberta` se a data de fechamento ainda não passou, ou como `Fechada` caso contrário (RN-06).
+  **Com pagamento parcial, o diálogo diz o que está sendo pago**: o que falta, o total e quanto já foi pago em parciais ("falta pagar R$ 70,00 de R$ 120,00 (R$ 50,00 já pagos em parciais)"). Marcar como paga quita o restante; os pagamentos parciais continuam registrados na fatura (RN-10).
+
+- **RF-FAT-05** — Reabrir fatura paga (caso de erro): requer confirmação. A fatura reabre como `Aberta` se a data de fechamento ainda não passou, ou como `Fechada` caso contrário (RN-06). Reabrir desfaz o pagamento da fatura, não os pagamentos parciais dela: eles são mantidos, e o diálogo de confirmação diz isso quando há algum.
+
+- **RF-FAT-07** — **Registrar e excluir pagamento parcial** (RN-10). Um pagamento parcial é um valor pago numa fatura antes da quitação, com data.
+  - **Registrar** é o botão "Pagamento parcial" da faixa de resumo, em fatura `Aberta` e `Fechada`. Na `Paga` ele não existe (reabrir antes, RF-FAT-05); quando não falta nada a pagar, fica desabilitado, com o motivo. Abre um diálogo que nomeia a fatura (cartão, mês e quanto falta pagar) e pede **Valor (R$)** e **Data do pagamento**, que começa em hoje.
+  - **"Registrar pagamento" só habilita com o que o main vai aceitar**: valor válido, de pelo menos um centavo, dentro do que falta pagar, e data que existe no calendário. O motivo aparece junto do campo. A conferência é a mesma função do domínio que o main usa ao gravar — ação que a tela sabe que vai falhar não é oferecida para falhar depois do clique. Em fatura `Fechada`, o valor que quita o restante aponta para "Marcar como paga" (RN-10). O que o main recusar mesmo assim fica no diálogo, legível; ele só fecha quando o registro dá certo, com aviso, e faixa, trilho e histórico se atualizam.
+  - **Excluir** fica no menu de ações da linha, no painel "Pagamentos parciais", marcado como destrutivo, com uma confirmação que repete o valor e a data. Em fatura `Paga` a ação fica desabilitada com o motivo ("Reabra a fatura para excluir o pagamento."), em vez de abrir a confirmação e falhar depois — o mesmo tratamento do Excluir da despesa (RF-DES-09).
+  - **Não há edição**: valor ou data errados se corrigem excluindo e registrando de novo. E não há descrição: o pagamento é da fatura, e é ela que o nomeia.
+  - **Só na tela de Faturas.** As outras telas mostram o efeito do pagamento, não o registram.
 
 ### 4.5 ~~Contribuidores e Ajudas (RF-AJU)~~
 
@@ -619,6 +633,7 @@ Fluxos críticos cobertos:
 - Cadastrar, reajustar e cancelar assinatura
 - Excluir despesa (RF-DES-09)
 - Pagar fatura bloqueia exclusão da despesa; reabrir libera (RN-06)
+- Pagamento parcial de fatura: registrar, excluir, pagar o restante e reabrir mantendo o parcial (RF-FAT-07)
 - Cadastrar gasto fora de cartão (Pix/Débito/Dinheiro)
 - Cadastrar e marcar recebimento de renda (recorrente + avulso)
 - Visão mensal consolidada
