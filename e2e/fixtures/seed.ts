@@ -55,10 +55,16 @@ export async function semear(app: ElectronApplication): Promise<{
     const api = (window as unknown as { api: ApiSeed }).api
     const hoje = new Date()
     const iso = (d: Date) => d.toISOString().slice(0, 10)
+    // Data LOCAL, como o app (`hojeIsoLocal`). Com `toISOString`, das 21h à
+    // meia-noite (UTC-3) "hoje" já era amanhã em UTC — e no último dia do mês o
+    // lançamento caía no mês seguinte, fora do mês que as telas abrem: oito
+    // casos falhavam procurando "Feira no Pix" em setembro.
+    const isoLocal = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
     const emDias = (dias: number) => {
       const x = new Date(hoje)
       x.setDate(x.getDate() + dias)
-      return iso(x)
+      return isoLocal(x)
     }
 
     // Dia 1 de N meses atrás. Aritmética de calendário, não de dias: só assim o
