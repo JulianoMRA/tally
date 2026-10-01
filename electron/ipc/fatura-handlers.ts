@@ -3,24 +3,29 @@ import type { Database } from '../../src/persistence/database'
 import type { Despesa } from '../../src/domain/entities/despesa'
 import { DespesaRepository } from '../../src/persistence/repositories/despesa-repository'
 import { FaturaRepository } from '../../src/persistence/repositories/fatura-repository'
+import { PagamentoParcialRepository } from '../../src/persistence/repositories/pagamento-parcial-repository'
 import { ParcelaRepository } from '../../src/persistence/repositories/parcela-repository'
 import { fecharFatura, pagarFatura, reabrirFatura } from '../../src/domain/services/ciclo-fatura'
 import {
   descreverOcorrencia,
   type Ocorrencia
 } from '../../src/domain/services/descrever-ocorrencia'
+import { calcularRestanteDaFatura } from '../../src/domain/services/pagamento-parcial'
 import { hojeIsoLocal } from '../../src/shared/datas-locais'
 import {
   cartaoIdSchema,
+  excluirPagamentoParcialInputSchema,
   faturaIdSchema,
   FATURA_IPC_CHANNELS,
-  pagarFaturaInputSchema
+  pagarFaturaInputSchema,
+  registrarPagamentoParcialInputSchema
 } from '../../src/shared/ipc/fatura'
-import type { FaturaDetalhada } from '../../src/shared/ipc/fatura'
+import type { FaturaComTotal, FaturaDetalhada } from '../../src/shared/ipc/fatura'
 
 export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
   const despesaRepo = new DespesaRepository(db)
   const faturaRepo = new FaturaRepository(db)
+  const pagamentoRepo = new PagamentoParcialRepository(db)
   const parcelaRepo = new ParcelaRepository(db)
 
   // É o caminho de leitura da tela de Faturas, e por isso aplica o RN-06 antes
@@ -28,11 +33,18 @@ export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
   // fatura nasce sempre Aberta, inclusive a de um lançamento retroativo, e sem
   // isto seguia Aberta aqui até o boot ou o timer de uma hora, enquanto a Visão
   // mensal já a mostrava Fechada.
-  ipcMain.handle(FATURA_IPC_CHANNELS.listarResumoPorCartao, (_event, payload: unknown) => {
-    const cartaoId = cartaoIdSchema.parse(payload)
-    faturaRepo.fecharVencidas(hojeIsoLocal())
-    return faturaRepo.listarResumoPorCartao(cartaoId)
-  })
+  //
+  // O tipo de retorno amarra o repositório ao contrato: `ResumoFatura` e
+  // `FaturaComTotal` são declarados em arquivos diferentes, e sem a anotação um
+  // campo faltando só apareceria na tela.
+  ipcMain.handle(
+    FATURA_IPC_CHANNELS.listarResumoPorCartao,
+    (_event, payload: unknown): FaturaComTotal[] => {
+      const cartaoId = cartaoIdSchema.parse(payload)
+      faturaRepo.fecharVencidas(hojeIsoLocal())
+      return faturaRepo.listarResumoPorCartao(cartaoId)
+    }
+  )
 
   ipcMain.handle(FATURA_IPC_CHANNELS.listarPorCartao, (_event, payload: unknown) => {
     const cartaoId = cartaoIdSchema.parse(payload)
@@ -47,7 +59,15 @@ export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
       if (!fatura) return null
 
       const parcelas = parcelaRepo.listarPorFatura(faturaId)
-      const totalCentavos = parcelas.reduce((sum, p) => sum + p.valorCentavos, 0)
+
+      // RN-10 — a mesma conta do resumo por cartão e da visão mensal: três
+      // contas próprias fariam a fatura valer um número em cada tela.
+      const pagamentosParciais = pagamentoRepo.listarPorFatura(faturaId)
+      const { totalCentavos, pagoParcialCentavos, restanteCentavos, excedenteCentavos } =
+        calcularRestanteDaFatura(
+          parcelas.reduce((sum, p) => sum + p.valorCentavos, 0),
+          pagamentosParciais.reduce((sum, p) => sum + p.valorCentavos, 0)
+        )
 
       const despesaIds = [...new Set(parcelas.map((p) => p.despesaId))]
       const despesas = despesaRepo.listarPorIds(despesaIds)
@@ -75,6 +95,10 @@ export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
         fatura,
         parcelas,
         totalCentavos,
+        pagoParcialCentavos,
+        restanteCentavos,
+        excedenteCentavos,
+        pagamentosParciais,
         despesasPorParcela,
         exclusaoBloqueada,
         ocorrenciaPorParcela
@@ -113,5 +137,18 @@ export function registerFaturaHandlers(db: Database, ipcMain: IpcMain): void {
       throw new Error('reabrir: transição inesperada para Paga')
     }
     return faturaRepo.reabrir(faturaId, resultado.novoStatus.kind)
+  })
+
+  // RN-10. A elegibilidade (status da fatura, teto do valor) é conferida no
+  // repositório, com o estado gravado; aqui o schema barra o que não depende
+  // do banco.
+  ipcMain.handle(FATURA_IPC_CHANNELS.registrarPagamentoParcial, (_event, payload: unknown) => {
+    const input = registrarPagamentoParcialInputSchema.parse(payload)
+    return pagamentoRepo.registrar(input)
+  })
+
+  ipcMain.handle(FATURA_IPC_CHANNELS.excluirPagamentoParcial, (_event, payload: unknown) => {
+    const { pagamentoId } = excluirPagamentoParcialInputSchema.parse(payload)
+    pagamentoRepo.excluir(pagamentoId)
   })
 }

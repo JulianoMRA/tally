@@ -21,7 +21,9 @@ function fatura(status: StatusFatura['kind'], totalCentavos = 10000): FaturaComT
       updatedAt: ''
     },
     mesReferencia: '2026-08',
-    totalCentavos
+    totalCentavos,
+    pagoParcialCentavos: 0,
+    restanteCentavos: totalCentavos
   }
 }
 

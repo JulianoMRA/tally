@@ -39,7 +39,9 @@ function fatura(id: number, cartaoId: number, mesReferencia: string): FaturaComT
       updatedAt: '2026-01-01'
     },
     mesReferencia,
-    totalCentavos: 117071
+    totalCentavos: 117071,
+    pagoParcialCentavos: 0,
+    restanteCentavos: 117071
   }
 }
 
@@ -131,7 +133,9 @@ describe('TrilhoCartoes — prazo', () => {
         updatedAt: ''
       },
       mesReferencia: '2026-09',
-      totalCentavos: 183881
+      totalCentavos: 183881,
+      pagoParcialCentavos: 0,
+      restanteCentavos: 183881
     }
   }
 

@@ -15,6 +15,7 @@ import type { Categoria } from '../../domain/entities/categoria'
 import type { Despesa, FormaPagamento, TipoDespesa } from '../../domain/entities/despesa'
 import type { Fatura, StatusFatura } from '../../domain/entities/fatura'
 import type { Orcamento } from '../../domain/entities/orcamento'
+import type { PagamentoParcial } from '../../domain/entities/pagamento-parcial'
 import type { Parcela, StatusParcela } from '../../domain/entities/parcela'
 import type { Recebimento, StatusRecebimento } from '../../domain/entities/recebimento'
 import type { Renda, TipoRenda } from '../../domain/entities/renda'
@@ -145,6 +146,28 @@ export function mapFatura(row: FaturaRow): Fatura {
     dataFechamento: row.data_fechamento,
     dataVencimento: row.data_vencimento,
     status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }
+}
+
+// ────── PagamentoParcial ─────────────────────────────────────────
+
+export type PagamentoParcialRow = {
+  id: number
+  fatura_id: number
+  valor_centavos: number
+  data_pagamento: string
+  created_at: string
+  updated_at: string
+}
+
+export function mapPagamentoParcial(row: PagamentoParcialRow): PagamentoParcial {
+  return {
+    id: row.id,
+    faturaId: row.fatura_id,
+    valorCentavos: row.valor_centavos,
+    dataPagamento: row.data_pagamento,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }

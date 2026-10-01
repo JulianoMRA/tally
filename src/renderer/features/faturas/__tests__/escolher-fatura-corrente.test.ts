@@ -27,7 +27,9 @@ function fatura(mesReferencia: string, opcoes: Opcoes = {}): FaturaComTotal {
       updatedAt: '2026-01-01T00:00:00.000Z'
     },
     mesReferencia,
-    totalCentavos
+    totalCentavos,
+    pagoParcialCentavos: 0,
+    restanteCentavos: totalCentavos
   }
 }
 

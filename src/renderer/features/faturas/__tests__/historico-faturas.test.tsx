@@ -21,7 +21,9 @@ function fatura(mesReferencia: string, status: StatusFatura): FaturaComTotal {
       updatedAt: ''
     },
     mesReferencia,
-    totalCentavos: 10000
+    totalCentavos: 10000,
+    pagoParcialCentavos: 0,
+    restanteCentavos: 10000
   }
 }
 

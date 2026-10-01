@@ -55,7 +55,13 @@ export const FATURA_IPC_CHANNELS = {
   detalharComParcelas: 'fatura:detalharComParcelas',
   fechar: 'fatura:fechar',
   pagar: 'fatura:pagar',
-  reabrir: 'fatura:reabrir'
+  reabrir: 'fatura:reabrir',
+  // RN-10. No grupo de fatura, e não num grupo `pagamento:*` novo: um grupo
+  // novo exigiria registro em `main.ts` e em `reregistrarHandlersDeDados`, duas
+  // listas que já divergiram no passado — mesmo motivo de `marcarOcorrenciaPaga`
+  // morar no grupo de despesa.
+  registrarPagamentoParcial: 'fatura:registrarPagamentoParcial',
+  excluirPagamentoParcial: 'fatura:excluirPagamentoParcial'
 } as const
 
 export const RENDA_IPC_CHANNELS = {

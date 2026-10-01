@@ -6,6 +6,7 @@ import {
   calcularReferenciaFaturaDaCompra,
   formatarMesReferencia
 } from '../../domain/services/calcular-fatura-da-compra'
+import { calcularRestanteDaFatura } from '../../domain/services/pagamento-parcial'
 import type { Repository } from './types'
 import { mapFatura, type FaturaRow } from './row-mappers'
 
@@ -13,6 +14,10 @@ export type ResumoFatura = {
   fatura: Fatura
   mesReferencia: string
   totalCentavos: number
+  /** RN-10 — soma dos pagamentos parciais. */
+  pagoParcialCentavos: number
+  /** RN-10 — o que falta pagar: total menos os parciais, nunca negativo. */
+  restanteCentavos: number
 }
 
 export type AvisoFatura = {
@@ -60,27 +65,44 @@ export class FaturaRepository implements Repository {
    * `detalharComParcelas`, que é uma chamada por fatura: usá-lo na lista seria
    * um N+1 sobre 13+ faturas por cartão.
    *
-   * LEFT JOIN e `COALESCE`: fatura sem parcela (criada por adiantamento ou por
-   * uma despesa depois excluída) precisa aparecer com total zero, não sumir.
+   * `COALESCE`: fatura sem parcela (criada por adiantamento ou por uma despesa
+   * depois excluída) precisa aparecer com total zero, não sumir.
+   *
+   * Subconsultas, e não JOIN: o total vinha de um LEFT JOIN com `parcela`, e o
+   * RN-10 trouxe uma segunda soma, a dos pagamentos parciais. Dois JOINs fariam
+   * o produto das duas tabelas — 2 parcelas x 2 pagamentos dobraria o total e o
+   * pago, sem erro nenhum. Cada soma na sua subconsulta não se enxerga.
    */
   listarResumoPorCartao(cartaoId: number): ResumoFatura[] {
-    type Row = FaturaRow & { total_centavos: number }
+    type Row = FaturaRow & { total_centavos: number; pago_parcial_centavos: number }
     const rows = this.db
       .prepare(
-        `SELECT f.*, COALESCE(SUM(p.valor_centavos), 0) AS total_centavos
+        `SELECT f.*,
+                COALESCE(
+                  (SELECT SUM(p.valor_centavos) FROM parcela p WHERE p.fatura_id = f.id), 0
+                ) AS total_centavos,
+                COALESCE(
+                  (SELECT SUM(pp.valor_centavos) FROM pagamento_parcial pp WHERE pp.fatura_id = f.id), 0
+                ) AS pago_parcial_centavos
            FROM fatura f
-           LEFT JOIN parcela p ON p.fatura_id = f.id
           WHERE f.cartao_id = ?
-          GROUP BY f.id
           ORDER BY f.mes_referencia`
       )
       .all(cartaoId) as Row[]
 
-    return rows.map((row) => ({
-      fatura: mapFatura(row),
-      mesReferencia: row.mes_referencia,
-      totalCentavos: Number(row.total_centavos)
-    }))
+    return rows.map((row) => {
+      const { totalCentavos, pagoParcialCentavos, restanteCentavos } = calcularRestanteDaFatura(
+        Number(row.total_centavos),
+        Number(row.pago_parcial_centavos)
+      )
+      return {
+        fatura: mapFatura(row),
+        mesReferencia: row.mes_referencia,
+        totalCentavos,
+        pagoParcialCentavos,
+        restanteCentavos
+      }
+    })
   }
 
   list(cartaoId?: number): Fatura[] {

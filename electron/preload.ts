@@ -45,6 +45,10 @@ import type {
   DesmarcarOcorrenciaPagaInput
 } from '@shared/ipc/despesa'
 import type {
+  ExcluirPagamentoParcialInput,
+  RegistrarPagamentoParcialInput
+} from '@shared/ipc/fatura'
+import type {
   CriarRendaRecorrenteInput,
   UpdateRendaInput,
   ListRendaOptions
@@ -213,7 +217,11 @@ contextBridge.exposeInMainWorld('api', {
     fechar: (faturaId: number) => ipcRenderer.invoke(FATURA_IPC_CHANNELS.fechar, faturaId),
     pagar: (faturaId: number, dataPagamento: string) =>
       ipcRenderer.invoke(FATURA_IPC_CHANNELS.pagar, faturaId, dataPagamento),
-    reabrir: (faturaId: number) => ipcRenderer.invoke(FATURA_IPC_CHANNELS.reabrir, faturaId)
+    reabrir: (faturaId: number) => ipcRenderer.invoke(FATURA_IPC_CHANNELS.reabrir, faturaId),
+    registrarPagamentoParcial: (input: RegistrarPagamentoParcialInput) =>
+      ipcRenderer.invoke(FATURA_IPC_CHANNELS.registrarPagamentoParcial, input),
+    excluirPagamentoParcial: (input: ExcluirPagamentoParcialInput) =>
+      ipcRenderer.invoke(FATURA_IPC_CHANNELS.excluirPagamentoParcial, input)
   },
   renda: {
     list: (options?: ListRendaOptions) => ipcRenderer.invoke(RENDA_IPC_CHANNELS.list, options),
