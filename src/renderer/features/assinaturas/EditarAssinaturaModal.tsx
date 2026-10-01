@@ -5,6 +5,7 @@ import { Button, Field, Input, Modal, SegmentedControl, Select } from '../../com
 import type { OpcaoSegmentada } from '../../components/ui'
 import { categoriasParaEdicao, rotuloDeCategoria } from '../../lib/categorias'
 import { centavosParaReais, ehValorValido, parseCentavos } from '../../lib/dinheiro'
+import { mensagemErro } from '../../lib/mensagem-erro'
 import styles from './assinaturas.module.css'
 
 type Props = {
@@ -76,7 +77,7 @@ export function EditarAssinaturaModal({
         await onAlterarLimite(limiteAlvo)
       }
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Erro ao salvar.')
+      setErro(mensagemErro(e, 'Erro ao salvar.'))
     } finally {
       setLoading(false)
     }

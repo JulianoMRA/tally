@@ -147,3 +147,30 @@ describe('EditarAssinaturaModal — categoria arquivada (RF-CAT-02)', () => {
     expect([...select.options].map((o) => o.textContent)).toEqual(['Moradia', 'Lazer (arquivada)'])
   })
 })
+
+// O erro do main chega embrulhado pelo Electron, e o modal o mostrava cru. Ele
+// passou a abrir também da tela de Faturas.
+describe('EditarAssinaturaModal — erro ao salvar', () => {
+  afterEach(cleanup)
+
+  it('mostra a mensagem sem o prefixo do Electron', async () => {
+    const onConfirmar = vi
+      .fn()
+      .mockRejectedValue(
+        new Error("Error invoking remote method 'despesa:atualizar': Error: Categoria inexistente.")
+      )
+    render(
+      <EditarAssinaturaModal
+        assinatura={assinatura()}
+        categorias={CATEGORIAS}
+        onConfirmar={onConfirmar}
+        onCancelar={vi.fn()}
+      />
+    )
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Salvar' }))
+
+    expect(await screen.findByText('Categoria inexistente.')).toBeTruthy()
+    expect(screen.queryByText(/Error invoking/)).toBeNull()
+  })
+})
