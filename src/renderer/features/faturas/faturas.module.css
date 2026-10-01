@@ -376,24 +376,94 @@
   width: 100%;
 }
 
-/* Tabela de parcelas */
-.colValor {
-  text-align: right;
+/* Tabela de parcelas, com a hierarquia da lista de Saídas (RF-DES-14): a mesma
+   parcela tinha um nome e um peso em cada tela. */
+
+/* O Panel usa overflow:hidden; aqui o excesso vira rolagem em vez de corte,
+   como em Saídas. */
+.tabelaWrap {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
 }
 
-.tagAssinatura {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 1px 6px;
-  font-size: var(--text-1);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+/* Piso da descrição: quem cede largura é sempre ela, e sem piso uma descrição
+   comprida quebrava em três linhas na janela estreita. */
+.colDescricao {
+  min-width: 140px;
+}
+
+/* Descrição e valor no tom principal; categoria e data descem um degrau.
+   `tbody td.x`, e não `.x`: o `.tabela td` do Table pinta toda célula com o tom
+   principal e vence uma classe sozinha. */
+tbody td.colCategoria,
+tbody td.colCompra {
+  color: var(--ink-2);
+}
+
+.colCompra {
+  width: 92px;
+  white-space: nowrap;
+}
+
+.compraApoio {
+  font-size: var(--text-2);
   color: var(--ink-3);
-  background: var(--bg-sunk);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-pill);
-  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Rótulo e valor da compra lado a lado ("1/6 de R$ 196,56"); na janela
+   estreita o valor desce para baixo do rótulo em vez de alargar a tabela. */
+.parcelaCelula {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+}
+
+.parcelaRotulo {
+  font-size: var(--text-2);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+/* "à vista" é a maioria das linhas de uma fatura. No mesmo tom da parcela, ele
+   afogava "1/6" e "mensal", que são o que a coluna existe para mostrar. */
+.parcelaRotulo[data-tom='apoio'] {
+  color: var(--ink-3);
+}
+
+.origem {
+  font-size: var(--text-2);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.colValor {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.valor {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* width:1% + nowrap encolhe a coluna até o conteúdo. */
+.colAcoes {
+  width: 1%;
+  white-space: nowrap;
+}
+
+/* Ações em tom de apoio, como em Saídas: "Editar" repetido em toda linha
+   formava uma coluna de palavras iguais disputando atenção com os valores.
+   Sobem de tom com o mouse na linha ou o foco dentro dela. */
+.colAcoes button {
+  color: var(--tom-acao, var(--ink-3));
+}
+
+tr:hover > .colAcoes,
+tr:focus-within > .colAcoes {
+  --tom-acao: var(--ink-2);
 }
 
 /* Motivo de valor e data não poderem mudar no modal de edição (RF-DES-10). */
