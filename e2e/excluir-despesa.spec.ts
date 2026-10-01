@@ -108,7 +108,9 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     // Abre o detalhe da fatura
     await irPara(page, 'Faturas')
     await focarCartao(page, 'Inter Paga E2E')
-    await page.getByText(labelMes, { exact: true }).click()
+    // A linha "Mês" do resumo saiu (o título já diz o mês): confere-se o
+    // título, em vez de clicar num texto que só repetia o que estava aberto.
+    await expect(page.getByRole('heading', { name: new RegExp(labelMes) })).toBeVisible()
     await expect(page.getByText('1/1')).toBeVisible()
 
     // Fecha e paga a fatura
@@ -171,9 +173,9 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     // fatura Fechada preserva o histórico.
     await page.getByRole('button', { name: 'Reabrir fatura' }).click()
     await page.getByRole('button', { name: 'Reabrir', exact: true }).click()
-    // Escopado ao resumo do painel: o trilho também exibe o status do cartão,
-    // e um getByText solto passou a casar com os dois.
-    const resumo = page.getByText('Status', { exact: true }).locator('..')
+    // Escopado à faixa de resumo: o trilho também exibe o status do cartão,
+    // e um getByText solto casaria com os dois.
+    const resumo = page.getByRole('region', { name: 'Resumo da fatura' })
     await expect(resumo.getByText('Fechada', { exact: true })).toBeVisible()
 
     // Até set/2026 o item ficava habilitado, o diálogo "irreversível" abria e só

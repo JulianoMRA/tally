@@ -14,6 +14,8 @@ import { EditarDespesaModal } from './EditarDespesaModal'
 import { PagarFaturaModal } from './PagarFaturaModal'
 import {
   Badge,
+  BolinhaDeCor,
+  BotaoSeta,
   Button,
   ConfirmDialog,
   EmptyState,
@@ -82,10 +84,16 @@ function motivoDoBloqueio(p: Parcela, bloqueio: MotivoBloqueioExclusao | undefin
   return null
 }
 
+/** A fatura vizinha para onde uma seta do título leva (RF-FAT-06). */
+export type Vizinha = { mesReferencia: string; abrir: () => void }
+
 type Props = {
   detalhe: FaturaDetalhada
   cartaoNome: string
   cartaoCor?: string
+  /** Sem vizinha, a seta fica desabilitada. */
+  anterior?: Vizinha
+  proxima?: Vizinha
   onFaturaAtualizada: (fatura: Fatura) => void
   onDetalheAtualizado: (detalhe: FaturaDetalhada) => void
 }
@@ -94,6 +102,8 @@ export function FaturaDetalhe({
   detalhe,
   cartaoNome,
   cartaoCor,
+  anterior,
+  proxima,
   onFaturaAtualizada,
   onDetalheAtualizado
 }: Props) {
@@ -237,108 +247,190 @@ export function FaturaDetalhe({
 
   return (
     <div className={styles.detalhe}>
-      <div className={`${styles.detalheHeader} ${styles.areaHeader}`}>
-        <div className={styles.detalheTitle}>
-          {cartaoCor && <span className={styles.cardChip} style={{ background: cartaoCor }} />}
-          <h2 className={styles.detalheTitleText}>
-            {cartaoNome} · {formatarMesReferencia(fatura.mesReferencia, { capitalizar: true })}
-          </h2>
-        </div>
+      {/* A navegação mora junto do título que ela muda. Eram setas de texto
+          nas pontas da largura inteira ("← agosto de 2026"), acima do título,
+          e "← sem anterior" era um botão desabilitado com texto. */}
+      <div className={styles.cabecalho}>
+        <BotaoSeta
+          direcao="anterior"
+          rotulo={
+            anterior
+              ? `Fatura anterior: ${formatarMesReferencia(anterior.mesReferencia)}`
+              : 'Sem fatura anterior'
+          }
+          onClick={anterior?.abrir}
+          disabled={!anterior}
+        />
+        <BolinhaDeCor cor={cartaoCor} />
+        <h2 className={styles.detalheTitleText}>
+          {cartaoNome} · {formatarMesReferencia(fatura.mesReferencia, { capitalizar: true })}
+        </h2>
+        <BotaoSeta
+          direcao="proxima"
+          rotulo={
+            proxima
+              ? `Próxima fatura: ${formatarMesReferencia(proxima.mesReferencia)}`
+              : 'Sem próxima fatura'
+          }
+          onClick={proxima?.abrir}
+          disabled={!proxima}
+        />
       </div>
 
-      {/* Ordem do DOM: header -> main -> aside. Em duas colunas quem posiciona
-          é o grid-template-areas, que ignora a ordem; empilhado, ela decide o
-          que vem primeiro — e o que se veio ver são as parcelas, não o resumo.
-          Nesta ordem a sequência de foco bate com a visual nos DOIS layouts. */}
-      <div className={styles.areaMain}>
-        {/* O total vem para o cabeçalho do painel, no formato que Saídas e
-            Busca já usam ("N lançamentos · R$ X"). Antes ele vivia numa faixa
-            própria no rodapé da tabela, e a mesma quantia aparecia de novo no
-            card de resumo logo abaixo, como "Total da fatura". Lado a lado
-            (>=1360px) a repetição passava; empilhado — que é o layout do
-            viewport padrão do app, 1266px — eram dois totais idênticos a poucos
-            centímetros um do outro. O do resumo é o que fica: ele senta junto do
-            status e do botão de pagar, que é onde o número vira decisão. */}
-        <Panel
-          title="Parcelas"
-          meta={`${parcelas.length} ${pluralizar('lançamento', parcelas.length)} · ${formatBRL(totalCentavos)}`}
-          flush
-        >
-          {parcelas.length === 0 ? (
-            <EmptyState title="Nenhuma parcela nesta fatura." />
+      {/* Faixa de resumo acima das parcelas (RF-FAT-03/06). Era um card
+          lateral a partir de 1360px e, na janela padrão (1266px), um card
+          empilhado DEPOIS da tabela: o total e "Marcar como paga" ficavam
+          abaixo de todas as parcelas. Numa linha só, ela cabe acima delas sem
+          empurrá-las para baixo da dobra. Sai a linha "Mês", que o título já
+          diz, e o total deixa a meta do painel, onde se repetia. */}
+      <section className={styles.faixa} aria-label="Resumo da fatura">
+        <div className={styles.faixaStatus}>
+          <Badge variant={statusVariant(kind)} />
+          {/* Paga diz quando foi paga; as outras dizem o aviso de prazo, no
+              tom do trilho. */}
+          {fatura.status.kind === 'Paga' ? (
+            <span className={styles.avisoPrazo}>
+              Paga em {formatarDataIso(fatura.status.pagaEm)}
+            </span>
           ) : (
-            <>
-              <Table>
-                <thead>
-                  <tr>
-                    <SortableHeader
-                      rotulo="Descrição"
-                      ativo={sortBy === 'descricao'}
-                      direcao={sortDir}
-                      onSort={() => handleSort('descricao')}
-                    />
-                    <SortableHeader
-                      rotulo="Parcela"
-                      ativo={sortBy === 'parcela'}
-                      direcao={sortDir}
-                      onSort={() => handleSort('parcela')}
-                    />
-                    <SortableHeader
-                      rotulo="Data"
-                      ativo={sortBy === 'data'}
-                      direcao={sortDir}
-                      onSort={() => handleSort('data')}
-                    />
-                    <SortableHeader
-                      rotulo="Valor"
-                      ativo={sortBy === 'valor'}
-                      direcao={sortDir}
-                      onSort={() => handleSort('valor')}
-                      className={styles.colValor}
-                      alinhamento="direita"
-                    />
-                    <SortableHeader
-                      rotulo="Status"
-                      ativo={sortBy === 'status'}
-                      direcao={sortDir}
-                      onSort={() => handleSort('status')}
-                    />
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {parcelasOrdenadas.map((p) => (
-                    <tr key={p.id}>
-                      <td>
-                        {detalhe.despesasPorParcela?.[p.id]?.descricao ?? `#${p.despesaId}`}
-                        {detalhe.despesasPorParcela?.[p.id]?.tipo === 'Assinatura' && (
-                          <span className={styles.tagAssinatura}>Assinatura</span>
-                        )}
-                      </td>
-                      <td className="mono">
-                        {p.total === null ? 'Mensal' : `${p.numero}/${p.total}`}
-                      </td>
-                      <td>
-                        {formatarDataIso(dataParcelaExibida(p, detalhe.despesasPorParcela?.[p.id]))}
-                      </td>
-                      <td className={`${styles.colValor} tnum`}>{formatBRL(p.valorCentavos)}</td>
-                      <td>
-                        <Badge variant={p.status === 'Paga' ? 'paid' : 'pending'} />
-                      </td>
-                      <td>
-                        <RowActions
-                          acoes={acoesDaParcela(p)}
-                          contexto={detalhe.despesasPorParcela?.[p.id]?.descricao}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </>
+            aviso && (
+              <span className={styles.avisoPrazo} data-tom={aviso.tom}>
+                {aviso.texto}
+              </span>
+            )
           )}
-        </Panel>
-      </div>
+        </div>
+
+        <dl className={styles.faixaDatas}>
+          <div className={styles.faixaData}>
+            <dt className={styles.faixaRotulo}>Fechamento</dt>
+            <dd className={styles.faixaValor}>{formatarDataIso(fatura.dataFechamento)}</dd>
+          </div>
+          <div className={styles.faixaData}>
+            <dt className={styles.faixaRotulo}>Vencimento</dt>
+            <dd className={styles.faixaValor}>{formatarDataIso(fatura.dataVencimento)}</dd>
+          </div>
+        </dl>
+
+        <div className={styles.faixaFim}>
+          <div className={styles.faixaTotal}>
+            <span className={styles.faixaRotulo}>Total da fatura</span>
+            <span className={`${styles.faixaTotalValor} tnum`}>{formatBRL(totalCentavos)}</span>
+          </div>
+          {kind === 'Aberta' && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setDialogo({ tipo: 'fechar' })}
+              disabled={ciclo.loading}
+            >
+              Fechar fatura
+            </Button>
+          )}
+          {kind === 'Fechada' && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setPagando(true)}
+              disabled={ciclo.loading}
+            >
+              Marcar como paga
+            </Button>
+          )}
+          {kind === 'Paga' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDialogo({ tipo: 'reabrir' })}
+              disabled={ciclo.loading}
+            >
+              Reabrir fatura
+            </Button>
+          )}
+        </div>
+
+        {ciclo.erro && !pagando && <p className={styles.erroAcao}>{ciclo.erro}</p>}
+      </section>
+
+      <Panel
+        title="Parcelas"
+        meta={`${parcelas.length} ${pluralizar('lançamento', parcelas.length)}`}
+        flush
+      >
+        {parcelas.length === 0 ? (
+          <EmptyState title="Nenhuma parcela nesta fatura." />
+        ) : (
+          <>
+            <Table>
+              <thead>
+                <tr>
+                  <SortableHeader
+                    rotulo="Descrição"
+                    ativo={sortBy === 'descricao'}
+                    direcao={sortDir}
+                    onSort={() => handleSort('descricao')}
+                  />
+                  <SortableHeader
+                    rotulo="Parcela"
+                    ativo={sortBy === 'parcela'}
+                    direcao={sortDir}
+                    onSort={() => handleSort('parcela')}
+                  />
+                  <SortableHeader
+                    rotulo="Data"
+                    ativo={sortBy === 'data'}
+                    direcao={sortDir}
+                    onSort={() => handleSort('data')}
+                  />
+                  <SortableHeader
+                    rotulo="Valor"
+                    ativo={sortBy === 'valor'}
+                    direcao={sortDir}
+                    onSort={() => handleSort('valor')}
+                    className={styles.colValor}
+                    alinhamento="direita"
+                  />
+                  <SortableHeader
+                    rotulo="Status"
+                    ativo={sortBy === 'status'}
+                    direcao={sortDir}
+                    onSort={() => handleSort('status')}
+                  />
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {parcelasOrdenadas.map((p) => (
+                  <tr key={p.id}>
+                    <td>
+                      {detalhe.despesasPorParcela?.[p.id]?.descricao ?? `#${p.despesaId}`}
+                      {detalhe.despesasPorParcela?.[p.id]?.tipo === 'Assinatura' && (
+                        <span className={styles.tagAssinatura}>Assinatura</span>
+                      )}
+                    </td>
+                    <td className="mono">
+                      {p.total === null ? 'Mensal' : `${p.numero}/${p.total}`}
+                    </td>
+                    <td>
+                      {formatarDataIso(dataParcelaExibida(p, detalhe.despesasPorParcela?.[p.id]))}
+                    </td>
+                    <td className={`${styles.colValor} tnum`}>{formatBRL(p.valorCentavos)}</td>
+                    <td>
+                      <Badge variant={p.status === 'Paga' ? 'paid' : 'pending'} />
+                    </td>
+                    <td>
+                      <RowActions
+                        acoes={acoesDaParcela(p)}
+                        contexto={detalhe.despesasPorParcela?.[p.id]?.descricao}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </>
+        )}
+      </Panel>
 
       {despesaEditar && (
         <EditarDespesaModal
@@ -367,83 +459,6 @@ export function FaturaDetalhe({
           onCancelar={() => setParcelaAdiantar(null)}
         />
       )}
-
-      <aside className={styles.areaAside}>
-        <div className={styles.resumoCard}>
-          <div className={styles.resumoLinha}>
-            <span className={styles.resumoLabel}>Mês</span>
-            <span className={styles.resumoValor}>
-              {formatarMesReferencia(fatura.mesReferencia, { capitalizar: true })}
-            </span>
-          </div>
-          <div className={styles.resumoLinha}>
-            <span className={styles.resumoLabel}>Fechamento</span>
-            <span className={styles.resumoValor}>{formatarDataIso(fatura.dataFechamento)}</span>
-          </div>
-          <div className={styles.resumoLinha}>
-            <span className={styles.resumoLabel}>Vencimento</span>
-            <span className={styles.resumoValor}>{formatarDataIso(fatura.dataVencimento)}</span>
-          </div>
-          <div className={styles.resumoLinha}>
-            <span className={styles.resumoLabel}>Status</span>
-            <span className={styles.statusValor}>
-              <Badge variant={statusVariant(kind)} />
-              {/* Paga diz quando foi paga: o `pagaEm` era gravado e não
-                  aparecia em lugar nenhum. As outras dizem o aviso de prazo,
-                  no tom do trilho. */}
-              {fatura.status.kind === 'Paga' ? (
-                <span className={styles.avisoPrazo}>
-                  Paga em {formatarDataIso(fatura.status.pagaEm)}
-                </span>
-              ) : (
-                aviso && (
-                  <span className={styles.avisoPrazo} data-tom={aviso.tom}>
-                    {aviso.texto}
-                  </span>
-                )
-              )}
-            </span>
-          </div>
-          <div className={`${styles.resumoLinha} ${styles.resumoTotalLinha}`}>
-            <span className={styles.resumoLabel}>Total da fatura</span>
-            <span className={styles.resumoTotalValor}>{formatBRL(totalCentavos)}</span>
-          </div>
-
-          <div className={styles.cicloActions}>
-            {kind === 'Aberta' && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setDialogo({ tipo: 'fechar' })}
-                disabled={ciclo.loading}
-              >
-                Fechar fatura
-              </Button>
-            )}
-            {kind === 'Fechada' && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setPagando(true)}
-                disabled={ciclo.loading}
-              >
-                Marcar como paga
-              </Button>
-            )}
-            {kind === 'Paga' && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setDialogo({ tipo: 'reabrir' })}
-                disabled={ciclo.loading}
-              >
-                Reabrir fatura
-              </Button>
-            )}
-            {ciclo.erro && !pagando && <p className={styles.erroAcao}>{ciclo.erro}</p>}
-          </div>
-        </div>
-      </aside>
 
       {pagando && (
         <PagarFaturaModal

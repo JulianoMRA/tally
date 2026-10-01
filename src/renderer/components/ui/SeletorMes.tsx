@@ -1,4 +1,5 @@
 import { mesReferenciaAnterior, proxMesReferencia } from '@domain/services/mes-referencia'
+import { BotaoSeta } from './BotaoSeta'
 import { Input } from './Input'
 import styles from './seletor-mes.module.css'
 
@@ -26,14 +27,11 @@ interface SeletorMesProps {
 export function SeletorMes({ valor, onChange, label, id, className }: SeletorMesProps) {
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
-      <button
-        type="button"
-        className={styles.navBtn}
+      <BotaoSeta
+        direcao="anterior"
+        rotulo="Mês anterior"
         onClick={() => onChange(mesReferenciaAnterior(valor))}
-        aria-label="Mês anterior"
-      >
-        ←
-      </button>
+      />
       <Input
         id={id}
         type="month"
@@ -43,14 +41,11 @@ export function SeletorMes({ valor, onChange, label, id, className }: SeletorMes
         className={styles.mesInput}
         aria-label={label}
       />
-      <button
-        type="button"
-        className={styles.navBtn}
+      <BotaoSeta
+        direcao="proxima"
+        rotulo="Próximo mês"
         onClick={() => onChange(proxMesReferencia(valor))}
-        aria-label="Próximo mês"
-      >
-        →
-      </button>
+      />
     </div>
   )
 }

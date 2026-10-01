@@ -31,7 +31,9 @@ test.describe('Deep-link de faturas (query string)', () => {
     // --- Abre a fatura pelo fluxo normal e captura a URL com deep-link ---
     await irPara(page, 'Faturas')
     await focarCartao(page, 'Inter Deep E2E')
-    await page.getByText('Junho de 2026', { exact: true }).click()
+    // A linha "Mês" do resumo saiu (o título já diz o mês): confere-se o
+    // título, em vez de clicar num texto que só repetia o que estava aberto.
+    await expect(page.getByRole('heading', { name: /Junho de 2026/ })).toBeVisible()
     await expect(page.getByText('1/1')).toBeVisible()
 
     const hashDetalhe = await page.evaluate(() => window.location.hash)

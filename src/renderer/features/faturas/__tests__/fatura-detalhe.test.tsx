@@ -313,3 +313,90 @@ describe('FaturaDetalhe — aviso do adiantamento', () => {
     expect(await screen.findByText('Nenhuma parcela para adiantar para esta fatura.')).toBeTruthy()
   })
 })
+
+// RF-FAT-03/06 — o resumo era um card lateral; na janela padrão ele caía para
+// baixo das parcelas, com o total e "Marcar como paga" depois de 36 linhas.
+describe('FaturaDetalhe — faixa de resumo', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 29, 12))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+  })
+
+  it('traz status, datas, total e a ação, antes das parcelas', () => {
+    renderizarCom(comParcela({ kind: 'Fechada' }, despesa(), parcela()))
+
+    const faixa = screen.getByRole('region', { name: 'Resumo da fatura' })
+    expect(within(faixa).getByText('Fechada')).toBeTruthy()
+    expect(within(faixa).getByText('24/09/2026')).toBeTruthy()
+    expect(within(faixa).getByText('01/10/2026')).toBeTruthy()
+    expect(within(faixa).getByText('Total da fatura')).toBeTruthy()
+    expect(within(faixa).getByRole('button', { name: 'Marcar como paga' })).toBeTruthy()
+
+    const tabela = screen.getByRole('table')
+    expect(faixa.compareDocumentPosition(tabela) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  // O título já diz o mês; a linha "Mês" repetia.
+  it('não repete o mês numa linha própria', () => {
+    renderizarCom(comParcela({ kind: 'Fechada' }, despesa(), parcela()))
+
+    expect(screen.queryByText('Mês', { exact: true })).toBeNull()
+  })
+
+  // O total aparecia no card do trilho, na meta do painel e no resumo.
+  it('a meta das parcelas conta os lançamentos sem repetir o total', () => {
+    renderizarCom(comParcela({ kind: 'Fechada' }, despesa(), parcela()))
+
+    const meta = screen.getByText('1 lançamento')
+    expect(meta.textContent).not.toMatch(/R\$/)
+  })
+})
+
+// As setas eram texto solto nas pontas da largura inteira, acima do título que
+// elas mudam; "← sem anterior" era um botão desabilitado com texto.
+describe('FaturaDetalhe — navegação junto do título', () => {
+  afterEach(cleanup)
+
+  it('as setas nomeiam a fatura para onde levam', async () => {
+    const anterior = vi.fn()
+    const proxima = vi.fn()
+    vi.stubGlobal(
+      'window',
+      Object.assign(window, { api: { categoria: { list: vi.fn().mockResolvedValue([]) } } })
+    )
+    render(
+      <ToastProvider>
+        <FaturaDetalhe
+          detalhe={detalhe({ kind: 'Aberta' })}
+          cartaoNome="Inter"
+          cartaoCor="#f70"
+          anterior={{ mesReferencia: '2026-08', abrir: anterior }}
+          proxima={{ mesReferencia: '2026-10', abrir: proxima }}
+          onFaturaAtualizada={() => {}}
+          onDetalheAtualizado={() => {}}
+        />
+      </ToastProvider>
+    )
+    const usuario = userEvent.setup()
+
+    await usuario.click(screen.getByRole('button', { name: 'Fatura anterior: agosto de 2026' }))
+    await usuario.click(screen.getByRole('button', { name: 'Próxima fatura: outubro de 2026' }))
+
+    expect(anterior).toHaveBeenCalledTimes(1)
+    expect(proxima).toHaveBeenCalledTimes(1)
+  })
+
+  it('sem vizinha, a seta fica desabilitada', () => {
+    renderizarCom(detalhe({ kind: 'Aberta' }))
+
+    const semAnterior = screen.getByRole('button', { name: 'Sem fatura anterior' })
+    expect((semAnterior as HTMLButtonElement).disabled).toBe(true)
+    expect(
+      (screen.getByRole('button', { name: 'Sem próxima fatura' }) as HTMLButtonElement).disabled
+    ).toBe(true)
+  })
+})

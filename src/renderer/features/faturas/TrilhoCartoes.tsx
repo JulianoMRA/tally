@@ -8,7 +8,7 @@ import { escolherFaturaCorrente } from './escolher-fatura-corrente'
 import { mesDivergenteDoPainel } from './escopo-do-trilho'
 import { avisoDePrazo, type AvisoDePrazo } from './aviso-fechamento'
 import { statusVariant } from './status-variant'
-import { Badge } from '../../components/ui'
+import { Badge, BolinhaDeCor } from '../../components/ui'
 import styles from './faturas.module.css'
 
 type Props = {
@@ -83,7 +83,7 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
             onClick={() => onSelecionar(cartao.id)}
           >
             <span className={styles.trilhoTopo}>
-              <span className={styles.cardChip} style={{ background: cartao.cor }} />
+              <BolinhaDeCor cor={cartao.cor} />
               <span className={styles.trilhoNome}>{cartao.nome}</span>
               {corrente && <Badge variant={statusVariant(corrente.fatura.status.kind)} />}
             </span>

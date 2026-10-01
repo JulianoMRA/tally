@@ -56,7 +56,7 @@ test.describe('Fatura vencida', () => {
     await expect(page.getByLabel('Mês', { exact: true })).toHaveValue('2026-05')
     await expect(page.getByText(/vencida há \d+ dias?/)).toBeVisible()
 
-    // Detalhe da fatura: o aside de status também exibe o selo.
+    // Detalhe da fatura: a faixa de resumo também exibe o selo.
     await ir(page, 'Faturas')
     await focarCartao(page, 'Inter Vencida E2E')
     // O cartão em foco já abre a fatura dele: não há mais lista para clicar
