@@ -90,12 +90,13 @@ describe('migration 0003_drop_colunas_mortas', () => {
       '0011_avulso_sem_fonte',
       '0012_realinha_data_referencia_apos_adiantamento',
       '0013_recorrente_fora_de_cartao',
-      '0014_categoria_sem_tipo'
+      '0014_categoria_sem_tipo',
+      '0015_pagamento_parcial'
     ])
 
     const second = runMigrations(db, files)
     expect(second.applied).toEqual([])
-    expect(second.skipped).toHaveLength(14)
+    expect(second.skipped).toHaveLength(15)
   })
 
   it('preserva categoria + renda inseridas antes do upgrade (simulacao real)', () => {

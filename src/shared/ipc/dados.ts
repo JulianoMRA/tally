@@ -120,6 +120,19 @@ const recebimentoRowSchema = z.looseObject({
   updated_at: timestampSchema
 })
 
+// `positive`, e não o `centavosSchema` das outras tabelas (min 0): pagamento
+// parcial de zero não existe — o CHECK da 0015 é `> 0`. A data passa pelo
+// `dataIsoSchema` porque o CHECK do banco confere só o formato, e 30/02
+// entraria pela importação.
+const pagamentoParcialRowSchema = z.looseObject({
+  id: idSchema,
+  fatura_id: idSchema,
+  valor_centavos: z.number().int().positive(),
+  data_pagamento: dataIsoSchema,
+  created_at: timestampSchema,
+  updated_at: timestampSchema
+})
+
 export const exportPayloadSchema = z.object({
   formatVersion: z.literal(1),
   exportedAt: z.string(),
@@ -139,7 +152,9 @@ export const exportPayloadSchema = z.object({
     // Tabelas da fase 11. `default([])` mantém importável um export antigo que
     // não as tinha (formatVersion segue 1).
     tag: z.array(tagRowSchema).default([]),
-    despesa_tag: z.array(despesaTagRowSchema).default([])
+    despesa_tag: z.array(despesaTagRowSchema).default([]),
+    // Tabela da migration 0015 (RN-10). Mesmo `default([])`, pelo mesmo motivo.
+    pagamento_parcial: z.array(pagamentoParcialRowSchema).default([])
   })
 })
 

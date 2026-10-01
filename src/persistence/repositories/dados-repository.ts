@@ -5,9 +5,13 @@ import { exportPayloadSchema, type ExportPayload } from '../../shared/ipc/dados'
 // Nomes de tabela sao constantes do proprio codigo (nunca vem do arquivo),
 // entao a interpolacao em SQL aqui e segura. Os valores sao sempre parametrizados.
 // Ordem segura para FKs: filhos antes dos pais ao apagar; pais antes dos filhos ao inserir.
+// `pagamento_parcial` referencia `fatura` com RESTRICT: fora destas listas, ou
+// depois de `fatura` na primeira, importar sobre uma base que ja tem pagamento
+// parcial morreria no `DELETE FROM fatura`.
 const ORDEM_DELETE = [
   'despesa_tag',
   'parcela',
+  'pagamento_parcial',
   'recebimento',
   'fatura',
   'tag',
@@ -25,6 +29,7 @@ const ORDEM_INSERT = [
   'despesa',
   'fatura',
   'parcela',
+  'pagamento_parcial',
   'recebimento',
   'tag',
   'despesa_tag'
@@ -80,7 +85,8 @@ export class DadosRepository implements Repository {
         renda: this.lerTabela('renda'),
         recebimento: this.lerTabela('recebimento'),
         tag: this.lerTabela('tag'),
-        despesa_tag: this.lerTabela('despesa_tag')
+        despesa_tag: this.lerTabela('despesa_tag'),
+        pagamento_parcial: this.lerTabela('pagamento_parcial')
       }
     })
   }

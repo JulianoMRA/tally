@@ -113,9 +113,23 @@ function payloadValido(): ExportPayload {
       // `ExportPayload` é. Faltando aqui, o `as` só passava por sorte da
       // heurística de sobreposição do TS.
       tag: [],
-      despesa_tag: []
+      despesa_tag: [],
+      // Mesma mecânica de `tag`: a tabela nasceu na migration 0015 e tem
+      // `.default([])` para o export anterior a ela continuar importável.
+      pagamento_parcial: []
     }
   } as ExportPayload
+}
+
+function pagamentoValido(): Record<string, unknown> {
+  return {
+    id: 1,
+    fatura_id: 1,
+    valor_centavos: 20000,
+    data_pagamento: '2026-06-02',
+    created_at: '2026-06-02 10:00:00',
+    updated_at: '2026-06-02 10:00:00'
+  }
 }
 
 describe('exportPayloadSchema — validação por tabela', () => {
@@ -198,6 +212,51 @@ describe('exportPayloadSchema — validação por tabela', () => {
   it('rejeita dia_esperado fora de 1..31 na renda', () => {
     const p = payloadValido()
     ;(p.tables.renda[0] as Record<string, unknown>).dia_esperado = 32
+    expect(() => exportPayloadSchema.parse(p)).toThrow()
+  })
+})
+
+/**
+ * RN-10 — a tabela `pagamento_parcial` entra no export (migration 0015).
+ *
+ * O `formatVersion` segue 1: um backup gerado antes dela não tem a chave, e
+ * não pode deixar de ser importável por isso — mesma promessa feita a `tag` e
+ * `despesa_tag` na fase 11.
+ */
+describe('exportPayloadSchema — pagamento parcial', () => {
+  it('aceita export anterior à tabela, sem a chave, como lista vazia', () => {
+    const p = payloadValido()
+    delete (p.tables as Record<string, unknown>).pagamento_parcial
+
+    const parsed = exportPayloadSchema.parse(p)
+
+    expect(parsed.tables.pagamento_parcial).toEqual([])
+  })
+
+  it('aceita um pagamento parcial válido', () => {
+    const p = payloadValido()
+    p.tables.pagamento_parcial = [pagamentoValido()] as ExportPayload['tables']['pagamento_parcial']
+
+    const parsed = exportPayloadSchema.parse(p)
+
+    expect(parsed.tables.pagamento_parcial).toHaveLength(1)
+  })
+
+  // O CHECK do banco pegaria os dois primeiros dentro da transação; a data
+  // impossível não — o CHECK confere só o formato. É o schema que barra.
+  it.each([
+    ['valor zero', { valor_centavos: 0 }],
+    ['valor negativo', { valor_centavos: -100 }],
+    ['valor fracionário', { valor_centavos: 10.5 }],
+    ['data de calendário impossível', { data_pagamento: '2026-02-30' }],
+    ['data fora do formato', { data_pagamento: '02/06/2026' }],
+    ['fatura_id nulo', { fatura_id: null }]
+  ])('rejeita pagamento parcial com %s', (_caso, campo) => {
+    const p = payloadValido()
+    p.tables.pagamento_parcial = [
+      { ...pagamentoValido(), ...campo }
+    ] as ExportPayload['tables']['pagamento_parcial']
+
     expect(() => exportPayloadSchema.parse(p)).toThrow()
   })
 })

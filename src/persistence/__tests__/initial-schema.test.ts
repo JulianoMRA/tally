@@ -10,6 +10,7 @@ const EXPECTED_TABLES = [
   'despesa_tag',
   'fatura',
   'orcamento',
+  'pagamento_parcial',
   'parcela',
   'recebimento',
   'renda',
@@ -167,7 +168,8 @@ describe('migration 0001_initial_schema', () => {
       '0011_avulso_sem_fonte',
       '0012_realinha_data_referencia_apos_adiantamento',
       '0013_recorrente_fora_de_cartao',
-      '0014_categoria_sem_tipo'
+      '0014_categoria_sem_tipo',
+      '0015_pagamento_parcial'
     ])
   })
 })
