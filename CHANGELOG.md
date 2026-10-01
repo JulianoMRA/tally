@@ -6,6 +6,36 @@ vista técnico.
 
 ---
 
+## v1.19.0 — Faturas: a regra que errava no dia de pagar (out/2026)
+
+---
+
+**O que esta versão é.** O redesenho da tela de Faturas em quatro fases (PRs #156 a #159), pedido logo depois da v1.18.0: "analise as melhorias feitas na tela de Saídas e proponha as melhorias na tela de Faturas". Nenhuma migration, nenhuma dependência nova; dois campos opcionais novos no detalhe da fatura. Cobre **RF-FAT-03**, **RF-FAT-04**, **RF-FAT-06**, **RF-CAR-02**, **RF-DES-09**, **RF-DES-10**, **RN-03** e a redação do **RN-06**. O plano, com os 25 requisitos, fica em `docs/design/PLANO-FATURAS.md`.
+
+**Faturas estava onde Saídas estava antes da v1.18.0** — tabela sem hierarquia, a mesma parcela com um nome em cada tela, três bordas direitas — e tinha defeitos próprios, mais sérios. A análise os achou lendo o código; cada um virou teste vermelho antes da correção.
+
+**A fatura a pagar sumia do card no dia do vencimento.** A regra do RF-FAT-06 punha o mês de referência atual primeiro. Num cartão que vence no mês seguinte ao fechamento (fecha 24, vence 01, o caso que o RN-01 já descreve), a fatura de setembro vence em 01/10 — e no dia 01 o card e o painel trocavam para a de outubro, Aberta. A fatura corrente passa a ser, entre as não pagas com valor **do mês anterior em diante**, a de vencimento mais próximo, inclusive vencida; sem nenhuma, a mais recente. A mesma regra tira do card a fatura já paga, que ficava ali enquanto a próxima acumulava. A janela de um mês não estava na regra aprovada e entrou no detalhamento: sem ela, quem importou histórico ou não marca as faturas como pagas veria no card a mais antiga do cartão, "vencida há 200 dias". Essas ficam no histórico, na aba "A pagar".
+
+**Fatura de cartão arquivado não tinha onde ser paga.** A tela carregava só os cartões ativos, enquanto a Visão mensal, os avisos do sistema e o saldo (RN-08) seguiam contando as faturas dele. Trocar de cartão no meio de uma compra em 12x deixava as parcelas no saldo e fora de alcance, e o link da Visão mensal caía em outro cartão dizendo que "a fatura desse link não existe mais". O arquivado continua no trilho enquanto tiver fatura a pagar, com o selo, e enquanto estiver em foco — escrever o E2E mostrou que pagar a última fatura dele o tiraria do trilho debaixo do painel.
+
+**A fatura nasce sempre Aberta, e Faturas não sabia disso.** O fechamento automático rodava no boot, no timer de uma hora e ao abrir a Visão mensal. Um lançamento retroativo deixava a fatura Aberta em Faturas — oferecendo "Fechar fatura", sem aviso de vencida — e Fechada na Visão mensal, ao mesmo tempo. A tela passa a aplicar o RN-06 ao carregar. **Dois specs afirmavam o estado atrasado**: `excluir-despesa` fechava na mão uma fatura que já deveria estar fechada, e `assinaturas` cancelava uma assinatura retroativa esperando que ela sumisse de todos os meses — o que só acontecia porque as faturas passadas seguiam Abertas. O segundo não estava no mapeamento do plano; foi a suíte inteira que o achou.
+
+**Ações que a tela oferecia sabendo que iam falhar.** Excluir conferia só a parcela da linha, e a regra olha todas as parcelas da despesa: numa fatura Fechada, e numa parcelada cuja primeira parcela já tinha fechado, o usuário confirmava "Esta ação é irreversível" e só então recebia "Exclusão bloqueada". O detalhe da fatura traz o bloqueio por despesa, calculado no main com o mesmo `podeDeletarDespesa`, e o item fica desabilitado com o motivo. O modal de edição trava valor e data da compra à vista em fatura fechada. Adiantar sugeria a fatura **seguinte** à que estava na tela (o modal excluía a atual, contra o padrão do RN-03), o domínio não conferia a direção — dava para "adiantar" para uma fatura mais distante — e o aviso repetia a quantidade pedida mesmo quando o repositório movia menos, ou nada. O diálogo de fechar dizia o contrário do RN-06. E o ciclo da fatura, o adiantamento e os dois modais de edição mostravam o erro do main com o prefixo do Electron; com a data de pagamento apagada, o card exibia o JSON do zod. Marcar como paga virou diálogo, com a data validada pelo mesmo schema do main.
+
+**Prazo com tom, e a data do pagamento.** "vencida há 19 dias" tinha no trilho o mesmo cinza de um vencimento distante, e a fatura Fechada a dois dias do prazo não avisava nada — enquanto a notificação do sistema já dizia "vence em 2 dias". Um `avisoDePrazo` só, com o tom, serve o trilho, a faixa de resumo e o card da Visão mensal. A fatura paga diz quando foi paga: a data era gravada e não aparecia em lugar nenhum.
+
+**Estrutura.** O resumo era um card lateral a partir de 1360px e, na janela padrão, um card empilhado depois da tabela: o total e "Marcar como paga" ficavam abaixo de todas as parcelas. Virou uma faixa acima delas. As setas de navegação, que eram textos soltos nas pontas da largura inteira, moram junto do título — o botão saiu do `SeletorMes` e virou o primitivo `BotaoSeta`. Detalhe, faixa e histórico terminam na mesma borda, medida por `faturas-geometria.spec.ts` em três larguras.
+
+**A tabela fala a língua de Saídas.** "à vista" onde dizia "1/1", "mensal" onde dizia "Mensal" mais um selo, "1/12 de R$ 4.800,00", "desde 03/2024" no lugar do dia 01 que o app inventava para a assinatura. O rótulo vem de `descreverOcorrencia`, a mesma função de Saídas, calculada no main. Saiu a coluna Status — toda parcela de uma fatura tem o status dela, e a coluna repetia "Pendente" em todas as linhas —, entrou a categoria com a cor, e a ordenação passou ao `useOrdenacao` compartilhado.
+
+**A semente do E2E usava UTC.** A suíte da terceira fase rodou às 21h55 do último dia do mês e oito casos de Saídas e Rendas falharam procurando "Feira no Pix": a semente calculava "hoje" com `toISOString()`, e das 21h à meia-noite (UTC-3) esse "hoje" já era o dia seguinte — no caso, o mês seguinte, fora do mês que as telas abrem. Sem relação com a fase, e os mesmos specs tinham passado mais cedo com o mesmo código. `emDias` passou a usar a data local, como o app. Fica anotado: `scripts/smoke-visual.mjs` e `marcar-ocorrencia-paga.spec.ts` ainda usam UTC.
+
+**Testes.** Unitários de 1512 para **1619**, em 163 arquivos, com os pisos por camada atendidos — entre eles os primeiros testes de página de `FaturasPage`, `FaturaDetalhe` e `HistoricoFaturas` e o primeiro dos handlers de fatura. E2E de 133 para **139 casos**, em 40 arquivos, com **a suíte inteira verde ao fim de cada uma das quatro fases**; três specs novos (cartão arquivado, adiantamento — que não tinha nenhum — e a borda direita). Uma lição de ferramenta: a suíte leva de cinco a dez minutos e, rodada em primeiro plano, foi cortada no meio pelo limite de tempo — as falhas daquela rodada eram do corte, e ela foi descartada.
+
+**Fora desta versão, anotado.** Saídas tem dois dos mesmos defeitos — Excluir oferecido onde a regra bloqueia, e o modal sem a trava para compra à vista em fatura fechada —, e corrigi-los pede dado novo no IPC de lá. Busca por descrição dentro da fatura ficou fora por decisão.
+
+---
+
 ## v1.18.0 — Saídas: o incômodo era geometria e hierarquia (set/2026)
 
 ---
