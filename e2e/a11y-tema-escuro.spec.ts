@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import type { Page } from '@playwright/test'
 import { test, expect } from './fixtures/electron-app'
 import { levarFaturasAoFimDoCiclo } from './fixtures/ciclo-de-vida'
+import { registrarPagamentoParcialNaSemente } from './fixtures/pagamento-parcial'
 import { semear } from './fixtures/seed'
 
 /**
@@ -105,4 +106,18 @@ test.describe('Acessibilidade no escuro — ciclo de vida da fatura', () => {
       await varrer(page, `${pagina.link} (escuro, ciclo de vida)`)
     })
   }
+})
+
+// A faixa com "Falta pagar", a lista de pagamentos e o contexto do trilho só
+// existem com pagamento parcial, que o `semear` não cria (RF-FAT-07).
+test.describe('Acessibilidade no escuro — pagamento parcial', () => {
+  test('Faturas com pagamento parcial: sem violações serious ou critical', async ({ app }) => {
+    const { page } = await semear(app)
+    await registrarPagamentoParcialNaSemente(page)
+
+    await page.getByRole('link', { name: 'Faturas' }).click()
+    await expect(page.getByRole('region', { name: 'Pagamentos parciais' })).toBeVisible()
+
+    await varrer(page, 'Faturas (escuro, pagamento parcial)')
+  })
 })

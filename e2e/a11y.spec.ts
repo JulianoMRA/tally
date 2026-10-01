@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test'
 import { test, expect } from './fixtures/electron-app'
 import { acionarNoMenuDaLinha } from './fixtures/acoes-de-linha'
 import { levarFaturasAoFimDoCiclo } from './fixtures/ciclo-de-vida'
+import { registrarPagamentoParcialNaSemente } from './fixtures/pagamento-parcial'
 import { semear } from './fixtures/seed'
 
 // Varredura de acessibilidade (axe-core) nas telas principais.
@@ -176,4 +177,32 @@ test.describe('Acessibilidade (axe-core) — ciclo de vida da fatura', () => {
       await varrer(page, `${pagina.link} (ciclo de vida)`)
     })
   }
+})
+
+/**
+ * Pagamento parcial (RF-FAT-07). A faixa com "Falta pagar", a lista de
+ * pagamentos, a linha de contexto do trilho e o diálogo de registro só existem
+ * com um dado que o `semear` não cria — a mesma mecânica que escondeu os três
+ * defeitos de contraste anteriores.
+ */
+test.describe('Acessibilidade (axe-core) — pagamento parcial', () => {
+  test('Faturas com pagamento parcial: sem violações serious ou critical', async ({ app }) => {
+    const { page } = await semear(app)
+    await registrarPagamentoParcialNaSemente(page)
+
+    await page.getByRole('link', { name: 'Faturas' }).click()
+    await expect(page.getByRole('region', { name: 'Pagamentos parciais' })).toBeVisible()
+
+    await varrer(page, 'Faturas (pagamento parcial)')
+  })
+
+  test('diálogo de pagamento parcial', async ({ app }) => {
+    const { page } = await semear(app)
+    await page.getByRole('link', { name: 'Faturas' }).click()
+
+    await page.getByRole('button', { name: 'Pagamento parcial' }).click()
+    await expect(page.getByRole('dialog', { name: 'Registrar pagamento parcial' })).toBeVisible()
+
+    await varrer(page, 'RegistrarPagamentoParcialModal')
+  })
 })
