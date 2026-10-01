@@ -156,6 +156,44 @@ describe('ParcelaRepository', () => {
     })
   })
 
+  // O menor número separa a parcelada criada do zero (começa na 1) da
+  // cadastrada em andamento, e o detalhe da fatura precisa dele para rotular
+  // a parcela como a lista de Saídas rotula.
+  describe('menorNumeroPorDespesa', () => {
+    it('devolve o menor número de cada despesa, em qualquer ordem de criação', () => {
+      const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+      const catId = inserirCategoria(db)
+      const faturaId = inserirFatura(db, cartaoId, '2026-06')
+      const doZero = inserirDespesa(db, catId, cartaoId, '2026-06-03', 3000, 'Parcelada')
+      const emAndamento = inserirDespesa(db, catId, cartaoId, '2026-06-03', 2000, 'Parcelada')
+      for (const [despesaId, numero] of [
+        [doZero, 2],
+        [doZero, 1],
+        [emAndamento, 7],
+        [emAndamento, 8]
+      ] as const) {
+        repo.criar({
+          despesaId,
+          faturaId,
+          numero,
+          total: 12,
+          valorCentavos: 1000,
+          dataReferencia: '2026-06-01'
+        })
+      }
+
+      const menores = repo.menorNumeroPorDespesa([doZero, emAndamento])
+
+      expect(menores.get(doZero)).toBe(1)
+      expect(menores.get(emAndamento)).toBe(7)
+    })
+
+    it('despesa sem parcela fica fora do mapa, e lista vazia devolve mapa vazio', () => {
+      expect(repo.menorNumeroPorDespesa([999]).size).toBe(0)
+      expect(repo.menorNumeroPorDespesa([]).size).toBe(0)
+    })
+  })
+
   describe('adiantar', () => {
     it('move as N parcelas mais futuras para a fatura destino', () => {
       const cartaoId = inserirCartao(db, 'Nubank', 15, 22)

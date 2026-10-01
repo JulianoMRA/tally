@@ -57,6 +57,29 @@ export class ParcelaRepository implements Repository {
     return rows.map(mapParcela)
   }
 
+  /**
+   * Menor número de parcela de cada despesa, em uma query. É o que separa a
+   * parcelada criada do zero (começa na 1) da cadastrada em andamento — ver
+   * `descreverOcorrencia`. A lista de Saídas obtém o mesmo dado por subquery;
+   * aqui quem pede é o detalhe da fatura, que parte das parcelas dela.
+   */
+  menorNumeroPorDespesa(despesaIds: readonly number[]): Map<number, number> {
+    const menores = new Map<number, number>()
+    const ids = [...new Set(despesaIds)]
+    if (ids.length === 0) return menores
+    const placeholders = ids.map(() => '?').join(',')
+    const rows = this.db
+      .prepare(
+        `SELECT despesa_id, MIN(numero) AS menor
+           FROM parcela
+          WHERE despesa_id IN (${placeholders})
+          GROUP BY despesa_id`
+      )
+      .all(...ids) as { despesa_id: number; menor: number }[]
+    for (const row of rows) menores.set(row.despesa_id, row.menor)
+    return menores
+  }
+
   adiantar(input: { despesaId: number; quantidade: number; faturaDestinoId: number }): {
     movidas: Parcela[]
     faturasAfetadas: number[]
