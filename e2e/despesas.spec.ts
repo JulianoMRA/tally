@@ -45,8 +45,9 @@ test.describe('Despesa única + Fatura', () => {
     await focarCartao(page, 'Inter E2E')
     await expect(page.getByRole('heading', { name: /Inter E2E · Junho de 2026/ })).toBeVisible()
 
-    // Parcela 1/1 com valor R$ 50,00 (espaço pode ser non-breaking → regex tolerante)
-    await expect(page.getByText('1/1')).toBeVisible()
+    // Compra à vista com valor R$ 50,00 (espaço pode ser non-breaking → regex
+    // tolerante). A fatura diz "à vista", como Saídas — até set/2026 dizia "1/1".
+    await expect(page.getByRole('table').getByText('à vista')).toBeVisible()
     await expect(page.getByRole('cell', { name: /R\$\s*50,00/ })).toBeVisible()
 
     // O total vive no card de resumo, junto do status e do botao de pagar.
