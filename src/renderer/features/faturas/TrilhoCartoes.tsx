@@ -7,6 +7,7 @@ import { mesAtualReferencia } from '../../lib/mes-atual'
 import { escolherFaturaCorrente } from './escolher-fatura-corrente'
 import { mesDivergenteDoPainel } from './escopo-do-trilho'
 import { avisoDePrazo, type AvisoDePrazo } from './aviso-fechamento'
+import { contextoDoParcial, quitadaPorParciais } from './descrever-parcial'
 import { statusVariant } from './status-variant'
 import { Badge, BolinhaDeCor } from '../../components/ui'
 import styles from './faturas.module.css'
@@ -61,7 +62,10 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
       {grupos.map(({ cartao, faturas }) => {
         const corrente = escolherFaturaCorrente(faturas, mesAtual)
         const ativo = cartao.id === cartaoSelecionadoId
-        const aviso = corrente ? avisoDePrazo(corrente.fatura, hoje) : null
+        const aviso = corrente
+          ? avisoDePrazo(corrente.fatura, hoje, quitadaPorParciais(corrente))
+          : null
+        const parcial = corrente ? contextoDoParcial(corrente) : null
         const divergencia = mesDivergenteDoPainel(
           corrente?.mesReferencia ?? null,
           mesDoPainel,
@@ -101,9 +105,14 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
               </span>
             )}
 
+            {/* O que falta pagar (RN-10), que sem pagamento parcial é o total.
+                Mostrando o total, o card seguia exibindo um valor que o banco
+                já não cobrava. */}
             <span className={`${styles.trilhoTotal} tnum`}>
-              {formatBRL(corrente?.totalCentavos ?? 0)}
+              {formatBRL(corrente?.restanteCentavos ?? 0)}
             </span>
+
+            {parcial && <span className={`${styles.trilhoParcial} tnum`}>{parcial}</span>}
 
             {/* O tom vem só com o aviso: "vencida há 19 dias" no cinza de
                 "vence 05/11" fazia o prazo mais urgente da tela parecer rotina. */}

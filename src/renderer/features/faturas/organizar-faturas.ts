@@ -28,7 +28,11 @@ export function contarPorStatus(faturas: readonly FaturaComTotal[]): Record<Filt
   return { todas: faturas.length, 'a-pagar': faturas.length - pagas, pagas }
 }
 
-/** Soma dos totais, para o resumo no cabeçalho do cartão. */
-export function somarTotais(faturas: readonly FaturaComTotal[]): number {
-  return faturas.reduce((soma, f) => soma + f.totalCentavos, 0)
+/**
+ * Soma do que falta pagar de cada fatura (RN-10), para a barra do Histórico.
+ * É o mesmo número que cada linha mostra: somando o total, a barra discordaria
+ * das linhas abaixo dela assim que uma fatura tivesse pagamento parcial.
+ */
+export function somarRestantes(faturas: readonly FaturaComTotal[]): number {
+  return faturas.reduce((soma, f) => soma + f.restanteCentavos, 0)
 }

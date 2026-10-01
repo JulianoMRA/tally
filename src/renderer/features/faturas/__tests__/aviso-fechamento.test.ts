@@ -161,3 +161,38 @@ describe('avisoDePrazo', () => {
     ).toBeNull()
   })
 })
+
+/**
+ * RN-10 — fatura Fechada cujos pagamentos parciais já cobrem o total. Não há o
+ * que pagar, só o que marcar: "vence em 2 dias" e "vencida há 3 dias" seriam
+ * alarme falso, em vermelho, sobre uma fatura quitada.
+ */
+describe('prazo de fatura sem nada a pagar', () => {
+  const NADA_A_PAGAR = true
+
+  it('não avisa o vencimento que está chegando', () => {
+    expect(avisoDePrazo(fechada(), '2026-07-25', NADA_A_PAGAR)).toBeNull()
+  })
+
+  it('não diz que está vencida', () => {
+    expect(avisoDePrazo(fechada(), '2026-07-30', NADA_A_PAGAR)).toBeNull()
+    expect(rotuloVencida(fechada(), '2026-07-30', NADA_A_PAGAR)).toBeNull()
+  })
+
+  // Fechar continua sendo um evento: depois dele a fatura não recebe mais
+  // adiantamento nem edição (RN-06), com ou sem valor a pagar.
+  it('fatura Aberta segue avisando o fechamento', () => {
+    expect(avisoDePrazo(fatura(), '2026-07-16', NADA_A_PAGAR)).toEqual({
+      texto: 'fecha em 4 dias',
+      tom: 'atencao'
+    })
+  })
+
+  it('com valor a pagar, os avisos seguem como sempre', () => {
+    expect(avisoDePrazo(fechada(), '2026-07-30', false)).toEqual({
+      texto: 'vencida há 3 dias',
+      tom: 'alerta'
+    })
+    expect(rotuloVencida(fechada(), '2026-07-30', false)).toBe('vencida há 3 dias')
+  })
+})

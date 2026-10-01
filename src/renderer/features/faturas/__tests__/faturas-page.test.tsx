@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import type { Cartao } from '@domain/entities/cartao'
 import type { StatusFatura } from '@domain/entities/fatura'
+import type { PagamentoParcial } from '@domain/entities/pagamento-parcial'
 import type { FaturaComTotal, FaturaDetalhada } from '@shared/ipc/fatura'
 import { ToastProvider } from '../../../components/ui'
 import { cartao } from '../../../__tests__/__fixtures__/builders'
@@ -44,6 +45,7 @@ function fatura(
  */
 function instalarApi(cartoes: Cartao[], faturasPorCartao: Record<number, FaturaComTotal[]>) {
   const todas = Object.values(faturasPorCartao).flat()
+  const pagamentos: PagamentoParcial[] = []
   const api = {
     // Como o repositório: os arquivados só vêm quando pedidos.
     cartao: {
@@ -60,14 +62,27 @@ function instalarApi(cartoes: Cartao[], faturasPorCartao: Record<number, FaturaC
           ? {
               fatura: alvo.fatura,
               parcelas: [],
-              totalCentavos: 0,
-              pagoParcialCentavos: 0,
-              restanteCentavos: 0,
+              totalCentavos: alvo.totalCentavos,
+              pagoParcialCentavos: alvo.pagoParcialCentavos,
+              restanteCentavos: alvo.restanteCentavos,
               excedenteCentavos: 0,
-              pagamentosParciais: []
+              pagamentosParciais: pagamentos.filter((p) => p.faturaId === id)
             }
           : null
       }),
+      // Muta o dublê como o banco faria: o resumo e o detalhe da próxima carga
+      // já veem o pagamento.
+      registrarPagamentoParcial: vi.fn(
+        async (input: { faturaId: number; valorCentavos: number; dataPagamento: string }) => {
+          const alvo = todas.find((f) => f.fatura.id === input.faturaId)
+          if (!alvo) throw new Error(`Fatura #${input.faturaId} não encontrada`)
+          alvo.pagoParcialCentavos += input.valorCentavos
+          alvo.restanteCentavos -= input.valorCentavos
+          const pagamento = { id: pagamentos.length + 1, ...input, createdAt: '', updatedAt: '' }
+          pagamentos.push(pagamento)
+          return pagamento
+        }
+      ),
       // Muta o dublê como o banco faria: a próxima carga já vê a fatura paga.
       pagar: vi.fn(async (id: number, dataPagamento: string) => {
         const alvo = todas.find((f) => f.fatura.id === id)
@@ -256,5 +271,54 @@ describe('FaturasPage — navegação entre faturas', () => {
     expect(
       (screen.getByRole('button', { name: 'Sem próxima fatura' }) as HTMLButtonElement).disabled
     ).toBe(true)
+  })
+})
+
+/**
+ * RF-FAT-07 — registrar um pagamento parcial muda três lugares da tela ao mesmo
+ * tempo: a faixa, o card do trilho e a lista de pagamentos. Cada um lê de uma
+ * carga diferente (o detalhe e o resumo por cartão), e um registro que
+ * recarregasse só uma delas deixaria a tela mostrando dois valores para a
+ * mesma fatura.
+ */
+describe('FaturasPage — pagamento parcial', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 29, 12))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+  })
+
+  it('registrar atualiza a faixa, o card do trilho e a lista de pagamentos', async () => {
+    const api = instalarApi([INTER], { 1: [fatura(10, 1, '2026-09', { kind: 'Aberta' }, 80000)] })
+    renderizar()
+    const usuario = userEvent.setup({ delay: null })
+
+    await screen.findByRole('heading', { name: 'Inter · Setembro de 2026' })
+    await usuario.click(screen.getByRole('button', { name: 'Pagamento parcial' }))
+    const dialogo = screen.getByRole('dialog', { name: 'Registrar pagamento parcial' })
+    await usuario.type(within(dialogo).getByLabelText('Valor (R$)'), '200,00')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Registrar pagamento' }))
+
+    expect(api.fatura.registrarPagamentoParcial).toHaveBeenCalledWith({
+      faturaId: 10,
+      valorCentavos: 20000,
+      dataPagamento: '2026-09-29'
+    })
+
+    const pagamentos = await screen.findByRole('region', { name: 'Pagamentos parciais' })
+    expect(within(pagamentos).getByText('29/09/2026')).toBeTruthy()
+
+    const faixa = screen.getByRole('region', { name: 'Resumo da fatura' })
+    expect(within(faixa).getByText('Falta pagar').parentElement?.textContent).toMatch(
+      /R\$\s*600,00/
+    )
+
+    const card = within(trilho()).getByRole('button', { name: /^Inter/ })
+    expect(within(card).getByText(/^R\$\s*600,00$/)).toBeTruthy()
+    expect(within(card).getByText(/^R\$\s*200,00 pagos de R\$\s*800,00$/)).toBeTruthy()
   })
 })

@@ -4,6 +4,7 @@ import { render, screen, cleanup, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Despesa } from '@domain/entities/despesa'
 import type { StatusFatura } from '@domain/entities/fatura'
+import type { PagamentoParcial } from '@domain/entities/pagamento-parcial'
 import type { Parcela } from '@domain/entities/parcela'
 import type { FaturaDetalhada } from '@shared/ipc/fatura'
 import { ToastProvider } from '../../../components/ui'
@@ -564,6 +565,346 @@ describe('FaturaDetalhe — tabela de parcelas', () => {
 
       const parcelaTh = screen.getByRole('columnheader', { name: /Parcela/ })
       expect(within(parcelaTh).queryByRole('button')).toBeNull()
+    })
+  })
+})
+
+function pagamento(over: Partial<PagamentoParcial> = {}): PagamentoParcial {
+  return {
+    id: 70,
+    faturaId: 10,
+    valorCentavos: 20000,
+    dataPagamento: '2026-09-10',
+    createdAt: '',
+    updatedAt: '',
+    ...over
+  }
+}
+
+/** Fatura de R$ 800,00 (ou do total dado) com os pagamentos parciais dados. */
+function comParciais(
+  status: StatusFatura,
+  pagamentos: PagamentoParcial[] = [pagamento()],
+  totalCentavos = 80000
+): FaturaDetalhada {
+  const pago = pagamentos.reduce((soma, p) => soma + p.valorCentavos, 0)
+  return {
+    ...detalhe(status),
+    totalCentavos,
+    pagoParcialCentavos: pago,
+    restanteCentavos: Math.max(0, totalCentavos - pago),
+    excedenteCentavos: Math.max(0, pago - totalCentavos),
+    pagamentosParciais: pagamentos
+  }
+}
+
+/**
+ * RF-FAT-07 e RN-10 no painel da fatura: registrar e excluir pagamento parcial,
+ * e a faixa passando a dizer o que falta pagar.
+ *
+ * Hoje fixo em 29/09/2026; a fatura dos dublês fecha em 24/09 e vence em 01/10.
+ */
+describe('FaturaDetalhe — pagamento parcial', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 29, 12))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+  })
+
+  function faixa() {
+    return screen.getByRole('region', { name: 'Resumo da fatura' })
+  }
+
+  function painel() {
+    return screen.getByRole('region', { name: 'Pagamentos parciais' })
+  }
+
+  /** O valor ao lado de um rótulo da faixa ("Falta pagar" → "R$ 600,00"). */
+  function valorDe(rotulo: string): string {
+    return within(faixa()).getByText(rotulo).parentElement?.textContent ?? ''
+  }
+
+  async function abrirMenuDoPagamento() {
+    const usuario = userEvent.setup({ delay: null })
+    await usuario.click(within(painel()).getByRole('button', { name: /^Mais ações/ }))
+    return usuario
+  }
+
+  describe('botão', () => {
+    it.each([{ kind: 'Aberta' }, { kind: 'Fechada' }] as const)(
+      'fatura $kind oferece "Pagamento parcial"',
+      (status) => {
+        renderizarCom(comParciais(status, []))
+
+        const botao = within(faixa()).getByRole('button', { name: 'Pagamento parcial' })
+        expect((botao as HTMLButtonElement).disabled).toBe(false)
+      }
+    )
+
+    // Fatura paga é imutável (RF-FAT-04): quem quer registrar algo nela reabre.
+    it('fatura Paga não oferece', () => {
+      renderizarCom(comParciais({ kind: 'Paga', pagaEm: '2026-09-20' }, []))
+
+      expect(screen.queryByRole('button', { name: 'Pagamento parcial' })).toBeNull()
+    })
+
+    // Sem nada a pagar não existe valor aceitável: oferecer o diálogo seria
+    // oferecer uma ação que a tela sabe que vai falhar.
+    it('sem nada a pagar, fica desabilitado e diz por quê', () => {
+      renderizarCom(comParciais({ kind: 'Aberta' }, [], 0))
+
+      const botao = within(faixa()).getByRole('button', { name: 'Pagamento parcial' })
+      expect((botao as HTMLButtonElement).disabled).toBe(true)
+      expect(botao.getAttribute('title')).toMatch(/Não falta nada a pagar/)
+    })
+  })
+
+  describe('faixa de resumo', () => {
+    it('sem parcial, segue só com o total', () => {
+      renderizarCom(comParciais({ kind: 'Aberta' }, []))
+
+      expect(valorDe('Total da fatura')).toMatch(/R\$\s*800,00/)
+      expect(within(faixa()).queryByText('Falta pagar')).toBeNull()
+      expect(within(faixa()).queryByText('Pagamentos parciais')).toBeNull()
+      expect(screen.queryByRole('region', { name: 'Pagamentos parciais' })).toBeNull()
+    })
+
+    it('com parcial, mostra o total, o que foi pago e o que falta', () => {
+      renderizarCom(comParciais({ kind: 'Aberta' }))
+
+      expect(valorDe('Total da fatura')).toMatch(/R\$\s*800,00/)
+      expect(valorDe('Pagamentos parciais')).toMatch(/R\$\s*200,00/)
+      expect(valorDe('Falta pagar')).toMatch(/R\$\s*600,00/)
+    })
+
+    // "Falta pagar" numa fatura paga seria falso: o restante já foi pago.
+    it('fatura Paga com parcial diz "Restante pago", e não "Falta pagar"', () => {
+      renderizarCom(comParciais({ kind: 'Paga', pagaEm: '2026-09-20' }))
+
+      expect(valorDe('Restante pago')).toMatch(/R\$\s*600,00/)
+      expect(within(faixa()).queryByText('Falta pagar')).toBeNull()
+    })
+
+    // Só acontece quando uma despesa é excluída ou reduzida depois do
+    // pagamento. A faixa diz quanto, para o pagamento poder ser corrigido.
+    it('pago a mais aparece na faixa, em tom de atenção', () => {
+      renderizarCom(comParciais({ kind: 'Aberta' }, [pagamento({ valorCentavos: 50000 })], 10000))
+
+      const aviso = within(faixa()).getByText(/R\$\s*400,00 pagos a mais/)
+      expect(aviso.getAttribute('data-tom')).toBe('atencao')
+      expect(valorDe('Falta pagar')).toMatch(/R\$\s*0,00/)
+    })
+
+    // A dois dias do vencimento ela diria "vence em 2 dias". Com tudo pago em
+    // parciais não há o que pagar, só o que marcar.
+    it('fatura Fechada quitada por parciais não mostra aviso de prazo', () => {
+      renderizarCom(comParciais({ kind: 'Fechada' }, [pagamento({ valorCentavos: 80000 })]))
+
+      expect(within(faixa()).queryByText(/vence em|vencida há/)).toBeNull()
+      expect(within(faixa()).getByRole('button', { name: 'Marcar como paga' })).toBeTruthy()
+    })
+  })
+
+  describe('lista de pagamentos', () => {
+    it('lista cada pagamento com data e valor, entre a faixa e as parcelas', () => {
+      renderizarCom(
+        comParciais({ kind: 'Aberta' }, [
+          pagamento({ id: 70, valorCentavos: 20000, dataPagamento: '2026-09-10' }),
+          pagamento({ id: 71, valorCentavos: 15050, dataPagamento: '2026-09-18' })
+        ])
+      )
+
+      const linhas = within(painel()).getAllByRole('row').slice(1)
+      expect(linhas).toHaveLength(2)
+      expect(within(linhas[0]!).getByText('10/09/2026')).toBeTruthy()
+      expect(within(linhas[0]!).getByText(/^R\$\s*200,00$/)).toBeTruthy()
+      expect(within(linhas[1]!).getByText('18/09/2026')).toBeTruthy()
+      expect(within(linhas[1]!).getByText(/^R\$\s*150,50$/)).toBeTruthy()
+
+      const antes = Node.DOCUMENT_POSITION_FOLLOWING
+      expect(faixa().compareDocumentPosition(painel()) & antes).toBeTruthy()
+      expect(
+        painel().compareDocumentPosition(screen.getByRole('heading', { name: 'Parcelas' })) & antes
+      ).toBeTruthy()
+    })
+
+    // A soma já está na faixa: repeti-la aqui seria o mesmo número duas vezes
+    // a poucos centímetros um do outro.
+    it('a meta conta os pagamentos, sem repetir a soma', () => {
+      renderizarCom(comParciais({ kind: 'Aberta' }, [pagamento({ id: 70 }), pagamento({ id: 71 })]))
+
+      expect(within(painel()).getByText('2 pagamentos')).toBeTruthy()
+    })
+  })
+
+  describe('registrar', () => {
+    it('chama o main com a fatura, o valor e a data, avisa e recarrega', async () => {
+      const registrarPagamentoParcial = vi.fn().mockResolvedValue(pagamento())
+      const detalharComParcelas = vi.fn().mockResolvedValue(null)
+      renderizarCom(comParciais({ kind: 'Aberta' }, []), {
+        fatura: { registrarPagamentoParcial, detalharComParcelas }
+      })
+      const usuario = userEvent.setup({ delay: null })
+
+      await usuario.click(screen.getByRole('button', { name: 'Pagamento parcial' }))
+      const dialogo = screen.getByRole('dialog', { name: 'Registrar pagamento parcial' })
+      await usuario.type(within(dialogo).getByLabelText('Valor (R$)'), '200,00')
+      await usuario.click(within(dialogo).getByRole('button', { name: 'Registrar pagamento' }))
+
+      expect(registrarPagamentoParcial).toHaveBeenCalledWith({
+        faturaId: 10,
+        valorCentavos: 20000,
+        dataPagamento: '2026-09-29'
+      })
+      expect(await screen.findByText('Pagamento parcial registrado.')).toBeTruthy()
+      expect(screen.queryByRole('dialog', { name: 'Registrar pagamento parcial' })).toBeNull()
+      expect(detalharComParcelas).toHaveBeenCalledWith(10)
+    })
+
+    it('o diálogo conhece o que falta pagar, descontados os parciais', async () => {
+      renderizarCom(comParciais({ kind: 'Aberta' }))
+      const usuario = userEvent.setup({ delay: null })
+
+      await usuario.click(screen.getByRole('button', { name: 'Pagamento parcial' }))
+
+      const dialogo = screen.getByRole('dialog', { name: 'Registrar pagamento parcial' })
+      expect(dialogo.textContent).toMatch(/falta pagar R\$\s*600,00/)
+    })
+
+    it('o erro do main fica no diálogo, que não fecha', async () => {
+      const registrarPagamentoParcial = vi
+        .fn()
+        .mockRejectedValue(
+          new Error(
+            "Error invoking remote method 'fatura:registrarPagamentoParcial': Error: Fatura já está paga. Reabra a fatura antes de registrar um pagamento parcial."
+          )
+        )
+      renderizarCom(comParciais({ kind: 'Aberta' }, []), { fatura: { registrarPagamentoParcial } })
+      const usuario = userEvent.setup({ delay: null })
+
+      await usuario.click(screen.getByRole('button', { name: 'Pagamento parcial' }))
+      const dialogo = screen.getByRole('dialog', { name: 'Registrar pagamento parcial' })
+      await usuario.type(within(dialogo).getByLabelText('Valor (R$)'), '200,00')
+      await usuario.click(within(dialogo).getByRole('button', { name: 'Registrar pagamento' }))
+
+      expect(await within(dialogo).findByText(/Reabra a fatura/)).toBeTruthy()
+      expect(dialogo.textContent).not.toMatch(/Error invoking/)
+      expect(screen.queryByText('Pagamento parcial registrado.')).toBeNull()
+    })
+  })
+
+  describe('excluir', () => {
+    it('pede confirmação com o valor e a data, e só então chama o main', async () => {
+      const excluirPagamentoParcial = vi.fn().mockResolvedValue(undefined)
+      const detalharComParcelas = vi.fn().mockResolvedValue(null)
+      renderizarCom(comParciais({ kind: 'Aberta' }), {
+        fatura: { excluirPagamentoParcial, detalharComParcelas }
+      })
+
+      const usuario = await abrirMenuDoPagamento()
+      await usuario.click(
+        within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Excluir' })
+      )
+
+      const confirmacao = screen.getByRole('dialog', { name: 'Excluir pagamento parcial?' })
+      expect(confirmacao.textContent).toMatch(/R\$\s*200,00/)
+      expect(confirmacao.textContent).toMatch(/10\/09\/2026/)
+      expect(excluirPagamentoParcial).not.toHaveBeenCalled()
+
+      await usuario.click(within(confirmacao).getByRole('button', { name: 'Excluir' }))
+
+      expect(excluirPagamentoParcial).toHaveBeenCalledWith({ pagamentoId: 70 })
+      expect(await screen.findByText('Pagamento parcial excluído.')).toBeTruthy()
+      expect(detalharComParcelas).toHaveBeenCalledWith(10)
+    })
+
+    it('cancelar a confirmação não chama o main', async () => {
+      const excluirPagamentoParcial = vi.fn()
+      renderizarCom(comParciais({ kind: 'Aberta' }), { fatura: { excluirPagamentoParcial } })
+
+      const usuario = await abrirMenuDoPagamento()
+      await usuario.click(
+        within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Excluir' })
+      )
+      const confirmacao = screen.getByRole('dialog', { name: 'Excluir pagamento parcial?' })
+      await usuario.click(within(confirmacao).getByRole('button', { name: 'Cancelar' }))
+
+      expect(excluirPagamentoParcial).not.toHaveBeenCalled()
+      expect(screen.queryByRole('dialog', { name: 'Excluir pagamento parcial?' })).toBeNull()
+    })
+
+    // Como o Excluir da despesa (RF-DES-09): desabilitado com o motivo, em vez
+    // de abrir o diálogo "irreversível" e falhar depois.
+    it('em fatura Paga, fica desabilitado e diz por quê', async () => {
+      renderizarCom(comParciais({ kind: 'Paga', pagaEm: '2026-09-20' }))
+
+      await abrirMenuDoPagamento()
+
+      const excluir = within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Excluir' })
+      expect((excluir as HTMLButtonElement).disabled).toBe(true)
+      expect(excluir.getAttribute('title')).toMatch(/Reabra a fatura/)
+    })
+
+    it('a falha do main vira aviso legível', async () => {
+      const excluirPagamentoParcial = vi
+        .fn()
+        .mockRejectedValue(
+          new Error(
+            "Error invoking remote method 'fatura:excluirPagamentoParcial': Error: Pagamento parcial #70 não encontrado"
+          )
+        )
+      renderizarCom(comParciais({ kind: 'Aberta' }), { fatura: { excluirPagamentoParcial } })
+
+      const usuario = await abrirMenuDoPagamento()
+      await usuario.click(
+        within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Excluir' })
+      )
+      await usuario.click(
+        within(screen.getByRole('dialog', { name: 'Excluir pagamento parcial?' })).getByRole(
+          'button',
+          { name: 'Excluir' }
+        )
+      )
+
+      expect(await screen.findByText('Pagamento parcial #70 não encontrado')).toBeTruthy()
+      expect(screen.queryByText(/Error invoking/)).toBeNull()
+    })
+  })
+
+  describe('ciclo da fatura com parcial', () => {
+    // O que se paga em "Marcar como paga" é o restante.
+    it('o diálogo de pagar diz o que falta e o que já foi pago', async () => {
+      renderizarCom(comParciais({ kind: 'Fechada' }))
+      const usuario = userEvent.setup({ delay: null })
+
+      await usuario.click(screen.getByRole('button', { name: 'Marcar como paga' }))
+
+      const texto = screen.getByRole('dialog', { name: 'Marcar fatura como paga' }).textContent
+      expect(texto).toMatch(/falta pagar R\$\s*600,00 de R\$\s*800,00/)
+      expect(texto).toMatch(/R\$\s*200,00 já pagos/)
+    })
+
+    it('o diálogo de reabrir avisa que os pagamentos parciais são mantidos', async () => {
+      renderizarCom(comParciais({ kind: 'Paga', pagaEm: '2026-09-20' }))
+      const usuario = userEvent.setup({ delay: null })
+
+      await usuario.click(screen.getByRole('button', { name: 'Reabrir fatura' }))
+
+      const texto = screen.getByRole('dialog', { name: 'Reabrir fatura?' }).textContent
+      expect(texto).toMatch(/pagamentos parciais são mantidos/)
+    })
+
+    it('sem parcial, o diálogo de reabrir não fala em pagamento parcial', async () => {
+      renderizarCom(comParciais({ kind: 'Paga', pagaEm: '2026-09-20' }, []))
+      const usuario = userEvent.setup({ delay: null })
+
+      await usuario.click(screen.getByRole('button', { name: 'Reabrir fatura' }))
+
+      const texto = screen.getByRole('dialog', { name: 'Reabrir fatura?' }).textContent
+      expect(texto).not.toMatch(/parciais/)
     })
   })
 })

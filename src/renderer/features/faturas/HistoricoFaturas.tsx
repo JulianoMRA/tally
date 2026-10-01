@@ -13,10 +13,11 @@ import { formatBRL } from '../../lib/format-brl'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { pluralizar } from '../../lib/pluralizar'
 import { rotuloVencida } from './aviso-fechamento'
+import { contextoDoParcial, quitadaPorParciais } from './descrever-parcial'
 import {
   contarPorStatus,
   filtrarPorStatus,
-  somarTotais,
+  somarRestantes,
   type FiltroStatus
 } from './organizar-faturas'
 import { statusVariant } from './status-variant'
@@ -112,7 +113,7 @@ export function HistoricoFaturas({ faturas, mesAtual, faturaAbertaId, cartaoCor,
             {pluralizar('fatura', passadas.length)} de meses anteriores
           </Button>
           <span className={`${styles.anterioresTotal} tnum`}>
-            {formatBRL(somarTotais(passadas))}
+            {formatBRL(somarRestantes(passadas))}
           </span>
         </div>
       )}
@@ -142,7 +143,8 @@ function LinhaFatura({
   onAbrir: (faturaId: number) => void
 }) {
   const { status, dataFechamento, dataVencimento } = item.fatura
-  const vencida = rotuloVencida(item.fatura, hoje)
+  const vencida = rotuloVencida(item.fatura, hoje, quitadaPorParciais(item))
+  const parcial = contextoDoParcial(item)
 
   return (
     <li className={styles.itemBotao}>
@@ -167,9 +169,16 @@ function LinhaFatura({
                 </span>
               </>
             )}
+            {parcial && (
+              <>
+                {' · '}
+                <span>{parcial}</span>
+              </>
+            )}
           </span>
         </div>
-        <span className={`${styles.faturaTotal} tnum`}>{formatBRL(item.totalCentavos)}</span>
+        {/* O que falta pagar (RN-10): sem pagamento parcial, é o total. */}
+        <span className={`${styles.faturaTotal} tnum`}>{formatBRL(item.restanteCentavos)}</span>
         <Badge variant={statusVariant(item.fatura.status.kind)} />
       </button>
     </li>

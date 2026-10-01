@@ -1,18 +1,19 @@
 import { describe, it, expect } from 'vitest'
 import type { FaturaComTotal } from '@shared/ipc/fatura'
 import type { StatusFatura } from '@domain/entities/fatura'
-import { contarPorStatus, filtrarPorStatus, somarTotais } from '../organizar-faturas'
+import { contarPorStatus, filtrarPorStatus, somarRestantes } from '../organizar-faturas'
 
 function fatura(
   mesReferencia: string,
   status: StatusFatura = { kind: 'Aberta' },
-  totalCentavos = 10_000
+  totalCentavos = 10_000,
+  pagoParcialCentavos = 0
 ): FaturaComTotal {
   return {
     mesReferencia,
     totalCentavos,
-    pagoParcialCentavos: 0,
-    restanteCentavos: totalCentavos,
+    pagoParcialCentavos,
+    restanteCentavos: totalCentavos - pagoParcialCentavos,
     fatura: {
       id: Number(mesReferencia.replace('-', '')),
       cartaoId: 1,
@@ -75,14 +76,26 @@ describe('contarPorStatus', () => {
   })
 })
 
-describe('somarTotais', () => {
-  it('soma os totais das faturas', () => {
+// RN-10 — a barra do Histórico soma o número que cada linha mostra, que é o que
+// falta pagar. Somando o total, a barra discordaria das linhas abaixo dela
+// assim que uma fatura tivesse pagamento parcial.
+describe('somarRestantes', () => {
+  it('sem pagamento parcial, é a soma dos totais', () => {
     expect(
-      somarTotais([fatura('2026-07', undefined, 1_000), fatura('2026-08', undefined, 2_500)])
+      somarRestantes([fatura('2026-07', undefined, 1_000), fatura('2026-08', undefined, 2_500)])
     ).toBe(3_500)
   })
 
+  it('desconta o que já foi pago em parciais', () => {
+    expect(
+      somarRestantes([
+        fatura('2026-07', undefined, 1_000, 400),
+        fatura('2026-08', undefined, 2_500)
+      ])
+    ).toBe(3_100)
+  })
+
   it('devolve zero para lista vazia', () => {
-    expect(somarTotais([])).toBe(0)
+    expect(somarRestantes([])).toBe(0)
   })
 })

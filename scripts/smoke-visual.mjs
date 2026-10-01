@@ -410,6 +410,33 @@ await page.evaluate(async () => {
   await pagarDoMes(inter.id, 1)
   await pagarDoMes(inter.id, 3)
 
+  // Um pagamento parcial na fatura corrente do Inter (RF-FAT-07). Sem ele a
+  // folha nunca mostra a faixa com "Falta pagar", a lista de pagamentos nem a
+  // linha de contexto do card. O Inter é o primeiro cartão do trilho, então é
+  // a fatura que a tela abre sem clique. A escolha é pela data de fechamento,
+  // e não pelo status: a fatura de quatro meses atrás também está Aberta neste
+  // ponto (só fecha com a manutenção) e vem antes na ordem de mês.
+  //
+  // Essa de quatro meses atrás, vencida, ganha outro: é a linha do Histórico
+  // com o contexto "pagos de", que a fatura corrente não mostra — o histórico
+  // só lista meses encerrados.
+  const resumoDoInter = await api.fatura.listarResumoPorCartao(inter.id)
+  const mesVencido = primeiroDiaDeMesesAtras(4).slice(0, 7)
+  for (const [fatura, valorCentavos] of [
+    [
+      resumoDoInter.find((f) => f.fatura.dataFechamento > emDias(0) && f.restanteCentavos > 15000),
+      15000
+    ],
+    [resumoDoInter.find((f) => f.mesReferencia === mesVencido), 10000]
+  ]) {
+    if (!fatura) continue
+    await api.fatura.registrarPagamentoParcial({
+      faturaId: fatura.fatura.id,
+      valorCentavos,
+      dataPagamento: emDias(0)
+    })
+  }
+
   const antigo = await api.cartao.create({
     nome: 'Cartao antigo',
     diaFechamento: 10,
@@ -512,6 +539,14 @@ try {
   await page.getByRole('listitem').last().scrollIntoViewIfNeeded({ timeout: 5000 })
   await page.waitForTimeout(300)
   await capturar('estado-faturas-historico')
+
+  // O diálogo de pagamento parcial (RF-FAT-07), na fatura do Inter, que já tem
+  // um parcial da semente: a descrição mostra o que falta, não o total.
+  await page.getByRole('button', { name: 'Pagamento parcial' }).click({ timeout: 5000 })
+  await page.getByLabel('Valor (R$)').fill('100,00')
+  await page.waitForTimeout(300)
+  await capturar('estado-modal-pagamento-parcial')
+  await page.keyboard.press('Escape')
 
   // Marcar como paga virou diálogo (RF-FAT-04). O Nubank da semente abre numa
   // fatura Fechada, que é a única que oferece o botão.

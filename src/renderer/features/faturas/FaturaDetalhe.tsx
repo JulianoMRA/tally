@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
 import type { Fatura } from '@domain/entities/fatura'
+import type { PagamentoParcial } from '@domain/entities/pagamento-parcial'
 import type { Parcela } from '@domain/entities/parcela'
 import type { FaturaDetalhada } from '@shared/ipc/fatura'
 import type { MotivoBloqueioExclusao } from '@domain/services/regras-despesa'
@@ -11,6 +12,7 @@ import { AdiantarParcelasModal } from './AdiantarParcelasModal'
 import { avisoDoAdiantamento } from './aviso-adiantamento'
 import { EditarDespesaModal } from './EditarDespesaModal'
 import { PagarFaturaModal } from './PagarFaturaModal'
+import { RegistrarPagamentoParcialModal } from './RegistrarPagamentoParcialModal'
 import {
   Badge,
   BolinhaDeCor,
@@ -30,6 +32,7 @@ import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { mensagemErro } from '../../lib/mensagem-erro'
 import { pluralizar } from '../../lib/pluralizar'
 import { avisoDePrazo } from './aviso-fechamento'
+import { quitadaPorParciais } from './descrever-parcial'
 import { statusVariant } from './status-variant'
 import styles from './faturas.module.css'
 import { useCargaAuxiliar } from '../../hooks/use-carga-auxiliar'
@@ -43,6 +46,7 @@ type DialogoConfirma =
   | { tipo: 'fechar' }
   | { tipo: 'reabrir' }
   | { tipo: 'excluir'; despesaId: number }
+  | { tipo: 'excluir-pagamento'; pagamento: PagamentoParcial }
 
 /** A parcela com a despesa dela: é o que cada linha da tabela mostra. */
 type Linha = { parcela: Parcela; despesa: Despesa | undefined }
@@ -110,11 +114,21 @@ export function FaturaDetalhe({
   onFaturaAtualizada,
   onDetalheAtualizado
 }: Props) {
-  const { fatura, parcelas, totalCentavos } = detalhe
+  const {
+    fatura,
+    parcelas,
+    totalCentavos,
+    pagoParcialCentavos,
+    restanteCentavos,
+    excedenteCentavos,
+    pagamentosParciais
+  } = detalhe
   const kind = fatura.status.kind
-  const aviso = avisoDePrazo(fatura, hojeIsoLocal())
+  const temParcial = pagoParcialCentavos > 0
+  const aviso = avisoDePrazo(fatura, hojeIsoLocal(), quitadaPorParciais(detalhe))
 
   const [pagando, setPagando] = useState(false)
+  const [registrandoParcial, setRegistrandoParcial] = useState(false)
   const [parcelaAdiantar, setParcelaAdiantar] = useState<Parcela | null>(null)
   const [despesaEditar, setDespesaEditar] = useState<Despesa | null>(null)
   const [assinaturaEditar, setAssinaturaEditar] = useState<Despesa | null>(null)
@@ -276,6 +290,41 @@ export function FaturaDetalhe({
     if (await ciclo.pagar(fatura.id, dataPagamento)) setPagando(false)
   }
 
+  // O erro sobe para o diálogo, que o mostra e segue aberto (RF-FAT-07).
+  async function handleRegistrarParcial(input: { valorCentavos: number; dataPagamento: string }) {
+    await window.api.fatura.registrarPagamentoParcial({ faturaId: fatura.id, ...input })
+    toast.show('Pagamento parcial registrado.', 'success')
+    setRegistrandoParcial(false)
+    await recarregarDetalhe()
+  }
+
+  async function confirmarExcluirPagamento(pagamentoId: number) {
+    try {
+      await window.api.fatura.excluirPagamentoParcial({ pagamentoId })
+      toast.show('Pagamento parcial excluído.', 'success')
+      await recarregarDetalhe()
+    } catch (e) {
+      toast.show(mensagemErro(e, 'Erro ao excluir o pagamento.'), 'error')
+    } finally {
+      setDialogo(null)
+    }
+  }
+
+  // Em fatura Paga o Excluir fica desabilitado com o motivo, como o da despesa
+  // (RF-DES-09): abrir o diálogo "irreversível" para falhar depois é pior.
+  function acoesDoPagamento(pagamento: PagamentoParcial): AcaoLinha[] {
+    const paga = kind === 'Paga'
+    return [
+      {
+        label: 'Excluir',
+        onClick: () => setDialogo({ tipo: 'excluir-pagamento', pagamento }),
+        disabled: paga,
+        destrutiva: true,
+        title: paga ? 'Reabra a fatura para excluir o pagamento.' : 'Excluir pagamento parcial'
+      }
+    ]
+  }
+
   return (
     <div className={styles.detalhe}>
       {/* A navegação mora junto do título que ela muda. Eram setas de texto
@@ -344,10 +393,44 @@ export function FaturaDetalhe({
         </dl>
 
         <div className={styles.faixaFim}>
+          {/* Com pagamento parcial (RN-10) o destaque passa do total para o
+              que falta pagar: é o número que o banco cobra. O total continua
+              na faixa, porque é dele que os lançamentos abaixo dão conta. */}
           <div className={styles.faixaTotal}>
             <span className={styles.faixaRotulo}>Total da fatura</span>
-            <span className={`${styles.faixaTotalValor} tnum`}>{formatBRL(totalCentavos)}</span>
+            <span className={`${temParcial ? styles.faixaValor : styles.faixaTotalValor} tnum`}>
+              {formatBRL(totalCentavos)}
+            </span>
           </div>
+          {temParcial && (
+            <>
+              <div className={styles.faixaTotal}>
+                <span className={styles.faixaRotulo}>Pagamentos parciais</span>
+                <span className={`${styles.faixaValor} tnum`}>
+                  {formatBRL(pagoParcialCentavos)}
+                </span>
+              </div>
+              <div className={styles.faixaTotal}>
+                <span className={styles.faixaRotulo}>
+                  {kind === 'Paga' ? 'Restante pago' : 'Falta pagar'}
+                </span>
+                <span className={`${styles.faixaTotalValor} tnum`}>
+                  {formatBRL(restanteCentavos)}
+                </span>
+              </div>
+            </>
+          )}
+          {kind !== 'Paga' && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setRegistrandoParcial(true)}
+              disabled={ciclo.loading || restanteCentavos === 0}
+              title={restanteCentavos === 0 ? 'Não falta nada a pagar nesta fatura.' : undefined}
+            >
+              Pagamento parcial
+            </Button>
+          )}
           {kind === 'Aberta' && (
             <Button
               variant="secondary"
@@ -380,8 +463,61 @@ export function FaturaDetalhe({
           )}
         </div>
 
+        {/* Só acontece quando uma despesa é excluída ou reduzida depois do
+            pagamento. A faixa diz quanto, para o pagamento poder ser corrigido. */}
+        {excedenteCentavos > 0 && (
+          <p className={styles.avisoExcedente} data-tom="atencao">
+            {formatBRL(excedenteCentavos)} pagos a mais: os pagamentos parciais passam do total da
+            fatura.
+          </p>
+        )}
+
         {ciclo.erro && !pagando && <p className={styles.erroAcao}>{ciclo.erro}</p>}
       </section>
+
+      {/* Entre a faixa e as parcelas: é a lista que explica os números da
+          faixa. Sem pagamento não há painel — a maioria das faturas não tem. */}
+      {pagamentosParciais.length > 0 && (
+        <Panel
+          title="Pagamentos parciais"
+          meta={`${pagamentosParciais.length} ${pluralizar('pagamento', pagamentosParciais.length)}`}
+          role="region"
+          aria-label="Pagamentos parciais"
+          flush
+        >
+          <div className={styles.tabelaWrap}>
+            <Table densidade="compacta">
+              <thead>
+                <tr>
+                  <th scope="col">Data</th>
+                  <th scope="col" className={styles.colValor}>
+                    Valor
+                  </th>
+                  <th scope="col" className={styles.colAcoes}>
+                    <span className="sr-only">Ações</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {pagamentosParciais.map((pagamento) => (
+                  <tr key={pagamento.id}>
+                    <td className="tnum">{formatarDataIso(pagamento.dataPagamento)}</td>
+                    <td className={`${styles.colValor} tnum`}>
+                      <span className={styles.valor}>{formatBRL(pagamento.valorCentavos)}</span>
+                    </td>
+                    <td className={styles.colAcoes}>
+                      <RowActions
+                        acoes={acoesDoPagamento(pagamento)}
+                        contexto={`pagamento de ${formatarDataIso(pagamento.dataPagamento)}`}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </div>
+        </Panel>
+      )}
 
       <Panel
         title="Parcelas"
@@ -519,10 +655,23 @@ export function FaturaDetalhe({
           cartaoNome={cartaoNome}
           mesReferencia={fatura.mesReferencia}
           totalCentavos={totalCentavos}
+          pagoParcialCentavos={pagoParcialCentavos}
+          restanteCentavos={restanteCentavos}
           loading={ciclo.loading}
           erro={ciclo.erro}
           onConfirmar={confirmarPagamento}
           onCancelar={() => setPagando(false)}
+        />
+      )}
+
+      {registrandoParcial && (
+        <RegistrarPagamentoParcialModal
+          cartaoNome={cartaoNome}
+          mesReferencia={fatura.mesReferencia}
+          statusFatura={kind}
+          restanteCentavos={restanteCentavos}
+          onConfirmar={handleRegistrarParcial}
+          onCancelar={() => setRegistrandoParcial(false)}
         />
       )}
       {dialogo?.tipo === 'fechar' && (
@@ -540,7 +689,9 @@ export function FaturaDetalhe({
       {dialogo?.tipo === 'reabrir' && (
         <ConfirmDialog
           title="Reabrir fatura?"
-          body="A data de pagamento será apagada. A fatura volta a Aberta — ou a Fechada, se a data de fechamento já tiver passado."
+          body={`A data de pagamento será apagada. A fatura volta a Aberta — ou a Fechada, se a data de fechamento já tiver passado.${
+            temParcial ? ' Os pagamentos parciais são mantidos.' : ''
+          }`}
           confirmText="Reabrir"
           onConfirm={() => {
             ciclo.reabrir(fatura.id)
@@ -556,6 +707,18 @@ export function FaturaDetalhe({
           confirmText="Excluir"
           confirmVariant="danger"
           onConfirm={() => confirmarExcluirDespesa(dialogo.despesaId)}
+          onCancel={() => setDialogo(null)}
+        />
+      )}
+      {dialogo?.tipo === 'excluir-pagamento' && (
+        <ConfirmDialog
+          title="Excluir pagamento parcial?"
+          body={`${formatBRL(dialogo.pagamento.valorCentavos)}, pago em ${formatarDataIso(
+            dialogo.pagamento.dataPagamento
+          )}. O valor volta a contar no que falta pagar desta fatura.`}
+          confirmText="Excluir"
+          confirmVariant="danger"
+          onConfirm={() => confirmarExcluirPagamento(dialogo.pagamento.id)}
           onCancel={() => setDialogo(null)}
         />
       )}

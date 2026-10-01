@@ -27,9 +27,15 @@ export function estaVencida(fatura: Fatura, hoje: string): boolean {
   return diferencaEmDias(hoje, fatura.dataVencimento) < 0
 }
 
-/** Rótulo "vencida há N dias" para faturas vencidas; null caso contrário. */
-export function rotuloVencida(fatura: Fatura, hoje: string): string | null {
-  if (!estaVencida(fatura, hoje)) return null
+/**
+ * Rótulo "vencida há N dias" para faturas vencidas; null caso contrário.
+ *
+ * `nadaAPagar` é a fatura cujos pagamentos parciais já cobrem o total (RN-10):
+ * não há o que pagar, só o que marcar, e "vencida" em vermelho seria alarme
+ * falso. Quem sabe disso é quem chama, que tem os valores; aqui só há a fatura.
+ */
+export function rotuloVencida(fatura: Fatura, hoje: string, nadaAPagar = false): string | null {
+  if (nadaAPagar || !estaVencida(fatura, hoje)) return null
   const dias = diferencaEmDias(fatura.dataVencimento, hoje)
   return dias === 1 ? 'vencida há 1 dia' : `vencida há ${dias} dias`
 }
@@ -58,8 +64,17 @@ export type AvisoDePrazo = {
  * O aviso que acompanha o prazo de uma fatura, com o tom dele. Os três rótulos
  * nunca valem juntos — "fecha em" é de Aberta, os outros dois de Fechada —,
  * mas quem exibe não precisa saber disso para compô-los.
+ *
+ * Com `nadaAPagar` (ver `rotuloVencida`), a fatura Fechada não avisa
+ * vencimento nenhum. A Aberta segue avisando o fechamento: fechar continua
+ * sendo um evento, com ou sem valor a pagar (RN-06).
  */
-export function avisoDePrazo(fatura: Fatura, hoje: string): AvisoDePrazo | null {
+export function avisoDePrazo(
+  fatura: Fatura,
+  hoje: string,
+  nadaAPagar = false
+): AvisoDePrazo | null {
+  if (nadaAPagar && fatura.status.kind === 'Fechada') return null
   const vencida = rotuloVencida(fatura, hoje)
   if (vencida) return { texto: vencida, tom: 'alerta' }
   const chegando = rotuloVencimento(fatura, hoje) ?? rotuloFechamento(fatura, hoje)
