@@ -206,6 +206,16 @@ prevista; entram no escopo quando forem priorizadas.
 
   > Até set/2026 o resumo era um card lateral a partir de 1360px e, abaixo disso — inclusive na janela padrão, de 1266px —, um card empilhado depois da tabela: o total e "Marcar como paga" ficavam abaixo de todas as parcelas. O card repetia o mês do título e a meta do painel repetia o total, que aparecia três vezes na tela. E o detalhe tinha teto de largura (880 ou 1280px) enquanto a navegação e o histórico ocupavam a largura inteira: três bordas direitas.
 
+  **A tabela de parcelas fala a língua da lista de Saídas** (RF-DES-14): Descrição, Categoria, Compra, Parcela e Valor — as colunas de Saídas agrupada por origem, na mesma ordem.
+  - **Parcela** vem de `descreverOcorrencia`, a mesma função de Saídas, calculada no main: "à vista" em tom de apoio, "mensal", "2/3", e o valor da compra ao lado ("2/3 de R$ 979,92") na parcelada criada do zero.
+  - **Compra** é a data da compra; assinatura mostra "desde MM/AAAA" em tom de apoio.
+  - **Categoria** traz a cor e, quando for o caso, o selo "Arquivada" (RF-CAT-02).
+  - Densidade compacta; categoria e data um tom abaixo de descrição e valor; ações em tom de apoio até o mouse ou o foco chegarem à linha.
+  - Ordena por Descrição, Compra ou Valor, com o mesmo `useOrdenacao` de Saídas e da Busca. Abre por Compra, crescente — a ordem do extrato do banco.
+  - "Editar" numa assinatura abre o modal de assinatura, o mesmo de Saídas.
+
+  > Até set/2026 a mesma parcela tinha um nome em cada tela: a fatura dizia "1/1" onde Saídas diz "à vista", "Mensal" mais um selo ASSINATURA onde Saídas diz "mensal", e mostrava "01/09/2026" como data de uma assinatura — a data de referência, sempre dia 01, um dia em que ninguém foi cobrado. Havia uma coluna **Status** com "Pendente" em todas as linhas: toda parcela de uma fatura tem o status dela, por construção (RN-06 paga e reverte todas juntas, e parcela com fatura não é paga sozinha), então a coluna não informava nada e ordenar por ela não mudava a ordem. A coluna Parcela era ordenável, mas "à vista", "mensal" e "1/6" não têm ordem natural. E o "Editar" de uma assinatura ficava desabilitado, de quando o modal dela não era compartilhado.
+
 - **RF-FAT-06** — **Tela única de faturas.** Lista e detalhe deixam de ser modos separados:
   - **Trilho de cartões** no topo, um bloco por cartão ativo (e pelo arquivado com fatura a pagar, RF-CAR-02), sempre com a **fatura corrente** dele — total, status e prazo. O trilho não acompanha o mês exibido no painel: ele responde "como cada cartão está hoje", mesmo enquanto se navega no histórico.
   - **O prazo do card tem tom.** "vencida há N dias" em vermelho; "fecha em N dias" (Aberta) e "vence em N dias" (Fechada), até 7 dias antes, em âmbar; o resto neutro ("vence 05/11"). Fatura paga diz "paga em DD/MM" no lugar do vencimento. O mesmo aviso, com o mesmo tom, aparece no resumo do painel e no card de faturas da Visão mensal. Até set/2026 o trilho mostrava "vencida há 19 dias" no mesmo cinza de um prazo distante, e a fatura Fechada perto do vencimento não avisava nada — enquanto a notificação do sistema já dizia "vence em 2 dias".
