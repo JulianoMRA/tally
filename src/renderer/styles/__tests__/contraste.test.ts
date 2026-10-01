@@ -103,6 +103,11 @@ const PARES: ReadonlyArray<readonly [string, string, number, string]> = [
   ['--expense', '--bg', 4.5, 'valor de saída sobre o fundo'],
   ['--income', '--bg-elev', 4.5, 'valor de entrada sobre card'],
   ['--expense', '--bg-elev', 4.5, 'valor de saída sobre card'],
+  // "fecha em N dias" e "vence em N dias" já usavam este par, e o axe os vê
+  // quando o prazo está perto. O aviso de pago a mais (RN-10) usa o mesmo tom e
+  // só existe quando uma despesa é excluída depois do pagamento: a varredura
+  // nunca o encontra, então o par é conferido aqui.
+  ['--pending', '--bg-elev', 4.5, 'aviso de prazo próximo e de pago a mais sobre card'],
   // Fatias são superfície, não texto: o mínimo de componente gráfico é 3:1.
   ['--fatia-entradas', '--forest', 3, 'fatia de entradas na barra do hero'],
   ['--fatia-faturas', '--forest', 3, 'fatia de faturas na barra do hero'],

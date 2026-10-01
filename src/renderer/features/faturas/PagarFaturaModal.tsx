@@ -10,6 +10,9 @@ type Props = {
   cartaoNome: string
   mesReferencia: string
   totalCentavos: number
+  /** RN-10 — o que já foi pago em parciais, e o que falta: é o que se paga aqui. */
+  pagoParcialCentavos: number
+  restanteCentavos: number
   loading: boolean
   /** Erro do último pagamento: fica no diálogo, que só fecha quando der certo. */
   erro: string | null
@@ -25,11 +28,17 @@ type Props = {
  * um diálogo. Com a data apagada, "Confirmar pagamento" mandava uma string
  * vazia ao main, e o card mostrava o JSON do zod: aqui o botão só habilita com
  * uma data que existe no calendário — a mesma validação do main.
+ *
+ * Com pagamento parcial (RN-10), o que se paga aqui é o restante, e o diálogo
+ * diz isso: mostrando só o total, confirmar parecia pagar de novo o que já
+ * tinha sido pago.
  */
 export function PagarFaturaModal({
   cartaoNome,
   mesReferencia,
   totalCentavos,
+  pagoParcialCentavos,
+  restanteCentavos,
   loading,
   erro,
   onConfirmar,
@@ -46,7 +55,11 @@ export function PagarFaturaModal({
           <strong>
             {cartaoNome} · {formatarMesReferencia(mesReferencia, { capitalizar: true })}
           </strong>{' '}
-          — {formatBRL(totalCentavos)}. As parcelas dela ficam pagas com a mesma data.
+          —{' '}
+          {pagoParcialCentavos > 0
+            ? `falta pagar ${formatBRL(restanteCentavos)} de ${formatBRL(totalCentavos)} (${formatBRL(pagoParcialCentavos)} já pagos em parciais)`
+            : formatBRL(totalCentavos)}
+          . As parcelas dela ficam pagas com a mesma data.
         </>
       }
       onFechar={onCancelar}

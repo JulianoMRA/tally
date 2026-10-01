@@ -332,10 +332,17 @@
   color: var(--ink);
 }
 
+/* `flex-wrap`: com pagamento parcial o bloco ganha dois valores e um botão, e
+   na janela estreita não cabe numa linha. Sem quebrar, em 1024px os rótulos se
+   partiam palavra por palavra ("TOTAL / DA / FATURA") e o último botão saía
+   28px para fora da faixa; quebrando, os itens descem alinhados à direita.
+   `faturas-geometria.spec.ts` cobra as duas coisas. */
 .faixaFim {
   display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
-  gap: 16px;
+  gap: 8px 16px;
   margin-left: auto;
 }
 
@@ -380,6 +387,17 @@
 .erroAcao {
   font-size: var(--text-2);
   color: var(--expense);
+  margin: 0;
+  width: 100%;
+}
+
+/* Pago a mais (RN-10): os pagamentos parciais passam do total. Âmbar, o tom
+   de "atenção" da tela — não é erro, é algo a conferir. Linha inteira, como o
+   erro de ação acima. */
+.avisoExcedente {
+  font-size: var(--text-2);
+  font-weight: 600;
+  color: var(--pending);
   margin: 0;
   width: 100%;
 }
@@ -449,6 +467,15 @@ tbody td.colCompra {
 .colValor {
   text-align: right;
   white-space: nowrap;
+}
+
+/* `thead th.x`, e não `.x`: o `.tabela th` do Table alinha todo cabeçalho à
+   esquerda e vence uma classe sozinha, como o `.tabela td` acima. O cabeçalho
+   ordenável resolve por dentro (`alinhamento="direita"`); o de "Pagamentos
+   parciais" é um `th` simples, e "Valor" ficava na borda esquerda da coluna,
+   longe do número que nomeia. */
+thead th.colValor {
+  text-align: right;
 }
 
 .valor {

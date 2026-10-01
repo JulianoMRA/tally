@@ -11,6 +11,8 @@ function renderizar(over: Partial<Parameters<typeof PagarFaturaModal>[0]> = {}) 
       cartaoNome="Inter"
       mesReferencia="2026-09"
       totalCentavos={183881}
+      pagoParcialCentavos={0}
+      restanteCentavos={183881}
       loading={false}
       erro={null}
       onConfirmar={onConfirmar}
@@ -79,5 +81,29 @@ describe('PagarFaturaModal', () => {
 
     const confirmar = screen.getByRole('button', { name: /Confirm|Pagando/ })
     expect((confirmar as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  /**
+   * RN-10 — com pagamento parcial, o que se paga aqui é o restante. O diálogo
+   * dizia só o total, e confirmar parecia pagar de novo o que já tinha sido
+   * pago.
+   */
+  describe('com pagamento parcial', () => {
+    it('diz o que falta, de quanto, e o que já foi pago', () => {
+      renderizar({ totalCentavos: 80000, pagoParcialCentavos: 20000, restanteCentavos: 60000 })
+
+      const texto = screen.getByRole('dialog').textContent ?? ''
+      expect(texto).toMatch(/falta pagar R\$\s*600,00 de R\$\s*800,00/)
+      expect(texto).toMatch(/R\$\s*200,00 já pagos/)
+    })
+
+    it('sem parcial, segue dizendo só o total', () => {
+      renderizar()
+
+      const texto = screen.getByRole('dialog').textContent ?? ''
+      expect(texto).toMatch(/R\$\s*1\.838,81/)
+      expect(texto).not.toMatch(/falta pagar/)
+      expect(texto).not.toMatch(/já pagos/)
+    })
   })
 })
