@@ -186,4 +186,45 @@ describe('TrilhoCartoes — prazo', () => {
 
     expect(within(card('Inter')).getByText('Arquivado')).toBeTruthy()
   })
+
+  /**
+   * RN-10 no trilho: o número do card é o que falta pagar. Era o total, e por
+   * isso o card seguia mostrando um valor que o banco já não cobrava.
+   */
+  describe('pagamento parcial', () => {
+    function comParcial(pagoParcialCentavos: number, vencimento = '2026-10-20'): FaturaComTotal {
+      const base = faturaEm({ kind: 'Fechada' }, vencimento)
+      return {
+        ...base,
+        pagoParcialCentavos,
+        restanteCentavos: base.totalCentavos - pagoParcialCentavos
+      }
+    }
+
+    it('o card mostra o que falta pagar, com o parcial como contexto', () => {
+      renderUm(comParcial(40000))
+
+      expect(within(card('Inter')).getByText(/^R\$\s*1\.438,81$/)).toBeTruthy()
+      expect(
+        within(card('Inter')).getByText(/^R\$\s*400,00 pagos de R\$\s*1\.838,81$/)
+      ).toBeTruthy()
+    })
+
+    it('sem parcial, o card mostra o total e não ganha a linha de contexto', () => {
+      renderUm(faturaEm({ kind: 'Fechada' }, '2026-10-20'))
+
+      expect(within(card('Inter')).getByText(/^R\$\s*1\.838,81$/)).toBeTruthy()
+      expect(within(card('Inter')).queryByText(/pagos de/)).toBeNull()
+    })
+
+    // Tudo pago em parciais, fatura ainda não marcada como paga: o prazo fica
+    // neutro. "vencida há 19 dias" em vermelho seria alarme falso.
+    it('fatura quitada por parciais não alarma o prazo', () => {
+      renderUm(comParcial(183881, '2026-09-10'))
+
+      expect(within(card('Inter')).queryByText(/vencida há/)).toBeNull()
+      const prazo = within(card('Inter')).getByText('vence 10/09')
+      expect(prazo.getAttribute('data-tom')).toBeNull()
+    })
+  })
 })

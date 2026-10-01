@@ -69,6 +69,14 @@
   line-height: 1.1;
 }
 
+/* Contexto do pagamento parcial (RN-10): "R$ 200,00 pagos de R$ 800,00". O
+   número acima passa a ser o que falta pagar, e esta linha diz de quanto.
+   Tom de apoio: é explicação do número, não um segundo número. */
+.trilhoParcial {
+  font-size: var(--text-2);
+  color: var(--ink-3);
+}
+
 .trilhoPrazo {
   font-size: var(--text-2);
   color: var(--ink-3);

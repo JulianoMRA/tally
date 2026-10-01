@@ -8,7 +8,12 @@ import { HistoricoFaturas } from '../HistoricoFaturas'
 
 let proximoId = 1
 
-function fatura(mesReferencia: string, status: StatusFatura): FaturaComTotal {
+/** Toda fatura tem total de R$ 100,00; `pagoParcialCentavos` abate dele. */
+function fatura(
+  mesReferencia: string,
+  status: StatusFatura,
+  pagoParcialCentavos = 0
+): FaturaComTotal {
   return {
     fatura: {
       id: proximoId++,
@@ -22,8 +27,8 @@ function fatura(mesReferencia: string, status: StatusFatura): FaturaComTotal {
     },
     mesReferencia,
     totalCentavos: 10000,
-    pagoParcialCentavos: 0,
-    restanteCentavos: 10000
+    pagoParcialCentavos,
+    restanteCentavos: 10000 - pagoParcialCentavos
   }
 }
 
@@ -35,12 +40,12 @@ const FATURAS = [
   fatura('2026-09', { kind: 'Aberta' })
 ]
 
-function renderizar() {
+function renderizar(faturas: FaturaComTotal[] = FATURAS) {
   render(
     <HistoricoFaturas
-      faturas={FATURAS}
+      faturas={faturas}
       mesAtual="2026-09"
-      faturaAbertaId={FATURAS[3]!.fatura.id}
+      faturaAbertaId={faturas[faturas.length - 1]!.fatura.id}
       cartaoCor="#f70"
       onAbrir={() => {}}
     />
@@ -112,5 +117,73 @@ describe('HistoricoFaturas', () => {
     const agosto = screen.getByRole('button', { name: /Agosto de 2026/ })
     const aviso = within(agosto).getByText('vencida há 48 dias')
     expect(aviso.getAttribute('data-tom')).toBe('alerta')
+  })
+})
+
+/**
+ * RN-10 no Histórico: a linha mostra o que falta pagar, com o total como
+ * contexto, e a soma da barra acompanha as linhas.
+ */
+describe('HistoricoFaturas — pagamento parcial', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 29, 12))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+  })
+
+  // Julho pago, agosto com R$ 40 pagos de R$ 100, setembro é a fatura em tela.
+  function comParcialEmAgosto(): FaturaComTotal[] {
+    return [
+      fatura('2026-07', { kind: 'Paga', pagaEm: '2026-07-11' }),
+      fatura('2026-08', { kind: 'Fechada' }, 4000),
+      fatura('2026-09', { kind: 'Aberta' })
+    ]
+  }
+
+  it('a linha com parcial mostra o que falta pagar e de quanto', async () => {
+    renderizar(comParcialEmAgosto())
+    const usuario = userEvent.setup()
+    await usuario.click(screen.getByRole('button', { name: /meses anteriores/ }))
+
+    const agosto = screen.getByRole('button', { name: /Agosto de 2026/ })
+    expect(within(agosto).getByText(/^R\$\s*60,00$/)).toBeTruthy()
+    expect(within(agosto).getByText(/R\$\s*40,00 pagos de R\$\s*100,00/)).toBeTruthy()
+  })
+
+  it('a linha sem parcial não ganha o contexto', async () => {
+    renderizar(comParcialEmAgosto())
+    const usuario = userEvent.setup()
+    await usuario.click(screen.getByRole('button', { name: /meses anteriores/ }))
+
+    const julho = screen.getByRole('button', { name: /Julho de 2026/ })
+    expect(within(julho).getByText(/^R\$\s*100,00$/)).toBeTruthy()
+    expect(within(julho).queryByText(/pagos de/)).toBeNull()
+  })
+
+  // 100 de julho mais os 60 que faltam de agosto. Somando os totais daria 200,
+  // e a barra discordaria das duas linhas logo abaixo dela.
+  it('a soma da barra é a das linhas: o que falta, não o total', () => {
+    renderizar(comParcialEmAgosto())
+
+    expect(screen.getByText(/^R\$\s*160,00$/)).toBeTruthy()
+    expect(screen.queryByText(/^R\$\s*200,00$/)).toBeNull()
+  })
+
+  // Fatura Fechada com tudo pago em parciais: não há o que pagar, só o que
+  // marcar. "vencida há 48 dias" em vermelho seria alarme falso.
+  it('a fatura quitada por parciais não diz que está vencida', async () => {
+    renderizar([
+      fatura('2026-08', { kind: 'Fechada' }, 10000),
+      fatura('2026-09', { kind: 'Aberta' })
+    ])
+    const usuario = userEvent.setup()
+    await usuario.click(screen.getByRole('button', { name: /meses anteriores/ }))
+
+    const agosto = screen.getByRole('button', { name: /Agosto de 2026/ })
+    expect(within(agosto).queryByText(/vencida há/)).toBeNull()
+    expect(within(agosto).getByText(/^R\$\s*0,00$/)).toBeTruthy()
   })
 })
