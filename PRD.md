@@ -410,6 +410,12 @@ Datas: `TEXT` ISO-8601. `mes_referencia` é `YYYY-MM`; demais datas são `YYYY-M
 Unique constraint: `(cartao_id, mes_referencia)`.
 Total da fatura é calculado em tempo de leitura (soma das parcelas vinculadas) — não persistido.
 
+### PagamentoParcial
+
+`id, fatura_id, valor_centavos (> 0), data_pagamento (YYYY-MM-DD), created_at, updated_at`
+
+> Tabela `pagamento_parcial`, criada na migration 0015 (RN-10). Uma linha por pagamento, e não uma coluna `valor_pago` em `fatura`: os pagamentos acontecem várias vezes no mês, cada um com a sua data, e são excluídos um a um. A soma por fatura é feita na leitura, como o total. FK `fatura_id` com `ON DELETE RESTRICT`. Entra no export/import JSON (formatVersion segue 1; export anterior importa com a lista vazia).
+
 ### Categoria
 
 `id, nome, tipo (Despesa|Renda|Ambos), cor, ativo, created_at, updated_at`
@@ -533,12 +539,16 @@ Em nenhum dos dois ramos a ocorrência sem cartão cria fatura: `fatura_id` fica
 
 Pagar a fatura marca todas as parcelas dela como `Paga` (com a mesma data de pagamento); reabrir reverte as parcelas para `Pendente` e devolve a fatura para `Aberta` — ou para `Fechada`, quando `data_fechamento` já passou (a reabertura não pode ressuscitar uma fatura vencida como se ainda aceitasse compras). É essa sincronização que arma os bloqueios de RF-DES-09/10.
 
+**Pagamento parcial (RN-10) não é uma transição deste ciclo.** Não muda o status da fatura nem o das parcelas, e por isso não arma bloqueio nenhum: a despesa de uma fatura `Aberta` com pagamento parcial segue editável e excluível. Pagar e reabrir a fatura preservam os pagamentos parciais dela.
+
 ### RN-07 — Cálculo do total da fatura
 
 `total = soma(valor_parcela onde parcela.fatura_id = fatura.id)`.
 
 > Anteriormente havia subtração de ajudas (`líquido = bruto − ajudas`); removida
 > no Slice 12.1 junto com a feature de Ajudas.
+
+O total é quanto foi comprado, e não muda com pagamento. O que falta pagar é outra grandeza, a da RN-10.
 
 ### RN-08 — Balanço mensal
 
@@ -559,14 +569,36 @@ representável no projeto e o sinal vem do tipo.
 **Esta regra não alimenta nenhuma outra.** Ela lê a RN-08 quando o ponto de
 partida é o saldo do mês, e nada mais no app lê o resultado dela.
 
+### RN-10 — Valor a pagar da fatura (pagamento parcial)
+
+`falta pagar = max(0, total − soma(pagamentos parciais da fatura))`
+
+`pago a mais = max(0, soma(pagamentos parciais da fatura) − total)`
+
+Um **pagamento parcial** é um valor pago numa fatura antes da quitação, com data. O total continua sendo a RN-07; o que o pagamento muda é o que falta pagar.
+
+> Até out/2026 o app só sabia pagar a fatura inteira: pagar era um status com uma data (RN-06). Quem pagava uma parte antes do vencimento não tinha onde registrar, e o improviso era lançar o pagamento como renda avulsa — a sobra do mês fechava, porque somar X nas entradas é aritmeticamente igual a tirar X da fatura, e a fatura seguia mostrando um valor que o banco já não cobrava.
+
+**Não é adiantamento de parcela.** O adiantamento (RN-03) move parcelas entre faturas e muda o total das duas. O pagamento parcial não toca em parcela nenhuma.
+
+**Quem aceita.** Fatura `Aberta` e `Fechada`. `Paga` não: é imutável (RF-FAT-04), e quem quer registrar algo nela reabre antes (RF-FAT-05). A recusa confere a fatura antes do valor — quando os dois valem, a mensagem aponta o dono da decisão.
+
+**O teto é o que falta pagar.** O valor é inteiro, de pelo menos um centavo, e não passa do restante; a data precisa existir no calendário. Em fatura `Fechada`, o valor **igual** ao que falta também é recusado: aceitá-lo deixaria a fatura sem nada a pagar e sem estar paga, com as parcelas pendentes. Quitar é "Marcar como paga", que grava a data e marca as parcelas (RN-06). Em fatura `Aberta` o mesmo valor é aceito — ela ainda não pode ser marcada como paga, e novas compras podem entrar.
+
+**O restante nunca fica negativo.** Os pagamentos só passam do total numa fatura `Aberta`, quando uma despesa é excluída ou reduzida depois do pagamento — o que continua permitido, porque o pagamento parcial não trava a despesa (RN-06). A diferença vira **pago a mais**, e não um restante abaixo de zero: valor monetário negativo não é representável no projeto.
+
+**Excluir.** Um pagamento parcial pode ser excluído enquanto a fatura não está `Paga`; o que falta pagar volta. É a única correção: não há edição, e errar o valor se resolve excluindo e registrando de novo.
+
+**Uma conta só.** O total de uma fatura nasce em três pontos de leitura — o resumo por cartão, o detalhe da fatura e a visão mensal —, e os três descontam os pagamentos pela mesma função do domínio. Três contas próprias fariam a mesma fatura valer um número em cada tela.
+
 ---
 
 ## 8. Estratégia de QA
 
 ### 8.1 Testes unitários (Vitest)
 
-- **Cobertura mínima**: piso por camada — domain 80% (regras RN-01 a RN-09), persistence 90%, shared 85%, renderer 40%, electron 10% — e 55% global sobre o app inteiro. Ver RNF-06 para por que os números mudaram em set/2026.
-- **Foco**: cálculo de fatura por data de compra (RN-01), geração de parcelas (RN-02), adiantamento (RN-03), geração de ocorrências de assinatura (RN-04), ciclo de vida da fatura (RN-06), total da fatura (RN-07), balanço mensal (RN-08), saldo simulado (RN-09).
+- **Cobertura mínima**: piso por camada — domain 80% (regras RN-01 a RN-10), persistence 90%, shared 85%, renderer 40%, electron 10% — e 55% global sobre o app inteiro. Ver RNF-06 para por que os números mudaram em set/2026.
+- **Foco**: cálculo de fatura por data de compra (RN-01), geração de parcelas (RN-02), adiantamento (RN-03), geração de ocorrências de assinatura (RN-04), ciclo de vida da fatura (RN-06), total da fatura (RN-07), balanço mensal (RN-08), saldo simulado (RN-09), valor a pagar da fatura (RN-10).
 - **TDD obrigatório** no domain layer: teste antes da implementação.
 
 ### 8.2 Testes de integração (Vitest + node-sqlite3-wasm em memória)

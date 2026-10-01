@@ -33,7 +33,13 @@ function fatura(id: number, cartaoId: number): Fatura {
 /** A visão geral consome FaturaComTotal desde a fase 8: a lista precisa do valor. */
 function comTotal(id: number, cartaoId: number, totalCentavos = 0): FaturaComTotal {
   const f = fatura(id, cartaoId)
-  return { fatura: f, mesReferencia: f.mesReferencia, totalCentavos }
+  return {
+    fatura: f,
+    mesReferencia: f.mesReferencia,
+    totalCentavos,
+    pagoParcialCentavos: 0,
+    restanteCentavos: totalCentavos
+  }
 }
 
 describe('agruparFaturasPorCartao', () => {

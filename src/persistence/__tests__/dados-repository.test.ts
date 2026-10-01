@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { openInMemoryDatabase, type Database } from '../database'
 import { runMigrations } from '../migrations/runner'
 import { DadosRepository } from '../repositories/dados-repository'
+import { exportPayloadSchema } from '../../shared/ipc/dados'
 
 function novoBanco(): Database {
   const db = openInMemoryDatabase()
@@ -50,7 +51,7 @@ describe('DadosRepository', () => {
     const payload = new DadosRepository(db).exportar()
 
     expect(payload.formatVersion).toBe(1)
-    expect(payload.app.schemaVersion).toMatch(/^0014/)
+    expect(payload.app.schemaVersion).toMatch(/^0015/)
     expect(payload.tables.cartao).toHaveLength(1)
     expect(payload.tables.orcamento).toHaveLength(1)
     expect(payload.tables.parcela).toHaveLength(1)
@@ -221,6 +222,115 @@ describe('DadosRepository', () => {
     const fonte = destino.prepare('SELECT id FROM renda WHERE id = 900').get()
     expect(fonte).toBeUndefined()
 
+    origem.close()
+    destino.close()
+  })
+})
+
+/**
+ * RN-10 — a tabela `pagamento_parcial` (migration 0015) no export e no import.
+ *
+ * Ela referencia `fatura` com ON DELETE RESTRICT, e o import apaga tudo antes
+ * de inserir. Fora da ordem certa nas duas listas, importar um backup sobre uma
+ * base que já tem pagamento parcial morreria no `DELETE FROM fatura`.
+ */
+describe('DadosRepository — pagamento parcial', () => {
+  function seedComPagamento(db: Database): void {
+    seedBasico(db)
+    db.exec(
+      `INSERT INTO pagamento_parcial (id, fatura_id, valor_centavos, data_pagamento)
+       VALUES (1, 1, 2000, '2026-06-04')`
+    )
+  }
+
+  it('exporta os pagamentos parciais', () => {
+    const db = novoBanco()
+    seedComPagamento(db)
+
+    const payload = new DadosRepository(db).exportar()
+
+    expect(payload.tables.pagamento_parcial).toHaveLength(1)
+    expect(payload.tables.pagamento_parcial[0]).toMatchObject({
+      fatura_id: 1,
+      valor_centavos: 2000,
+      data_pagamento: '2026-06-04'
+    })
+    db.close()
+  })
+
+  it('ida e volta preserva o pagamento e o vínculo com a fatura', () => {
+    const origem = novoBanco()
+    seedComPagamento(origem)
+    const payload = new DadosRepository(origem).exportar()
+
+    const destino = novoBanco()
+    const { totalLinhas } = new DadosRepository(destino).importar(payload)
+
+    // As 8 linhas do seed básico mais o pagamento.
+    expect(totalLinhas).toBe(9)
+    const linha = destino
+      .prepare(
+        `SELECT pp.valor_centavos, pp.data_pagamento, f.mes_referencia
+           FROM pagamento_parcial pp JOIN fatura f ON f.id = pp.fatura_id`
+      )
+      .get()
+    expect(linha).toEqual({
+      valor_centavos: 2000,
+      data_pagamento: '2026-06-04',
+      mes_referencia: '2026-06'
+    })
+    origem.close()
+    destino.close()
+  })
+
+  // O caso que a ordem de DELETE existe para resolver.
+  it('importa sobre uma base que já tem pagamento parcial, substituindo-o', () => {
+    const origem = novoBanco()
+    seedBasico(origem)
+    const payload = new DadosRepository(origem).exportar()
+
+    const destino = novoBanco()
+    seedComPagamento(destino)
+
+    expect(() => new DadosRepository(destino).importar(payload)).not.toThrow()
+    expect(contar(destino, 'pagamento_parcial')).toBe(0)
+    expect(contar(destino, 'fatura')).toBe(1)
+    origem.close()
+    destino.close()
+  })
+
+  it('export anterior à tabela, sem a chave, continua importável', () => {
+    const origem = novoBanco()
+    seedBasico(origem)
+    const payload = new DadosRepository(origem).exportar()
+    const tabelasAntigas: Record<string, unknown> = { ...payload.tables }
+    delete tabelasAntigas.pagamento_parcial
+    payload.app.schemaVersion = '0014_categoria_sem_tipo'
+
+    const destino = novoBanco()
+    const antigo = exportPayloadSchema.parse({ ...payload, tables: tabelasAntigas })
+    const { totalLinhas } = new DadosRepository(destino).importar(antigo)
+
+    expect(totalLinhas).toBe(8)
+    expect(contar(destino, 'pagamento_parcial')).toBe(0)
+    origem.close()
+    destino.close()
+  })
+
+  it('pagamento apontando para fatura inexistente reverte a importação inteira', () => {
+    const origem = novoBanco()
+    seedComPagamento(origem)
+    const payload = new DadosRepository(origem).exportar()
+    ;(payload.tables.pagamento_parcial[0] as Record<string, unknown>).fatura_id = 999
+
+    const destino = novoBanco()
+    destino.exec(
+      `INSERT INTO cartao (id, nome, dia_fechamento, dia_vencimento, cor) VALUES (99, 'Antigo', 1, 1, '#000000')`
+    )
+
+    expect(() => new DadosRepository(destino).importar(payload)).toThrow(/FOREIGN KEY/i)
+    expect(destino.prepare('SELECT nome FROM cartao').get()).toEqual({ nome: 'Antigo' })
+    expect(contar(destino, 'pagamento_parcial')).toBe(0)
     origem.close()
     destino.close()
   })

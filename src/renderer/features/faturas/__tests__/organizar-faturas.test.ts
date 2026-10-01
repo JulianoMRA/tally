@@ -11,6 +11,8 @@ function fatura(
   return {
     mesReferencia,
     totalCentavos,
+    pagoParcialCentavos: 0,
+    restanteCentavos: totalCentavos,
     fatura: {
       id: Number(mesReferencia.replace('-', '')),
       cartaoId: 1,

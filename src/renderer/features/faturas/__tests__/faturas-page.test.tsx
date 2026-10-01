@@ -32,7 +32,9 @@ function fatura(
       updatedAt: ''
     },
     mesReferencia,
-    totalCentavos
+    totalCentavos,
+    pagoParcialCentavos: 0,
+    restanteCentavos: totalCentavos
   }
 }
 
@@ -54,7 +56,17 @@ function instalarApi(cartoes: Cartao[], faturasPorCartao: Record<number, FaturaC
       listarResumoPorCartao: vi.fn(async (id: number) => faturasPorCartao[id] ?? []),
       detalharComParcelas: vi.fn(async (id: number): Promise<FaturaDetalhada | null> => {
         const alvo = todas.find((f) => f.fatura.id === id)
-        return alvo ? { fatura: alvo.fatura, parcelas: [], totalCentavos: 0 } : null
+        return alvo
+          ? {
+              fatura: alvo.fatura,
+              parcelas: [],
+              totalCentavos: 0,
+              pagoParcialCentavos: 0,
+              restanteCentavos: 0,
+              excedenteCentavos: 0,
+              pagamentosParciais: []
+            }
+          : null
       }),
       // Muta o dublê como o banco faria: a próxima carga já vê a fatura paga.
       pagar: vi.fn(async (id: number, dataPagamento: string) => {

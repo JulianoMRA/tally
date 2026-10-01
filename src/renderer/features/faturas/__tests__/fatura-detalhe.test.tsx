@@ -22,7 +22,11 @@ function detalhe(status: StatusFatura, dataVencimento = '2026-10-01'): FaturaDet
       updatedAt: ''
     },
     parcelas: [],
-    totalCentavos: 183881
+    totalCentavos: 183881,
+    pagoParcialCentavos: 0,
+    restanteCentavos: 183881,
+    excedenteCentavos: 0,
+    pagamentosParciais: []
   }
 }
 
@@ -124,6 +128,7 @@ function comParcela(
     ...detalhe(status),
     parcelas: [p],
     totalCentavos: p.valorCentavos,
+    restanteCentavos: p.valorCentavos,
     despesasPorParcela: { [p.id]: d },
     ...extra
   }
@@ -522,6 +527,7 @@ describe('FaturaDetalhe — tabela de parcelas', () => {
         ...detalhe({ kind: 'Aberta' }),
         parcelas: [pTarde, pCedo],
         totalCentavos: 110000,
+        restanteCentavos: 110000,
         despesasPorParcela: { 50: cedo, 51: tarde }
       }
     }
