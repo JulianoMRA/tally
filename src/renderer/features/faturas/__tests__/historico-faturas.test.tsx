@@ -56,6 +56,18 @@ function abas() {
   return screen.getByRole('radiogroup', { name: 'Filtrar faturas por status' })
 }
 
+function contagens() {
+  return within(abas())
+    .getAllByRole('radio')
+    .map((r) => r.textContent)
+}
+
+async function abrirLista() {
+  const usuario = userEvent.setup()
+  await usuario.click(screen.getByRole('button', { name: /meses anteriores/ }))
+  return usuario
+}
+
 describe('HistoricoFaturas', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
@@ -72,10 +84,7 @@ describe('HistoricoFaturas', () => {
   it('as abas são Todas, A pagar e Pagas, cada uma com a contagem', () => {
     renderizar()
 
-    const nomes = within(abas())
-      .getAllByRole('radio')
-      .map((r) => r.textContent)
-    expect(nomes).toEqual(['Todas 3', 'A pagar 1', 'Pagas 2'])
+    expect(contagens()).toEqual(['Todas 3', 'A pagar 1', 'Pagas 2'])
   })
 
   // A meta do painel era um "3" sem rótulo, repetindo a linha de baixo
@@ -101,8 +110,7 @@ describe('HistoricoFaturas', () => {
 
   it('a linha paga diz quando foi paga, no lugar do vencimento', async () => {
     renderizar()
-    const usuario = userEvent.setup()
-    await usuario.click(screen.getByRole('button', { name: /meses anteriores/ }))
+    await abrirLista()
 
     const julho = screen.getByRole('button', { name: /Julho de 2026/ })
     expect(within(julho).getByText(/Paga em 11\/07\/2026/)).toBeTruthy()
@@ -111,8 +119,7 @@ describe('HistoricoFaturas', () => {
 
   it('a linha não paga e vencida avisa, em tom de alerta', async () => {
     renderizar()
-    const usuario = userEvent.setup()
-    await usuario.click(screen.getByRole('button', { name: /meses anteriores/ }))
+    await abrirLista()
 
     const agosto = screen.getByRole('button', { name: /Agosto de 2026/ })
     const aviso = within(agosto).getByText('vencida há 48 dias')
@@ -145,8 +152,7 @@ describe('HistoricoFaturas — pagamento parcial', () => {
 
   it('a linha com parcial mostra o que falta pagar e de quanto', async () => {
     renderizar(comParcialEmAgosto())
-    const usuario = userEvent.setup()
-    await usuario.click(screen.getByRole('button', { name: /meses anteriores/ }))
+    await abrirLista()
 
     const agosto = screen.getByRole('button', { name: /Agosto de 2026/ })
     expect(within(agosto).getByText(/^R\$\s*60,00$/)).toBeTruthy()
@@ -155,8 +161,7 @@ describe('HistoricoFaturas — pagamento parcial', () => {
 
   it('a linha sem parcial não ganha o contexto', async () => {
     renderizar(comParcialEmAgosto())
-    const usuario = userEvent.setup()
-    await usuario.click(screen.getByRole('button', { name: /meses anteriores/ }))
+    await abrirLista()
 
     const julho = screen.getByRole('button', { name: /Julho de 2026/ })
     expect(within(julho).getByText(/^R\$\s*100,00$/)).toBeTruthy()
@@ -179,8 +184,7 @@ describe('HistoricoFaturas — pagamento parcial', () => {
       fatura('2026-08', { kind: 'Fechada' }, 10000),
       fatura('2026-09', { kind: 'Aberta' })
     ])
-    const usuario = userEvent.setup()
-    await usuario.click(screen.getByRole('button', { name: /meses anteriores/ }))
+    await abrirLista()
 
     const agosto = screen.getByRole('button', { name: /Agosto de 2026/ })
     expect(within(agosto).queryByText(/vencida há/)).toBeNull()
