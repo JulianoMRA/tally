@@ -168,7 +168,10 @@ async function ir(hash) {
  */
 async function abrirAnalise() {
   await ir('#/mensal')
-  await page.getByRole('tab', { name: /an[aá]lise/i }).first().click({ timeout: 5000 })
+  await page
+    .getByRole('tab', { name: /an[aá]lise/i })
+    .first()
+    .click({ timeout: 5000 })
   await page.waitForTimeout(600)
   await esperarGraficos()
 }
@@ -190,6 +193,63 @@ async function capturar(nome) {
   console.log('  ·', nome)
 }
 
+/**
+ * Leva o foco até `alvo` pela tecla Tab.
+ *
+ * `.focus()` não serve para fotografar foco de teclado: depois de um clique de
+ * mouse, o foco por script não acende `:focus-visible`. A captura
+ * `estado-foco-de-teclado` usava `.focus()` e saía idêntica, byte a byte, à
+ * captura sem foco — nos dois temas, sem que nada avisasse.
+ */
+async function tabAte(alvo, limite = 40) {
+  for (let i = 0; i < limite; i++) {
+    await page.keyboard.press('Tab')
+    if (await alvo.evaluate((el) => el === document.activeElement)) return
+  }
+  throw new Error('o foco não chegou ao alvo pela tecla Tab')
+}
+
+/**
+ * Captura um estado de foco e confere que ele aparece na imagem: fotografa de
+ * novo sem o foco, e as duas precisam diferir. Mesmo princípio da conferência
+ * do tema lá em cima — folha de revisão que mente em silêncio é o pior defeito
+ * que ela pode ter.
+ */
+async function capturarFoco(nome) {
+  // A sombra do anel entra com transição; sem a espera a captura sai no meio.
+  await page.waitForTimeout(300)
+  const comFoco = await page.screenshot({ path: join(SAIDA, `${nome}.png`) })
+  await page.evaluate(() => document.activeElement?.blur())
+  await page.waitForTimeout(300)
+  const semFoco = await page.screenshot()
+  if (comFoco.equals(semFoco)) {
+    problemas.push(`[foco] "${nome}" saiu igual à tela sem foco: o anel não aparece`)
+  }
+  console.log('  ·', nome)
+}
+
+const MESES = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro'
+]
+
+/** "Julho de 2026": o mês de N meses atrás, como a tela o escreve. */
+function mesPorExtenso(mesesAtras) {
+  const hoje = new Date()
+  const alvo = new Date(hoje.getFullYear(), hoje.getMonth() - mesesAtras, 1)
+  return `${MESES[alvo.getMonth()]} de ${alvo.getFullYear()}`
+}
+
 await redimensionar(1280)
 await page.waitForTimeout(1000)
 
@@ -203,7 +263,11 @@ console.log('semeando…')
 await page.evaluate(async () => {
   const api = window.api
   const hoje = new Date()
-  const iso = (d) => d.toISOString().slice(0, 10)
+  // Data LOCAL, como o app (`hojeIsoLocal`). Com `toISOString`, das 21h à
+  // meia-noite "hoje" já era amanhã em UTC: a folha de 01/10/2026 saiu com um
+  // pagamento parcial de "02/10" numa tela cujos diálogos abriam em 01/10.
+  const iso = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   const emDias = (n) => {
     const x = new Date(hoje)
     x.setDate(x.getDate() + n)
@@ -268,8 +332,7 @@ await page.evaluate(async () => {
   // têm o que mostrar, e a linha de Cartões volta a parecer cadastro morto.
   // Dia 1 fica antes do fechamento dos dois cartões (3 e 25), então a fatura é
   // sempre a do próprio mês escolhido.
-  const primeiroDiaDeMesesAtras = (n) =>
-    iso(new Date(Date.UTC(hoje.getFullYear(), hoje.getMonth() - n, 1)))
+  const primeiroDiaDeMesesAtras = (n) => iso(new Date(hoje.getFullYear(), hoje.getMonth() - n, 1))
 
   for (const [n, valorNubank, valorInter] of [
     [1, 41000, 38000],
@@ -400,15 +463,26 @@ await page.evaluate(async () => {
   // A fatura do mês passado do Inter é paga; a de quatro meses atrás fica a
   // pagar, vencida. Fatura de mês passado nasce Aberta e só fecha com a
   // manutenção: fecha antes de pagar, que é o ciclo do RN-06.
-  const pagarDoMes = async (cartaoId, mesesAtras) => {
+  const pagarDoMes = async (cartaoId, mesesAtras, parcialCentavos = 0) => {
     const mes = primeiroDiaDeMesesAtras(mesesAtras).slice(0, 7)
     const fatura = (await api.fatura.listarPorCartao(cartaoId)).find((f) => f.mesReferencia === mes)
     if (!fatura) return
+    // O pagamento parcial entra antes de pagar: fatura paga não aceita (RN-10).
+    if (parcialCentavos > 0) {
+      await api.fatura.registrarPagamentoParcial({
+        faturaId: fatura.id,
+        valorCentavos: parcialCentavos,
+        dataPagamento: fatura.dataFechamento
+      })
+    }
     if (fatura.status.kind === 'Aberta') await api.fatura.fechar(fatura.id)
     await api.fatura.pagar(fatura.id, fatura.dataVencimento)
   }
   await pagarDoMes(inter.id, 1)
-  await pagarDoMes(inter.id, 3)
+  // Paga COM pagamento parcial: a faixa diz "Restante pago", e a linha do
+  // histórico mostra o contexto do parcial ao lado do selo "Paga". Sem esta
+  // fatura a folha só via o pagamento parcial em fatura a pagar.
+  await pagarDoMes(inter.id, 3, 20000)
 
   // Um pagamento parcial na fatura corrente do Inter (RF-FAT-07). Sem ele a
   // folha nunca mostra a faixa com "Falta pagar", a lista de pagamentos nem a
@@ -451,6 +525,66 @@ await page.evaluate(async () => {
     dataCompra: primeiroDiaDeMesesAtras(1)
   })
   await api.cartao.arquivar(antigo.id)
+
+  // Quarto cartão do trilho, com três estados que a folha nunca mostrou: o
+  // nome que não cabe no card, a fatura comprida e o pagamento parcial nos dois
+  // extremos (RN-10). O nome começa com "O" de propósito: o trilho vai em ordem
+  // alfabética, e o Inter precisa continuar sendo o cartão que a tela abre sem
+  // clique. As compras são de meses à frente: o mês corrente fica como está,
+  // com os três estados de orçamento montados acima.
+  const diaDeMesesAFrente = (meses, dia) =>
+    iso(new Date(hoje.getFullYear(), hoje.getMonth() + meses, dia))
+  const ourocard = await api.cartao.create({
+    nome: 'Ourocard corporativo Banco do Brasil Visa Infinite',
+    diaFechamento: 20,
+    diaVencimento: 27,
+    cor: '#1f6f8b'
+  })
+
+  // Fatura do mês que vem: mais de 30 lançamentos, o tamanho de uma fatura de
+  // verdade. É com ela que a tabela passa da dobra.
+  for (let i = 1; i <= 32; i++) {
+    await api.despesa.criarUnicaCredito({
+      descricao: `Compra ${String(i).padStart(2, '0')} da viagem`,
+      categoriaId: cats.Transporte.id,
+      cartaoId: ourocard.id,
+      valorCentavos: 1500 + i * 137,
+      dataCompra: diaDeMesesAFrente(1, 1 + (i % 15))
+    })
+  }
+  // Pago a mais: o pagamento parcial só passa do total quando uma despesa sai
+  // depois dele. A passagem entra, o pagamento cobre quase tudo, a passagem é
+  // excluída — e a faixa precisa dizer quanto sobrou.
+  const passagem = await api.despesa.criarUnicaCredito({
+    descricao: 'Passagem cancelada',
+    categoriaId: cats.Transporte.id,
+    cartaoId: ourocard.id,
+    valorCentavos: 60000,
+    dataCompra: diaDeMesesAFrente(1, 2)
+  })
+  await api.fatura.registrarPagamentoParcial({
+    faturaId: passagem.fatura.id,
+    valorCentavos: 150000,
+    dataPagamento: emDias(0)
+  })
+  await api.despesa.excluir({ despesaId: passagem.despesa.id })
+
+  // Quitada por parciais: fatura Aberta aceita o pagamento que cobre tudo, e
+  // depois fecha. Fica Fechada sem nada a pagar — "Pagamento parcial"
+  // desabilitado, sem aviso de prazo, e só "Marcar como paga" a fazer.
+  const curso = await api.despesa.criarUnicaCredito({
+    descricao: 'Curso de idiomas',
+    categoriaId: cats.Transporte.id,
+    cartaoId: ourocard.id,
+    valorCentavos: 45000,
+    dataCompra: diaDeMesesAFrente(2, 2)
+  })
+  await api.fatura.registrarPagamentoParcial({
+    faturaId: curso.fatura.id,
+    valorCentavos: 45000,
+    dataPagamento: emDias(0)
+  })
+  await api.fatura.fechar(curso.fatura.id)
 
   // Uma cópia de segurança: sem ela a lista de Ajustes só aparece vazia na
   // folha de contato, e o estado que a F9 mexeu — a linha com o menu de ações —
@@ -556,6 +690,44 @@ try {
   await capturar('estado-modal-pagar-fatura')
   await page.keyboard.press('Escape')
 
+  // Foco de teclado nos dois elementos de Faturas que têm sombra própria: era
+  // ela que cancelava o anel. Sai do cartão e volta pela tecla — o clique o
+  // deixa focado, mas sem `:focus-visible`.
+  await page.getByRole('button', { name: /^Inter/ }).click({ timeout: 5000 })
+  await page.waitForTimeout(400)
+  await page.keyboard.press('Shift+Tab')
+  await page.keyboard.press('Tab')
+  await capturarFoco('estado-faturas-foco-cartao')
+
+  // O histórico segue aberto desde a captura lá de cima: o estado dele
+  // sobrevive à troca de cartão. A conferência é só para a folha não depender
+  // disso.
+  const expandir = page.getByRole('button', { name: /meses anteriores/ }).first()
+  if ((await expandir.getAttribute('aria-expanded')) !== 'true') await expandir.click()
+  await expandir.focus()
+  await page.keyboard.press('Tab')
+  await capturarFoco('estado-faturas-foco-historico')
+
+  // Fatura paga com pagamento parcial: a faixa diz "Restante pago". Aberta
+  // pelo histórico, a página vai até o título dela.
+  await page
+    .getByRole('listitem')
+    .filter({ hasText: mesPorExtenso(3) })
+    .getByRole('button')
+    .click({ timeout: 5000 })
+  await page.waitForTimeout(500)
+  await capturar('estado-faturas-paga-com-parcial')
+
+  // O cartão de nome comprido abre na fatura longa, com pago a mais.
+  await page.getByRole('button', { name: /^Ourocard/ }).click({ timeout: 5000 })
+  await page.waitForTimeout(500)
+  await capturar('estado-faturas-pago-a-mais')
+
+  // A fatura seguinte dele é a Fechada quitada por parciais.
+  await page.getByRole('button', { name: /^Próxima fatura/ }).click({ timeout: 5000 })
+  await page.waitForTimeout(500)
+  await capturar('estado-faturas-quitada-por-parciais')
+
   // O cadastro de avulso virou painel na F6; sem este estado ele fica fora da
   // folha de contato, como o de Saídas ficava antes.
   await ir('#/rendas')
@@ -571,8 +743,10 @@ try {
   await page.getByRole('button', { name: '+ Novo cartão' }).click({ timeout: 5000 })
   await page.waitForTimeout(400)
   await capturar('estado-painel-novo-cartao')
-  await page.getByRole('radio', { name: 'Bronze' }).focus()
-  await capturar('estado-foco-de-teclado')
+  // O grupo de cores é uma parada de Tab só, no swatch escolhido — que no
+  // cartão novo é a primeira sugestão.
+  await tabAte(page.getByRole('radio', { name: 'Verde escuro' }))
+  await capturarFoco('estado-foco-de-teclado')
   await page.keyboard.press('Escape')
 
   // A dica da pizza (RF-VIS-08) só existe sob o mouse. "Outros" é o caso mais
