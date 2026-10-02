@@ -231,6 +231,22 @@ button.faturaItem:hover {
   border-radius: 0 0 calc(var(--r-3) - 1px) calc(var(--r-3) - 1px);
 }
 
+/* A fatura que o painel exibe: fica na lista para as contagens não mudarem
+   com o que está aberto, mas não é botão. */
+.faturaItem[data-em-exibicao] {
+  background: var(--bg-sunk);
+}
+
+.emExibicao {
+  margin-left: 8px;
+  font-size: var(--text-1);
+  font-family: var(--font-mono);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
 /* Valor da fatura: era a informação que faltava na lista inteira. */
 .faturaTotal {
   justify-self: end;

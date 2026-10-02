@@ -94,10 +94,11 @@ test.describe('Navegação por teclado', () => {
     await focarCartao(page, 'Nubank Seed')
     const anel = await anelDeFoco(page, '--focus-ring-inset')
 
-    // O clique abre a lista e deixa o foco no botão; o Tab leva à primeira linha.
+    // O clique abre a lista e deixa o foco no botão; o Tab leva à primeira
+    // linha que é botão — a fatura em exibição fica na lista, mas não abre nada.
     await page.getByRole('button', { name: /meses anteriores/ }).click()
     await page.keyboard.press('Tab')
-    await expect(page.getByRole('listitem').first().getByRole('button')).toBeFocused()
+    await expect(page.getByRole('listitem').getByRole('button').first()).toBeFocused()
     await expect.poll(() => sombraDoFoco(page), 'linha do histórico sem anel de foco').toBe(anel)
   })
 

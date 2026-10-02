@@ -41,12 +41,16 @@ const FATURAS = [
   fatura('2026-09', { kind: 'Aberta' })
 ]
 
-function renderizar(faturas: FaturaComTotal[] = FATURAS) {
+/** Por padrão o painel está na última fatura da lista, a do mês corrente. */
+function renderizar(
+  faturas: FaturaComTotal[] = FATURAS,
+  faturaAbertaId = faturas[faturas.length - 1]!.fatura.id
+) {
   render(
     <HistoricoFaturas
       faturas={faturas}
       mesAtual="2026-09"
-      faturaAbertaId={faturas[faturas.length - 1]!.fatura.id}
+      faturaAbertaId={faturaAbertaId}
       cartaoCor="#f70"
       onAbrir={() => {}}
     />
@@ -142,6 +146,58 @@ describe('HistoricoFaturas', () => {
     const agosto = screen.getByRole('button', { name: /Agosto de 2026/ })
     expect(within(agosto).getByText('fechou 05/08/2026 · vence 01/10/2026')).toBeTruthy()
     expect(within(agosto).queryByText(/vencida há/)).toBeNull()
+  })
+})
+
+/**
+ * A fatura que o painel exibe saía da lista, e as contagens mudavam com o que
+ * estava aberto: com a única fatura a pagar em exibição, a aba passava de
+ * "A pagar 1" para "A pagar 0" — e ela continuava sem pagar.
+ */
+describe('HistoricoFaturas — a fatura em exibição', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 29, 12))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+  })
+
+  const agosto = () => FATURAS[2]!.fatura.id
+
+  it('as contagens não mudam com a fatura que está aberta', () => {
+    renderizar(FATURAS, agosto())
+
+    expect(contagens()).toEqual(['Todas 3', 'A pagar 1', 'Pagas 2'])
+  })
+
+  it('continua na lista, marcada e sem a ação de abrir', async () => {
+    renderizar(FATURAS, agosto())
+    await abrirLista()
+
+    const linha = screen.getByRole('listitem', { current: true })
+    expect(within(linha).getByText('Agosto de 2026')).toBeTruthy()
+    expect(within(linha).getByText('em exibição')).toBeTruthy()
+    expect(within(linha).queryByRole('button')).toBeNull()
+  })
+
+  it('as outras linhas seguem abrindo a fatura delas', async () => {
+    const onAbrir = vi.fn()
+    render(
+      <HistoricoFaturas
+        faturas={FATURAS}
+        mesAtual="2026-09"
+        faturaAbertaId={agosto()}
+        cartaoCor="#f70"
+        onAbrir={onAbrir}
+      />
+    )
+    const usuario = await abrirLista()
+
+    await usuario.click(screen.getByRole('button', { name: /Julho de 2026/ }))
+
+    expect(onAbrir).toHaveBeenCalledWith(FATURAS[1]!.fatura.id)
   })
 })
 
