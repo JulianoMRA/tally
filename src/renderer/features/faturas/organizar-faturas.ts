@@ -29,10 +29,15 @@ export function contarPorStatus(faturas: readonly FaturaComTotal[]): Record<Filt
 }
 
 /**
- * Soma do que falta pagar de cada fatura (RN-10), para a barra do Histórico.
- * É o mesmo número que cada linha mostra: somando o total, a barra discordaria
- * das linhas abaixo dela assim que uma fatura tivesse pagamento parcial.
+ * Quanto falta pagar nas faturas da lista (RN-10), para a barra do Histórico:
+ * a soma do restante das que não estão pagas.
+ *
+ * A barra somava o restante de todas, num número sem rótulo. Na fatura paga o
+ * restante é o que foi quitado ao marcar como paga, e não o que falta: em
+ * "Todas" a conta juntava as duas grandezas, e nada na tela dizia qual era.
  */
-export function somarRestantes(faturas: readonly FaturaComTotal[]): number {
-  return faturas.reduce((soma, f) => soma + f.restanteCentavos, 0)
+export function somarAPagar(faturas: readonly FaturaComTotal[]): number {
+  return faturas
+    .filter((f) => f.fatura.status.kind !== 'Paga')
+    .reduce((soma, f) => soma + f.restanteCentavos, 0)
 }

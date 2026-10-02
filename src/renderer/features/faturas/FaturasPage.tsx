@@ -10,7 +10,7 @@ import { PageHead } from '../../components/layout/PageHead'
 import { EmptyState } from '../../components/ui'
 import { mesAtualReferencia } from '../../lib/mes-atual'
 import { buildFaturasSearch, parseFaturasSearch } from './faturas-search'
-import { resolverFaturaDoDeepLink } from './escolher-fatura-corrente'
+import { escolherFaturaCorrente, resolverFaturaDoDeepLink } from './escolher-fatura-corrente'
 import styles from './faturas.module.css'
 
 /**
@@ -116,16 +116,24 @@ export default function FaturasPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartaoEmFoco, faturaId])
 
-  function selecionarCartao(proximo: number) {
-    // Clicar no cartão que já está em foco não deve descartar a fatura aberta.
-    if (proximo === cartaoEmFoco) return
-    setCartaoId(proximo)
-    setFaturaId(null)
+  function abrirFatura(id: number) {
+    setFaturaId(id)
     setLinkQuebrado(false)
   }
 
-  function abrirFatura(id: number) {
-    setFaturaId(id)
+  function selecionarCartao(proximo: number) {
+    if (proximo === cartaoEmFoco) {
+      // O cartão em foco leva de volta à fatura corrente dele quando o painel
+      // saiu dela — é o que o card passa a dizer ("voltar para outubro de
+      // 2026"). Sem isso a volta era seta por seta, ou sair do cartão e voltar.
+      // Com o painel já na corrente o clique segue sem efeito: recarregar a
+      // fatura que está na tela descartaria o que estivesse aberto nela.
+      const corrente = grupoEmFoco ? escolherFaturaCorrente(grupoEmFoco.faturas, mesAtual) : null
+      if (corrente && corrente.fatura.id !== faturaId) abrirFatura(corrente.fatura.id)
+      return
+    }
+    setCartaoId(proximo)
+    setFaturaId(null)
     setLinkQuebrado(false)
   }
 

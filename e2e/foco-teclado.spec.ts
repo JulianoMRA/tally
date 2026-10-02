@@ -28,16 +28,25 @@ async function foco(page: Page) {
  * O `box-shadow` que o anel de foco produz, lido de uma sonda com a mesma
  * variável. Comparar com "diferente de `none`" não serve onde o elemento já tem
  * sombra própria — é exatamente o caso que este spec precisa pegar.
+ *
+ * A sonda sem sombra é o token que não existe. Sem conferir isso, a sonda e o
+ * elemento responderiam `none` os dois, e o caso passaria sem anel nenhum na
+ * tela.
  */
-async function anelDeFoco(page: Page): Promise<string> {
-  return page.evaluate(() => {
+async function anelDeFoco(
+  page: Page,
+  variavel: '--focus-ring' | '--focus-ring-inset' = '--focus-ring'
+): Promise<string> {
+  const anel = await page.evaluate((token) => {
     const sonda = document.createElement('div')
-    sonda.style.boxShadow = 'var(--focus-ring)'
+    sonda.style.boxShadow = `var(${token})`
     document.body.appendChild(sonda)
     const valor = getComputedStyle(sonda).boxShadow
     sonda.remove()
     return valor
-  })
+  }, variavel)
+  expect(anel, `o token ${variavel} não produz sombra`).not.toBe('none')
+  return anel
 }
 
 /** O `box-shadow` computado do elemento que está com o foco. */
@@ -75,17 +84,21 @@ test.describe('Navegação por teclado', () => {
     await expect.poll(() => sombraDoFoco(page), 'cartão selecionado sem anel de foco').toBe(anel)
   })
 
+  // O anel da linha é o de dentro. Ela encosta na borda do painel, que recorta
+  // o que passa dela: o anel de fora aparecia em cima e embaixo e saía cortado
+  // nas laterais — foi a folha de contato que mostrou.
   test('em Faturas, a linha do histórico mostra o anel de foco', async ({ app }) => {
     const { page } = await semear(app)
     await irPara(page, 'Faturas')
     // A fatura de mês anterior da seed está no Nubank.
     await focarCartao(page, 'Nubank Seed')
-    const anel = await anelDeFoco(page)
+    const anel = await anelDeFoco(page, '--focus-ring-inset')
 
-    // O clique abre a lista e deixa o foco no botão; o Tab leva à primeira linha.
+    // O clique abre a lista e deixa o foco no botão; o Tab leva à primeira
+    // linha que é botão — a fatura em exibição fica na lista, mas não abre nada.
     await page.getByRole('button', { name: /meses anteriores/ }).click()
     await page.keyboard.press('Tab')
-    await expect(page.getByRole('listitem').first().getByRole('button')).toBeFocused()
+    await expect(page.getByRole('listitem').getByRole('button').first()).toBeFocused()
     await expect.poll(() => sombraDoFoco(page), 'linha do histórico sem anel de foco').toBe(anel)
   })
 

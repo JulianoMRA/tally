@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { quitadaPorParciais } from '@domain/services/pagamento-parcial'
 import type { FaturaComTotal } from '@shared/ipc/fatura'
 import type { GrupoFaturasCartao } from './hooks/use-faturas'
@@ -53,13 +54,22 @@ function textoDoPrazo(corrente: FaturaComTotal | null, aviso: AvisoDePrazo | nul
  * sem nada explicando a diferença — e a leitura era de defeito, não de decisão.
  * Por isso cada card agora nomeia a fatura que exibe, e o card em foco admite
  * quando o painel saiu dela.
+ *
+ * Ele admitia numa linha a mais ("painel em dezembro de 2026"), que aumentava
+ * a fileira inteira e empurrava a página — as setas de navegação inclusive —
+ * no primeiro clique para fora da fatura corrente. Agora é a linha do mês que
+ * muda, sem mexer na altura do card, e diz o que o clique nele faz: "voltar
+ * para outubro de 2026".
  */
 export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSelecionar }: Props) {
   const mesAtual = mesAtualReferencia()
   const hoje = hojeIsoLocal()
+  // O teto de 300px por cartão é da fileira inteira, e depende de quantos são:
+  // o CSS faz a conta a partir daqui.
+  const estilo = { '--cartoes': grupos.length } as CSSProperties
 
   return (
-    <div className={styles.trilho} role="group" aria-label="Cartões">
+    <div className={styles.trilho} role="group" aria-label="Cartões" style={estilo}>
       {grupos.map(({ cartao, faturas }) => {
         const corrente = escolherFaturaCorrente(faturas, mesAtual)
         const ativo = cartao.id === cartaoSelecionadoId
@@ -67,11 +77,8 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
           ? avisoDePrazo(corrente.fatura, hoje, quitadaPorParciais(corrente))
           : null
         const parcial = corrente ? contextoDoParcial(corrente) : null
-        const divergencia = mesDivergenteDoPainel(
-          corrente?.mesReferencia ?? null,
-          mesDoPainel,
-          ativo
-        )
+        const painelEmOutraFatura =
+          mesDivergenteDoPainel(corrente?.mesReferencia ?? null, mesDoPainel, ativo) !== null
 
         return (
           <button
@@ -94,17 +101,31 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
             </span>
 
             {/* O selo de arquivado desce para a linha do mês: na de cima, com o
-                do status, o nome do cartão não cabia e virava "Cartao an…". */}
-            {(corrente || !cartao.ativo) && (
-              <span className={styles.trilhoLinhaEscopo}>
-                {corrente && (
+                do status, o nome do cartão não cabia e virava "Cartao an…".
+                A linha existe sempre, mesmo vazia: é ela, com altura fixa, que
+                põe o total na mesma altura em todos os cards da fileira. */}
+            <span className={styles.trilhoLinhaEscopo}>
+              {corrente &&
+                (painelEmOutraFatura ? (
+                  <span className={styles.trilhoVolta}>
+                    voltar para {formatarMesReferencia(corrente.mesReferencia)}
+                  </span>
+                ) : (
                   <span className={styles.trilhoEscopo}>
                     {formatarMesReferencia(corrente.mesReferencia)}
                   </span>
-                )}
-                {!cartao.ativo && <Badge variant="archived" />}
-              </span>
-            )}
+                ))}
+              {/* A volta e o selo não cabem lado a lado: a linha quebrava, e o
+                  total descia só no card arquivado. Enquanto o card oferece a
+                  volta, o selo sai da vista. A borda tracejada continua, e o
+                  texto fica para quem não a vê. */}
+              {!cartao.ativo &&
+                (painelEmOutraFatura ? (
+                  <span className="sr-only">Arquivado</span>
+                ) : (
+                  <Badge variant="archived" />
+                ))}
+            </span>
 
             {/* O que falta pagar (RN-10), que sem pagamento parcial é o total.
                 Mostrando o total, o card seguia exibindo um valor que o banco
@@ -120,12 +141,6 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
             <span className={styles.trilhoPrazo} data-tom={aviso?.tom}>
               {textoDoPrazo(corrente, aviso)}
             </span>
-
-            {divergencia && (
-              <span className={styles.trilhoDivergencia}>
-                painel em {formatarMesReferencia(divergencia)}
-              </span>
-            )}
           </button>
         )
       })}

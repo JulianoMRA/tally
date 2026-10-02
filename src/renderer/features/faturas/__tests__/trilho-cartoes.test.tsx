@@ -81,20 +81,25 @@ describe('TrilhoCartoes', () => {
     expect(within(card('Nubank')).getByText(rotulo)).toBeTruthy()
   })
 
-  it('não anuncia divergência quando o painel está na própria fatura corrente', () => {
+  it('não oferece a volta quando o painel está na própria fatura corrente', () => {
     renderTrilho(MES_CORRENTE)
 
-    expect(screen.queryByText(/^painel em/)).toBeNull()
+    expect(screen.queryByText(/^voltar para/)).toBeNull()
   })
 
   // O defeito relatado: os passadores levam o painel adiante e o card segue no
-  // mês corrente, com dois totais na tela e nada explicando a diferença.
-  it('o card em foco admite quando o painel saiu da fatura corrente', () => {
+  // mês corrente, com dois totais na tela e nada explicando a diferença. O
+  // aviso era uma linha a mais no card ("painel em dezembro de 2026"), que
+  // aumentava a fileira inteira e empurrava a página — as setas inclusive —
+  // no primeiro clique para fora da fatura corrente. Agora é a própria linha
+  // do mês que muda, e diz para onde o clique no card leva.
+  it('com o painel em outra fatura, a linha do mês do card em foco oferece a volta', () => {
     renderTrilho(MES_ADIANTE)
 
-    expect(
-      within(card('Inter')).getByText(`painel em ${formatarMesReferencia(MES_ADIANTE)}`)
-    ).toBeTruthy()
+    const rotulo = formatarMesReferencia(MES_CORRENTE)
+    expect(within(card('Inter')).getByText(`voltar para ${rotulo}`)).toBeTruthy()
+    // No lugar do mês, e não além dele: o card não ganha linha.
+    expect(within(card('Inter')).queryByText(rotulo)).toBeNull()
   })
 
   // O painel é de um cartão só: marcar o Nubank também transformaria o aviso em
@@ -102,7 +107,17 @@ describe('TrilhoCartoes', () => {
   it('cartão fora de foco não recebe o aviso', () => {
     renderTrilho(MES_ADIANTE)
 
-    expect(within(card('Nubank')).queryByText(/^painel em/)).toBeNull()
+    expect(within(card('Nubank')).queryByText(/^voltar para/)).toBeNull()
+    expect(within(card('Nubank')).getByText(formatarMesReferencia(MES_CORRENTE))).toBeTruthy()
+  })
+
+  // O teto de largura da fileira sai desta conta no CSS. Sem o número, ele cai
+  // no padrão de um cartão e espreme a fileira inteira em 300px.
+  it('informa ao CSS quantos cartões a fileira tem', () => {
+    renderTrilho(MES_CORRENTE)
+
+    const trilho = screen.getByRole('group', { name: 'Cartões' })
+    expect(trilho.style.getPropertyValue('--cartoes')).toBe(String(GRUPOS.length))
   })
 })
 
@@ -139,13 +154,14 @@ describe('TrilhoCartoes — prazo', () => {
     }
   }
 
-  function renderUm(fatura: FaturaComTotal, ativo = true) {
+  /** A fatura é de setembro; por padrão o painel está nela. */
+  function renderUm(fatura: FaturaComTotal, ativo = true, mesDoPainel = '2026-09') {
     const inter = { ...cartao(1, 'Inter'), ativo }
     render(
       <TrilhoCartoes
         grupos={[{ cartao: inter, faturas: [fatura] }]}
         cartaoSelecionadoId={1}
-        mesDoPainel="2026-09"
+        mesDoPainel={mesDoPainel}
         onSelecionar={() => {}}
       />
     )
@@ -184,7 +200,17 @@ describe('TrilhoCartoes — prazo', () => {
   it('cartão arquivado leva o selo', () => {
     renderUm(faturaEm({ kind: 'Fechada' }, '2026-10-20'), false)
 
-    expect(within(card('Inter')).getByText('Arquivado')).toBeTruthy()
+    expect(within(card('Inter')).getByText('Arquivado').className).not.toBe('sr-only')
+  })
+
+  // A volta e o selo não cabem lado a lado no card: a linha quebrava, e o total
+  // descia 24px só no card arquivado. Enquanto o card oferece a volta, o selo
+  // sai da vista. A borda tracejada continua, e o texto fica para quem não a vê.
+  it('no cartão arquivado, o selo dá lugar à volta para a fatura corrente', () => {
+    renderUm(faturaEm({ kind: 'Fechada' }, '2026-10-20'), false, '2026-08')
+
+    expect(within(card('Inter')).getByText('voltar para setembro de 2026')).toBeTruthy()
+    expect(within(card('Inter')).getByText('Arquivado').className).toBe('sr-only')
   })
 
   /**
@@ -214,6 +240,20 @@ describe('TrilhoCartoes — prazo', () => {
       renderUm(faturaEm({ kind: 'Fechada' }, '2026-10-20'))
 
       expect(within(card('Inter')).getByText(/^R\$\s*1\.838,81$/)).toBeTruthy()
+      expect(within(card('Inter')).queryByText(/pagos de/)).toBeNull()
+    })
+
+    // "R$ 400,00 pagos de R$ 1.838,81" ao lado do selo "Paga" se lê como se só
+    // uma parte tivesse sido paga.
+    it('em fatura paga, o contexto diz só quanto foi em pagamentos parciais', () => {
+      const paga = faturaEm({ kind: 'Paga', pagaEm: '2026-09-20' }, '2026-10-01')
+      renderUm({
+        ...paga,
+        pagoParcialCentavos: 40000,
+        restanteCentavos: paga.totalCentavos - 40000
+      })
+
+      expect(within(card('Inter')).getByText(/^R\$\s*400,00 em pagamentos parciais$/)).toBeTruthy()
       expect(within(card('Inter')).queryByText(/pagos de/)).toBeNull()
     })
 

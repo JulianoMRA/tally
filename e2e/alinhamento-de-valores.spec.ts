@@ -144,6 +144,39 @@ function tabelaCom(page: Page, texto: string): Locator {
   return page.getByRole('table').filter({ has: page.getByRole('cell', { name: texto }) })
 }
 
+type ApiCiclo = {
+  cartao: { list: (o?: unknown) => Promise<{ id: number; nome: string }[]> }
+  fatura: {
+    listarPorCartao: (
+      cartaoId: number
+    ) => Promise<{ id: number; mesReferencia: string; status: { kind: string } }[]>
+    fechar: (faturaId: number) => Promise<unknown>
+    pagar: (faturaId: number, dataPagamento: string) => Promise<unknown>
+  }
+}
+
+/**
+ * Paga a fatura de junho do cartão da semente. As de julho e agosto, que a
+ * parcelada cria, seguem a pagar: o histórico fica com selos de larguras
+ * diferentes, que é o que o caso do alinhamento precisa.
+ */
+async function pagarFaturaDeJunho(page: Page): Promise<void> {
+  await page.evaluate(async (mes) => {
+    const api = (window as unknown as { api: ApiCiclo }).api
+    const cartao = (await api.cartao.list()).find((c) => c.nome === 'Inter Alinhamento')
+    if (!cartao) throw new Error('Cartão da semente não encontrado')
+    const fatura = (await api.fatura.listarPorCartao(cartao.id)).find(
+      (f) => f.mesReferencia === mes
+    )
+    if (!fatura) throw new Error(`Fatura de ${mes} não encontrada`)
+    if (fatura.status.kind === 'Aberta') await api.fatura.fechar(fatura.id)
+    await api.fatura.pagar(fatura.id, `${mes}-30`)
+  }, MES)
+
+  await page.reload()
+  await page.waitForLoadState('domcontentloaded')
+}
+
 test.describe('Alinhamento das colunas de valor', () => {
   test('Saídas: cabeçalho, valores e subtotais terminam na mesma borda', async ({ app }) => {
     const page = await app.firstWindow()
@@ -209,5 +242,43 @@ test.describe('Alinhamento das colunas de valor', () => {
     await expect(recebimentos).toBeVisible()
     esperarAlinhada(await medirColuna(recebimentos, 'Valor'), 1)
     esperarAlinhada(await medirColuna(recebimentos, 'Status'), 1)
+  })
+
+  /**
+   * O histórico não é tabela, mas tem uma coluna de dinheiro. O valor vinha
+   * antes do selo numa linha flex, e "Paga" e "Fechada" têm larguras
+   * diferentes: os valores terminavam em bordas diferentes, uns 19px de
+   * ziguezague. A medida é a borda do próprio valor, linha a linha.
+   */
+  test('histórico de faturas: os valores terminam na mesma borda, com selos diferentes', async ({
+    app
+  }) => {
+    const page = await app.firstWindow()
+    await semear(page)
+    await pagarFaturaDeJunho(page)
+    await irPara(page, 'Faturas')
+    await page.getByRole('button', { name: /meses anteriores/ }).click()
+
+    const linhas = await page.getByRole('listitem').evaluateAll((itens) =>
+      itens.map((item) => {
+        const valor = [...item.querySelectorAll('span')].find(
+          (s) =>
+            s.children.length === 0 && /^R\$\s*[\d.]+,\d{2}$/.test((s.textContent ?? '').trim())
+        )
+        if (!valor) throw new Error('linha do histórico sem valor')
+        return {
+          borda: valor.getBoundingClientRect().right,
+          // Sem caixa: a linha já disse "Paga em", e a pré-condição abaixo
+          // não pode depender do texto que outro requisito muda.
+          paga: /paga em/i.test(item.textContent ?? '')
+        }
+      })
+    )
+
+    // Sem os dois selos na lista o caso não mediria nada.
+    expect(linhas.some((l) => l.paga)).toBe(true)
+    expect(linhas.some((l) => !l.paga)).toBe(true)
+    const bordas = linhas.map((l) => l.borda)
+    expect(Math.max(...bordas) - Math.min(...bordas)).toBeLessThanOrEqual(TOLERANCIA_PX)
   })
 })
