@@ -226,20 +226,33 @@ export function FaturaDetalhe({
   const erroDoCiclo = ciclo.erroDa(fatura.id)
 
   // No fim da lista a seta acionada fica desabilitada, e botão desabilitado não
-  // recebe tecla: o foco passa para a que continua valendo. `useLayoutEffect`
-  // para agir antes de o navegador tirar o foco do botão desabilitado.
+  // recebe tecla: o foco passa para a que continua valendo.
+  //
+  // Quem diz qual seta foi acionada é o clique, e não o documento. O Chromium
+  // responde `body` em `document.activeElement` na mesma tarefa em que o botão
+  // focado é desabilitado. A primeira versão perguntava ao documento quem
+  // estava focado: passava no jsdom, que segue respondendo o botão, e perdia o
+  // foco no app. Quem pegou foi o E2E.
   const setaAnteriorRef = useRef<HTMLButtonElement>(null)
   const setaProximaRef = useRef<HTMLButtonElement>(null)
-  const temAnterior = anterior !== undefined
-  const temProxima = proxima !== undefined
+  const setaAcionada = useRef<'anterior' | 'proxima' | null>(null)
+
+  function acionarSeta(seta: 'anterior' | 'proxima', vizinha: Vizinha | undefined) {
+    setaAcionada.current = seta
+    vizinha?.abrir()
+  }
+
+  // Sem lista de dependências de propósito: o efeito roda no commit seguinte
+  // ao clique, que já traz a vizinhança nova, e esquece a seta ali. Guardada,
+  // ela valeria para uma mudança de vizinhança que viesse depois, por outro
+  // motivo, e tiraria o foco de onde ele estivesse.
   useLayoutEffect(() => {
-    const focada = document.activeElement
-    if (focada === setaProximaRef.current && !temProxima && temAnterior) {
-      setaAnteriorRef.current?.focus()
-    } else if (focada === setaAnteriorRef.current && !temAnterior && temProxima) {
-      setaProximaRef.current?.focus()
-    }
-  }, [temAnterior, temProxima])
+    const acionada = setaAcionada.current
+    if (acionada === null) return
+    setaAcionada.current = null
+    if (acionada === 'proxima' && !proxima && anterior) setaAnteriorRef.current?.focus()
+    else if (acionada === 'anterior' && !anterior && proxima) setaProximaRef.current?.focus()
+  })
 
   async function handleAdiantar(despesaId: number, quantidade: number, faturaDestinoId: number) {
     // O aviso conta o que o main moveu: ele só move as elegíveis (RN-03), e
@@ -355,7 +368,7 @@ export function FaturaDetalhe({
               ? `Fatura anterior: ${formatarMesReferencia(anterior.mesReferencia)}`
               : 'Sem fatura anterior'
           }
-          onClick={anterior?.abrir}
+          onClick={() => acionarSeta('anterior', anterior)}
           disabled={!anterior}
         />
         <BolinhaDeCor cor={cartaoCor} />
@@ -372,7 +385,7 @@ export function FaturaDetalhe({
               ? `Próxima fatura: ${formatarMesReferencia(proxima.mesReferencia)}`
               : 'Sem próxima fatura'
           }
-          onClick={proxima?.abrir}
+          onClick={() => acionarSeta('proxima', proxima)}
           disabled={!proxima}
         />
       </div>

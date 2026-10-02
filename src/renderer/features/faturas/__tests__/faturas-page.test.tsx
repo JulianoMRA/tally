@@ -445,11 +445,32 @@ describe('FaturasPage — trocar de fatura sem desmontar o painel', () => {
     vi.clearAllMocks()
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(2026, 8, 29, 12))
+    emularFocoDoChromium()
   })
   afterEach(() => {
     vi.useRealTimers()
     cleanup()
+    Reflect.deleteProperty(document, 'activeElement')
   })
+
+  /**
+   * No Chromium, `document.activeElement` responde `body` na mesma tarefa em
+   * que o botão focado é desabilitado (medido no Electron 42, Chromium 148). O
+   * jsdom segue respondendo o botão. A primeira versão da troca de foco
+   * perguntava ao documento quem estava focado: passava aqui e perdia o foco
+   * no app. Quem pegou foi o E2E — este dublê traz a diferença para o teste de
+   * componente.
+   */
+  function emularFocoDoChromium() {
+    const original = Object.getOwnPropertyDescriptor(Document.prototype, 'activeElement')
+    Object.defineProperty(document, 'activeElement', {
+      configurable: true,
+      get() {
+        const focado = original?.get?.call(document) as Element | null
+        return focado instanceof HTMLButtonElement && focado.disabled ? document.body : focado
+      }
+    })
+  }
 
   // Setembro é a fatura corrente; novembro e dezembro vêm pela seta.
   function instalar() {
