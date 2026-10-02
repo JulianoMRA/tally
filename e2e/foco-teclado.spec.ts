@@ -40,27 +40,31 @@ async function anelDeFoco(page: Page): Promise<string> {
   })
 }
 
+/** O `box-shadow` computado do elemento que está com o foco. */
+async function sombraDoFoco(page: Page): Promise<string> {
+  return page.evaluate(() => getComputedStyle(document.activeElement as Element).boxShadow)
+}
+
 test.describe('Navegação por teclado', () => {
   /**
-   * O anel de foco é um `box-shadow` no `:focus-visible` global. A linha do
-   * histórico e o cartão selecionado do trilho declaram a própria sombra com a
-   * mesma especificidade, num CSS que carrega depois: venciam, e o foco de
+   * O anel de foco é um `box-shadow` no `:focus-visible` global. O cartão
+   * selecionado do trilho e a linha do histórico declaram a própria sombra com
+   * a mesma especificidade, num CSS que carrega depois: venciam, e o foco de
    * teclado ficava sem indicação nenhuma.
    *
    * O foco chega pela tecla, e não por `.focus()`: depois de um clique de
    * mouse, o foco por script não acende `:focus-visible`, e o teste passaria a
    * medir um estado que quem usa o teclado nunca vê.
+   *
+   * São dois casos, e não um: juntos, o teste parava no primeiro `expect`, e
+   * no código sem a correção só o cartão era visto falhar — a linha do
+   * histórico ficava sem prova.
    */
-  test('em Faturas, o anel aparece no cartão selecionado e na linha do histórico', async ({
-    app
-  }) => {
+  test('em Faturas, o cartão selecionado mostra o anel de foco', async ({ app }) => {
     const { page } = await semear(app)
     await irPara(page, 'Faturas')
-    // A fatura de mês anterior da seed está no Nubank.
     await focarCartao(page, 'Nubank Seed')
     const anel = await anelDeFoco(page)
-    const sombraDoFoco = () =>
-      page.evaluate(() => getComputedStyle(document.activeElement as Element).boxShadow)
 
     // Sai do cartão e volta pelo teclado: o clique o deixou focado, mas sem
     // `:focus-visible`.
@@ -68,13 +72,21 @@ test.describe('Navegação por teclado', () => {
     await page.keyboard.press('Tab')
     await expect(page.getByRole('button', { name: /^Nubank Seed/ })).toBeFocused()
     // `poll`: a sombra tem transição, e o valor computado leva um instante.
-    await expect.poll(sombraDoFoco, 'cartão selecionado sem anel de foco').toBe(anel)
+    await expect.poll(() => sombraDoFoco(page), 'cartão selecionado sem anel de foco').toBe(anel)
+  })
 
-    const expandir = page.getByRole('button', { name: /meses anteriores/ })
-    await expandir.click()
+  test('em Faturas, a linha do histórico mostra o anel de foco', async ({ app }) => {
+    const { page } = await semear(app)
+    await irPara(page, 'Faturas')
+    // A fatura de mês anterior da seed está no Nubank.
+    await focarCartao(page, 'Nubank Seed')
+    const anel = await anelDeFoco(page)
+
+    // O clique abre a lista e deixa o foco no botão; o Tab leva à primeira linha.
+    await page.getByRole('button', { name: /meses anteriores/ }).click()
     await page.keyboard.press('Tab')
     await expect(page.getByRole('listitem').first().getByRole('button')).toBeFocused()
-    await expect.poll(sombraDoFoco, 'linha do histórico sem anel de foco').toBe(anel)
+    await expect.poll(() => sombraDoFoco(page), 'linha do histórico sem anel de foco').toBe(anel)
   })
 
   test('o foco recebe um anel visível do design system', async ({ app }) => {
