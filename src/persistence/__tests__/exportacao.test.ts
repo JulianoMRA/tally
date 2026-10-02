@@ -5,8 +5,10 @@ import { runMigrations } from '../migrations/runner'
 import { montarLinhasDoMes } from '../exportacao'
 import { serializarCsv } from '../../shared/csv/gerar-csv'
 import { DespesaRepository } from '../repositories/despesa-repository'
+import { PagamentoParcialRepository } from '../repositories/pagamento-parcial-repository'
 import { ParcelaRepository } from '../repositories/parcela-repository'
 import { RecebimentoRepository } from '../repositories/recebimento-repository'
+import { VisaoMensalRepository } from '../repositories/visao-mensal-repository'
 
 describe('montarLinhasDoMes (exportação CSV do mês)', () => {
   let db: Database
@@ -141,5 +143,132 @@ describe('montarLinhasDoMes (exportação CSV do mês)', () => {
     expect(linhas).toHaveLength(3)
     const datas = linhas.filter((l) => l[0] === 'Fatura').map((l) => l[5])
     expect(datas).toEqual(['2026-06-01', '2026-06-01', '2026-06-01'])
+  })
+
+  /**
+   * RN-10 — as linhas "Fatura" somam o que foi comprado, e a sobra do mês conta
+   * a fatura pelo que falta pagar. Sem as linhas de pagamento parcial, quem
+   * refizesse a conta na planilha não chegaria à sobra que o app mostra.
+   */
+  describe('pagamento parcial (RF-EXP-01)', () => {
+    function faturaDoMes(mes: string): number {
+      const row = db.prepare('SELECT id FROM fatura WHERE mes_referencia = ?').get(mes) as {
+        id: number
+      }
+      return row.id
+    }
+
+    function parcelarNotebook() {
+      new DespesaRepository(db).criarParceladaCredito({
+        descricao: 'Notebook',
+        categoriaId: 1,
+        cartaoId: 1,
+        totalParcelas: 3,
+        valorTotalCentavos: 30000,
+        dataCompra: '2026-06-02'
+      })
+    }
+
+    it('cada pagamento vira uma linha própria, logo depois das parcelas da fatura', () => {
+      parcelarNotebook()
+      new DespesaRepository(db).criarUnicaForaCartao({
+        descricao: 'Almoço Pix',
+        categoriaId: 1,
+        formaPagamento: 'Pix',
+        valorCentavos: 2590,
+        dataCompra: '2026-06-10'
+      })
+      new PagamentoParcialRepository(db).registrar({
+        faturaId: faturaDoMes('2026-06'),
+        valorCentavos: 4000,
+        dataPagamento: '2026-06-03'
+      })
+
+      const { linhas } = montarLinhasDoMes(db, '2026-06')
+
+      expect(linhas).toEqual([
+        [
+          'Fatura',
+          'Notebook',
+          'parcela 1/3',
+          'Mercado',
+          'Inter',
+          '2026-06-01',
+          '100,00',
+          'Pendente'
+        ],
+        ['Pagamento parcial', 'Fatura de 2026-06', '', '', 'Inter', '2026-06-03', '40,00', ''],
+        ['Gasto fora de cartão', 'Almoço Pix', 'Pix', 'Mercado', '', '2026-06-10', '25,90', '']
+      ])
+    })
+
+    it('vários pagamentos saem em ordem de data', () => {
+      parcelarNotebook()
+      const repo = new PagamentoParcialRepository(db)
+      const faturaId = faturaDoMes('2026-06')
+      repo.registrar({ faturaId, valorCentavos: 3000, dataPagamento: '2026-06-04' })
+      repo.registrar({ faturaId, valorCentavos: 2000, dataPagamento: '2026-06-02' })
+
+      const pagamentos = montarLinhasDoMes(db, '2026-06').linhas.filter(
+        (l) => l[0] === 'Pagamento parcial'
+      )
+
+      expect(pagamentos.map((l) => [l[5], l[6]])).toEqual([
+        ['2026-06-02', '20,00'],
+        ['2026-06-04', '30,00']
+      ])
+    })
+
+    // O pagamento pertence à fatura, e a fatura é do mês exportado: pagar em
+    // maio uma parte da fatura de junho sai no CSV de junho, com a data de maio.
+    it('o pagamento segue a fatura, mesmo com data em outro mês', () => {
+      parcelarNotebook()
+      new PagamentoParcialRepository(db).registrar({
+        faturaId: faturaDoMes('2026-06'),
+        valorCentavos: 4000,
+        dataPagamento: '2026-05-28'
+      })
+
+      const junho = montarLinhasDoMes(db, '2026-06').linhas
+      const maio = montarLinhasDoMes(db, '2026-05').linhas
+
+      expect(junho.filter((l) => l[0] === 'Pagamento parcial')).toEqual([
+        ['Pagamento parcial', 'Fatura de 2026-06', '', '', 'Inter', '2026-05-28', '40,00', '']
+      ])
+      expect(maio).toEqual([])
+    })
+
+    it('pagamento da fatura de outro mês não entra no mês exportado', () => {
+      parcelarNotebook()
+      new PagamentoParcialRepository(db).registrar({
+        faturaId: faturaDoMes('2026-07'),
+        valorCentavos: 4000,
+        dataPagamento: '2026-06-20'
+      })
+
+      const junho = montarLinhasDoMes(db, '2026-06').linhas
+      const julho = montarLinhasDoMes(db, '2026-07').linhas
+
+      expect(junho.some((l) => l[0] === 'Pagamento parcial')).toBe(false)
+      expect(julho.filter((l) => l[0] === 'Pagamento parcial')).toHaveLength(1)
+    })
+
+    it('as linhas de fatura menos as de pagamento parcial dão as saídas do mês', () => {
+      parcelarNotebook()
+      new PagamentoParcialRepository(db).registrar({
+        faturaId: faturaDoMes('2026-06'),
+        valorCentavos: 4000,
+        dataPagamento: '2026-06-03'
+      })
+
+      const { linhas } = montarLinhasDoMes(db, '2026-06')
+      const somar = (tipo: string) =>
+        linhas
+          .filter((l) => l[0] === tipo)
+          .reduce((soma, l) => soma + Math.round(Number(l[6].replace(',', '.')) * 100), 0)
+      const { totais } = new VisaoMensalRepository(db).detalharSomenteLeitura('2026-06')
+
+      expect(somar('Fatura') - somar('Pagamento parcial')).toBe(totais.totalSaidasCentavos)
+    })
   })
 })
