@@ -4,6 +4,7 @@ import { openInMemoryDatabase } from '../database'
 import { runMigrations } from '../migrations/runner'
 import { DespesaRepository } from '../repositories/despesa-repository'
 import { FaturaRepository } from '../repositories/fatura-repository'
+import { PagamentoParcialRepository } from '../repositories/pagamento-parcial-repository'
 import { ParcelaRepository } from '../repositories/parcela-repository'
 
 type CartaoFixture = { id: number; diaFechamento: number; diaVencimento: number }
@@ -443,5 +444,101 @@ describe('FaturaRepository.listarAvisos (fase 7 — notificações)', () => {
     expect(avisos).toContainEqual(
       expect.objectContaining({ tipo: 'fechamento', cartaoNome: 'Inter' })
     )
+  })
+
+  /**
+   * RN-10 — a notificação de vencimento existe para lembrar de pagar. Fatura
+   * Fechada cujos pagamentos parciais já cobrem o total não tem o que pagar,
+   * só o que marcar: avisar "vence em 2 dias" seria o mesmo alarme falso que a
+   * tela de Faturas deixou de dar.
+   */
+  describe('com pagamento parcial (RN-10)', () => {
+    /** Compra de R$ 50 na fatura de julho do Inter: fecha 05/07, vence 12/07. */
+    function faturaDeJulhoComCompra(): number {
+      const inter = inserirCartao(db, 'Inter', 5, 12)
+      const catId = db.prepare("INSERT INTO categoria (nome, cor) VALUES ('Geral', '#000')").run()
+        .lastInsertRowid as number
+      new DespesaRepository(db).criarUnicaCredito({
+        descricao: 'Compra',
+        categoriaId: Number(catId),
+        cartaoId: inter.id,
+        valorCentavos: 5000,
+        dataCompra: '2026-07-03'
+      })
+      const row = db.prepare("SELECT id FROM fatura WHERE mes_referencia = '2026-07'").get() as {
+        id: number
+      }
+      return row.id
+    }
+
+    function pagarParcial(faturaId: number, valorCentavos: number): void {
+      new PagamentoParcialRepository(db).registrar({
+        faturaId,
+        valorCentavos,
+        dataPagamento: '2026-07-04'
+      })
+    }
+
+    it('fatura Fechada coberta pelos parciais não avisa vencimento', () => {
+      const faturaId = faturaDeJulhoComCompra()
+      // Aberta aceita o valor que quita (RN-10); depois ela fecha por data.
+      pagarParcial(faturaId, 5000)
+      repo.fechar(faturaId)
+
+      expect(repo.listarAvisos('2026-07-10', '2026-07-13')).toEqual([])
+    })
+
+    it('com parcial e ainda algo a pagar, o aviso de vencimento continua', () => {
+      const faturaId = faturaDeJulhoComCompra()
+      pagarParcial(faturaId, 2000)
+      repo.fechar(faturaId)
+
+      const avisos = repo.listarAvisos('2026-07-10', '2026-07-13')
+
+      expect(avisos).toHaveLength(1)
+      expect(avisos[0]).toMatchObject({ tipo: 'vencimento', cartaoNome: 'Inter' })
+    })
+
+    it('faltando um centavo, ainda avisa', () => {
+      const faturaId = faturaDeJulhoComCompra()
+      pagarParcial(faturaId, 4999)
+      repo.fechar(faturaId)
+
+      expect(repo.listarAvisos('2026-07-10', '2026-07-13')).toHaveLength(1)
+    })
+
+    // Fechar continua sendo um evento, com ou sem valor a pagar: a fatura
+    // Aberta ainda recebe compra. É o mesmo critério do aviso na tela.
+    it('fatura Aberta coberta pelos parciais segue avisando o fechamento', () => {
+      const faturaId = faturaDeJulhoComCompra()
+      pagarParcial(faturaId, 5000)
+
+      const avisos = repo.listarAvisos('2026-07-03', '2026-07-06')
+
+      expect(avisos).toHaveLength(1)
+      expect(avisos[0]).toMatchObject({ tipo: 'fechamento', cartaoNome: 'Inter' })
+    })
+
+    // Pago a mais: uma despesa excluída depois do pagamento deixa os parciais
+    // acima do total. Continua sem nada a pagar.
+    it('fatura Fechada com pago a mais também não avisa vencimento', () => {
+      const faturaId = faturaDeJulhoComCompra()
+      pagarParcial(faturaId, 5000)
+      db.prepare('UPDATE parcela SET valor_centavos = 3000 WHERE fatura_id = ?').run(faturaId)
+      repo.fechar(faturaId)
+
+      expect(repo.listarAvisos('2026-07-10', '2026-07-13')).toEqual([])
+    })
+
+    it('o aviso devolvido segue sendo só tipo, cartão e fatura', () => {
+      const faturaId = faturaDeJulhoComCompra()
+      pagarParcial(faturaId, 2000)
+      repo.fechar(faturaId)
+
+      const [aviso] = repo.listarAvisos('2026-07-10', '2026-07-13')
+
+      expect(Object.keys(aviso).sort()).toEqual(['cartaoNome', 'fatura', 'tipo'])
+      expect(aviso.fatura).toEqual(repo.findById(faturaId))
+    })
   })
 })

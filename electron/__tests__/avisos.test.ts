@@ -102,4 +102,43 @@ describe('verificarAvisos', () => {
     // O conjunto guarda apenas o que ainda vale hoje: uma fatura, um tipo.
     expect(avisosMemorizados()).toBe(1)
   })
+
+  /**
+   * RN-10 / RF-CFG-02 — a notificacao de vencimento existe para lembrar de
+   * pagar. Fatura Fechada cujos pagamentos parciais ja cobrem o total nao tem o
+   * que pagar, so o que marcar: "vence em 2 dias" seria o alarme falso que a
+   * tela de Faturas deixou de dar.
+   *
+   * Dias proprios, pelo mesmo motivo dos testes acima: o dedup e estado de
+   * modulo.
+   */
+  function prepararFaturaFechadaVencendo(vencimento: string, pagoParcialCentavos: number): void {
+    prepararFaturaPrestesAFechar('2026-10-05')
+    db.prepare("UPDATE fatura SET status = 'Fechada', data_vencimento = ? WHERE id = 1").run(
+      vencimento
+    )
+    db.prepare(
+      `INSERT INTO pagamento_parcial (fatura_id, valor_centavos, data_pagamento)
+       VALUES (1, ?, '2026-10-01')`
+    ).run(pagoParcialCentavos)
+  }
+
+  it('nao notifica o vencimento de fatura Fechada coberta pelos pagamentos parciais', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-10T09:00:00'))
+    prepararFaturaFechadaVencendo('2026-10-12', 1000)
+
+    expect(verificarAvisos(db, settingsPath)).toBe(0)
+    expect(mostradas).toEqual([])
+  })
+
+  it('notifica o vencimento quando o pagamento parcial nao cobre a fatura', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-15T09:00:00'))
+    prepararFaturaFechadaVencendo('2026-10-17', 600)
+
+    expect(verificarAvisos(db, settingsPath)).toBe(1)
+    expect(mostradas).toHaveLength(1)
+    expect(mostradas[0].title).toBe('Fatura Inter vence em 2 dias')
+  })
 })
