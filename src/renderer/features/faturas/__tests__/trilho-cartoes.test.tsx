@@ -217,6 +217,20 @@ describe('TrilhoCartoes — prazo', () => {
       expect(within(card('Inter')).queryByText(/pagos de/)).toBeNull()
     })
 
+    // "R$ 400,00 pagos de R$ 1.838,81" ao lado do selo "Paga" se lê como se só
+    // uma parte tivesse sido paga.
+    it('em fatura paga, o contexto diz só quanto foi em pagamentos parciais', () => {
+      const paga = faturaEm({ kind: 'Paga', pagaEm: '2026-09-20' }, '2026-10-01')
+      renderUm({
+        ...paga,
+        pagoParcialCentavos: 40000,
+        restanteCentavos: paga.totalCentavos - 40000
+      })
+
+      expect(within(card('Inter')).getByText(/^R\$\s*400,00 em pagamentos parciais$/)).toBeTruthy()
+      expect(within(card('Inter')).queryByText(/pagos de/)).toBeNull()
+    })
+
     // Tudo pago em parciais, fatura ainda não marcada como paga: o prazo fica
     // neutro. "vencida há 19 dias" em vermelho seria alarme falso.
     it('fatura quitada por parciais não alarma o prazo', () => {

@@ -168,6 +168,20 @@ describe('HistoricoFaturas — pagamento parcial', () => {
     expect(within(julho).queryByText(/pagos de/)).toBeNull()
   })
 
+  // "R$ 40,00 pagos de R$ 100,00" ao lado do selo "Paga" se lê como se só uma
+  // parte tivesse sido paga.
+  it('em fatura paga, o contexto diz só quanto foi em pagamentos parciais', async () => {
+    renderizar([
+      fatura('2026-07', { kind: 'Paga', pagaEm: '2026-07-11' }, 4000),
+      fatura('2026-09', { kind: 'Aberta' })
+    ])
+    await abrirLista()
+
+    const julho = screen.getByRole('button', { name: /Julho de 2026/ })
+    expect(within(julho).getByText(/R\$\s*40,00 em pagamentos parciais/)).toBeTruthy()
+    expect(within(julho).queryByText(/pagos de/)).toBeNull()
+  })
+
   // 100 de julho mais os 60 que faltam de agosto. Somando os totais daria 200,
   // e a barra discordaria das duas linhas logo abaixo dela.
   it('a soma da barra é a das linhas: o que falta, não o total', () => {
