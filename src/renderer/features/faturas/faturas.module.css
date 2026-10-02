@@ -112,10 +112,13 @@
   border-style: dashed;
 }
 
+/* Quebra de linha só no caso raro do cartão arquivado com o painel em outra
+   fatura, em que o selo e a volta não cabem lado a lado. */
 .trilhoLinhaEscopo {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 4px 8px;
   max-width: 100%;
   min-width: 0;
 }
@@ -136,10 +139,14 @@
   white-space: nowrap;
 }
 
-/* Só no cartão em foco, e só quando o painel saiu da fatura corrente. Herda o
-   par --pending/--pending-bg do aviso de link quebrado, que é a linguagem de
-   ressalva desta tela e um contraste já conferido nos dois temas. */
-.trilhoDivergencia {
+/* Só no cartão em foco, e só quando o painel saiu da fatura corrente: toma o
+   lugar do mês na mesma linha, e por isso não muda a altura do card. Era uma
+   linha a mais no pé dele, que aumentava a fileira inteira e empurrava a
+   página — as setas de navegação inclusive — no primeiro clique para fora da
+   fatura corrente. Herda o par --pending/--pending-bg do aviso de link
+   quebrado, que é a linguagem de ressalva desta tela e um contraste já
+   conferido nos dois temas. */
+.trilhoVolta {
   font-size: var(--text-2);
   color: var(--pending);
   background: var(--pending-bg);

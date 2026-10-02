@@ -621,3 +621,59 @@ describe('FaturasPage — abrir uma fatura pelo histórico', () => {
     expect(scrollIntoView).not.toHaveBeenCalled()
   })
 })
+
+/**
+ * Saindo da fatura corrente — pelas setas ou pelo histórico —, o card do cartão
+ * em foco avisava a divergência e não oferecia saída: o caminho de volta era
+ * seta por seta, ou sair do cartão e voltar. O clique no card em foco não
+ * fazia nada, de propósito, para não descartar a fatura aberta.
+ */
+describe('FaturasPage — voltar para a fatura corrente', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 29, 12))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+  })
+
+  // Setembro é a fatura corrente; novembro vem pela seta.
+  function instalar() {
+    return instalarApi([INTER], {
+      1: [
+        fatura(9, 1, '2026-09', { kind: 'Fechada' }),
+        fatura(11, 1, '2026-11', { kind: 'Aberta' })
+      ]
+    })
+  }
+
+  it('com o painel em outra fatura, clicar no cartão em foco volta para a corrente', async () => {
+    instalar()
+    renderizar()
+    const usuario = userEvent.setup({ delay: null })
+    await screen.findByRole('heading', { name: 'Inter · Setembro de 2026' })
+    await usuario.click(screen.getByRole('button', { name: 'Próxima fatura: novembro de 2026' }))
+    await screen.findByRole('heading', { name: 'Inter · Novembro de 2026' })
+
+    await usuario.click(within(trilho()).getByRole('button', { name: /^Inter/ }))
+
+    expect(await screen.findByRole('heading', { name: 'Inter · Setembro de 2026' })).toBeTruthy()
+  })
+
+  // Sem divergência o clique continua sem efeito: recarregar a fatura que já
+  // está na tela descartaria o que estivesse aberto nela.
+  it('com o painel na fatura corrente, o clique não recarrega nada', async () => {
+    const api = instalar()
+    renderizar()
+    const usuario = userEvent.setup({ delay: null })
+    await screen.findByRole('heading', { name: 'Inter · Setembro de 2026' })
+    const leiturasAntes = api.fatura.detalharComParcelas.mock.calls.length
+
+    await usuario.click(within(trilho()).getByRole('button', { name: /^Inter/ }))
+
+    expect(screen.getByRole('heading', { name: 'Inter · Setembro de 2026' })).toBeTruthy()
+    expect(api.fatura.detalharComParcelas.mock.calls.length).toBe(leiturasAntes)
+  })
+})

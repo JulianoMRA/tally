@@ -53,6 +53,12 @@ function textoDoPrazo(corrente: FaturaComTotal | null, aviso: AvisoDePrazo | nul
  * sem nada explicando a diferença — e a leitura era de defeito, não de decisão.
  * Por isso cada card agora nomeia a fatura que exibe, e o card em foco admite
  * quando o painel saiu dela.
+ *
+ * Ele admitia numa linha a mais ("painel em dezembro de 2026"), que aumentava
+ * a fileira inteira e empurrava a página — as setas de navegação inclusive —
+ * no primeiro clique para fora da fatura corrente. Agora é a linha do mês que
+ * muda, sem mexer na altura do card, e diz o que o clique nele faz: "voltar
+ * para outubro de 2026".
  */
 export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSelecionar }: Props) {
   const mesAtual = mesAtualReferencia()
@@ -67,11 +73,8 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
           ? avisoDePrazo(corrente.fatura, hoje, quitadaPorParciais(corrente))
           : null
         const parcial = corrente ? contextoDoParcial(corrente) : null
-        const divergencia = mesDivergenteDoPainel(
-          corrente?.mesReferencia ?? null,
-          mesDoPainel,
-          ativo
-        )
+        const painelEmOutraFatura =
+          mesDivergenteDoPainel(corrente?.mesReferencia ?? null, mesDoPainel, ativo) !== null
 
         return (
           <button
@@ -97,11 +100,16 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
                 do status, o nome do cartão não cabia e virava "Cartao an…". */}
             {(corrente || !cartao.ativo) && (
               <span className={styles.trilhoLinhaEscopo}>
-                {corrente && (
-                  <span className={styles.trilhoEscopo}>
-                    {formatarMesReferencia(corrente.mesReferencia)}
-                  </span>
-                )}
+                {corrente &&
+                  (painelEmOutraFatura ? (
+                    <span className={styles.trilhoVolta}>
+                      voltar para {formatarMesReferencia(corrente.mesReferencia)}
+                    </span>
+                  ) : (
+                    <span className={styles.trilhoEscopo}>
+                      {formatarMesReferencia(corrente.mesReferencia)}
+                    </span>
+                  ))}
                 {!cartao.ativo && <Badge variant="archived" />}
               </span>
             )}
@@ -120,12 +128,6 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
             <span className={styles.trilhoPrazo} data-tom={aviso?.tom}>
               {textoDoPrazo(corrente, aviso)}
             </span>
-
-            {divergencia && (
-              <span className={styles.trilhoDivergencia}>
-                painel em {formatarMesReferencia(divergencia)}
-              </span>
-            )}
           </button>
         )
       })}

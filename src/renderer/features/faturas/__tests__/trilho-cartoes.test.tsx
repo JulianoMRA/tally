@@ -81,20 +81,25 @@ describe('TrilhoCartoes', () => {
     expect(within(card('Nubank')).getByText(rotulo)).toBeTruthy()
   })
 
-  it('não anuncia divergência quando o painel está na própria fatura corrente', () => {
+  it('não oferece a volta quando o painel está na própria fatura corrente', () => {
     renderTrilho(MES_CORRENTE)
 
-    expect(screen.queryByText(/^painel em/)).toBeNull()
+    expect(screen.queryByText(/^voltar para/)).toBeNull()
   })
 
   // O defeito relatado: os passadores levam o painel adiante e o card segue no
-  // mês corrente, com dois totais na tela e nada explicando a diferença.
-  it('o card em foco admite quando o painel saiu da fatura corrente', () => {
+  // mês corrente, com dois totais na tela e nada explicando a diferença. O
+  // aviso era uma linha a mais no card ("painel em dezembro de 2026"), que
+  // aumentava a fileira inteira e empurrava a página — as setas inclusive —
+  // no primeiro clique para fora da fatura corrente. Agora é a própria linha
+  // do mês que muda, e diz para onde o clique no card leva.
+  it('com o painel em outra fatura, a linha do mês do card em foco oferece a volta', () => {
     renderTrilho(MES_ADIANTE)
 
-    expect(
-      within(card('Inter')).getByText(`painel em ${formatarMesReferencia(MES_ADIANTE)}`)
-    ).toBeTruthy()
+    const rotulo = formatarMesReferencia(MES_CORRENTE)
+    expect(within(card('Inter')).getByText(`voltar para ${rotulo}`)).toBeTruthy()
+    // No lugar do mês, e não além dele: o card não ganha linha.
+    expect(within(card('Inter')).queryByText(rotulo)).toBeNull()
   })
 
   // O painel é de um cartão só: marcar o Nubank também transformaria o aviso em
@@ -102,7 +107,8 @@ describe('TrilhoCartoes', () => {
   it('cartão fora de foco não recebe o aviso', () => {
     renderTrilho(MES_ADIANTE)
 
-    expect(within(card('Nubank')).queryByText(/^painel em/)).toBeNull()
+    expect(within(card('Nubank')).queryByText(/^voltar para/)).toBeNull()
+    expect(within(card('Nubank')).getByText(formatarMesReferencia(MES_CORRENTE))).toBeTruthy()
   })
 })
 
