@@ -4,9 +4,11 @@ import type { FaturaResumida, VisaoMensalDetalhada } from '../../shared/ipc/visa
 import type { Repository } from './types'
 import { calcularBalancoMensal } from '../../domain/services/calcular-balanco-mensal'
 import { diferencaEmMeses } from '../../domain/services/mes-referencia'
+import { calcularRestanteDaFatura } from '../../domain/services/pagamento-parcial'
 import { hojeIsoLocal, mesAtualReferencia } from '../../shared/datas-locais'
 import { DespesaRepository } from './despesa-repository'
 import { FaturaRepository, SQL_FATURA_VISIVEL } from './fatura-repository'
+import { PagamentoParcialRepository } from './pagamento-parcial-repository'
 import { ParcelaRepository } from './parcela-repository'
 import { RecebimentoRepository } from './recebimento-repository'
 import { RendaRepository } from './renda-repository'
@@ -37,6 +39,7 @@ export class VisaoMensalRepository implements Repository {
   detalharSomenteLeitura(mesReferencia: string): VisaoMensalDetalhada {
     const despesaRepo = new DespesaRepository(this.db)
     const parcelaRepo = new ParcelaRepository(this.db)
+    const pagamentoRepo = new PagamentoParcialRepository(this.db)
     const recebimentoRepo = new RecebimentoRepository(this.db)
 
     const faturaRows = this.db
@@ -62,20 +65,31 @@ export class VisaoMensalRepository implements Repository {
       const fatura = mapFatura(row)
       const cartao = cartoesById.get(fatura.cartaoId)
       const parcelas = parcelaRepo.listarPorFatura(fatura.id)
-      const totalCentavos = parcelas.reduce((s, p) => s + p.valorCentavos, 0)
+      // RN-10 — o terceiro ponto onde o total de uma fatura nasce, e o que
+      // alimenta a sobra do mês. Mesma função do resumo por cartão e do
+      // detalhe: três contas próprias fariam a fatura valer um número por tela.
+      const { totalCentavos, pagoParcialCentavos, restanteCentavos } = calcularRestanteDaFatura(
+        parcelas.reduce((s, p) => s + p.valorCentavos, 0),
+        pagamentoRepo.somarPorFatura(fatura.id)
+      )
 
       return {
         fatura,
         cartaoNome: cartao?.nome ?? `#${fatura.cartaoId}`,
         cartaoCor: cartao?.cor ?? '#999',
-        totalCentavos
+        totalCentavos,
+        pagoParcialCentavos,
+        restanteCentavos
       }
     })
 
     const gastosForaCartao = despesaRepo.listarGastosForaCartao({ mesReferencia })
     const recebimentos = recebimentoRepo.listar({ mesReferencia })
 
-    const totalFaturasCentavos = faturas.reduce((s, f) => s + f.totalCentavos, 0)
+    // RN-08 com RN-10: a fatura pesa o que falta pagar dela, em qualquer
+    // status. A Paga que teve pagamento parcial segue abatida — se voltasse ao
+    // total, marcar como paga mudaria a sobra de um mês já encerrado.
+    const totalFaturasCentavos = faturas.reduce((s, f) => s + f.restanteCentavos, 0)
     const totalGastosForaCartaoCentavos = gastosForaCartao.reduce((s, g) => s + g.valorCentavos, 0)
     const totalRecebidoCentavos = recebimentos
       .filter((r) => r.status === 'Recebido')

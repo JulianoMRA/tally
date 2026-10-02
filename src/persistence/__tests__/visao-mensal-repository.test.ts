@@ -4,6 +4,8 @@ import { openInMemoryDatabase } from '../database'
 import { runMigrations } from '../migrations/runner'
 import { VisaoMensalRepository } from '../repositories/visao-mensal-repository'
 import { DespesaRepository } from '../repositories/despesa-repository'
+import { FaturaRepository } from '../repositories/fatura-repository'
+import { PagamentoParcialRepository } from '../repositories/pagamento-parcial-repository'
 import { RendaRepository } from '../repositories/renda-repository'
 import { RecebimentoRepository } from '../repositories/recebimento-repository'
 
@@ -376,5 +378,233 @@ describe('VisaoMensalRepository — cartão que vence no mês seguinte ao fecham
     expect(agosto.faturas[0].fatura.dataVencimento).toBe('2026-09-01')
     expect(agosto.faturas[0].totalCentavos).toBe(10_000)
     expect(setembro.faturas).toEqual([])
+  })
+})
+
+/**
+ * RN-08 com pagamento parcial (RN-10, decisão de produto de out/2026).
+ *
+ * A fatura pesa no mês o que falta pagar dela, em qualquer status. Era assim
+ * que o improviso funcionava — lançar o pagamento como renda avulsa somava X nas
+ * entradas, o que na RN-08 é aritmeticamente igual a tirar X da fatura —, e a
+ * regra passou a dar o mesmo número sem a renda falsa.
+ *
+ * `detalharSomenteLeitura`, e não `detalhar`: a leitura pura é a que os
+ * relatórios e a exportação usam, e não fecha a fatura de junho por data no
+ * meio do teste.
+ */
+describe('VisaoMensalRepository — pagamento parcial abate a fatura (RN-08, RN-10)', () => {
+  let db: Database
+  let repo: VisaoMensalRepository
+  let despesaRepo: DespesaRepository
+  let pagamentoRepo: PagamentoParcialRepository
+  let cartaoId: number
+  let categoriaId: number
+
+  beforeEach(() => {
+    db = openInMemoryDatabase()
+    runMigrations(db)
+    repo = new VisaoMensalRepository(db)
+    despesaRepo = new DespesaRepository(db)
+    pagamentoRepo = new PagamentoParcialRepository(db)
+    cartaoId = inserirCartao(db, 'Inter', 5, 12)
+    categoriaId = inserirCategoria(db)
+  })
+
+  /** Compra no dia 3, antes do fechamento (dia 5): cai na fatura de junho. */
+  function comprar(valorCentavos: number, cartao = cartaoId, dataCompra = '2026-06-03') {
+    return despesaRepo.criarUnicaCredito({
+      descricao: `Compra de ${valorCentavos}`,
+      categoriaId,
+      cartaoId: cartao,
+      valorCentavos,
+      dataCompra
+    })
+  }
+
+  function faturaDe(cartao: number, mes: string): number {
+    const row = db
+      .prepare('SELECT id FROM fatura WHERE cartao_id = ? AND mes_referencia = ?')
+      .get(cartao, mes) as { id: number }
+    return row.id
+  }
+
+  function receber(valorCentavos: number) {
+    new RecebimentoRepository(db).criarAvulso({
+      descricao: 'Entrada do mês',
+      valorCentavos,
+      dataEsperada: '2026-06-15'
+    })
+  }
+
+  it('entradas 1.000, fatura de 800 e parcial de 200: saídas 600 e sobra 400', () => {
+    comprar(80000)
+    receber(100000)
+    pagamentoRepo.registrar({
+      faturaId: faturaDe(cartaoId, '2026-06'),
+      valorCentavos: 20000,
+      dataPagamento: '2026-06-02'
+    })
+
+    const { totais, faturas } = repo.detalharSomenteLeitura('2026-06')
+
+    expect(totais.totalSaidasCentavos).toBe(60000)
+    expect(totais.saldoProjetadoCentavos).toBe(40000)
+    // O total da fatura segue sendo o comprado (RN-07); o que muda é o peso dela.
+    expect(faturas[0]).toMatchObject({
+      totalCentavos: 80000,
+      pagoParcialCentavos: 20000,
+      restanteCentavos: 60000
+    })
+  })
+
+  it('o saldo só com entradas recebidas também desconta o parcial', () => {
+    comprar(80000)
+    pagamentoRepo.registrar({
+      faturaId: faturaDe(cartaoId, '2026-06'),
+      valorCentavos: 20000,
+      dataPagamento: '2026-06-02'
+    })
+
+    const { totais } = repo.detalharSomenteLeitura('2026-06')
+
+    expect(totais.saldoRealizadoCentavos).toBe(-60000)
+  })
+
+  it('dois pagamentos na mesma fatura somam no abatimento', () => {
+    comprar(80000)
+    const faturaId = faturaDe(cartaoId, '2026-06')
+    pagamentoRepo.registrar({ faturaId, valorCentavos: 20000, dataPagamento: '2026-06-02' })
+    pagamentoRepo.registrar({ faturaId, valorCentavos: 15000, dataPagamento: '2026-06-04' })
+
+    const { totais, faturas } = repo.detalharSomenteLeitura('2026-06')
+
+    expect(totais.totalSaidasCentavos).toBe(45000)
+    expect(faturas[0]).toMatchObject({ pagoParcialCentavos: 35000, restanteCentavos: 45000 })
+  })
+
+  // Decisão A: a fatura vale total menos parciais em QUALQUER status. Se a paga
+  // voltasse a pesar o total, marcar como paga mudaria a sobra de um mês
+  // encerrado — e o parcial contaria como saída justamente depois de quitado.
+  it('marcar a fatura como paga não muda o número', () => {
+    comprar(80000)
+    receber(100000)
+    const faturaId = faturaDe(cartaoId, '2026-06')
+    pagamentoRepo.registrar({ faturaId, valorCentavos: 20000, dataPagamento: '2026-06-02' })
+    const antes = repo.detalharSomenteLeitura('2026-06').totais
+
+    const faturaRepo = new FaturaRepository(db)
+    faturaRepo.fechar(faturaId)
+    faturaRepo.pagar(faturaId, '2026-06-12')
+    const depois = repo.detalharSomenteLeitura('2026-06')
+
+    expect(depois.faturas[0].fatura.status.kind).toBe('Paga')
+    expect(depois.totais).toEqual(antes)
+    expect(depois.totais.totalSaidasCentavos).toBe(60000)
+  })
+
+  // Só acontece quando uma despesa é excluída depois do pagamento. O que passa
+  // do total é "pago a mais" (RN-10), não uma saída negativa: valor monetário
+  // negativo não é representável, e a sobra do mês não cresce por isso.
+  it('pago a mais não vira saída negativa', () => {
+    const grande = comprar(50000)
+    comprar(30000)
+    despesaRepo.criarUnicaForaCartao({
+      descricao: 'Pix',
+      categoriaId,
+      formaPagamento: 'Pix',
+      valorCentavos: 3000,
+      dataCompra: '2026-06-10'
+    })
+    pagamentoRepo.registrar({
+      faturaId: faturaDe(cartaoId, '2026-06'),
+      valorCentavos: 60000,
+      dataPagamento: '2026-06-02'
+    })
+    despesaRepo.excluir(grande.despesa.id)
+
+    const { totais, faturas } = repo.detalharSomenteLeitura('2026-06')
+
+    expect(faturas[0]).toMatchObject({
+      totalCentavos: 30000,
+      pagoParcialCentavos: 60000,
+      restanteCentavos: 0
+    })
+    expect(totais.totalSaidasCentavos).toBe(3000)
+  })
+
+  it('mês sem pagamento parcial fica como sempre foi', () => {
+    comprar(80000)
+    receber(100000)
+
+    const { totais, faturas } = repo.detalharSomenteLeitura('2026-06')
+
+    expect(totais.totalSaidasCentavos).toBe(80000)
+    expect(totais.saldoProjetadoCentavos).toBe(20000)
+    expect(faturas[0]).toMatchObject({
+      totalCentavos: 80000,
+      pagoParcialCentavos: 0,
+      restanteCentavos: 80000
+    })
+  })
+
+  it('o parcial abate só a fatura que o recebeu, não a do outro cartão', () => {
+    const nubank = inserirCartao(db, 'Nubank', 15, 22)
+    comprar(80000)
+    comprar(50000, nubank, '2026-06-10')
+    pagamentoRepo.registrar({
+      faturaId: faturaDe(cartaoId, '2026-06'),
+      valorCentavos: 20000,
+      dataPagamento: '2026-06-02'
+    })
+
+    const { totais, faturas } = repo.detalharSomenteLeitura('2026-06')
+
+    expect(totais.totalSaidasCentavos).toBe(110000)
+    const porCartao = Object.fromEntries(faturas.map((f) => [f.cartaoNome, f.restanteCentavos]))
+    expect(porCartao).toEqual({ Inter: 60000, Nubank: 50000 })
+  })
+
+  // O pagamento pertence à fatura, e a fatura ao mês dela: pagar em junho uma
+  // parte da fatura de julho abate julho.
+  it('o parcial abate o mês da fatura, não o mês em que foi pago', () => {
+    comprar(80000)
+    comprar(40000, cartaoId, '2026-06-10') // depois do fechamento: fatura de julho
+    pagamentoRepo.registrar({
+      faturaId: faturaDe(cartaoId, '2026-07'),
+      valorCentavos: 10000,
+      dataPagamento: '2026-06-20'
+    })
+
+    expect(repo.detalharSomenteLeitura('2026-06').totais.totalSaidasCentavos).toBe(80000)
+    expect(repo.detalharSomenteLeitura('2026-07').totais.totalSaidasCentavos).toBe(30000)
+  })
+
+  it('excluir o pagamento devolve o peso inteiro à fatura', () => {
+    comprar(80000)
+    const pagamento = pagamentoRepo.registrar({
+      faturaId: faturaDe(cartaoId, '2026-06'),
+      valorCentavos: 20000,
+      dataPagamento: '2026-06-02'
+    })
+    pagamentoRepo.excluir(pagamento.id)
+
+    expect(repo.detalharSomenteLeitura('2026-06').totais.totalSaidasCentavos).toBe(80000)
+  })
+
+  // `detalhar` é o caminho do IPC, o que a Visão mensal e a Simulação (RN-09,
+  // ponto de partida) leem. Fatura de 2999 para a manutenção não fechá-la.
+  it('o caminho do IPC entrega a mesma sobra abatida', () => {
+    comprar(80000, cartaoId, '2999-06-03')
+    pagamentoRepo.registrar({
+      faturaId: faturaDe(cartaoId, '2999-06'),
+      valorCentavos: 20000,
+      dataPagamento: '2026-06-02'
+    })
+
+    const { totais } = repo.detalhar('2999-06')
+
+    expect(totais.totalSaidasCentavos).toBe(60000)
+    expect(totais.saldoProjetadoCentavos).toBe(-60000)
   })
 })

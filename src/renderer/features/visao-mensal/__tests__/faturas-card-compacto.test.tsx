@@ -31,6 +31,8 @@ function faturaResumida(
     cartaoNome: 'Inter',
     cartaoCor: '#ff7a00',
     totalCentavos: 5000,
+    pagoParcialCentavos: 0,
+    restanteCentavos: 5000,
     ...rest
   }
 }
@@ -50,7 +52,15 @@ describe('FaturasCardCompacto', () => {
   afterEach(cleanup)
 
   it('exibe nome do cartão, vencimento curto e total formatado', () => {
-    renderCard([faturaResumida({ id: 9, cartaoId: 3, cartaoNome: 'Nubank', totalCentavos: 12345 })])
+    renderCard([
+      faturaResumida({
+        id: 9,
+        cartaoId: 3,
+        cartaoNome: 'Nubank',
+        totalCentavos: 12345,
+        restanteCentavos: 12345
+      })
+    ])
 
     expect(screen.getByRole('button', { name: 'Nubank' })).toBeTruthy()
     expect(screen.getByText('vence 12/06')).toBeTruthy()
