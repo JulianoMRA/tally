@@ -476,7 +476,12 @@ await page.evaluate(async () => {
       })
     }
     if (fatura.status.kind === 'Aberta') await api.fatura.fechar(fatura.id)
-    await api.fatura.pagar(fatura.id, fatura.dataVencimento)
+    // No vencimento, ou hoje quando ele ainda não chegou: a fatura do mês
+    // passado pode vencer neste mês, e a folha mostrava "paga em" com data
+    // futura nos primeiros dias dele.
+    const hoje = emDias(0)
+    const pagaEm = fatura.dataVencimento <= hoje ? fatura.dataVencimento : hoje
+    await api.fatura.pagar(fatura.id, pagaEm)
   }
   await pagarDoMes(inter.id, 1)
   // Paga COM pagamento parcial: a faixa diz "Restante pago", e a linha do
@@ -524,6 +529,17 @@ await page.evaluate(async () => {
     valorCentavos: 27000,
     dataCompra: primeiroDiaDeMesesAtras(1)
   })
+  // Uma fatura mais velha, paga: é para ela que a seta "anterior" leva o
+  // painel. Com uma fatura só o cartão arquivado nunca saía da corrente, e o
+  // card dele nunca mostrava a volta ao lado do selo "Arquivado".
+  await api.despesa.criarUnicaCredito({
+    descricao: 'Compra mais velha no cartao antigo',
+    categoriaId: cats.Casa.id,
+    cartaoId: antigo.id,
+    valorCentavos: 9000,
+    dataCompra: primeiroDiaDeMesesAtras(2)
+  })
+  await pagarDoMes(antigo.id, 2)
   await api.cartao.arquivar(antigo.id)
 
   // Quarto cartão do trilho, com três estados que a folha nunca mostrou: o
@@ -727,6 +743,15 @@ try {
   await page.getByRole('button', { name: /^Próxima fatura/ }).click({ timeout: 5000 })
   await page.waitForTimeout(500)
   await capturar('estado-faturas-quitada-por-parciais')
+
+  // O cartão arquivado em foco, antes e depois de o painel sair da fatura
+  // corrente: é o card em que a volta divide a linha do mês com um selo.
+  await page.getByRole('button', { name: /^Cartao antigo/ }).click({ timeout: 5000 })
+  await page.waitForTimeout(500)
+  await capturar('estado-faturas-arquivado')
+  await page.getByRole('button', { name: /^Fatura anterior/ }).click({ timeout: 5000 })
+  await page.waitForTimeout(500)
+  await capturar('estado-faturas-arquivado-fora-da-corrente')
 
   // O cadastro de avulso virou painel na F6; sem este estado ele fica fora da
   // folha de contato, como o de Saídas ficava antes.
