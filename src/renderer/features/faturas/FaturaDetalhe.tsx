@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
 import type { PagamentoParcial } from '@domain/entities/pagamento-parcial'
@@ -106,6 +106,8 @@ type Props = {
    * detalhe por ação. Quem lê é a página, uma vez.
    */
   onAtualizada: () => Promise<void> | void
+  /** O título do painel, para a página levar o foco até ele (RF-FAT-06). */
+  tituloRef?: RefObject<HTMLHeadingElement>
 }
 
 export function FaturaDetalhe({
@@ -114,7 +116,8 @@ export function FaturaDetalhe({
   cartaoCor,
   anterior,
   proxima,
-  onAtualizada
+  onAtualizada,
+  tituloRef
 }: Props) {
   const {
     fatura,
@@ -356,7 +359,9 @@ export function FaturaDetalhe({
           disabled={!anterior}
         />
         <BolinhaDeCor cor={cartaoCor} />
-        <h2 className={styles.detalheTitleText}>
+        {/* `tabIndex={-1}`: o título recebe o foco quando a fatura é aberta
+            pelo histórico, sem entrar na ordem do Tab. */}
+        <h2 ref={tituloRef} tabIndex={-1} className={styles.detalheTitleText}>
           {cartaoNome} · {formatarMesReferencia(fatura.mesReferencia, { capitalizar: true })}
         </h2>
         <BotaoSeta

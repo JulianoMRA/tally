@@ -376,12 +376,16 @@
   color: var(--pending);
 }
 
+/* `scroll-margin-top`: abrir uma fatura pelo histórico rola a página até o
+   título, e sem a folga ele encostaria na borda de cima, cortando as setas que
+   ficam na mesma linha. */
 .detalheTitleText {
   font-size: var(--text-5);
   font-weight: 700;
   color: var(--ink);
   letter-spacing: -0.02em;
   margin: 0;
+  scroll-margin-top: 24px;
 }
 
 .erroAcao {

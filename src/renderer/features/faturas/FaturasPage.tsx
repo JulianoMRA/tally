@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useCartoesDaTela, useFaturaDetalhe, useFaturasDeTodosCartoes } from './hooks/use-faturas'
 import { cartoesDoTrilho } from './cartoes-do-trilho'
@@ -129,6 +129,27 @@ export default function FaturasPage() {
     setLinkQuebrado(false)
   }
 
+  // O histórico é o último bloco da página, e o painel que o clique troca fica
+  // acima dele: abrir por ali leva a vista e o foco ao título. Sem isso, o
+  // resultado visível do clique era a linha sumir da lista. As setas não
+  // passam por aqui — já estão junto do título, e rolar a cada mês faria a
+  // página pular debaixo do cursor.
+  const tituloRef = useRef<HTMLHeadingElement>(null)
+  const levarAoPainel = useRef(false)
+
+  function abrirPeloHistorico(id: number) {
+    levarAoPainel.current = true
+    abrirFatura(id)
+  }
+
+  useEffect(() => {
+    // Espera o detalhe da fatura pedida: até lá o título é o da anterior.
+    if (!levarAoPainel.current || detalheDoCartao?.fatura.id !== faturaId) return
+    levarAoPainel.current = false
+    tituloRef.current?.scrollIntoView({ block: 'start' })
+    tituloRef.current?.focus({ preventScroll: true })
+  }, [detalheDoCartao, faturaId])
+
   // Faturas futuras saíram da lista (ponto 13) e são alcançadas por aqui. A
   // navegação anda pelas faturas QUE EXISTEM, em ordem de mês, em vez de somar
   // mês no calendário: cartão sem compra num mês não tem fatura, e um ‹ › que
@@ -238,6 +259,7 @@ export default function FaturasPage() {
                   }
                 }
                 onAtualizada={recarregar}
+                tituloRef={tituloRef}
               />
             )}
 
@@ -247,7 +269,7 @@ export default function FaturasPage() {
                 mesAtual={mesAtual}
                 faturaAbertaId={faturaId}
                 cartaoCor={grupoEmFoco.cartao.cor}
-                onAbrir={abrirFatura}
+                onAbrir={abrirPeloHistorico}
               />
             )}
           </>

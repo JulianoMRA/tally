@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { render, screen, cleanup, within } from '@testing-library/react'
+import { render, screen, cleanup, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import type { Cartao } from '@domain/entities/cartao'
@@ -538,5 +538,65 @@ describe('FaturasPage — trocar de fatura sem desmontar o painel', () => {
     await screen.findByRole('heading', { name: 'Inter · Novembro de 2026' })
 
     expect(screen.queryByText('Banco indisponível')).toBeNull()
+  })
+})
+
+/**
+ * O histórico é o último bloco da página, e o painel que o clique troca fica
+ * acima dele. Sem levar a vista e o foco até o título, o resultado visível do
+ * clique era a linha sumir da lista.
+ */
+describe('FaturasPage — abrir uma fatura pelo histórico', () => {
+  const scrollIntoView = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 29, 12))
+    // O jsdom não implementa `scrollIntoView`.
+    Element.prototype.scrollIntoView = scrollIntoView
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+    Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
+  })
+
+  function instalar() {
+    return instalarApi([INTER], {
+      1: [
+        fatura(6, 1, '2026-06', { kind: 'Fechada' }),
+        fatura(9, 1, '2026-09', { kind: 'Aberta' }),
+        fatura(11, 1, '2026-11', { kind: 'Aberta' })
+      ]
+    })
+  }
+
+  it('leva a vista e o foco ao título do painel', async () => {
+    instalar()
+    renderizar()
+    const usuario = userEvent.setup({ delay: null })
+    await screen.findByRole('heading', { name: 'Inter · Setembro de 2026' })
+
+    await usuario.click(screen.getByRole('button', { name: /meses anteriores/ }))
+    await usuario.click(screen.getByRole('button', { name: /^Junho de 2026/ }))
+
+    const titulo = await screen.findByRole('heading', { name: 'Inter · Junho de 2026' })
+    await waitFor(() => expect(document.activeElement).toBe(titulo))
+    expect(scrollIntoView).toHaveBeenCalledTimes(1)
+  })
+
+  // As setas já estão junto do título: rolar até ele a cada mês faria a
+  // página pular debaixo do cursor.
+  it('navegar pelas setas não rola a página', async () => {
+    instalar()
+    renderizar()
+    const usuario = userEvent.setup({ delay: null })
+    await screen.findByRole('heading', { name: 'Inter · Setembro de 2026' })
+
+    await usuario.click(screen.getByRole('button', { name: 'Próxima fatura: novembro de 2026' }))
+    await screen.findByRole('heading', { name: 'Inter · Novembro de 2026' })
+
+    expect(scrollIntoView).not.toHaveBeenCalled()
   })
 })
