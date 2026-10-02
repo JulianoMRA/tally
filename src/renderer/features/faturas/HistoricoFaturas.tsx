@@ -18,7 +18,7 @@ import { contextoDoParcial } from './descrever-parcial'
 import {
   contarPorStatus,
   filtrarPorStatus,
-  somarRestantes,
+  somarAPagar,
   type FiltroStatus
 } from './organizar-faturas'
 import { statusVariant } from './status-variant'
@@ -49,8 +49,7 @@ type Props = {
  * navegação de mês no painel: um parcelamento de 12x cria doze faturas futuras
  * idênticas, e listá-las produzia uma parede de linhas de mesmo valor com o
  * mesmo peso visual do mês corrente — que é exatamente o defeito que o ponto 13
- * descreve. O total agregado fica à vista mesmo colapsado, porque é ele que
- * justifica expandir.
+ * descreve.
  *
  * O filtro por status veio da `FaturasOverview`, que a fusão absorveu. Lá ele
  * varria as faturas de TODOS os cartões; aqui o escopo é o cartão em foco, que
@@ -88,6 +87,7 @@ export function HistoricoFaturas({ faturas, mesAtual, faturaAbertaId, cartaoCor,
   if (todasPassadas.length === 0) return null
 
   const hoje = hojeIsoLocal()
+  const aPagar = somarAPagar(passadas)
 
   return (
     <Panel
@@ -113,9 +113,11 @@ export function HistoricoFaturas({ faturas, mesAtual, faturaAbertaId, cartaoCor,
             {mostrarPassadas ? 'Ocultar' : 'Mostrar'} {passadas.length}{' '}
             {pluralizar('fatura', passadas.length)} de meses anteriores
           </Button>
-          <span className={`${styles.anterioresTotal} tnum`}>
-            {formatBRL(somarRestantes(passadas))}
-          </span>
+          {/* Com nome, e só o que está por pagar: era um número solto que, em
+              "Todas", somava o que falta com o que já tinha sido quitado. */}
+          {aPagar > 0 && (
+            <span className={`${styles.anterioresTotal} tnum`}>{formatBRL(aPagar)} a pagar</span>
+          )}
         </div>
       )}
 

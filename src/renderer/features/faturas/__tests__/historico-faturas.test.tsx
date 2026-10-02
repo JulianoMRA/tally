@@ -129,7 +129,7 @@ describe('HistoricoFaturas', () => {
 
 /**
  * RN-10 no Histórico: a linha mostra o que falta pagar, com o total como
- * contexto, e a soma da barra acompanha as linhas.
+ * contexto, e a barra diz quanto falta pagar na lista.
  */
 describe('HistoricoFaturas — pagamento parcial', () => {
   beforeEach(() => {
@@ -182,13 +182,22 @@ describe('HistoricoFaturas — pagamento parcial', () => {
     expect(within(julho).queryByText(/pagos de/)).toBeNull()
   })
 
-  // 100 de julho mais os 60 que faltam de agosto. Somando os totais daria 200,
-  // e a barra discordaria das duas linhas logo abaixo dela.
-  it('a soma da barra é a das linhas: o que falta, não o total', () => {
+  // Era um número sem rótulo: 100 de julho, já pagos, mais os 60 que faltam de
+  // agosto. Só os 60 estão por pagar.
+  it('a barra diz quanto falta pagar, sem somar o que já foi quitado', () => {
     renderizar(comParcialEmAgosto())
 
-    expect(screen.getByText(/^R\$\s*160,00$/)).toBeTruthy()
-    expect(screen.queryByText(/^R\$\s*200,00$/)).toBeNull()
+    expect(screen.getByText(/^R\$\s*60,00 a pagar$/)).toBeTruthy()
+    expect(screen.queryByText(/160,00/)).toBeNull()
+  })
+
+  it('na aba Pagas a barra não mostra valor', async () => {
+    renderizar(comParcialEmAgosto())
+    const usuario = userEvent.setup()
+
+    await usuario.click(within(abas()).getByRole('radio', { name: /^Pagas/ }))
+
+    expect(screen.queryByText(/a pagar$/)).toBeNull()
   })
 
   // Fatura Fechada com tudo pago em parciais: não há o que pagar, só o que

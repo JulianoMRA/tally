@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { FaturaComTotal } from '@shared/ipc/fatura'
 import type { StatusFatura } from '@domain/entities/fatura'
-import { contarPorStatus, filtrarPorStatus, somarRestantes } from '../organizar-faturas'
+import { contarPorStatus, filtrarPorStatus, somarAPagar } from '../organizar-faturas'
 
 function fatura(
   mesReferencia: string,
@@ -76,26 +76,45 @@ describe('contarPorStatus', () => {
   })
 })
 
-// RN-10 — a barra do Histórico soma o número que cada linha mostra, que é o que
-// falta pagar. Somando o total, a barra discordaria das linhas abaixo dela
-// assim que uma fatura tivesse pagamento parcial.
-describe('somarRestantes', () => {
-  it('sem pagamento parcial, é a soma dos totais', () => {
+/**
+ * RN-10 — a barra do Histórico diz quanto falta pagar nas faturas da lista.
+ *
+ * Ela somava o "restante" de todas, pagas inclusive, num número sem rótulo: em
+ * "Todas", o que falta das não pagas com o que foi quitado das pagas. Duas
+ * grandezas diferentes numa conta só, e nada na tela dizendo qual era qual.
+ */
+describe('somarAPagar', () => {
+  it('soma o que falta nas faturas não pagas, Aberta ou Fechada', () => {
     expect(
-      somarRestantes([fatura('2026-07', undefined, 1_000), fatura('2026-08', undefined, 2_500)])
+      somarAPagar([
+        fatura('2026-07', { kind: 'Fechada' }, 1_000),
+        fatura('2026-08', { kind: 'Aberta' }, 2_500)
+      ])
     ).toBe(3_500)
   })
 
   it('desconta o que já foi pago em parciais', () => {
     expect(
-      somarRestantes([
-        fatura('2026-07', undefined, 1_000, 400),
-        fatura('2026-08', undefined, 2_500)
+      somarAPagar([
+        fatura('2026-07', { kind: 'Fechada' }, 1_000, 400),
+        fatura('2026-08', { kind: 'Fechada' }, 2_500)
       ])
     ).toBe(3_100)
   })
 
-  it('devolve zero para lista vazia', () => {
-    expect(somarRestantes([])).toBe(0)
+  // A fatura paga não tem nada a pagar, mesmo com "restante" maior que zero:
+  // nela o restante é o que foi quitado ao marcar como paga.
+  it('deixa as pagas de fora', () => {
+    expect(
+      somarAPagar([
+        fatura('2026-06', { kind: 'Paga', pagaEm: '2026-06-12' }, 4_000),
+        fatura('2026-07', { kind: 'Fechada' }, 1_000)
+      ])
+    ).toBe(1_000)
+  })
+
+  it('devolve zero para lista vazia ou só de pagas', () => {
+    expect(somarAPagar([])).toBe(0)
+    expect(somarAPagar([fatura('2026-06', { kind: 'Paga', pagaEm: '2026-06-12' })])).toBe(0)
   })
 })
