@@ -164,10 +164,11 @@ for (const largura of [1024, 1280, 1760] as const) {
 /**
  * Geometria do trilho de cartões (plano de acabamento de Faturas, out/2026).
  *
- * Dois defeitos que só existem com layout de verdade, e que a folha de contato
- * mostrou antes de qualquer teste: o selo "Arquivado" e a linha do pagamento
- * parcial tiravam o total e o prazo de alinhamento entre os cards; e o aviso de
- * que o painel saiu da fatura corrente acrescentava uma linha ao card, o que
+ * Três defeitos que só existem com layout de verdade, e que a folha de contato
+ * mostrou antes de qualquer teste: o grid nunca usava o mínimo de 200px e
+ * quebrava a fileira cedo; o selo "Arquivado" e a linha do pagamento parcial
+ * tiravam o total e o prazo de alinhamento entre os cards; e o aviso de que o
+ * painel saiu da fatura corrente acrescentava uma linha ao card, o que
  * aumentava a fileira e empurrava a página no primeiro clique numa seta.
  *
  * A semente vai pelo IPC: são cartões e estados, e não formulários.
@@ -208,7 +209,47 @@ async function fileiras(cards: Locator): Promise<number[]> {
   })
 }
 
+/** A diferença entre o card mais largo e o mais estreito. */
+async function folgaDeLargura(cards: Locator): Promise<number> {
+  const larguras = await cards.evaluateAll((els) =>
+    els.map((el) => el.getBoundingClientRect().width)
+  )
+  return Math.max(...larguras) - Math.min(...larguras)
+}
+
 test.describe('Faturas — geometria do trilho', () => {
+  // O grid era `repeat(auto-fit, minmax(200px, 300px))`, e o `auto-fit` conta
+  // as colunas pelo máximo: cabiam quatro cards de 240px em 1280px e o quarto
+  // caía para a linha de baixo; em 1024px, o terceiro.
+  //
+  // A largura entra no aceite porque a primeira correção, com flex, passava no
+  // resto: o card que caía para a fileira de baixo crescia até o teto e ficava
+  // 60px mais largo que os de cima. Foi a folha de contato que mostrou.
+  test('os cards encolhem antes de quebrar, todos com a mesma largura', async ({ app }) => {
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+    await page.evaluate(async () => {
+      const api = (window as unknown as { api: ApiTrilho }).api
+      for (const nome of ['Cartao A', 'Cartao B', 'Cartao C', 'Cartao D']) {
+        await api.cartao.create({ nome, diaFechamento: 5, diaVencimento: 12, cor: '#a88454' })
+      }
+    })
+    await recarregar(page)
+
+    await redimensionar(app, 1280)
+    await expect.poll(async () => page.evaluate(() => window.innerWidth)).toBeLessThan(1281)
+    await irPara(page, 'Faturas')
+    const cards = trilho(page).getByRole('button')
+    await expect(cards).toHaveCount(4)
+    await expect.poll(() => fileiras(cards), 'em 1280px').toEqual([4])
+    expect(await folgaDeLargura(cards), 'larguras diferentes em 1280px').toBeLessThanOrEqual(1)
+
+    await redimensionar(app, 1024)
+    await expect.poll(async () => page.evaluate(() => window.innerWidth)).toBeLessThan(1025)
+    await expect.poll(() => fileiras(cards), 'em 1024px').toEqual([3, 1])
+    expect(await folgaDeLargura(cards), 'larguras diferentes em 1024px').toBeLessThanOrEqual(1)
+  })
+
   // O selo "Arquivado" engrossava a linha do mês e empurrava o total só no
   // card dele; a linha de contexto do pagamento parcial descia o prazo só no
   // card que a tinha.

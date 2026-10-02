@@ -110,6 +110,15 @@ describe('TrilhoCartoes', () => {
     expect(within(card('Nubank')).queryByText(/^voltar para/)).toBeNull()
     expect(within(card('Nubank')).getByText(formatarMesReferencia(MES_CORRENTE))).toBeTruthy()
   })
+
+  // O teto de largura da fileira sai desta conta no CSS. Sem o número, ele cai
+  // no padrão de um cartão e espreme a fileira inteira em 300px.
+  it('informa ao CSS quantos cartões a fileira tem', () => {
+    renderTrilho(MES_CORRENTE)
+
+    const trilho = screen.getByRole('group', { name: 'Cartões' })
+    expect(trilho.style.getPropertyValue('--cartoes')).toBe(String(GRUPOS.length))
+  })
 })
 
 /**

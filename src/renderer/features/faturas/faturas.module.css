@@ -6,19 +6,30 @@
 }
 
 /* Trilho de cartões: substitui o select mais o agrupamento por cartão da visão
-   geral, que diziam a mesma coisa em dois lugares (ponto 12). `auto-fit` com
-   mínimo de 200px cabe três cartões na janela padrão e degrada para dois e um
-   sem breakpoint. */
-/* O teto de 300px evita que dois cartões virem duas lajes de 650px numa janela
-   larga — o conteúdo de cada bloco é curto, e esticá-lo só afasta o nome do
-   total. Com três ou mais cartões o grid preenche a linha naturalmente. */
+   geral, que diziam a mesma coisa em dois lugares (ponto 12).
+
+   Era `repeat(auto-fit, minmax(200px, 300px))`, e o `auto-fit` conta as
+   colunas pelo MÁXIMO quando ele é definido: o mínimo de 200px nunca entrava
+   em jogo. Em 1024px cabiam três cartões de 240px, e o terceiro caía para a
+   linha de baixo; na janela padrão, o quarto.
+
+   Com `minmax(200px, 1fr)` os cartões encolhem até 200px antes de quebrar, e
+   todos têm a mesma largura, inclusive o que cai para a fileira de baixo — com
+   flex ele crescia até o teto e ficava mais largo que os de cima.
+
+   O teto de 300px por cartão sai do `max-width` do trilho, calculado pelo
+   número de cartões (`--cartoes`, vindo do componente): com `1fr`, dois
+   cartões numa janela larga virariam duas lajes de 500px. O conteúdo de cada
+   bloco é curto, e esticá-lo só afasta o nome do total. */
 .trilho {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 300px));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
+  max-width: calc(var(--cartoes, 1) * 300px + (var(--cartoes, 1) - 1) * 12px);
 }
 
 .trilhoItem {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;

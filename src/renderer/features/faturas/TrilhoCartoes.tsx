@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { quitadaPorParciais } from '@domain/services/pagamento-parcial'
 import type { FaturaComTotal } from '@shared/ipc/fatura'
 import type { GrupoFaturasCartao } from './hooks/use-faturas'
@@ -63,9 +64,12 @@ function textoDoPrazo(corrente: FaturaComTotal | null, aviso: AvisoDePrazo | nul
 export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSelecionar }: Props) {
   const mesAtual = mesAtualReferencia()
   const hoje = hojeIsoLocal()
+  // O teto de 300px por cartão é da fileira inteira, e depende de quantos são:
+  // o CSS faz a conta a partir daqui.
+  const estilo = { '--cartoes': grupos.length } as CSSProperties
 
   return (
-    <div className={styles.trilho} role="group" aria-label="Cartões">
+    <div className={styles.trilho} role="group" aria-label="Cartões" style={estilo}>
       {grupos.map(({ cartao, faturas }) => {
         const corrente = escolherFaturaCorrente(faturas, mesAtual)
         const ativo = cartao.id === cartaoSelecionadoId
