@@ -97,22 +97,22 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
             </span>
 
             {/* O selo de arquivado desce para a linha do mês: na de cima, com o
-                do status, o nome do cartão não cabia e virava "Cartao an…". */}
-            {(corrente || !cartao.ativo) && (
-              <span className={styles.trilhoLinhaEscopo}>
-                {corrente &&
-                  (painelEmOutraFatura ? (
-                    <span className={styles.trilhoVolta}>
-                      voltar para {formatarMesReferencia(corrente.mesReferencia)}
-                    </span>
-                  ) : (
-                    <span className={styles.trilhoEscopo}>
-                      {formatarMesReferencia(corrente.mesReferencia)}
-                    </span>
-                  ))}
-                {!cartao.ativo && <Badge variant="archived" />}
-              </span>
-            )}
+                do status, o nome do cartão não cabia e virava "Cartao an…".
+                A linha existe sempre, mesmo vazia: é ela, com altura fixa, que
+                põe o total na mesma altura em todos os cards da fileira. */}
+            <span className={styles.trilhoLinhaEscopo}>
+              {corrente &&
+                (painelEmOutraFatura ? (
+                  <span className={styles.trilhoVolta}>
+                    voltar para {formatarMesReferencia(corrente.mesReferencia)}
+                  </span>
+                ) : (
+                  <span className={styles.trilhoEscopo}>
+                    {formatarMesReferencia(corrente.mesReferencia)}
+                  </span>
+                ))}
+              {!cartao.ativo && <Badge variant="archived" />}
+            </span>
 
             {/* O que falta pagar (RN-10), que sem pagamento parcial é o total.
                 Mostrando o total, o card seguia exibindo um valor que o banco

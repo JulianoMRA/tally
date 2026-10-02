@@ -160,3 +160,170 @@ for (const largura of [1024, 1280, 1760] as const) {
     expect(rolagem, 'a página rolou na horizontal').toBeLessThanOrEqual(0)
   })
 }
+
+/**
+ * Geometria do trilho de cartões (plano de acabamento de Faturas, out/2026).
+ *
+ * Dois defeitos que só existem com layout de verdade, e que a folha de contato
+ * mostrou antes de qualquer teste: o selo "Arquivado" e a linha do pagamento
+ * parcial tiravam o total e o prazo de alinhamento entre os cards; e o aviso de
+ * que o painel saiu da fatura corrente acrescentava uma linha ao card, o que
+ * aumentava a fileira e empurrava a página no primeiro clique numa seta.
+ *
+ * A semente vai pelo IPC: são cartões e estados, e não formulários.
+ */
+
+type ApiTrilho = {
+  cartao: {
+    create: (i: unknown) => Promise<{ id: number }>
+    arquivar: (id: number) => Promise<unknown>
+  }
+  categoria: { create: (i: unknown) => Promise<{ id: number }> }
+  despesa: {
+    criarUnicaCredito: (i: unknown) => Promise<{ fatura: { id: number } }>
+    criarParceladaCredito: (i: unknown) => Promise<unknown>
+  }
+  fatura: { registrarPagamentoParcial: (i: unknown) => Promise<unknown> }
+}
+
+async function recarregar(page: Page) {
+  // Os hooks carregaram antes da semente.
+  await page.reload()
+  await page.waitForLoadState('domcontentloaded')
+}
+
+function trilho(page: Page): Locator {
+  return page.getByRole('group', { name: 'Cartões' })
+}
+
+/** Quantos cards há em cada fileira do trilho, de cima para baixo. */
+async function fileiras(cards: Locator): Promise<number[]> {
+  return cards.evaluateAll((els) => {
+    const porTopo = new Map<number, number>()
+    for (const el of els) {
+      const topo = Math.round(el.getBoundingClientRect().top)
+      porTopo.set(topo, (porTopo.get(topo) ?? 0) + 1)
+    }
+    return [...porTopo.entries()].sort((a, b) => a[0] - b[0]).map(([, quantos]) => quantos)
+  })
+}
+
+test.describe('Faturas — geometria do trilho', () => {
+  // O selo "Arquivado" engrossava a linha do mês e empurrava o total só no
+  // card dele; a linha de contexto do pagamento parcial descia o prazo só no
+  // card que a tinha.
+  test('total e prazo ficam na mesma altura em todos os cards da fileira', async ({ app }) => {
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+    await page.evaluate(async () => {
+      const api = (window as unknown as { api: ApiTrilho }).api
+      const hoje = new Date()
+      const data = (d: Date) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const mesQueVem = data(new Date(hoje.getFullYear(), hoje.getMonth() + 1, 3))
+      const categoria = await api.categoria.create({ nome: 'Mercado Trilho E2E', cor: '#5b7a5e' })
+      const cartao = (nome: string) =>
+        api.cartao.create({ nome, diaFechamento: 5, diaVencimento: 12, cor: '#a88454' })
+      const compra = (cartaoId: number, dataCompra: string) =>
+        api.despesa.criarUnicaCredito({
+          descricao: 'Compra do trilho',
+          categoriaId: categoria.id,
+          cartaoId,
+          valorCentavos: 7500,
+          dataCompra
+        })
+
+      // Com pagamento parcial: ganha a linha de contexto.
+      const comParcial = await cartao('Com parcial')
+      const { fatura } = await compra(comParcial.id, mesQueVem)
+      await api.fatura.registrarPagamentoParcial({
+        faturaId: fatura.id,
+        valorCentavos: 2500,
+        dataPagamento: data(hoje)
+      })
+      // Sem nada além do básico.
+      await compra((await cartao('Simples')).id, mesQueVem)
+      // Arquivado com fatura a pagar: ganha o selo na linha do mês.
+      const antigo = await cartao('Velho')
+      await compra(antigo.id, '2026-06-03')
+      await api.cartao.arquivar(antigo.id)
+    })
+    await recarregar(page)
+    await irPara(page, 'Faturas')
+
+    const cards = trilho(page).getByRole('button')
+    await expect(cards).toHaveCount(3)
+    await expect(cards.filter({ hasText: 'pagos de' })).toHaveCount(1)
+    await expect(cards.filter({ hasText: 'Arquivado' })).toHaveCount(1)
+    await expect.poll(() => fileiras(cards)).toEqual([3])
+
+    const medidas = await cards.evaluateAll((els) =>
+      els.map((card) => {
+        const folhas = [...card.querySelectorAll('span')].filter((s) => s.children.length === 0)
+        const texto = (s: Element) => (s.textContent ?? '').trim()
+        const total = folhas.find((s) => /^R\$\s*[\d.]+,\d{2}$/.test(texto(s)))
+        const prazo = folhas.find((s) => /^(vence|vencida há|fecha|paga em)/.test(texto(s)))
+        if (!total || !prazo) throw new Error(`card sem total ou prazo: ${card.textContent}`)
+        return {
+          topoDoTotal: total.getBoundingClientRect().top,
+          baseDoPrazo: prazo.getBoundingClientRect().bottom
+        }
+      })
+    )
+    const folga = (valores: number[]) => Math.max(...valores) - Math.min(...valores)
+    expect(folga(medidas.map((m) => m.topoDoTotal)), 'totais desalinhados').toBeLessThanOrEqual(1)
+    expect(folga(medidas.map((m) => m.baseDoPrazo)), 'prazos desalinhados').toBeLessThanOrEqual(1)
+  })
+
+  // O aviso era uma linha a mais no pé do card: a fileira crescia uns 30px e
+  // as setas saíam de baixo do cursor no primeiro clique. Agora é a linha do
+  // mês que muda, e o clique no card em foco leva de volta.
+  test('sair da fatura corrente não muda a altura do trilho, e o card leva de volta', async ({
+    app
+  }) => {
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+    await page.evaluate(async () => {
+      const api = (window as unknown as { api: ApiTrilho }).api
+      const hoje = new Date()
+      const alvo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 3)
+      const mesQueVem = `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, '0')}-03`
+      const categoria = await api.categoria.create({ nome: 'Mercado Volta E2E', cor: '#5b7a5e' })
+      const cartao = await api.cartao.create({
+        nome: 'Inter Volta E2E',
+        diaFechamento: 5,
+        diaVencimento: 12,
+        cor: '#a88454'
+      })
+      // Duas parcelas: a fatura corrente e a seguinte, para onde a seta leva.
+      await api.despesa.criarParceladaCredito({
+        descricao: 'Parcelada em duas',
+        categoriaId: categoria.id,
+        cartaoId: cartao.id,
+        totalParcelas: 2,
+        valorTotalCentavos: 20000,
+        dataCompra: mesQueVem
+      })
+    })
+    await recarregar(page)
+    await irPara(page, 'Faturas')
+
+    const titulo = page.getByRole('heading', { level: 2 })
+    await expect(titulo).toContainText('Inter Volta E2E')
+    const corrente = (await titulo.textContent()) ?? ''
+    const alturaAntes = await altura(trilho(page))
+
+    await page.getByRole('button', { name: /^Próxima fatura/ }).click()
+    await expect(titulo).not.toHaveText(corrente)
+    expect(
+      Math.abs((await altura(trilho(page))) - alturaAntes),
+      'o trilho mudou de altura'
+    ).toBeLessThanOrEqual(1)
+
+    const card = trilho(page).getByRole('button')
+    await expect(card).toContainText(/voltar para/)
+    await card.click()
+    await expect(titulo).toHaveText(corrente)
+    await expect(card).not.toContainText(/voltar para/)
+  })
+})

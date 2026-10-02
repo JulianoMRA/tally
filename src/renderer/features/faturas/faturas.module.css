@@ -52,12 +52,17 @@
   box-shadow: var(--focus-ring);
 }
 
+/* As duas primeiras linhas do card têm a altura de um selo, com ou sem selo
+   nelas: é o que põe o total na mesma altura em todos os cards da fileira. O
+   selo "Arquivado" engrossava a linha do mês e empurrava o total 7px só no
+   card dele. */
 .trilhoTopo {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
   width: 100%;
+  min-height: 24px;
 }
 
 .trilhoNome {
@@ -86,7 +91,11 @@
   color: var(--ink-3);
 }
 
+/* `margin-top: auto`: o prazo fica no pé do card. Os cards de uma fileira têm
+   a mesma altura, então os prazos se alinham mesmo quando só um deles tem a
+   linha de contexto do pagamento parcial acima. */
 .trilhoPrazo {
+  margin-top: auto;
   font-size: var(--text-2);
   color: var(--ink-3);
   font-family: var(--font-mono);
@@ -121,6 +130,7 @@
   gap: 4px 8px;
   max-width: 100%;
   min-width: 0;
+  min-height: 24px;
 }
 
 /* Nomeia a fatura que o card exibe. Sem isso o card e o painel mostram dois
