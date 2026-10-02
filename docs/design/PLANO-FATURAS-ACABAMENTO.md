@@ -45,7 +45,8 @@ motivo.
 
 ## 3. O que mudou desde a análise
 
-Cinco achados do detalhamento. Nenhum muda uma decisão; dois tiram itens do ciclo.
+Cinco achados do detalhamento e um da primeira folha de contato. Nenhum muda uma decisão;
+dois tiram itens do ciclo.
 
 1. **A folha de contato não mostra foco de teclado.** Na folha de 01/10, nos dois temas,
    `estado-foco-de-teclado.png` e `estado-painel-novo-cartao.png` têm o mesmo SHA-256: são a
@@ -72,6 +73,14 @@ Cinco achados do detalhamento. Nenhum muda uma decisão; dois tiram itens do cic
    escrito para falhar no código de hoje. Se passar, o achado estava errado e o requisito
    sai do ciclo, registrado aqui. É a lição do ciclo anterior aplicada na ida: teste verde
    não é prova, e achado não medido também não.
+6. **A folha de contato da F1 foi a primeira vez em que a tela pôde ser vista rodando**, e
+   trouxe três coisas. O anel de foco da linha do histórico aparece em cima e embaixo e é
+   **cortado nas laterais**: a linha encosta na borda do painel, que recorta o que passa
+   dela. Fica para o **R7**, que redesenha a linha — o anel dela passa a ser desenhado por
+   dentro. O aviso "painel em dezembro de 2026" **acrescenta uma linha ao card** e empurra a
+   página uns 30px quando aparece: entra no **R13**. E o swatch ativo do `ColorPicker`, que
+   a análise tinha como candidato ao mesmo defeito de foco, **mostra o anel**: a suspeita
+   sai da seção 6.
 
 ## 4. Requisitos
 
@@ -126,23 +135,25 @@ focados pelo teclado. O anel é um `box-shadow` no `:focus-visible` global; `.fa
 carrega depois, e como o global zera o `outline` não sobra indicação. A correção é uma
 regra `:focus-visible` nos dois.
 
-Aceite: caso novo em `foco-teclado.spec.ts`, escrito antes. Percorre Faturas com `Tab` e, a
-cada parada, confere que o `box-shadow` computado contém o anel — a cor de `--brand` com 4px
-de espalhamento, e não só "diferente de `none`", que a sombra do próprio item já satisfaz.
+Aceite: caso novo em `foco-teclado.spec.ts`, escrito antes. Chega ao cartão selecionado e à
+primeira linha do histórico pela tecla e confere que o `box-shadow` computado é o do anel,
+lido de uma sonda com a mesma variável — e não só "diferente de `none`", que a sombra do
+próprio item já satisfaz.
 
 **R6 — Folha de contato** (ferramenta de revisão, sem RF).
 
-- A captura de foco passa a usar `Tab`, e ganha duas de Faturas: foco numa linha do
-  histórico e no cartão selecionado.
-- A semente ganha os estados que a análise não pôde ver: fatura Paga com pagamento parcial,
-  fatura Fechada quitada por parciais, pago a mais, uma fatura com mais de 30 lançamentos,
-  um quarto cartão ativo e um cartão de nome comprido. Sem mexer nos três estados de
-  orçamento que a semente monta no mês corrente.
+- As capturas de foco passam a usar a tecla `Tab`, e a folha confere sozinha que o foco
+  aparece: fotografa de novo sem ele, e imagens iguais viram erro da execução. Ganha duas
+  de Faturas: foco no cartão selecionado e numa linha do histórico.
+- A semente ganha os estados que a análise não pôde ver: fatura Paga com pagamento parcial
+  e, num quarto cartão de nome comprido, uma fatura com mais de 30 lançamentos e pago a
+  mais, seguida de uma Fechada quitada por parciais. Tudo em meses à frente, sem mexer nos
+  três estados de orçamento que a semente monta no mês corrente.
 - "Hoje" passa a ser calculado em data local. Em UTC, das 21h à meia-noite as capturas saem
   com a data de amanhã — foi assim que a folha de 01/10 mostrou um pagamento de "02/10".
 
-Aceite: a folha roda limpa nos dois temas, e as duas capturas de foco diferem da captura
-sem foco.
+Aceite: a folha roda nos dois temas, e as duas capturas de foco de Faturas diferem da
+captura sem foco.
 
 ### F2 — Histórico e trilho
 
@@ -152,8 +163,12 @@ o divisor duplo sob o cabeçalho do painel. Valor e selo ganham colunas estávei
 valor vem antes do selo, e como "Paga" e "Fechada" têm larguras diferentes os valores
 terminam em bordas diferentes (cerca de 19px na folha de contato).
 
+O anel de foco da linha passa a ser desenhado por dentro dela: por fora, o painel corta as
+laterais (seção 3, item 6).
+
 Aceite: caso novo em `alinhamento-de-valores.spec.ts` — a borda direita do valor é a mesma,
-com 1px de tolerância, numa linha Paga e numa Fechada. Folha de contato nos dois temas.
+com 1px de tolerância, numa linha Paga e numa Fechada. O caso de `foco-teclado.spec.ts`
+passa a conferir o anel por dentro. Folha de contato nos dois temas.
 
 **R8 — A fatura aberta continua no histórico** (RF-FAT-06, decisão C). A fatura de mês
 encerrado que o painel exibe fica na lista, marcada como "em exibição" (`aria-current`) e
@@ -201,8 +216,9 @@ volta; sem divergência não faz nada).
 **R13 — Trilho alinhado** (RF-FAT-06). Total e prazo ficam na mesma altura em todos os
 cartões de uma linha, com ou sem o selo "Arquivado" e com ou sem contexto de pagamento
 parcial. Hoje o selo engrossa a linha do mês e empurra o total uns 7px, e o contexto do
-parcial desce o prazo uma linha. O aviso de divergência fica fora do aceite: só o cartão em
-foco o tem, e é passageiro.
+parcial desce o prazo uma linha. O aviso de divergência deixa de acrescentar uma linha ao
+card: hoje ele aumenta a altura da fileira inteira e empurra a página quando aparece (seção
+3, item 6).
 
 Aceite: caso novo em `faturas-geometria.spec.ts`, com um cartão arquivado e um pagamento
 parcial na semente — o topo do total e a base do prazo coincidem, com 1px de tolerância.
@@ -378,11 +394,15 @@ Da análise:
 
 Achado ao detalhar:
 
-- **O mesmo defeito de foco pode existir em outras telas.** O swatch ativo do `ColorPicker`
-  também declara `box-shadow` próprio, e é justamente ele a parada de `Tab` do grupo. Não
-  foi conferido. A saída que resolve por construção é a que `tokens.css` já anota: trocar o
-  anel global por `outline` com `outline-offset`, que muda pixel no app inteiro e por isso
-  pede ciclo próprio.
+- **O mesmo defeito de foco pode existir em outras telas.** Qualquer elemento focável que
+  declare `box-shadow` próprio cancela o anel. O swatch ativo do `ColorPicker` foi conferido
+  na folha de contato da F1 e mostra o anel; as outras telas não foram varridas. A saída
+  que resolve por construção é a que `tokens.css` já anota: trocar o anel global por
+  `outline` com `outline-offset`, que muda pixel no app inteiro e por isso pede ciclo
+  próprio.
+- **Os outros swatches do `ColorPicker` não são alcançáveis pelo teclado.** Só o escolhido
+  é parada de `Tab`, e o grupo não trata as setas. Visto ao trocar a captura de foco para a
+  tecla.
 - **Fechar uma fatura à mão não tem desfazer direto.** Oferecer "Reabrir" numa fatura
   Fechada antes da data mudaria RF-FAT-05 e RN-06; o R18 só passa a dizer isso no diálogo.
 
