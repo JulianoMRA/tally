@@ -110,7 +110,8 @@ export default function VisaoMensalPage() {
       faturas: detalhe.faturas.map((f) => ({
         cartaoNome: f.cartaoNome,
         cartaoCor: f.cartaoCor,
-        totalCentavos: f.totalCentavos,
+        restanteCentavos: f.restanteCentavos,
+        pagoParcialCentavos: f.pagoParcialCentavos,
         dataFechamento: f.fatura.dataFechamento,
         dataVencimento: f.fatura.dataVencimento,
         status: f.fatura.status
