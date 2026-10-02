@@ -31,6 +31,8 @@ function faturaResumida(
     cartaoNome: 'Inter',
     cartaoCor: '#ff7a00',
     totalCentavos: 5000,
+    pagoParcialCentavos: 0,
+    restanteCentavos: 5000,
     ...rest
   }
 }
@@ -50,7 +52,15 @@ describe('FaturasCardCompacto', () => {
   afterEach(cleanup)
 
   it('exibe nome do cartão, vencimento curto e total formatado', () => {
-    renderCard([faturaResumida({ id: 9, cartaoId: 3, cartaoNome: 'Nubank', totalCentavos: 12345 })])
+    renderCard([
+      faturaResumida({
+        id: 9,
+        cartaoId: 3,
+        cartaoNome: 'Nubank',
+        totalCentavos: 12345,
+        restanteCentavos: 12345
+      })
+    ])
 
     expect(screen.getByRole('button', { name: 'Nubank' })).toBeTruthy()
     expect(screen.getByText('vence 12/06')).toBeTruthy()
@@ -136,5 +146,90 @@ describe('FaturasCardCompacto', () => {
     ])
 
     expect(screen.getByText('vencida há 3 dias').getAttribute('data-tom')).toBe('alerta')
+  })
+})
+
+/**
+ * RN-10 — cada linha mostra quanto a fatura pesa no mês, que é o que falta
+ * pagar dela. A soma das linhas volta a bater com a fatia "Faturas" do hero; com
+ * o total, o card somaria R$ 800 ao lado de um hero que conta R$ 600.
+ */
+describe('FaturasCardCompacto — pagamento parcial', () => {
+  afterEach(cleanup)
+
+  function comParcial(over: Partial<FaturaResumida> = {}): FaturaResumida {
+    return faturaResumida({
+      id: 9,
+      cartaoId: 3,
+      totalCentavos: 80000,
+      pagoParcialCentavos: 20000,
+      restanteCentavos: 60000,
+      ...over
+    })
+  }
+
+  it('mostra o que falta pagar, com o total como contexto', () => {
+    renderCard([comParcial()])
+
+    expect(screen.getByText(/^R\$\s*600,00$/)).toBeTruthy()
+    expect(screen.getByText(/^de R\$\s*800,00$/)).toBeTruthy()
+  })
+
+  it('sem pagamento parcial, não há contexto: o número é o total', () => {
+    renderCard([faturaResumida({ id: 9, cartaoId: 3 })])
+
+    expect(screen.getByText(/^R\$\s*50,00$/)).toBeTruthy()
+    expect(screen.queryByText(/^de R\$/)).toBeNull()
+  })
+
+  // Fatura Fechada cujos parciais cobrem o total: não há o que pagar, só o que
+  // marcar. O aviso de vencimento seria o alarme falso que Faturas não dá mais.
+  it('fatura Fechada coberta pelos parciais não avisa vencimento', () => {
+    const base = comParcial({ pagoParcialCentavos: 80000, restanteCentavos: 0 })
+    renderCard([
+      {
+        ...base,
+        fatura: {
+          ...base.fatura,
+          status: { kind: 'Fechada' },
+          dataVencimento: somarDias(hojeIsoLocal(), 2)
+        }
+      }
+    ])
+
+    expect(screen.queryByText(/vence em/)).toBeNull()
+    expect(screen.getByText(/^R\$\s*0,00$/)).toBeTruthy()
+  })
+
+  it('fatura Fechada com parcial e ainda algo a pagar segue avisando', () => {
+    const base = comParcial()
+    renderCard([
+      {
+        ...base,
+        fatura: {
+          ...base.fatura,
+          status: { kind: 'Fechada' },
+          dataVencimento: somarDias(hojeIsoLocal(), 2)
+        }
+      }
+    ])
+
+    expect(screen.getByText('vence em 2 dias')).toBeTruthy()
+  })
+
+  it('fatura vencida coberta pelos parciais não diz "vencida"', () => {
+    const base = comParcial({ pagoParcialCentavos: 80000, restanteCentavos: 0 })
+    renderCard([
+      {
+        ...base,
+        fatura: {
+          ...base.fatura,
+          status: { kind: 'Fechada' },
+          dataVencimento: somarDias(hojeIsoLocal(), -3)
+        }
+      }
+    ])
+
+    expect(screen.queryByText(/vencida há/)).toBeNull()
   })
 })

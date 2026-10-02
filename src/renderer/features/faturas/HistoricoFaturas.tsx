@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { quitadaPorParciais } from '@domain/services/pagamento-parcial'
 import type { FaturaComTotal } from '@shared/ipc/fatura'
 import { hojeIsoLocal } from '@shared/datas-locais'
 import {
@@ -13,7 +14,7 @@ import { formatBRL } from '../../lib/format-brl'
 import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
 import { pluralizar } from '../../lib/pluralizar'
 import { rotuloVencida } from './aviso-fechamento'
-import { contextoDoParcial, quitadaPorParciais } from './descrever-parcial'
+import { contextoDoParcial } from './descrever-parcial'
 import {
   contarPorStatus,
   filtrarPorStatus,

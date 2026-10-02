@@ -110,7 +110,8 @@ export default function VisaoMensalPage() {
       faturas: detalhe.faturas.map((f) => ({
         cartaoNome: f.cartaoNome,
         cartaoCor: f.cartaoCor,
-        totalCentavos: f.totalCentavos,
+        restanteCentavos: f.restanteCentavos,
+        pagoParcialCentavos: f.pagoParcialCentavos,
         dataFechamento: f.fatura.dataFechamento,
         dataVencimento: f.fatura.dataVencimento,
         status: f.fatura.status
@@ -154,7 +155,12 @@ export default function VisaoMensalPage() {
     { label: 'Exportar PDF', onClick: () => exportar('pdf'), disabled: exportando }
   ]
 
-  const totalFaturasCentavos = detalhe?.faturas.reduce((s, f) => s + f.totalCentavos, 0) ?? 0
+  // RN-10: a fatia "Faturas" do hero soma o que cada fatura pesa no mês — o
+  // que falta pagar dela —, que é o que a RN-08 conta. Somando o total, a barra
+  // de composição deixaria de fechar com a sobra assim que houvesse um parcial.
+  const totalFaturasCentavos = detalhe?.faturas.reduce((s, f) => s + f.restanteCentavos, 0) ?? 0
+  const pagoParcialFaturasCentavos =
+    detalhe?.faturas.reduce((s, f) => s + f.pagoParcialCentavos, 0) ?? 0
   const totalForaCartaoCentavos =
     detalhe?.gastosForaCartao.reduce((s, g) => s + g.valorCentavos, 0) ?? 0
 
@@ -208,6 +214,7 @@ export default function VisaoMensalPage() {
                 <SaldoHero
                   totais={detalhe.totais}
                   totalFaturasCentavos={totalFaturasCentavos}
+                  pagoParcialFaturasCentavos={pagoParcialFaturasCentavos}
                   totalForaCartaoCentavos={totalForaCartaoCentavos}
                   qtdCartoes={detalhe.faturas.length}
                   qtdGastosForaCartao={detalhe.gastosForaCartao.length}

@@ -22,7 +22,11 @@ function descrever(evento: EventoAgenda): LinhaAgenda {
     case 'FechamentoFatura':
       return {
         nome: `${evento.cartaoNome} fecha`,
-        meta: `${formatBRL(evento.totalCentavos)} acumulados`,
+        // Com pagamento parcial (RN-10) o valor já vem abatido: "acumulados"
+        // diria que a fatura acumulou menos do que foi comprado.
+        meta: `${formatBRL(evento.restanteCentavos)} ${
+          evento.temPagamentoParcial ? 'a pagar' : 'acumulados'
+        }`,
         valor: null,
         classeValor: styles.agendaValorNeutro
       }
@@ -30,7 +34,7 @@ function descrever(evento: EventoAgenda): LinhaAgenda {
       return {
         nome: `Fatura ${evento.cartaoNome}`,
         meta: 'vencimento',
-        valor: `-${formatBRL(evento.totalCentavos)}`,
+        valor: `-${formatBRL(evento.restanteCentavos)}`,
         classeValor: styles.agendaValorSaida
       }
     case 'RecebimentoPrevisto':

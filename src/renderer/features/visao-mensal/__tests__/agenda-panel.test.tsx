@@ -9,7 +9,7 @@ const VENCIMENTO: EventoAgenda = {
   data: '2026-08-20',
   cartaoNome: 'Inter',
   cartaoCor: '#ff7a00',
-  totalCentavos: 41235
+  restanteCentavos: 41235
 }
 
 const FECHAMENTO: EventoAgenda = {
@@ -17,7 +17,8 @@ const FECHAMENTO: EventoAgenda = {
   data: '2026-09-03',
   cartaoNome: 'Nubank',
   cartaoCor: '#820ad1',
-  totalCentavos: 128490
+  restanteCentavos: 128490,
+  temPagamentoParcial: false
 }
 
 const RECEBIMENTO: EventoAgenda = {
@@ -60,6 +61,32 @@ describe('AgendaPanel', () => {
     expect(screen.getByText('Nubank fecha')).toBeTruthy()
     expect(screen.getByText(/R\$\s*1\.284,90 acumulados/)).toBeTruthy()
     expect(screen.queryByText(/^-R\$\s*1\.284,90$/)).toBeNull()
+  })
+
+  // RN-10: com pagamento parcial o valor do evento já vem abatido, e
+  // "acumulados" diria que a fatura acumulou menos do que foi comprado.
+  it('fechamento de fatura com pagamento parcial diz quanto falta pagar', () => {
+    render(
+      <AgendaPanel
+        eventos={[{ ...FECHAMENTO, restanteCentavos: 60000, temPagamentoParcial: true }]}
+        horizonte="próximos 15 dias"
+      />
+    )
+
+    expect(screen.getByText(/^R\$\s*600,00 a pagar$/)).toBeTruthy()
+    expect(screen.queryByText(/acumulados/)).toBeNull()
+    expect(screen.queryByText(/^-R\$\s*600,00$/)).toBeNull()
+  })
+
+  it('vencimento mostra como saída o que falta pagar', () => {
+    render(
+      <AgendaPanel
+        eventos={[{ ...VENCIMENTO, restanteCentavos: 7000 }]}
+        horizonte="próximos 15 dias"
+      />
+    )
+
+    expect(screen.getByText(/^-R\$\s*70,00$/)).toBeTruthy()
   })
 
   it('nomeia recebimento avulso sem fonte vinculada', () => {

@@ -34,6 +34,10 @@ export default function PrintMensalPage() {
   }
 
   const { totais } = detalhe
+  // RN-10: "Saídas", acima, conta cada fatura pelo que falta pagar. Com
+  // pagamento parcial no mês a tabela ganha as colunas que fecham essa conta;
+  // sem nenhum, total e líquido são o mesmo número e a tabela fica como era.
+  const temParcial = detalhe.faturas.some((f) => f.pagoParcialCentavos > 0)
 
   return (
     <div className={styles.pagina} data-theme="claro" data-print-pronto>
@@ -73,6 +77,12 @@ export default function PrintMensalPage() {
                 <th>Vencimento</th>
                 <th>Status</th>
                 <th className={styles.num}>Total</th>
+                {temParcial && (
+                  <>
+                    <th className={styles.num}>Parciais</th>
+                    <th className={styles.num}>Líquido</th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -82,6 +92,12 @@ export default function PrintMensalPage() {
                   <td>{formatarDiaMes(f.fatura.dataVencimento)}</td>
                   <td>{f.fatura.status.kind}</td>
                   <td className={styles.num}>{formatBRL(f.totalCentavos)}</td>
+                  {temParcial && (
+                    <>
+                      <td className={styles.num}>{formatBRL(f.pagoParcialCentavos)}</td>
+                      <td className={styles.num}>{formatBRL(f.restanteCentavos)}</td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>

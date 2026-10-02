@@ -52,6 +52,21 @@ export function calcularRestanteDaFatura(
   }
 }
 
+/**
+ * RN-10 — fatura cujos pagamentos parciais já cobrem o total: não há o que
+ * pagar, só o que marcar. É o sinal que desliga os avisos de vencimento, na
+ * tela ("vence em N dias", "vencida há N dias") e na notificação do sistema.
+ *
+ * Exige pagamento de fato. Fatura sem compra também tem restante zero, e
+ * tratá-la como quitada desligaria os avisos de uma fatura vazia de cartão
+ * ativo, que hoje avisam.
+ */
+export function quitadaPorParciais(
+  fatura: Pick<RestanteDaFatura, 'pagoParcialCentavos' | 'restanteCentavos'>
+): boolean {
+  return fatura.pagoParcialCentavos > 0 && fatura.restanteCentavos === 0
+}
+
 /** O mínimo que decide o registro: onde a fatura está e quanto ainda falta. */
 export type PagamentoParaRegistrar = {
   statusFatura: StatusFatura['kind']

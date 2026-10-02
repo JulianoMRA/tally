@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { quitadaPorParciais } from '@domain/services/pagamento-parcial'
 import type { FaturaResumida } from '@shared/ipc/visao-mensal'
 import { hojeIsoLocal } from '@shared/datas-locais'
 import { Badge, EmptyState, Panel } from '../../components/ui'
@@ -29,8 +30,9 @@ export function FaturasCardCompacto({ faturas }: Props) {
         <ul className={styles.faturaCompactaList}>
           {faturas.map((f) => {
             const hoje = hojeIsoLocal()
-            // O mesmo aviso do trilho de Faturas, com o mesmo tom.
-            const aviso = avisoDePrazo(f.fatura, hoje)
+            // O mesmo aviso do trilho de Faturas, com o mesmo tom — e o mesmo
+            // silêncio para a fatura que os pagamentos parciais já cobriram.
+            const aviso = avisoDePrazo(f.fatura, hoje, quitadaPorParciais(f))
             return (
               <li key={f.fatura.id} className={styles.faturaCompactaItem}>
                 <span className={styles.cardChip} style={{ background: f.cartaoCor }} />
@@ -52,8 +54,14 @@ export function FaturasCardCompacto({ faturas }: Props) {
                     </span>
                   )}
                 </span>
+                {/* Quanto a fatura pesa no mês (RN-10): o que falta pagar dela.
+                    As linhas somam a fatia "Faturas" do hero. Com pagamento
+                    parcial o total vem embaixo, como contexto. */}
                 <span className={`${styles.faturaCompactaTotal} tnum`}>
-                  {formatBRL(f.totalCentavos)}
+                  {formatBRL(f.restanteCentavos)}
+                  {f.pagoParcialCentavos > 0 && (
+                    <span className={styles.faturaCompactaDe}>de {formatBRL(f.totalCentavos)}</span>
+                  )}
                 </span>
                 <Badge variant={statusVariant(f.fatura.status.kind)} />
               </li>

@@ -16,18 +16,3 @@ export function contextoDoParcial(fatura: {
   if (fatura.pagoParcialCentavos <= 0) return null
   return `${formatBRL(fatura.pagoParcialCentavos)} pagos de ${formatBRL(fatura.totalCentavos)}`
 }
-
-/**
- * Fatura cujos pagamentos parciais já cobrem o total: não há o que pagar, só o
- * que marcar. É o sinal que desliga "vence em N dias" e "vencida há N dias".
- *
- * Exige pagamento de fato. Fatura sem compra também tem restante zero, e
- * tratá-la como quitada desligaria os avisos de uma fatura vazia de cartão
- * ativo, que hoje avisam.
- */
-export function quitadaPorParciais(fatura: {
-  pagoParcialCentavos: number
-  restanteCentavos: number
-}): boolean {
-  return fatura.pagoParcialCentavos > 0 && fatura.restanteCentavos === 0
-}

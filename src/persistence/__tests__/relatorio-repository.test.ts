@@ -3,6 +3,7 @@ import type { Database } from '../database'
 import { openInMemoryDatabase } from '../database'
 import { runMigrations } from '../migrations/runner'
 import { DespesaRepository } from '../repositories/despesa-repository'
+import { PagamentoParcialRepository } from '../repositories/pagamento-parcial-repository'
 import { RecebimentoRepository } from '../repositories/recebimento-repository'
 import { RelatorioRepository } from '../repositories/relatorio-repository'
 import { RendaRepository } from '../repositories/renda-repository'
@@ -109,6 +110,36 @@ describe('RelatorioRepository.totaisPorCategoriaEmMes (RF-VIS-06)', () => {
       { categoriaId: cat, categoriaNome: 'X', cor: '#000', totalCentavos: 1000 }
     ])
   })
+
+  // RN-10, padrão G: gasto por categoria é quanto foi COMPRADO. Pagar parte da
+  // fatura não muda o que se gastou em mercado, e o pagamento nem tem
+  // categoria. É de propósito que este total passa a diferir das saídas do mês.
+  it('pagamento parcial não mexe no gasto por categoria', () => {
+    const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+    const cat = inserirCategoria(db, 'Mercado')
+    new DespesaRepository(db).criarUnicaCredito({
+      descricao: 'Compra',
+      categoriaId: cat,
+      cartaoId,
+      valorCentavos: 80000,
+      dataCompra: '2026-06-03'
+    })
+    const fatura = db.prepare("SELECT id FROM fatura WHERE mes_referencia = '2026-06'").get() as {
+      id: number
+    }
+    new PagamentoParcialRepository(db).registrar({
+      faturaId: fatura.id,
+      valorCentavos: 20000,
+      dataPagamento: '2026-06-02'
+    })
+
+    expect(repo.totaisPorCategoriaEmMes('2026-06')).toEqual([
+      { categoriaId: cat, categoriaNome: 'Mercado', cor: '#000', totalCentavos: 80000 }
+    ])
+    expect(repo.evolucaoCategoriaMensal(cat, '2026-06', 1)).toEqual([
+      { mes: '2026-06', totalCentavos: 80000 }
+    ])
+  })
 })
 
 describe('RelatorioRepository.evolucaoSaldoMensal (RF-VIS-05)', () => {
@@ -188,6 +219,34 @@ describe('RelatorioRepository.evolucaoSaldoMensal (RF-VIS-05)', () => {
     expect(junho.entradasCentavos).toBe(2000)
     expect(junho.saidasCentavos).toBe(1500)
     expect(junho.saldoCentavos).toBe(500)
+  })
+
+  // RN-10: o gráfico lê os mesmos totais da Visão mensal. Se ele seguisse pelo
+  // total da fatura, o ponto do mês discordaria da sobra que o hero mostra.
+  it('conta a fatura pelo que falta pagar, como a Visão mensal', () => {
+    const cartaoId = inserirCartao(db, 'Inter', 5, 12)
+    const cat = inserirCategoria(db, 'Geral')
+    new DespesaRepository(db).criarUnicaCredito({
+      descricao: 'Compra',
+      categoriaId: cat,
+      cartaoId,
+      valorCentavos: 80000,
+      dataCompra: '2026-06-03'
+    })
+    const fatura = db.prepare("SELECT id FROM fatura WHERE mes_referencia = '2026-06'").get() as {
+      id: number
+    }
+    new PagamentoParcialRepository(db).registrar({
+      faturaId: fatura.id,
+      valorCentavos: 20000,
+      dataPagamento: '2026-06-02'
+    })
+
+    const serie = repo.evolucaoSaldoMensal('2026-06', 3)
+    const junho = serie[serie.length - 1]
+
+    expect(junho.saidasCentavos).toBe(60000)
+    expect(junho.saldoCentavos).toBe(-60000)
   })
 })
 

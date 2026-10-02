@@ -14,7 +14,15 @@ export type FaturaResumida = {
   fatura: Fatura
   cartaoNome: string
   cartaoCor: string
+  /** Soma das parcelas (RN-07): quanto foi comprado. */
   totalCentavos: number
+  /** RN-10 — soma dos pagamentos parciais. Zero quando a fatura não tem nenhum. */
+  pagoParcialCentavos: number
+  /**
+   * RN-10 — o que falta pagar: total menos os parciais, nunca negativo. É
+   * quanto a fatura pesa na sobra do mês (RN-08), em qualquer status.
+   */
+  restanteCentavos: number
 }
 
 /**

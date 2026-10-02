@@ -1,8 +1,8 @@
 # Plano — Pagamento parcial de fatura (out/2026)
 
 > **Aprovado em 01/10/2026**, com as decisões A e B e os padrões C a H como estão. F1
-> mergeada (PR #161). F2 implementada na branch `feat/pagamento-parcial-faturas`. F3 por
-> fazer: até ela, a Visão mensal ainda conta a fatura pelo total.
+> mergeada (PR #161). F2 mergeada (PR #162). F3 implementada na branch
+> `feat/pagamento-parcial-mes`. Falta a release v1.20.0.
 
 Origem: pedido de 01/10/2026, logo depois da v1.19.0. Durante o mês são feitos pagamentos
 parciais das faturas em aberto, para reduzir o valor final, e o app só sabe adiantar

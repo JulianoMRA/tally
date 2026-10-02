@@ -3,6 +3,7 @@ import {
   calcularRestanteDaFatura,
   podeExcluirPagamentoParcial,
   podeRegistrarPagamentoParcial,
+  quitadaPorParciais,
   type PagamentoParaRegistrar
 } from '../pagamento-parcial'
 
@@ -269,5 +270,45 @@ describe('podeExcluirPagamentoParcial', () => {
 
     expect(resultado).toMatchObject({ ok: false, motivo: 'fatura-paga' })
     expect(resultado.ok === false && resultado.erro).toMatch(/Reabra a fatura/)
+  })
+})
+
+/**
+ * RN-10 — fatura cujos pagamentos parciais já cobrem o total: não há o que
+ * pagar, só o que marcar. É o sinal que desliga os avisos de vencimento, na
+ * tela ("vence em N dias", "vencida há N dias") e na notificação do sistema.
+ *
+ * Morava no renderer enquanto só a tela de Faturas perguntava. Com o aviso do
+ * sistema (main) perguntando a mesma coisa, duas cópias do predicado fariam a
+ * tela calar um prazo que a notificação ainda anuncia.
+ */
+describe('quitadaPorParciais', () => {
+  it('é true quando os parciais cobrem o total', () => {
+    expect(quitadaPorParciais({ pagoParcialCentavos: 80000, restanteCentavos: 0 })).toBe(true)
+  })
+
+  it('é false enquanto falta pagar', () => {
+    expect(quitadaPorParciais({ pagoParcialCentavos: 20000, restanteCentavos: 60000 })).toBe(false)
+  })
+
+  it('é false faltando um centavo', () => {
+    expect(quitadaPorParciais({ pagoParcialCentavos: 79999, restanteCentavos: 1 })).toBe(false)
+  })
+
+  // Fatura sem compra também tem restante zero, e nunca foi paga por ninguém:
+  // tratá-la como quitada desligaria os avisos de uma fatura vazia de cartão
+  // ativo, que hoje avisam.
+  it('é false para fatura zerada, sem pagamento nenhum', () => {
+    expect(quitadaPorParciais({ pagoParcialCentavos: 0, restanteCentavos: 0 })).toBe(false)
+  })
+
+  it('é true com um único centavo pago numa fatura de um centavo', () => {
+    expect(quitadaPorParciais({ pagoParcialCentavos: 1, restanteCentavos: 0 })).toBe(true)
+  })
+
+  it('aceita o resultado de calcularRestanteDaFatura, inclusive com pago a mais', () => {
+    expect(quitadaPorParciais(calcularRestanteDaFatura(30000, 60000))).toBe(true)
+    expect(quitadaPorParciais(calcularRestanteDaFatura(80000, 20000))).toBe(false)
+    expect(quitadaPorParciais(calcularRestanteDaFatura(0, 0))).toBe(false)
   })
 })

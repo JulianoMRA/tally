@@ -205,4 +205,18 @@ test.describe('Acessibilidade (axe-core) — pagamento parcial', () => {
 
     await varrer(page, 'RegistrarPagamentoParcialModal')
   })
+
+  // A nota "já pagos" do hero, o "de R$ total" do card e o "a pagar" da agenda
+  // só existem no mês de uma fatura com pagamento parcial.
+  test('Visão mensal com pagamento parcial: sem violações serious ou critical', async ({ app }) => {
+    const { page } = await semear(app)
+    const mes = await registrarPagamentoParcialNaSemente(page)
+
+    await page.getByRole('link', { name: 'Visão mensal' }).click()
+    await page.getByLabel('Mês', { exact: true }).fill(mes)
+    // `\s`: a nota usa espaço não-quebrável entre "já" e "pagos".
+    await expect(page.getByText(/já\spagos/)).toBeVisible()
+
+    await varrer(page, 'Visão mensal (pagamento parcial)')
+  })
 })

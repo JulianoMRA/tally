@@ -5,7 +5,10 @@ import styles from './visao-mensal.module.css'
 
 type Props = {
   totais: BalancoMensal
+  /** Quanto as faturas pesam no mês: a soma do que falta pagar de cada uma (RN-10). */
   totalFaturasCentavos: number
+  /** Soma dos pagamentos parciais das faturas do mês; zero quando não há nenhum. */
+  pagoParcialFaturasCentavos: number
   totalForaCartaoCentavos: number
   qtdCartoes: number
   qtdGastosForaCartao: number
@@ -33,16 +36,29 @@ function largura(valorCentavos: number, totalCentavos: number): string {
  *
  * RN-08 intacto: só a apresentação muda. O rótulo da linha de apoio segue
  * "Só entradas recebidas" e nunca "Realizado" — a palavra sugere um regime de
- * caixa que a regra não tem, já que as saídas contam integralmente mesmo em
- * fatura não paga.
+ * caixa que a regra não tem, já que as saídas contam mesmo em fatura não paga.
+ *
+ * Com pagamento parcial (RN-10) a fatura pesa o que falta pagar dela, e o hero
+ * diz isso em dois lugares: a nota da fatia "Faturas" ganha "R$ X já pagos",
+ * espelho de "R$ X já na conta" das entradas, e o texto de apoio troca
+ * "integralmente" por "descontados os pagamentos parciais". Sem a nota, a
+ * fatia mostraria menos do que o card de faturas diz que foi comprado, sem
+ * explicar para onde foi a diferença.
  */
 export function SaldoHero({
   totais,
   totalFaturasCentavos,
+  pagoParcialFaturasCentavos,
   totalForaCartaoCentavos,
   qtdCartoes,
   qtdGastosForaCartao
 }: Props) {
+  const temParcial = pagoParcialFaturasCentavos > 0
+  const notaCartoes = `${qtdCartoes} ${pluralizar('cartão', qtdCartoes, 'ões')}`
+  // Espaços não-quebráveis (U+00A0) em "R$ X já pagos": na janela padrão a
+  // nota não cabe numa linha, e com espaço comum quebrava em "… já / pagos".
+  // Presa, a quebra cai no "·", e as duas metades ficam inteiras.
+  const notaJaPagos = `${formatBRL(pagoParcialFaturasCentavos)} já pagos`
   const fatias: Fatia[] = [
     {
       chave: 'entradas',
@@ -56,7 +72,7 @@ export function SaldoHero({
       chave: 'faturas',
       rotulo: 'Faturas',
       valorCentavos: totalFaturasCentavos,
-      nota: `${qtdCartoes} ${pluralizar('cartão', qtdCartoes, 'ões')}`,
+      nota: temParcial ? `${notaCartoes} · ${notaJaPagos}` : notaCartoes,
       classeBarra: styles.fatiaFaturas,
       classeBorda: styles.bordaFaturas
     },
@@ -92,8 +108,10 @@ export function SaldoHero({
           {formatBRL(totais.saldoProjetadoCentavos)}
         </strong>
         <span className={styles.heroNota}>
-          se tudo que está previsto entrar e sair acontecer. Saídas contam integralmente, mesmo em
-          fatura não paga.
+          se tudo que está previsto entrar e sair acontecer.{' '}
+          {temParcial
+            ? 'Saídas contam mesmo em fatura não paga, descontados os pagamentos parciais.'
+            : 'Saídas contam integralmente, mesmo em fatura não paga.'}
         </span>
       </div>
 

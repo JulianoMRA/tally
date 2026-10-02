@@ -6,7 +6,10 @@ import {
   calcularReferenciaFaturaDaCompra,
   formatarMesReferencia
 } from '../../domain/services/calcular-fatura-da-compra'
-import { calcularRestanteDaFatura } from '../../domain/services/pagamento-parcial'
+import {
+  calcularRestanteDaFatura,
+  quitadaPorParciais
+} from '../../domain/services/pagamento-parcial'
 import type { Repository } from './types'
 import { mapFatura, type FaturaRow } from './row-mappers'
 
@@ -200,28 +203,53 @@ export class FaturaRepository implements Repository {
    * Fase 7 — faturas que merecem aviso dentro da janela [hoje, ateData]:
    * Abertas prestes a fechar e Fechadas prestes a vencer. Pagas nunca avisam;
    * datas passadas não geram aviso retroativo.
+   *
+   * RN-10 — a Fechada cujos pagamentos parciais já cobrem o total não avisa
+   * vencimento: não há o que pagar, só o que marcar. O critério é o mesmo
+   * `quitadaPorParciais` da tela de Faturas, para a notificação não anunciar um
+   * prazo que a tela calou. A Aberta segue avisando o fechamento, que continua
+   * sendo um evento, e a fatura vazia de cartão ativo segue avisando como antes.
    */
   listarAvisos(hoje: string, ateData: string): AvisoFatura[] {
-    type Row = FaturaRow & { cartao_nome: string; tipo: 'fechamento' | 'vencimento' }
+    type Row = FaturaRow & {
+      cartao_nome: string
+      tipo: 'fechamento' | 'vencimento'
+      total_centavos: number
+      pago_parcial_centavos: number
+    }
+    const somas = `COALESCE(
+                     (SELECT SUM(p.valor_centavos) FROM parcela p WHERE p.fatura_id = f.id), 0
+                   ) AS total_centavos,
+                   COALESCE(
+                     (SELECT SUM(pp.valor_centavos) FROM pagamento_parcial pp WHERE pp.fatura_id = f.id), 0
+                   ) AS pago_parcial_centavos`
     const rows = this.db
       .prepare(
-        `SELECT f.*, c.nome AS cartao_nome, 'fechamento' AS tipo
+        `SELECT f.*, c.nome AS cartao_nome, 'fechamento' AS tipo, ${somas}
          FROM fatura f INNER JOIN cartao c ON c.id = f.cartao_id
          WHERE f.status = 'Aberta' AND f.data_fechamento BETWEEN ? AND ?
            AND ${SQL_FATURA_VISIVEL}
          UNION ALL
-         SELECT f.*, c.nome AS cartao_nome, 'vencimento' AS tipo
+         SELECT f.*, c.nome AS cartao_nome, 'vencimento' AS tipo, ${somas}
          FROM fatura f INNER JOIN cartao c ON c.id = f.cartao_id
          WHERE f.status = 'Fechada' AND f.data_vencimento BETWEEN ? AND ?
            AND ${SQL_FATURA_VISIVEL}`
       )
       .all(hoje, ateData, hoje, ateData) as Row[]
 
-    return rows.map((row) => ({
-      tipo: row.tipo,
-      cartaoNome: row.cartao_nome,
-      fatura: mapFatura(row)
-    }))
+    return rows
+      .filter(
+        (row) =>
+          row.tipo === 'fechamento' ||
+          !quitadaPorParciais(
+            calcularRestanteDaFatura(Number(row.total_centavos), Number(row.pago_parcial_centavos))
+          )
+      )
+      .map((row) => ({
+        tipo: row.tipo,
+        cartaoNome: row.cartao_nome,
+        fatura: mapFatura(row)
+      }))
   }
 
   /** Mapa id da fatura -> status, em uma única query. */
