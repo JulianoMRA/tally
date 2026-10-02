@@ -1,7 +1,7 @@
 # Plano — Faturas: o que a tela perde ao agir, e acabamento (out/2026)
 
-> **Aprovado em 02/10/2026**, com as decisões A a F como estão. F1 em andamento na branch
-> `fix/faturas-recarga`.
+> **Aprovado em 02/10/2026**, com as decisões A a F como estão. F1 mergeada (#165). F2 em
+> andamento na branch `fix/faturas-historico`.
 
 Origem: análise de 02/10/2026, pedida logo depois da v1.20.0 ("analise profundamente a tela
 e procure por inconsistências ou erros visuais e de UX"). Mesmo fluxo dos dois ciclos
@@ -205,10 +205,15 @@ Aceite: `descrever-parcial.test.ts`, mais um caso em `trilho-cartoes.test.tsx` e
 `historico-faturas.test.tsx`.
 
 **R12 — Voltar para a fatura corrente** (RF-FAT-06, decisão D). Com o painel fora da fatura
-corrente do cartão em foco, clicar nesse cartão volta para ela, e o aviso do card diz isso:
-"painel em junho de 2026 · voltar", sem truncar. Sem divergência o clique segue sem efeito,
+corrente do cartão em foco, clicar nesse cartão volta para ela, e o card diz isso: a linha
+do mês passa a ser "voltar para outubro de 2026". Sem divergência o clique segue sem efeito,
 para não descartar a fatura aberta. Hoje a saída é seta por seta, ou sair do cartão e
 voltar.
+
+O texto aprovado era "painel em junho de 2026 · voltar", numa linha própria. Ele não cabe
+na linha do mês ao lado do próprio mês, e numa linha própria é o que o R13 proíbe. Tomando
+o lugar do mês, o aviso nomeia o destino do clique em vez do lugar onde o painel está — que
+o título do painel, logo abaixo, já diz.
 
 Aceite: `trilho-cartoes.test.tsx` (texto do aviso) e `faturas-page.test.tsx` (o clique
 volta; sem divergência não faz nada).
@@ -220,15 +225,35 @@ parcial desce o prazo uma linha. O aviso de divergência deixa de acrescentar um
 card: hoje ele aumenta a altura da fileira inteira e empurra a página quando aparece (seção
 3, item 6).
 
-Aceite: caso novo em `faturas-geometria.spec.ts`, com um cartão arquivado e um pagamento
-parcial na semente — o topo do total e a base do prazo coincidem, com 1px de tolerância.
+No cartão arquivado a volta divide a linha do mês com o selo "Arquivado", e os dois não
+cabem lado a lado: a linha quebrava em duas, e o total descia 24px só nesse card. A
+primeira versão aceitava a quebra como caso raro; a folha de contato, com um estado novo
+para ele, mostrou que o desalinhamento era o mesmo que este requisito corrige. Decisão de
+02/10/2026: enquanto o card oferece a volta, o selo sai da vista. A borda tracejada
+continua, e o texto fica para o leitor de tela.
+
+Aceite: três casos novos em `faturas-geometria.spec.ts`. Com um cartão arquivado e um
+pagamento parcial na semente, o topo do total e a base do prazo coincidem, com 1px de
+tolerância. A altura do trilho é a mesma antes e depois de o painel sair da fatura
+corrente. E, com o cartão arquivado em foco, total e prazo seguem alinhados depois de o
+painel sair da corrente. Mais um caso em `trilho-cartoes.test.tsx` para o selo.
 
 **R14 — Trilho usa a largura** (RF-FAT-06). Os cartões encolhem até 200px antes de quebrar
-linha; o teto de 300px continua. O grid atual nunca chega ao mínimo: `auto-fit` com
-`minmax(200px, 300px)` conta as colunas pelo máximo. Em 1024px cabem três e o terceiro cai
-para a linha de baixo; na janela padrão isso acontece a partir do quarto.
+linha; o teto de 300px continua, e todos têm a mesma largura, inclusive o que cai para a
+fileira de baixo. O grid atual nunca chega ao mínimo: `auto-fit` com `minmax(200px, 300px)`
+conta as colunas pelo máximo. Em 1024px cabem três e o terceiro cai para a linha de baixo;
+na janela padrão isso acontece a partir do quarto.
 
-Aceite: no mesmo spec, três cartões na mesma linha em 1024px e quatro em 1280px.
+A coluna passa a `minmax(200px, 1fr)`, e o teto sai do `max-width` do trilho, calculado
+pelo número de cartões (`--cartoes`, que o componente informa): com `1fr` solto, dois
+cartões numa janela larga virariam duas lajes de 500px. A primeira tentativa foi flex com
+`max-width` em cada cartão; passava nos dois aceites de contagem, e a folha de contato
+mostrou o cartão da segunda fileira com 300px ao lado dos de 240px de cima. Por isso a
+largura entrou no aceite.
+
+Aceite: no mesmo spec, quatro cartões numa fileira em 1280px e três em 1024px (o quarto na
+de baixo), todos com a mesma largura, com 1px de tolerância. E um caso em
+`trilho-cartoes.test.tsx` para o número de cartões que o componente informa ao CSS.
 
 ### F3 — Faixa, setas e diálogos
 
