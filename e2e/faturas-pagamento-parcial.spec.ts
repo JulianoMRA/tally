@@ -16,10 +16,11 @@ import type { Page } from '@playwright/test'
  * vencimento lançava o pagamento como renda avulsa: a sobra do mês fechava, e a
  * fatura seguia mostrando um valor que o banco já não cobrava.
  *
- * Os dois casos cobrem os dois status que aceitam pagamento parcial, com datas
- * que não dependem de quando o teste roda: a compra do mês que vem, dia 3, num
- * cartão que fecha no dia 5, nasce numa fatura Aberta em qualquer dia; a de
- * junho/2026 já chega Fechada.
+ * Os dois primeiros casos cobrem os dois status que aceitam pagamento parcial,
+ * com datas que não dependem de quando o teste roda: a compra do mês que vem,
+ * dia 3, num cartão que fecha no dia 5, nasce numa fatura Aberta em qualquer
+ * dia; a de junho/2026 já chega Fechada. O terceiro segue o pagamento para fora
+ * da tela de Faturas: a sobra do mês, o card, a agenda e a Simulação (RN-08).
  */
 
 async function lancarCompra(
@@ -182,5 +183,85 @@ test.describe('Faturas — pagamento parcial (RF-FAT-07)', () => {
     await expect(
       pagamentos(page).getByRole('row').filter({ hasText: hojePorExtenso() })
     ).toHaveCount(1)
+  })
+
+  /**
+   * RN-08 com RN-10: a fatura pesa no mês o que falta pagar dela. É o que o
+   * improviso da renda avulsa fazia por fora — e o motivo de a feature existir:
+   * a sobra certa, sem a renda falsa e com a fatura dizendo a verdade.
+   */
+  test('o pagamento parcial abate a sobra do mês, o card, a agenda e a Simulação', async ({
+    app
+  }) => {
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+
+    await criarCartao(page, 'Inter Mes E2E')
+    await criarCategoria(page, 'Casa Mes E2E')
+
+    // Dia 3 do mês que vem, num cartão que fecha no dia 5: a fatura é a do mês
+    // que vem, e segue Aberta em qualquer dia em que o teste rode.
+    const hoje = new Date()
+    const alvo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 3)
+    const mes = `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, '0')}`
+    await lancarCompra(page, {
+      cartao: 'Inter Mes E2E',
+      categoria: 'Casa Mes E2E',
+      valor: '800,00',
+      data: `${mes}-03`
+    })
+
+    const hero = page.getByRole('region', { name: 'Sobra projetada do mês' })
+    const cardDeFaturas = page
+      .getByRole('heading', { name: 'Faturas', exact: true })
+      .locator('../..')
+    const agenda = page.getByRole('heading', { name: 'Ainda vai acontecer' }).locator('../..')
+
+    // Antes do pagamento, o mês pesa o total da fatura.
+    await irPara(page, 'Visão mensal')
+    await page.getByLabel('Mês', { exact: true }).fill(mes)
+    await expect(hero).toContainText(/-R\$\s*800,00/)
+    await expect(hero).toContainText('Saídas contam integralmente')
+    await expect(agenda).toContainText(/R\$\s*800,00 acumulados/)
+
+    await irPara(page, 'Faturas')
+    await focarCartao(page, 'Inter Mes E2E')
+    const dialogo = await registrar(page, '200,00')
+    await dialogo.getByRole('button', { name: 'Registrar pagamento' }).click()
+    await expect(dialogo).toHaveCount(0)
+
+    // Depois: sobra, fatia do hero, card e agenda passam a contar R$ 600,00.
+    await irPara(page, 'Visão mensal')
+    await page.getByLabel('Mês', { exact: true }).fill(mes)
+    await expect(hero).toContainText(/-R\$\s*600,00/)
+    await expect(hero).not.toContainText(/-R\$\s*800,00/)
+    // `\s`: a nota usa espaço não-quebrável, para não quebrar em "já / pagos".
+    await expect(hero).toContainText(/R\$\s*200,00\sjá\spagos/)
+    await expect(hero).toContainText('descontados os pagamentos parciais')
+
+    await expect(cardDeFaturas).toContainText(/R\$\s*600,00/)
+    await expect(cardDeFaturas).toContainText(/de R\$\s*800,00/)
+
+    await expect(agenda).toContainText(/R\$\s*600,00 a pagar/)
+    await expect(agenda.getByText(/^-R\$\s*600,00$/)).toBeVisible()
+
+    // A Simulação parte da sobra do mês (RN-09): a mesma, já abatida.
+    await irPara(page, 'Simulação')
+    await page.getByLabel('Mês', { exact: true }).fill(mes)
+    await expect(page.locator('[data-saldo-simulado]')).toHaveText(/-R\$\s*600,00/)
+
+    // A folha do PDF fecha a mesma conta sozinha (RF-EXP-02): total, parciais
+    // e líquido da fatura, e "Saídas" pelo líquido. Por último, porque a rota
+    // de impressão não tem o shell do app.
+    await page.evaluate((m) => {
+      window.location.hash = `#/print/${m}`
+    }, mes)
+    const folha = page.locator('[data-print-pronto]')
+    await expect(folha.getByRole('columnheader', { name: 'Parciais' })).toBeVisible()
+    await expect(folha.getByRole('columnheader', { name: 'Líquido' })).toBeVisible()
+    await expect(folha.getByRole('row').filter({ hasText: 'Inter Mes E2E' })).toContainText(
+      /R\$\s*800,00.*R\$\s*200,00.*R\$\s*600,00/
+    )
+    await expect(folha.getByText('Saídas').locator('..')).toContainText(/R\$\s*600,00/)
   })
 })

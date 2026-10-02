@@ -120,4 +120,16 @@ test.describe('Acessibilidade no escuro — pagamento parcial', () => {
 
     await varrer(page, 'Faturas (escuro, pagamento parcial)')
   })
+
+  test('Visão mensal com pagamento parcial: sem violações serious ou critical', async ({ app }) => {
+    const { page } = await semear(app)
+    const mes = await registrarPagamentoParcialNaSemente(page)
+
+    await page.getByRole('link', { name: 'Visão mensal' }).click()
+    await page.getByLabel('Mês', { exact: true }).fill(mes)
+    // `\s`: a nota usa espaço não-quebrável entre "já" e "pagos".
+    await expect(page.getByText(/já\spagos/)).toBeVisible()
+
+    await varrer(page, 'Visão mensal (escuro, pagamento parcial)')
+  })
 })

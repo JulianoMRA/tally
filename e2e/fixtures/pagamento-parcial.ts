@@ -15,10 +15,16 @@ import type { Page } from '@playwright/test'
  *
  * O Inter é o primeiro cartão do trilho (ordem alfabética), então a fatura
  * escolhida é a que a tela de Faturas abre sem clique nenhum.
+ *
+ * Devolve o mês de referência dessa fatura. A compra da semente é de hoje e o
+ * Inter fecha no dia 25: do dia 25 em diante a fatura é a do mês que vem, e a
+ * Visão mensal, que abre no mês corrente, não mostraria o pagamento. Quem varre
+ * a Visão mensal navega até o mês devolvido em vez de contar com o calendário.
  */
 
 type FaturaSeed = {
   fatura: { id: number; status: { kind: 'Aberta' | 'Fechada' | 'Paga' } }
+  mesReferencia: string
   restanteCentavos: number
 }
 
@@ -34,8 +40,8 @@ type ApiPagamentoParcial = {
  * Requer uma página já semeada por `semear`. Recarrega ao final: os hooks do
  * renderer carregaram antes desta mutação.
  */
-export async function registrarPagamentoParcialNaSemente(page: Page): Promise<void> {
-  await page.evaluate(async () => {
+export async function registrarPagamentoParcialNaSemente(page: Page): Promise<string> {
+  const mesDaFatura = await page.evaluate(async () => {
     const api = (window as unknown as { api: ApiPagamentoParcial }).api
     // Data LOCAL, como o app (`hojeIsoLocal`): `toISOString` é UTC.
     const hoje = new Date()
@@ -56,8 +62,10 @@ export async function registrarPagamentoParcialNaSemente(page: Page): Promise<vo
       valorCentavos: 10000,
       dataPagamento
     })
+    return corrente.mesReferencia
   })
 
   await page.reload()
   await page.waitForLoadState('domcontentloaded')
+  return mesDaFatura
 }
