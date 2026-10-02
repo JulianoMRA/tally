@@ -43,6 +43,15 @@
   box-shadow: inset 0 0 0 1px var(--brand);
 }
 
+/* O anel de foco do design system é um `box-shadow` no `:focus-visible` global.
+   O cartão selecionado declara a própria sombra com a mesma especificidade,
+   num CSS que carrega depois: vencia, e como o global zera o `outline`, o foco
+   de teclado no cartão em foco não tinha indicação nenhuma. Dois seletores de
+   classe aqui, para a regra valer contra `.trilhoItemAtivo` em qualquer ordem. */
+.trilhoItem:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
 .trilhoTopo {
   display: flex;
   align-items: center;
@@ -200,6 +209,14 @@
 .faturaItem:hover {
   border-color: var(--rule-strong);
   box-shadow: var(--shadow-2);
+}
+
+/* Mesmo motivo do `.trilhoItem:focus-visible`: a sombra da linha cancelava o
+   anel de foco. Depois do `:hover` de propósito — os dois têm a mesma
+   especificidade, e com o mouse em cima o foco de teclado precisa continuar
+   aparecendo. */
+.faturaItem:focus-visible {
+  box-shadow: var(--focus-ring);
 }
 
 /* Valor da fatura: era a informação que faltava na lista inteira. */
