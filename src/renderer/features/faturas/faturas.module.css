@@ -164,76 +164,94 @@
   color: var(--pending);
 }
 
-/* Lista de faturas */
+/* Histórico: linhas planas com divisor, como as do card de faturas da Visão
+   mensal. Eram cartões soltos — borda, raio e sombra próprios —, de quando a
+   lista vivia direto na página. Dentro do painel, sem respiro, a borda da
+   linha corria a 1px da borda dele e os cantos arredondados deixavam cunhas.
+
+   A grade é da lista, e cada linha entra nela por `subgrid`: a coluna do selo
+   fica com a largura do selo mais largo, e os valores terminam na mesma borda
+   em todas as linhas. Numa linha flex, com o selo logo depois do valor, "Paga"
+   e "Fechada" — de larguras diferentes — deixavam os valores em ziguezague. */
 .faturaList {
   list-style: none;
   padding: 0;
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  column-gap: 12px;
 }
 
-/* O <li> agora é só o item de lista; toda a aparência e a interação vivem no
-   <button> interno. Antes o <li> carregava `role="button"`, o que tirava dele o
-   papel de listitem e deixava o <ul> sem nenhum filho válido — violação
-   `list` (serious) que só aparecia com dados na tela. */
-.itemBotao {
-  display: block;
-  width: 100%;
+/* O <li> é só o item de lista; a aparência e a interação vivem no <button>
+   interno. Antes o <li> carregava `role="button"`, o que tirava dele o papel de
+   listitem e deixava o <ul> sem nenhum filho válido — violação `list`
+   (serious) que só aparecia com dados na tela. */
+.linhaHistorico {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--rule);
+}
+
+.faturaItem {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-items: center;
+  padding: var(--dens-3) 16px;
   background: none;
   border: none;
-  padding: 0;
   font: inherit;
   color: inherit;
   text-align: left;
 }
 
-.faturaItem {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  text-align: left;
-  gap: 12px;
-  background: var(--bg-elev);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-3);
-  padding: var(--dens-3) 16px;
+button.faturaItem {
   cursor: pointer;
-  box-shadow: var(--shadow-1);
-  transition:
-    border-color 0.12s,
-    box-shadow 0.12s;
+  transition: background 0.12s;
 }
 
-.faturaItem:hover {
-  border-color: var(--rule-strong);
-  box-shadow: var(--shadow-2);
+button.faturaItem:hover {
+  background: var(--bg-sunk);
 }
 
-/* Mesmo motivo do `.trilhoItem:focus-visible`: a sombra da linha cancelava o
-   anel de foco. Depois do `:hover` de propósito — os dois têm a mesma
-   especificidade, e com o mouse em cima o foco de teclado precisa continuar
-   aparecendo. */
+/* O anel de foco vai por dentro (`--focus-ring-inset`): a linha encosta na
+   borda do painel, que recorta o que passa dela, e o anel de fora saía cortado
+   nas laterais. `border-radius: 0` desfaz o raio que o `:focus-visible` global
+   aplica — a linha é reta. */
 .faturaItem:focus-visible {
-  box-shadow: var(--focus-ring);
+  box-shadow: var(--focus-ring-inset);
+  border-radius: 0;
+}
+
+/* A última linha acompanha os cantos de baixo do painel, com ou sem foco:
+   sem isso o painel cortaria os dois cantos do anel. */
+.linhaHistorico:last-child .faturaItem,
+.linhaHistorico:last-child .faturaItem:focus-visible {
+  border-radius: 0 0 calc(var(--r-3) - 1px) calc(var(--r-3) - 1px);
 }
 
 /* Valor da fatura: era a informação que faltava na lista inteira. */
 .faturaTotal {
+  justify-self: end;
   font-size: var(--text-4);
   font-weight: 700;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  margin-left: auto;
 }
 
-/* O total agregado fica à vista mesmo com as faturas colapsadas: é a
-   informação que fazia valer a pena expandir. */
+/* O selo encosta à direita da coluna dele, que tem a largura do mais largo. */
+.faturaSelo {
+  justify-self: end;
+  display: inline-flex;
+}
+
+/* Quanto falta pagar fica à vista mesmo com as faturas colapsadas: é a
+   informação que faz valer a pena expandir. Sem `border-top`: o cabeçalho do
+   painel já traz a borda de baixo, e as duas juntas davam um divisor duplo. */
 .anterioresBarra {
   padding: 6px 10px;
-  border-top: 1px solid var(--rule);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -248,7 +266,6 @@
 }
 
 .faturaInfo {
-  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 2px;

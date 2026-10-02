@@ -150,10 +150,10 @@ function LinhaFatura({
   const parcial = contextoDoParcial(item)
 
   return (
-    <li className={styles.itemBotao}>
+    <li className={styles.linhaHistorico}>
       <button type="button" className={styles.faturaItem} onClick={() => onAbrir(item.fatura.id)}>
         <BolinhaDeCor cor={cor} />
-        <div className={styles.faturaInfo}>
+        <span className={styles.faturaInfo}>
           <span className={styles.faturaMes}>
             {formatarMesReferencia(item.mesReferencia, { capitalizar: true })}
           </span>
@@ -174,10 +174,12 @@ function LinhaFatura({
               </>
             )}
           </span>
-        </div>
+        </span>
         {/* O que falta pagar (RN-10): sem pagamento parcial, é o total. */}
         <span className={`${styles.faturaTotal} tnum`}>{formatBRL(item.restanteCentavos)}</span>
-        <Badge variant={statusVariant(item.fatura.status.kind)} />
+        <span className={styles.faturaSelo}>
+          <Badge variant={statusVariant(item.fatura.status.kind)} />
+        </span>
       </button>
     </li>
   )

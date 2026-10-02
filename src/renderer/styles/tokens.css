@@ -165,6 +165,13 @@
      anotado para depois. */
   --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--brand);
 
+  /* O anel por dentro, para o elemento que encosta na borda de um recipiente
+     que recorta o que passa dela — uma linha de lista dentro de um painel, por
+     exemplo. O anel de fora sai cortado nas laterais: foi assim que a linha do
+     histórico de Faturas apareceu na folha de contato. Composto de var(--brand),
+     acompanha o tema sozinho, como o de cima. */
+  --focus-ring-inset: inset 0 0 0 2px var(--brand);
+
   /* Véu dos modais (Modal, ConfirmDialog, SidePanel). Era rgba(0,0,0,0.4)
      repetido nos três. O guard de cores só varre hex, então rgba passava
      batido — mas um véu preto sobre fundo escuro quase não separa o modal
