@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { render, screen, cleanup, within } from '@testing-library/react'
+import { render, screen, cleanup, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import type { Cartao } from '@domain/entities/cartao'
 import type { StatusFatura } from '@domain/entities/fatura'
 import type { PagamentoParcial } from '@domain/entities/pagamento-parcial'
+import type { Parcela } from '@domain/entities/parcela'
 import type { FaturaComTotal, FaturaDetalhada } from '@shared/ipc/fatura'
 import { ToastProvider } from '../../../components/ui'
 import { cartao } from '../../../__tests__/__fixtures__/builders'
@@ -39,11 +40,32 @@ function fatura(
   }
 }
 
+function parcela(id: number, faturaId: number, valorCentavos: number): Parcela {
+  return {
+    id,
+    despesaId: id,
+    faturaId,
+    numero: 1,
+    total: 1,
+    valorCentavos,
+    dataReferencia: '2026-09-01',
+    status: 'Pendente',
+    dataPagamento: null,
+    createdAt: '',
+    updatedAt: ''
+  }
+}
+
 /**
  * Dublê do `window.api` com o que a tela carrega: os cartões (arquivados
  * inclusive), o resumo das faturas de cada um e o detalhe da fatura em foco.
+ * `parcelasPorFatura` só entra onde o teste precisa da tabela na tela.
  */
-function instalarApi(cartoes: Cartao[], faturasPorCartao: Record<number, FaturaComTotal[]>) {
+function instalarApi(
+  cartoes: Cartao[],
+  faturasPorCartao: Record<number, FaturaComTotal[]>,
+  parcelasPorFatura: Record<number, Parcela[]> = {}
+) {
   const todas = Object.values(faturasPorCartao).flat()
   const pagamentos: PagamentoParcial[] = []
   const api = {
@@ -61,7 +83,7 @@ function instalarApi(cartoes: Cartao[], faturasPorCartao: Record<number, FaturaC
         return alvo
           ? {
               fatura: alvo.fatura,
-              parcelas: [],
+              parcelas: parcelasPorFatura[id] ?? [],
               totalCentavos: alvo.totalCentavos,
               pagoParcialCentavos: alvo.pagoParcialCentavos,
               restanteCentavos: alvo.restanteCentavos,
@@ -320,5 +342,282 @@ describe('FaturasPage — pagamento parcial', () => {
     const card = within(trilho()).getByRole('button', { name: /^Inter/ })
     expect(within(card).getByText(/^R\$\s*600,00$/)).toBeTruthy()
     expect(within(card).getByText(/^R\$\s*200,00 pagos de R\$\s*800,00$/)).toBeTruthy()
+  })
+})
+
+/** O cabeçalho ordenável da coluna Valor: a tabela de pagamentos tem um `th` simples. */
+function colunaValor() {
+  return screen.getByRole('button', { name: 'Valor' }).closest('th')
+}
+
+/**
+ * Toda ação recarregava a tela inteira: `carregando` incluía o loading do
+ * resumo, então trilho, painel e histórico desmontavam e nasciam de novo. O
+ * conteúdo voltava certo — por isso nenhum teste reclamava —, mas o estado de
+ * quem estava usando não: o histórico fechava, o filtro voltava para "Todas" e
+ * a tabela, para a ordem da Compra.
+ */
+describe('FaturasPage — recarregar depois de uma ação', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 29, 12))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+  })
+
+  // Junho ficou sem pagar e está fora da janela da fatura corrente: é a linha
+  // que a aba "A pagar" do histórico mostra. Setembro é a fatura do painel.
+  function instalar() {
+    return instalarApi(
+      [INTER],
+      {
+        1: [
+          fatura(6, 1, '2026-06', { kind: 'Fechada' }),
+          fatura(7, 1, '2026-07', { kind: 'Paga', pagaEm: '2026-07-10' }),
+          fatura(9, 1, '2026-09', { kind: 'Aberta' }, 80000)
+        ]
+      },
+      { 9: [parcela(90, 9, 50000), parcela(91, 9, 30000)] }
+    )
+  }
+
+  async function registrarParcial(usuario: ReturnType<typeof userEvent.setup>) {
+    await usuario.click(screen.getByRole('button', { name: 'Pagamento parcial' }))
+    const dialogo = screen.getByRole('dialog', { name: 'Registrar pagamento parcial' })
+    await usuario.type(within(dialogo).getByLabelText('Valor (R$)'), '200,00')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Registrar pagamento' }))
+    await screen.findByRole('region', { name: 'Pagamentos parciais' })
+  }
+
+  function abas() {
+    return screen.getByRole('radiogroup', { name: 'Filtrar faturas por status' })
+  }
+
+  it('o trilho, o histórico aberto, a aba e a ordenação continuam como estavam', async () => {
+    instalar()
+    renderizar()
+    const usuario = userEvent.setup({ delay: null })
+    await screen.findByRole('heading', { name: 'Inter · Setembro de 2026' })
+
+    await usuario.click(within(abas()).getByRole('radio', { name: /^A pagar/ }))
+    await usuario.click(screen.getByRole('button', { name: 'Valor' }))
+    const trilhoAntes = trilho()
+
+    await registrarParcial(usuario)
+
+    // O mesmo nó, e não um trilho igual: a tela não desmontou no caminho.
+    expect(trilho()).toBe(trilhoAntes)
+    expect(
+      within(abas())
+        .getByRole('radio', { name: /^A pagar/ })
+        .getAttribute('aria-checked')
+    ).toBe('true')
+    expect(
+      screen.getByRole('button', { name: /meses anteriores/ }).getAttribute('aria-expanded')
+    ).toBe('true')
+    expect(colunaValor()?.getAttribute('aria-sort')).toBe('ascending')
+  })
+
+  // `recarregarDetalhe` lia o detalhe e chamava dois callbacks, e cada um relia
+  // o mesmo detalhe: três leituras para uma ação.
+  it('lê o detalhe uma vez só', async () => {
+    const api = instalar()
+    renderizar()
+    const usuario = userEvent.setup({ delay: null })
+    await screen.findByRole('heading', { name: 'Inter · Setembro de 2026' })
+    const leiturasAntes = api.fatura.detalharComParcelas.mock.calls.length
+
+    await registrarParcial(usuario)
+
+    expect(api.fatura.detalharComParcelas.mock.calls.length - leiturasAntes).toBe(1)
+  })
+})
+
+/**
+ * Trocar de fatura desmontava o painel: enquanto a nova carregava, o detalhe
+ * saía da tela e levava junto a seta que tinha o foco e a ordenação escolhida.
+ */
+describe('FaturasPage — trocar de fatura sem desmontar o painel', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 29, 12))
+    emularFocoDoChromium()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+    Reflect.deleteProperty(document, 'activeElement')
+  })
+
+  /**
+   * No Chromium, `document.activeElement` responde `body` na mesma tarefa em
+   * que o botão focado é desabilitado (medido no Electron 42, Chromium 148). O
+   * jsdom segue respondendo o botão. A primeira versão da troca de foco
+   * perguntava ao documento quem estava focado: passava aqui e perdia o foco
+   * no app. Quem pegou foi o E2E — este dublê traz a diferença para o teste de
+   * componente.
+   */
+  function emularFocoDoChromium() {
+    const original = Object.getOwnPropertyDescriptor(Document.prototype, 'activeElement')
+    Object.defineProperty(document, 'activeElement', {
+      configurable: true,
+      get() {
+        const focado = original?.get?.call(document) as Element | null
+        return focado instanceof HTMLButtonElement && focado.disabled ? document.body : focado
+      }
+    })
+  }
+
+  // Setembro é a fatura corrente; novembro e dezembro vêm pela seta.
+  function instalar() {
+    return instalarApi(
+      [INTER],
+      {
+        1: [
+          fatura(8, 1, '2026-08', { kind: 'Paga', pagaEm: '2026-08-10' }),
+          fatura(9, 1, '2026-09', { kind: 'Fechada' }),
+          fatura(11, 1, '2026-11', { kind: 'Aberta' }),
+          fatura(12, 1, '2026-12', { kind: 'Aberta' })
+        ]
+      },
+      {
+        9: [parcela(90, 9, 6000), parcela(91, 9, 4000)],
+        11: [parcela(110, 11, 7000), parcela(111, 11, 3000)]
+      }
+    )
+  }
+
+  it('a seta acionada pelo teclado continua com o foco', async () => {
+    instalar()
+    renderizar()
+    const usuario = userEvent.setup({ delay: null })
+    await screen.findByRole('heading', { name: 'Inter · Setembro de 2026' })
+
+    screen.getByRole('button', { name: 'Próxima fatura: novembro de 2026' }).focus()
+    await usuario.keyboard('{Enter}')
+
+    await screen.findByRole('heading', { name: 'Inter · Novembro de 2026' })
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Próxima fatura: dezembro de 2026' })
+    )
+  })
+
+  // Na última fatura a seta fica desabilitada, e botão desabilitado não recebe
+  // tecla: sem passar o foco adiante, a navegação por teclado morria ali.
+  it('na última fatura, o foco passa para a seta que continua valendo', async () => {
+    instalar()
+    renderizar()
+    const usuario = userEvent.setup({ delay: null })
+    await screen.findByRole('heading', { name: 'Inter · Setembro de 2026' })
+
+    screen.getByRole('button', { name: 'Próxima fatura: novembro de 2026' }).focus()
+    await usuario.keyboard('{Enter}')
+    await screen.findByRole('heading', { name: 'Inter · Novembro de 2026' })
+    await usuario.keyboard('{Enter}')
+    await screen.findByRole('heading', { name: 'Inter · Dezembro de 2026' })
+
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Fatura anterior: novembro de 2026' })
+    )
+  })
+
+  it('a ordenação escolhida vale para a fatura seguinte', async () => {
+    instalar()
+    renderizar()
+    const usuario = userEvent.setup({ delay: null })
+    await screen.findByRole('heading', { name: 'Inter · Setembro de 2026' })
+
+    await usuario.click(screen.getByRole('button', { name: 'Valor' }))
+    await usuario.click(screen.getByRole('button', { name: 'Próxima fatura: novembro de 2026' }))
+    await screen.findByRole('heading', { name: 'Inter · Novembro de 2026' })
+
+    expect(colunaValor()?.getAttribute('aria-sort')).toBe('ascending')
+  })
+
+  // Com o painel montado, o erro de uma ação ficaria na tela ao trocar de
+  // fatura: o "Banco indisponível" de setembro apareceria na faixa de novembro.
+  it('o erro de uma ação do ciclo fica na fatura em que ocorreu', async () => {
+    const api = instalar()
+    api.fatura.pagar.mockRejectedValueOnce(new Error('Banco indisponível'))
+    renderizar()
+    const usuario = userEvent.setup({ delay: null })
+    await screen.findByRole('heading', { name: 'Inter · Setembro de 2026' })
+
+    await usuario.click(screen.getByRole('button', { name: 'Marcar como paga' }))
+    const dialogo = screen.getByRole('dialog', { name: 'Marcar fatura como paga' })
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Confirmar pagamento' }))
+    await within(dialogo).findByText('Banco indisponível')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Cancelar' }))
+    const faixa = screen.getByRole('region', { name: 'Resumo da fatura' })
+    expect(within(faixa).getByText('Banco indisponível')).toBeTruthy()
+
+    await usuario.click(screen.getByRole('button', { name: 'Próxima fatura: novembro de 2026' }))
+    await screen.findByRole('heading', { name: 'Inter · Novembro de 2026' })
+
+    expect(screen.queryByText('Banco indisponível')).toBeNull()
+  })
+})
+
+/**
+ * O histórico é o último bloco da página, e o painel que o clique troca fica
+ * acima dele. Sem levar a vista e o foco até o título, o resultado visível do
+ * clique era a linha sumir da lista.
+ */
+describe('FaturasPage — abrir uma fatura pelo histórico', () => {
+  const scrollIntoView = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 29, 12))
+    // O jsdom não implementa `scrollIntoView`.
+    Element.prototype.scrollIntoView = scrollIntoView
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+    Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
+  })
+
+  function instalar() {
+    return instalarApi([INTER], {
+      1: [
+        fatura(6, 1, '2026-06', { kind: 'Fechada' }),
+        fatura(9, 1, '2026-09', { kind: 'Aberta' }),
+        fatura(11, 1, '2026-11', { kind: 'Aberta' })
+      ]
+    })
+  }
+
+  it('leva a vista e o foco ao título do painel', async () => {
+    instalar()
+    renderizar()
+    const usuario = userEvent.setup({ delay: null })
+    await screen.findByRole('heading', { name: 'Inter · Setembro de 2026' })
+
+    await usuario.click(screen.getByRole('button', { name: /meses anteriores/ }))
+    await usuario.click(screen.getByRole('button', { name: /^Junho de 2026/ }))
+
+    const titulo = await screen.findByRole('heading', { name: 'Inter · Junho de 2026' })
+    await waitFor(() => expect(document.activeElement).toBe(titulo))
+    expect(scrollIntoView).toHaveBeenCalledTimes(1)
+  })
+
+  // As setas já estão junto do título: rolar até ele a cada mês faria a
+  // página pular debaixo do cursor.
+  it('navegar pelas setas não rola a página', async () => {
+    instalar()
+    renderizar()
+    const usuario = userEvent.setup({ delay: null })
+    await screen.findByRole('heading', { name: 'Inter · Setembro de 2026' })
+
+    await usuario.click(screen.getByRole('button', { name: 'Próxima fatura: novembro de 2026' }))
+    await screen.findByRole('heading', { name: 'Inter · Novembro de 2026' })
+
+    expect(scrollIntoView).not.toHaveBeenCalled()
   })
 })

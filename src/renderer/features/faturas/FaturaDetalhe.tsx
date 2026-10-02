@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
-import type { Fatura } from '@domain/entities/fatura'
 import type { PagamentoParcial } from '@domain/entities/pagamento-parcial'
 import type { Parcela } from '@domain/entities/parcela'
 import { quitadaPorParciais } from '@domain/services/pagamento-parcial'
@@ -101,8 +100,14 @@ type Props = {
   /** Sem vizinha, a seta fica desabilitada. */
   anterior?: Vizinha
   proxima?: Vizinha
-  onFaturaAtualizada: (fatura: Fatura) => void
-  onDetalheAtualizado: (detalhe: FaturaDetalhada) => void
+  /**
+   * Pede à página que recarregue depois de uma ação. Eram dois callbacks, e o
+   * componente ainda lia o detalhe antes de chamá-los: três leituras do mesmo
+   * detalhe por ação. Quem lê é a página, uma vez.
+   */
+  onAtualizada: () => Promise<void> | void
+  /** O título do painel, para a página levar o foco até ele (RF-FAT-06). */
+  tituloRef?: RefObject<HTMLHeadingElement>
 }
 
 export function FaturaDetalhe({
@@ -111,8 +116,8 @@ export function FaturaDetalhe({
   cartaoCor,
   anterior,
   proxima,
-  onFaturaAtualizada,
-  onDetalheAtualizado
+  onAtualizada,
+  tituloRef
 }: Props) {
   const {
     fatura,
@@ -215,15 +220,39 @@ export function FaturaDetalhe({
     return acoes
   }
 
-  const ciclo = useCicloFatura(onFaturaAtualizada)
+  const ciclo = useCicloFatura(onAtualizada)
+  // O painel fica montado ao trocar de fatura: o erro de uma ação só aparece
+  // na fatura em que ela falhou.
+  const erroDoCiclo = ciclo.erroDa(fatura.id)
 
-  async function recarregarDetalhe() {
-    const atualizada = await window.api.fatura.detalharComParcelas(fatura.id)
-    if (atualizada) {
-      onFaturaAtualizada(atualizada.fatura)
-      onDetalheAtualizado(atualizada)
-    }
+  // No fim da lista a seta acionada fica desabilitada, e botão desabilitado não
+  // recebe tecla: o foco passa para a que continua valendo.
+  //
+  // Quem diz qual seta foi acionada é o clique, e não o documento. O Chromium
+  // responde `body` em `document.activeElement` na mesma tarefa em que o botão
+  // focado é desabilitado. A primeira versão perguntava ao documento quem
+  // estava focado: passava no jsdom, que segue respondendo o botão, e perdia o
+  // foco no app. Quem pegou foi o E2E.
+  const setaAnteriorRef = useRef<HTMLButtonElement>(null)
+  const setaProximaRef = useRef<HTMLButtonElement>(null)
+  const setaAcionada = useRef<'anterior' | 'proxima' | null>(null)
+
+  function acionarSeta(seta: 'anterior' | 'proxima', vizinha: Vizinha | undefined) {
+    setaAcionada.current = seta
+    vizinha?.abrir()
   }
+
+  // Sem lista de dependências de propósito: o efeito roda no commit seguinte
+  // ao clique, que já traz a vizinhança nova, e esquece a seta ali. Guardada,
+  // ela valeria para uma mudança de vizinhança que viesse depois, por outro
+  // motivo, e tiraria o foco de onde ele estivesse.
+  useLayoutEffect(() => {
+    const acionada = setaAcionada.current
+    if (acionada === null) return
+    setaAcionada.current = null
+    if (acionada === 'proxima' && !proxima && anterior) setaAnteriorRef.current?.focus()
+    else if (acionada === 'anterior' && !anterior && proxima) setaProximaRef.current?.focus()
+  })
 
   async function handleAdiantar(despesaId: number, quantidade: number, faturaDestinoId: number) {
     // O aviso conta o que o main moveu: ele só move as elegíveis (RN-03), e
@@ -236,7 +265,7 @@ export function FaturaDetalhe({
     const aviso = avisoDoAdiantamento(movidas.length, quantidade)
     toast.show(aviso.texto, aviso.tipo)
     setParcelaAdiantar(null)
-    await recarregarDetalhe()
+    await onAtualizada()
   }
 
   async function handleConfirmarEditarDespesa(input: {
@@ -253,7 +282,7 @@ export function FaturaDetalhe({
       })
       toast.show('Despesa atualizada.', 'success')
       setDespesaEditar(null)
-      await recarregarDetalhe()
+      await onAtualizada()
     } catch (e) {
       toast.show(mensagemErro(e, 'Erro ao atualizar despesa.'), 'error')
       throw e
@@ -270,14 +299,14 @@ export function FaturaDetalhe({
     await window.api.despesa.atualizar({ despesaId: assinaturaEditar.id, ...input })
     toast.show('Assinatura atualizada.', 'success')
     setAssinaturaEditar(null)
-    await recarregarDetalhe()
+    await onAtualizada()
   }
 
   async function confirmarExcluirDespesa(despesaId: number) {
     try {
       await window.api.despesa.excluir({ despesaId })
       toast.show('Despesa excluída.', 'success')
-      await recarregarDetalhe()
+      await onAtualizada()
     } catch (e) {
       toast.show(mensagemErro(e, 'Erro ao excluir despesa.'), 'error')
     } finally {
@@ -295,14 +324,14 @@ export function FaturaDetalhe({
     await window.api.fatura.registrarPagamentoParcial({ faturaId: fatura.id, ...input })
     toast.show('Pagamento parcial registrado.', 'success')
     setRegistrandoParcial(false)
-    await recarregarDetalhe()
+    await onAtualizada()
   }
 
   async function confirmarExcluirPagamento(pagamentoId: number) {
     try {
       await window.api.fatura.excluirPagamentoParcial({ pagamentoId })
       toast.show('Pagamento parcial excluído.', 'success')
-      await recarregarDetalhe()
+      await onAtualizada()
     } catch (e) {
       toast.show(mensagemErro(e, 'Erro ao excluir o pagamento.'), 'error')
     } finally {
@@ -332,27 +361,31 @@ export function FaturaDetalhe({
           e "← sem anterior" era um botão desabilitado com texto. */}
       <div className={styles.cabecalho}>
         <BotaoSeta
+          ref={setaAnteriorRef}
           direcao="anterior"
           rotulo={
             anterior
               ? `Fatura anterior: ${formatarMesReferencia(anterior.mesReferencia)}`
               : 'Sem fatura anterior'
           }
-          onClick={anterior?.abrir}
+          onClick={() => acionarSeta('anterior', anterior)}
           disabled={!anterior}
         />
         <BolinhaDeCor cor={cartaoCor} />
-        <h2 className={styles.detalheTitleText}>
+        {/* `tabIndex={-1}`: o título recebe o foco quando a fatura é aberta
+            pelo histórico, sem entrar na ordem do Tab. */}
+        <h2 ref={tituloRef} tabIndex={-1} className={styles.detalheTitleText}>
           {cartaoNome} · {formatarMesReferencia(fatura.mesReferencia, { capitalizar: true })}
         </h2>
         <BotaoSeta
+          ref={setaProximaRef}
           direcao="proxima"
           rotulo={
             proxima
               ? `Próxima fatura: ${formatarMesReferencia(proxima.mesReferencia)}`
               : 'Sem próxima fatura'
           }
-          onClick={proxima?.abrir}
+          onClick={() => acionarSeta('proxima', proxima)}
           disabled={!proxima}
         />
       </div>
@@ -472,7 +505,7 @@ export function FaturaDetalhe({
           </p>
         )}
 
-        {ciclo.erro && !pagando && <p className={styles.erroAcao}>{ciclo.erro}</p>}
+        {erroDoCiclo && !pagando && <p className={styles.erroAcao}>{erroDoCiclo}</p>}
       </section>
 
       {/* Entre a faixa e as parcelas: é a lista que explica os números da
@@ -658,7 +691,7 @@ export function FaturaDetalhe({
           pagoParcialCentavos={pagoParcialCentavos}
           restanteCentavos={restanteCentavos}
           loading={ciclo.loading}
-          erro={ciclo.erro}
+          erro={erroDoCiclo}
           onConfirmar={confirmarPagamento}
           onCancelar={() => setPagando(false)}
         />
