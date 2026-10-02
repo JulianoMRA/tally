@@ -11,9 +11,10 @@ import {
   SegmentedControl
 } from '../../components/ui'
 import { formatBRL } from '../../lib/format-brl'
-import { formatarDataIso, formatarMesReferencia } from '../../lib/formatar-data'
+import { formatarMesReferencia } from '../../lib/formatar-data'
 import { pluralizar } from '../../lib/pluralizar'
 import { rotuloVencida } from './aviso-fechamento'
+import { datasDaLinha } from './datas-da-linha'
 import { contextoDoParcial } from './descrever-parcial'
 import {
   contarPorStatus,
@@ -145,7 +146,6 @@ function LinhaFatura({
   hoje: string
   onAbrir: (faturaId: number) => void
 }) {
-  const { status, dataFechamento, dataVencimento } = item.fatura
   const vencida = rotuloVencida(item.fatura, hoje, quitadaPorParciais(item))
   const parcial = contextoDoParcial(item)
 
@@ -157,13 +157,8 @@ function LinhaFatura({
           <span className={styles.faturaMes}>
             {formatarMesReferencia(item.mesReferencia, { capitalizar: true })}
           </span>
-          {/* Paga diz quando foi paga: o vencimento de uma fatura quitada não
-              pede mais nada. A não paga e vencida diz há quanto tempo. */}
           <span className={styles.faturaSub}>
-            Fecha {formatarDataIso(dataFechamento)} ·{' '}
-            {status.kind === 'Paga'
-              ? `Paga em ${formatarDataIso(status.pagaEm)}`
-              : `Vence ${formatarDataIso(dataVencimento)}`}
+            <span>{datasDaLinha(item.fatura, hoje)}</span>
             {vencida && (
               <>
                 {' · '}

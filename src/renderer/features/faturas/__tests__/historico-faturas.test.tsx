@@ -12,7 +12,8 @@ let proximoId = 1
 function fatura(
   mesReferencia: string,
   status: StatusFatura,
-  pagoParcialCentavos = 0
+  pagoParcialCentavos = 0,
+  dataVencimento = `${mesReferencia}-12`
 ): FaturaComTotal {
   return {
     fatura: {
@@ -20,7 +21,7 @@ function fatura(
       cartaoId: 1,
       mesReferencia,
       dataFechamento: `${mesReferencia}-05`,
-      dataVencimento: `${mesReferencia}-12`,
+      dataVencimento,
       status,
       createdAt: '',
       updatedAt: ''
@@ -108,22 +109,39 @@ describe('HistoricoFaturas', () => {
     expect(screen.queryByText('Julho de 2026')).toBeNull()
   })
 
-  it('a linha paga diz quando foi paga, no lugar do vencimento', async () => {
+  // A linha dizia "Fecha" e "Vence" para datas que já passaram, e misturava
+  // caixa com o aviso ao lado. O tempo do verbo vem do calendário.
+  it('a linha paga diz quando fechou e quando foi paga, no lugar do vencimento', async () => {
     renderizar()
     await abrirLista()
 
     const julho = screen.getByRole('button', { name: /Julho de 2026/ })
-    expect(within(julho).getByText(/Paga em 11\/07\/2026/)).toBeTruthy()
-    expect(within(julho).queryByText(/Vence/)).toBeNull()
+    expect(within(julho).getByText('fechou 05/07/2026 · paga em 11/07/2026')).toBeTruthy()
+    expect(within(julho).queryByText(/vence/)).toBeNull()
   })
 
-  it('a linha não paga e vencida avisa, em tom de alerta', async () => {
+  it('a linha não paga e vencida diz que venceu e avisa, em tom de alerta', async () => {
     renderizar()
     await abrirLista()
 
     const agosto = screen.getByRole('button', { name: /Agosto de 2026/ })
+    expect(within(agosto).getByText('fechou 05/08/2026 · venceu 12/08/2026')).toBeTruthy()
     const aviso = within(agosto).getByText('vencida há 48 dias')
     expect(aviso.getAttribute('data-tom')).toBe('alerta')
+  })
+
+  // Cartão que vence no mês seguinte ao fechamento: a fatura de agosto vence
+  // em outubro, e em 29/09 ainda não venceu.
+  it('com o vencimento por vir, a linha diz que vence e não alarma', async () => {
+    renderizar([
+      fatura('2026-08', { kind: 'Fechada' }, 0, '2026-10-01'),
+      fatura('2026-09', { kind: 'Aberta' })
+    ])
+    await abrirLista()
+
+    const agosto = screen.getByRole('button', { name: /Agosto de 2026/ })
+    expect(within(agosto).getByText('fechou 05/08/2026 · vence 01/10/2026')).toBeTruthy()
+    expect(within(agosto).queryByText(/vencida há/)).toBeNull()
   })
 })
 
