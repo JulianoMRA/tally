@@ -209,12 +209,30 @@ async function fileiras(cards: Locator): Promise<number[]> {
   })
 }
 
+const folga = (valores: number[]) => Math.max(...valores) - Math.min(...valores)
+
 /** A diferença entre o card mais largo e o mais estreito. */
 async function folgaDeLargura(cards: Locator): Promise<number> {
-  const larguras = await cards.evaluateAll((els) =>
-    els.map((el) => el.getBoundingClientRect().width)
+  return folga(await cards.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width)))
+}
+
+/** O topo do total e a base do prazo ficam na mesma altura em todos os cards. */
+async function esperarTotalEPrazoAlinhados(cards: Locator): Promise<void> {
+  const medidas = await cards.evaluateAll((els) =>
+    els.map((card) => {
+      const folhas = [...card.querySelectorAll('span')].filter((s) => s.children.length === 0)
+      const texto = (s: Element) => (s.textContent ?? '').trim()
+      const total = folhas.find((s) => /^R\$\s*[\d.]+,\d{2}$/.test(texto(s)))
+      const prazo = folhas.find((s) => /^(vence|vencida há|fecha|paga em)/.test(texto(s)))
+      if (!total || !prazo) throw new Error(`card sem total ou prazo: ${card.textContent}`)
+      return {
+        topoDoTotal: total.getBoundingClientRect().top,
+        baseDoPrazo: prazo.getBoundingClientRect().bottom
+      }
+    })
   )
-  return Math.max(...larguras) - Math.min(...larguras)
+  expect(folga(medidas.map((m) => m.topoDoTotal)), 'totais desalinhados').toBeLessThanOrEqual(1)
+  expect(folga(medidas.map((m) => m.baseDoPrazo)), 'prazos desalinhados').toBeLessThanOrEqual(1)
 }
 
 test.describe('Faturas — geometria do trilho', () => {
@@ -298,22 +316,7 @@ test.describe('Faturas — geometria do trilho', () => {
     await expect(cards.filter({ hasText: 'Arquivado' })).toHaveCount(1)
     await expect.poll(() => fileiras(cards)).toEqual([3])
 
-    const medidas = await cards.evaluateAll((els) =>
-      els.map((card) => {
-        const folhas = [...card.querySelectorAll('span')].filter((s) => s.children.length === 0)
-        const texto = (s: Element) => (s.textContent ?? '').trim()
-        const total = folhas.find((s) => /^R\$\s*[\d.]+,\d{2}$/.test(texto(s)))
-        const prazo = folhas.find((s) => /^(vence|vencida há|fecha|paga em)/.test(texto(s)))
-        if (!total || !prazo) throw new Error(`card sem total ou prazo: ${card.textContent}`)
-        return {
-          topoDoTotal: total.getBoundingClientRect().top,
-          baseDoPrazo: prazo.getBoundingClientRect().bottom
-        }
-      })
-    )
-    const folga = (valores: number[]) => Math.max(...valores) - Math.min(...valores)
-    expect(folga(medidas.map((m) => m.topoDoTotal)), 'totais desalinhados').toBeLessThanOrEqual(1)
-    expect(folga(medidas.map((m) => m.baseDoPrazo)), 'prazos desalinhados').toBeLessThanOrEqual(1)
+    await esperarTotalEPrazoAlinhados(cards)
   })
 
   // O aviso era uma linha a mais no pé do card: a fileira crescia uns 30px e
@@ -366,5 +369,67 @@ test.describe('Faturas — geometria do trilho', () => {
     await card.click()
     await expect(titulo).toHaveText(corrente)
     await expect(card).not.toContainText(/voltar para/)
+  })
+
+  // A volta e o selo "Arquivado" não cabem lado a lado: a linha do mês
+  // quebrava em duas, e o total descia 24px só no card arquivado. Os casos de
+  // cima não viam: num o cartão arquivado está na fatura corrente, no outro o
+  // cartão que sai dela não é arquivado. Foi a folha de contato que mostrou.
+  test('no cartão arquivado, a volta não tira o total nem o prazo do lugar', async ({ app }) => {
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+    await page.evaluate(async () => {
+      const api = (window as unknown as { api: ApiTrilho }).api
+      const hoje = new Date()
+      const alvo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 3)
+      const mesQueVem = `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, '0')}-03`
+      const categoria = await api.categoria.create({
+        nome: 'Mercado Arquivado E2E',
+        cor: '#5b7a5e'
+      })
+      const cartao = (nome: string) =>
+        api.cartao.create({ nome, diaFechamento: 5, diaVencimento: 12, cor: '#a88454' })
+      const compra = (cartaoId: number, dataCompra: string) =>
+        api.despesa.criarUnicaCredito({
+          descricao: 'Compra do trilho',
+          categoriaId: categoria.id,
+          cartaoId,
+          valorCentavos: 7500,
+          dataCompra
+        })
+
+      // Quatro cards: em 1280px cada um fica com 240px, que é onde a volta e
+      // o selo não cabem na mesma linha. Com dois, de 300px, cabiam — e o caso
+      // passava também contra o código que quebrava a linha.
+      for (const nome of ['Cartao A', 'Cartao B', 'Cartao C']) {
+        await compra((await cartao(nome)).id, mesQueVem)
+      }
+      // Duas faturas no arquivado: a corrente e a anterior, para onde a seta leva.
+      const antigo = await cartao('Velho')
+      await compra(antigo.id, '2026-06-03')
+      await compra(antigo.id, '2026-07-03')
+      await api.cartao.arquivar(antigo.id)
+    })
+    await recarregar(page)
+    await redimensionar(app, 1280)
+    await expect.poll(async () => page.evaluate(() => window.innerWidth)).toBeLessThan(1281)
+    await irPara(page, 'Faturas')
+
+    const cards = trilho(page).getByRole('button')
+    await expect(cards).toHaveCount(4)
+    await expect.poll(() => fileiras(cards)).toEqual([4])
+    const arquivado = cards.filter({ hasText: 'Velho' })
+    await arquivado.click()
+    await expect(page.getByRole('heading', { level: 2 })).toContainText('Velho')
+    await esperarTotalEPrazoAlinhados(cards)
+    const alturaAntes = await altura(trilho(page))
+
+    await page.getByRole('button', { name: /^Fatura anterior/ }).click()
+    await expect(arquivado).toContainText(/voltar para/)
+    await esperarTotalEPrazoAlinhados(cards)
+    expect(
+      Math.abs((await altura(trilho(page))) - alturaAntes),
+      'o trilho mudou de altura'
+    ).toBeLessThanOrEqual(1)
   })
 })

@@ -132,13 +132,13 @@
   border-style: dashed;
 }
 
-/* Quebra de linha só no caso raro do cartão arquivado com o painel em outra
-   fatura, em que o selo e a volta não cabem lado a lado. */
+/* Uma linha só, sempre. A quebra existiu para o cartão arquivado com o painel
+   em outra fatura, em que a volta e o selo não cabem lado a lado — e descia o
+   total só nesse card. Nesse estado o selo sai da vista (ver `TrilhoCartoes`). */
 .trilhoLinhaEscopo {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 4px 8px;
+  gap: 8px;
   max-width: 100%;
   min-width: 0;
   min-height: 24px;

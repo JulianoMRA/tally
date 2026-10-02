@@ -115,7 +115,16 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
                     {formatarMesReferencia(corrente.mesReferencia)}
                   </span>
                 ))}
-              {!cartao.ativo && <Badge variant="archived" />}
+              {/* A volta e o selo não cabem lado a lado: a linha quebrava, e o
+                  total descia só no card arquivado. Enquanto o card oferece a
+                  volta, o selo sai da vista. A borda tracejada continua, e o
+                  texto fica para quem não a vê. */}
+              {!cartao.ativo &&
+                (painelEmOutraFatura ? (
+                  <span className="sr-only">Arquivado</span>
+                ) : (
+                  <Badge variant="archived" />
+                ))}
             </span>
 
             {/* O que falta pagar (RN-10), que sem pagamento parcial é o total.

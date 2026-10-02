@@ -154,13 +154,14 @@ describe('TrilhoCartoes — prazo', () => {
     }
   }
 
-  function renderUm(fatura: FaturaComTotal, ativo = true) {
+  /** A fatura é de setembro; por padrão o painel está nela. */
+  function renderUm(fatura: FaturaComTotal, ativo = true, mesDoPainel = '2026-09') {
     const inter = { ...cartao(1, 'Inter'), ativo }
     render(
       <TrilhoCartoes
         grupos={[{ cartao: inter, faturas: [fatura] }]}
         cartaoSelecionadoId={1}
-        mesDoPainel="2026-09"
+        mesDoPainel={mesDoPainel}
         onSelecionar={() => {}}
       />
     )
@@ -199,7 +200,17 @@ describe('TrilhoCartoes — prazo', () => {
   it('cartão arquivado leva o selo', () => {
     renderUm(faturaEm({ kind: 'Fechada' }, '2026-10-20'), false)
 
-    expect(within(card('Inter')).getByText('Arquivado')).toBeTruthy()
+    expect(within(card('Inter')).getByText('Arquivado').className).not.toBe('sr-only')
+  })
+
+  // A volta e o selo não cabem lado a lado no card: a linha quebrava, e o total
+  // descia 24px só no card arquivado. Enquanto o card oferece a volta, o selo
+  // sai da vista. A borda tracejada continua, e o texto fica para quem não a vê.
+  it('no cartão arquivado, o selo dá lugar à volta para a fatura corrente', () => {
+    renderUm(faturaEm({ kind: 'Fechada' }, '2026-10-20'), false, '2026-08')
+
+    expect(within(card('Inter')).getByText('voltar para setembro de 2026')).toBeTruthy()
+    expect(within(card('Inter')).getByText('Arquivado').className).toBe('sr-only')
   })
 
   /**
