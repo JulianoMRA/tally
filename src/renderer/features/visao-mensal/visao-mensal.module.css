@@ -642,6 +642,17 @@
   font-weight: 700;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Com pagamento parcial (RN-10) o número da linha é o que falta pagar, e o
+   total da fatura vem embaixo, em tom de apoio: "de R$ 800,00". Bloco, como o
+   aviso de prazo sob o vencimento. */
+.faturaCompactaDe {
+  display: block;
+  font-size: var(--text-2);
+  font-weight: 400;
+  color: var(--ink-3);
 }
 
 .recebimentoStatusBadgeRecebido {

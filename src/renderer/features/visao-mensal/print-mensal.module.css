@@ -71,7 +71,11 @@
   color: var(--ink-3);
 }
 
-.num {
+/* `.tabela .num`, e não `.num`: a regra `.tabela th, .tabela td` acima alinha à
+   esquerda e vence uma classe sozinha. As colunas de valor do PDF saíam à
+   esquerda desde sempre; com Total, Parciais e Líquido lado a lado (RN-10) o
+   desalinho de três colunas de número deixou de passar despercebido. */
+.tabela .num {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
