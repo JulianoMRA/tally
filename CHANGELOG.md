@@ -6,6 +6,37 @@ vista técnico.
 
 ---
 
+## v1.20.0 — Pagamento parcial: a fatura passa a dizer o que o banco cobra (out/2026)
+
+---
+
+**O que esta versão é.** Uma feature, pedida logo depois da v1.19.0: registrar o pagamento parcial de uma fatura. Três fases, três PRs (#161 a #163). Uma migration aditiva (`0015`, a tabela `pagamento_parcial`), dois canais IPC novos no grupo de fatura que já existia, nenhuma dependência nova. Cobre **RN-10** e **RF-FAT-07**, novos, e atualiza **RN-08**, **RF-FAT-03**, **RF-FAT-04**, **RF-FAT-05**, **RF-FAT-06**, **RF-VIS-02**, **RF-VIS-07**, **RF-CFG-02**, **RF-EXP-01** e **RF-EXP-02**. O plano, com os 22 requisitos e as decisões, fica em `docs/design/PLANO-PAGAMENTO-PARCIAL.md`.
+
+**O improviso acertava a conta e errava a tela.** O app só sabia pagar a fatura inteira: pagar era um status com uma data. Quem pagava uma parte antes do vencimento lançava o pagamento como renda avulsa — e a sobra do mês fechava, porque somar X nas entradas é aritmeticamente igual a tirar X da fatura. A fatura é que seguia mostrando, em todo lugar, um valor que o banco já não cobrava. O motivo estava no modelo: o total de uma fatura nunca é gravado, é a soma das parcelas, calculada na leitura em **três pontos** — o resumo por cartão, o detalhe da fatura e a visão mensal. A feature dá ao pagamento um registro próprio, ligado à fatura, e faz os três pontos descontarem esse registro **pela mesma função do domínio**. Três contas próprias fariam a mesma fatura valer um número em cada tela.
+
+**O que fazer com o improviso que já existe.** Nas faturas **ainda não pagas**, apague a renda avulsa que representava o pagamento e registre o pagamento parcial na fatura: os dois juntos abatem duas vezes. Nas faturas já pagas não precisa mexer — a sobra dá o mesmo número dos dois jeitos. Não há conversão automática, por decisão.
+
+**A decisão: abatimento.** A fatura passa a valer `total − pagamentos parciais`, nunca negativo, para a tela e para a sobra do mês (RN-08), em qualquer status. O pagamento parcial não conta como saída em mês nenhum: ele tira da fatura. É o número do improviso, sem a renda falsa. A ressalva ficou escrita: a conta é fiel quando o dinheiro do pagamento não veio de uma entrada já lançada naquele mês; se veio, a sobra fica acima do real pelo valor do pagamento. E **gasto por categoria não acompanha**, de propósito: ranking, pizza, orçamento, Saídas e o uso do cartão seguem pelo valor da compra, porque pagar parte da fatura não muda o que se gastou em mercado.
+
+**A regra (RN-10).** Fatura Aberta e Fechada aceitam pagamento parcial; Paga não — reabrir antes. O valor não passa do que falta pagar, e em fatura Fechada o valor que **quita** também é recusado: aceitá-lo deixaria a fatura sem nada a pagar e sem estar paga, com as parcelas pendentes, e quitar é "Marcar como paga". O pagamento não muda o status da fatura nem das parcelas e não trava a despesa. Como a despesa segue editável, uma exclusão depois do pagamento pode deixar os parciais acima do total: a diferença vira **pago a mais**, e não um restante negativo. Não há edição — errar o valor se resolve excluindo e registrando de novo.
+
+**A tela de Faturas.** O botão "Pagamento parcial" fica na faixa de resumo. O diálogo pede valor e data e só habilita "Registrar pagamento" com o que o main vai aceitar: a conferência usa a mesma função do domínio, e o motivo aparece junto do campo. Com pagamento parcial, o destaque da faixa passa do total para "Falta pagar", e um painel entre a faixa e as parcelas lista os pagamentos, com excluir. O trilho e o histórico mostram o que falta, com o contexto "R$ 200,00 pagos de R$ 800,00". "Marcar como paga" diz o que falta, o total e o que já foi pago; reabrir mantém os pagamentos e avisa. E a fatura Fechada que os pagamentos já cobriram **não avisa prazo**: não há o que pagar, só o que marcar.
+
+**O mês.** A sobra, a fatia de faturas do hero (com a nota "R$ X já pagos", espelho de "já na conta" das entradas), o card de faturas e a agenda passam a contar o que falta pagar. A notificação do sistema usa o mesmo critério da tela para não anunciar o vencimento de uma fatura coberta — o predicado foi do renderer para o domínio quando o main passou a precisar dele. O CSV ganha uma linha por pagamento, e o PDF, as colunas Parciais e Líquido quando há pagamento no mês. A evolução do saldo e o ponto de partida da Simulação leem o mesmo balanço e acompanharam sem mudança própria.
+
+**O que a verificação achou, além do que os testes pediam.**
+
+- **Um teste novo que não provava nada.** A faixa de resumo ganhou dois valores e um botão, e o bloco do fim precisou quebrar de linha. O teste de geometria escrito para isso — borda da faixa e rolagem da página — **passava com a correção revertida**. Medindo a tela sem a regra: em 1024px a faixa segue na borda certa e a página não rola; os rótulos é que se partem palavra por palavra e o "Fechar fatura" sai 28px para fora do card. O teste passou a cobrar botões dentro da faixa e rótulos numa linha só, com valores de cinco dígitos, e agora falha sem a regra. Só a reversão mostrou o problema: o teste verde não dizia nada.
+- **Dois JOINs multiplicam.** O resumo por cartão somava as parcelas com um LEFT JOIN, e os pagamentos entrariam com um segundo: 2 parcelas e 2 pagamentos dobrariam o total e o pago, sem erro nenhum. As somas viraram subconsultas, com um teste que falha na versão com dois JOINs.
+- **A folha de contato achou dois defeitos de alinhamento.** O cabeçalho "Valor" do painel novo ficava na borda esquerda da coluna, longe do número. E as colunas de valor do PDF saíam alinhadas à esquerda **desde sempre** — a regra `.num` perdia para o alinhamento padrão da tabela —, o que só ficou evidente com três colunas de número lado a lado. Mesma causa nos dois: uma classe sozinha perde para o seletor da tabela.
+- **Os testes da agenda entregavam os eventos já em ordem.** O mutation testing mostrou que a agenda passava em todos eles sem ordenar nada, e que as bordas do recorte ("hoje ainda é por vir") não tinham teste. O arquivo foi de 80% para 93%; os quatro mutantes restantes trocam 1 por 0 no comparador, que a ordenação estável de listas curtas não distingue.
+
+**Testes.** Unitários de 1619 para **1884**, em 171 arquivos, com os pisos por camada atendidos e a regra nova começando por teste vermelho, inclusive por propriedade (`falta pagar − pago a mais = total − pagamentos`, com pelo menos um dos dois em zero). Mutation testing em 100% no serviço novo do domínio. E2E de 139 para **150 casos**, em 41 arquivos, com **a suíte inteira verde ao fim de cada uma das três fases** e sem retentativa: um spec novo que segue o pagamento da tela de Faturas até a sobra do mês, a Simulação e a folha do PDF, o caso de geometria e cinco varreduras axe com o dado que a semente não criava.
+
+**Fora desta versão, anotado.** Editar um pagamento parcial e converter a renda avulsa do improviso ficaram fora por decisão. Também: registrar pela Visão mensal, pagar mais do que falta deixando crédito para as próximas compras, marcar a fatura como paga sozinha quando os pagamentos cobrem o total, e descrição no pagamento. Seguem anotados da v1.19.0 os dois defeitos gêmeos em Saídas e o UTC em `scripts/smoke-visual.mjs`.
+
+---
+
 ## v1.19.0 — Faturas: a regra que errava no dia de pagar (out/2026)
 
 ---
