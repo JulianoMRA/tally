@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Cartao } from '@domain/entities/cartao'
 import type { Fatura } from '@domain/entities/fatura'
 import type { FaturaComTotal, FaturaDetalhada } from '@shared/ipc/fatura'
@@ -8,20 +8,23 @@ export type GrupoFaturasCartao = { cartao: Cartao; faturas: FaturaComTotal[] }
 
 export function useCicloFatura(onSucesso: (fatura: Fatura) => void) {
   const [loading, setLoading] = useState(false)
-  const [erro, setErro] = useState<string | null>(null)
+  // O erro guarda de qual fatura é. O painel fica montado ao trocar de fatura,
+  // e este hook vive nele: um erro solto acompanharia a navegação, e o "Fatura
+  // já está paga" de setembro apareceria na faixa de novembro.
+  const [falha, setFalha] = useState<{ faturaId: number; mensagem: string } | null>(null)
 
   // Devolve se deu certo: o diálogo de pagamento só fecha nesse caso, e o erro
   // fica nele. `mensagemErro` tira o prefixo com que o Electron embrulha o erro
   // do main — sem isso o resumo mostrava "Error invoking remote method…".
-  async function executar(acao: () => Promise<Fatura>): Promise<boolean> {
+  async function executar(faturaId: number, acao: () => Promise<Fatura>): Promise<boolean> {
     setLoading(true)
-    setErro(null)
+    setFalha(null)
     try {
       const fatura = await acao()
       onSucesso(fatura)
       return true
     } catch (e) {
-      setErro(mensagemErro(e, 'Erro ao atualizar a fatura.'))
+      setFalha({ faturaId, mensagem: mensagemErro(e, 'Erro ao atualizar a fatura.') })
       return false
     } finally {
       setLoading(false)
@@ -29,18 +32,23 @@ export function useCicloFatura(onSucesso: (fatura: Fatura) => void) {
   }
 
   function fechar(faturaId: number) {
-    return executar(() => window.api.fatura.fechar(faturaId))
+    return executar(faturaId, () => window.api.fatura.fechar(faturaId))
   }
 
   function pagar(faturaId: number, dataPagamento: string) {
-    return executar(() => window.api.fatura.pagar(faturaId, dataPagamento))
+    return executar(faturaId, () => window.api.fatura.pagar(faturaId, dataPagamento))
   }
 
   function reabrir(faturaId: number) {
-    return executar(() => window.api.fatura.reabrir(faturaId))
+    return executar(faturaId, () => window.api.fatura.reabrir(faturaId))
   }
 
-  return { fechar, pagar, reabrir, loading, erro }
+  /** O erro da última ação, se ela foi nesta fatura. */
+  function erroDa(faturaId: number): string | null {
+    return falha?.faturaId === faturaId ? falha.mensagem : null
+  }
+
+  return { fechar, pagar, reabrir, loading, erroDa }
 }
 
 /**
@@ -122,27 +130,41 @@ export function useFaturasDeTodosCartoes(cartoes: Cartao[]) {
   return { grupos, loading, erro, refetch }
 }
 
+/**
+ * O detalhe da fatura em foco. Enquanto a seguinte carrega, `detalhe` segue
+ * sendo o da anterior: é o que deixa o painel na tela ao trocar de fatura, em
+ * vez de desmontá-lo — e levar junto a seta que tinha o foco.
+ */
 export function useFaturaDetalhe(faturaId: number | null) {
   const [detalhe, setDetalhe] = useState<FaturaDetalhada | null>(null)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  // Só a resposta do último pedido vale. Com o painel montado durante a troca,
+  // a resposta lenta de uma fatura anterior chegaria depois e cobriria a nova.
+  const ultimoPedido = useRef(0)
 
   const refetch = useCallback(async () => {
+    const pedido = ++ultimoPedido.current
     if (faturaId === null) {
       setDetalhe(null)
       setErro(null)
+      // O pedido que ainda estava a caminho foi descartado acima, e não vai
+      // encerrar o carregamento por conta própria.
+      setLoading(false)
       return
     }
     setLoading(true)
     setErro(null)
     try {
       const data = await window.api.fatura.detalharComParcelas(faturaId)
+      if (pedido !== ultimoPedido.current) return
       setDetalhe(data)
     } catch (e) {
+      if (pedido !== ultimoPedido.current) return
       setErro(mensagemErro(e, 'Erro ao carregar a fatura.'))
       setDetalhe(null)
     } finally {
-      setLoading(false)
+      if (pedido === ultimoPedido.current) setLoading(false)
     }
   }, [faturaId])
 

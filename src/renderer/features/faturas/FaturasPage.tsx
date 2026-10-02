@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useCartoesDaTela, useFaturaDetalhe, useFaturasDeTodosCartoes } from './hooks/use-faturas'
 import { cartoesDoTrilho } from './cartoes-do-trilho'
@@ -37,7 +37,6 @@ export default function FaturasPage() {
   const { cartoes, loading: loadingCartoes, erro: erroCartoes } = useCartoesDaTela()
   const {
     grupos: todosOsGrupos,
-    loading: loadingGrupos,
     erro: erroGrupos,
     refetch: refetchGrupos
   } = useFaturasDeTodosCartoes(cartoes)
@@ -98,6 +97,17 @@ export default function FaturasPage() {
     refetch: refetchDetalhe
   } = useFaturaDetalhe(faturaId)
 
+  // O detalhe anterior fica na tela enquanto o da fatura seguinte carrega, mas
+  // só dentro do mesmo cartão. Trocar de cartão troca o painel inteiro: o nome
+  // de um sobre as parcelas do outro seria pior que o "Carregando…".
+  const detalheDoCartao =
+    detalhe !== null && detalhe.fatura.cartaoId === cartaoEmFoco ? detalhe : null
+
+  // Uma recarga por ação: o resumo de cada cartão e o detalhe em tela.
+  const recarregar = useCallback(async () => {
+    await Promise.all([refetchGrupos(), refetchDetalhe()])
+  }, [refetchGrupos, refetchDetalhe])
+
   // Mantém a URL em dia sem criar entrada de histórico.
   useEffect(() => {
     if (cartaoEmFoco !== null && faturaId !== null) {
@@ -141,7 +151,12 @@ export default function FaturasPage() {
   // Os grupos trazem um item por cartão carregado; lista vazia com cartões na
   // mão é o intervalo entre as duas cargas, e não um estado vazio.
   const gruposPendentes = cartoes.length > 0 && todosOsGrupos.length === 0 && !erroGrupos
-  const carregando = loadingCartoes || loadingGrupos || gruposPendentes
+  // Só a primeira carga troca a tela por "Carregando…". O loading do resumo
+  // entrava aqui, e como toda ação recarrega o resumo, toda ação desmontava o
+  // trilho, o painel e o histórico. O conteúdo voltava certo; o que não voltava
+  // era o estado de quem estava usando — o histórico aberto, o filtro, a
+  // ordenação da tabela, a posição na página e o foco de teclado.
+  const carregando = loadingCartoes || gruposPendentes
   // Falha na carga do trilho não pode cair no estado vazio: "Nenhum cartão
   // cadastrado" afirma sobre os dados do usuário algo que não se sabe, e é
   // justamente o oposto do que houve.
@@ -195,37 +210,35 @@ export default function FaturasPage() {
               />
             )}
 
-            {faturaId !== null && loadingDetalhe && <p className={styles.empty}>Carregando…</p>}
+            {faturaId !== null && detalheDoCartao === null && loadingDetalhe && (
+              <p className={styles.empty}>Carregando…</p>
+            )}
 
             {faturaId !== null && !loadingDetalhe && erroDetalhe && (
               <p className={styles.erro}>{erroDetalhe}</p>
             )}
 
-            {faturaId !== null && !loadingDetalhe && detalhe && grupoEmFoco && (
-              <>
-                <FaturaDetalhe
-                  detalhe={detalhe}
-                  cartaoNome={grupoEmFoco.cartao.nome}
-                  cartaoCor={grupoEmFoco.cartao.cor}
-                  anterior={
-                    anterior && {
-                      mesReferencia: anterior.mesReferencia,
-                      abrir: () => abrirFatura(anterior.fatura.id)
-                    }
+            {/* Sem condição de loading: o painel fica montado enquanto a
+                fatura seguinte carrega, com o conteúdo da anterior. */}
+            {faturaId !== null && detalheDoCartao && grupoEmFoco && (
+              <FaturaDetalhe
+                detalhe={detalheDoCartao}
+                cartaoNome={grupoEmFoco.cartao.nome}
+                cartaoCor={grupoEmFoco.cartao.cor}
+                anterior={
+                  anterior && {
+                    mesReferencia: anterior.mesReferencia,
+                    abrir: () => abrirFatura(anterior.fatura.id)
                   }
-                  proxima={
-                    proxima && {
-                      mesReferencia: proxima.mesReferencia,
-                      abrir: () => abrirFatura(proxima.fatura.id)
-                    }
+                }
+                proxima={
+                  proxima && {
+                    mesReferencia: proxima.mesReferencia,
+                    abrir: () => abrirFatura(proxima.fatura.id)
                   }
-                  onFaturaAtualizada={() => {
-                    refetchGrupos()
-                    refetchDetalhe()
-                  }}
-                  onDetalheAtualizado={refetchDetalhe}
-                />
-              </>
+                }
+                onAtualizada={recarregar}
+              />
             )}
 
             {grupoEmFoco && (

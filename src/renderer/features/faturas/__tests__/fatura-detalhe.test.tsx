@@ -38,13 +38,7 @@ function renderizar(d: FaturaDetalhada) {
   )
   render(
     <ToastProvider>
-      <FaturaDetalhe
-        detalhe={d}
-        cartaoNome="Inter"
-        cartaoCor="#f70"
-        onFaturaAtualizada={() => {}}
-        onDetalheAtualizado={() => {}}
-      />
+      <FaturaDetalhe detalhe={d} cartaoNome="Inter" cartaoCor="#f70" onAtualizada={() => {}} />
     </ToastProvider>
   )
 }
@@ -137,7 +131,16 @@ function comParcela(
 
 type ApiExtra = Record<string, Record<string, unknown>>
 
-function renderizarCom(d: FaturaDetalhada, api: ApiExtra = {}) {
+/**
+ * `onAtualizada` é o pedido de recarga que o componente faz à página depois de
+ * uma ação. Ele lia o detalhe por conta própria e ainda avisava a página por
+ * dois callbacks, que reliam a mesma coisa: três leituras por ação.
+ */
+function renderizarCom(
+  d: FaturaDetalhada,
+  api: ApiExtra = {},
+  onAtualizada: () => void = () => {}
+) {
   vi.stubGlobal(
     'window',
     Object.assign(window, {
@@ -146,13 +149,7 @@ function renderizarCom(d: FaturaDetalhada, api: ApiExtra = {}) {
   )
   render(
     <ToastProvider>
-      <FaturaDetalhe
-        detalhe={d}
-        cartaoNome="Inter"
-        cartaoCor="#f70"
-        onFaturaAtualizada={() => {}}
-        onDetalheAtualizado={() => {}}
-      />
+      <FaturaDetalhe detalhe={d} cartaoNome="Inter" cartaoCor="#f70" onAtualizada={onAtualizada} />
     </ToastProvider>
   )
 }
@@ -289,8 +286,7 @@ describe('FaturaDetalhe — aviso do adiantamento', () => {
     renderizarCom(comParcela({ kind: 'Aberta' }, despesa(), parcela()), {
       despesa: { adiantarParcelas },
       fatura: {
-        listarPorCartao: vi.fn().mockResolvedValue([detalhe({ kind: 'Aberta' }).fatura]),
-        detalharComParcelas: vi.fn().mockResolvedValue(null)
+        listarPorCartao: vi.fn().mockResolvedValue([detalhe({ kind: 'Aberta' }).fatura])
       }
     })
     const usuario = userEvent.setup()
@@ -382,8 +378,7 @@ describe('FaturaDetalhe — navegação junto do título', () => {
           cartaoCor="#f70"
           anterior={{ mesReferencia: '2026-08', abrir: anterior }}
           proxima={{ mesReferencia: '2026-10', abrir: proxima }}
-          onFaturaAtualizada={() => {}}
-          onDetalheAtualizado={() => {}}
+          onAtualizada={() => {}}
         />
       </ToastProvider>
     )
@@ -741,12 +736,14 @@ describe('FaturaDetalhe — pagamento parcial', () => {
   })
 
   describe('registrar', () => {
-    it('chama o main com a fatura, o valor e a data, avisa e recarrega', async () => {
+    it('chama o main com a fatura, o valor e a data, avisa e pede a recarga', async () => {
       const registrarPagamentoParcial = vi.fn().mockResolvedValue(pagamento())
-      const detalharComParcelas = vi.fn().mockResolvedValue(null)
-      renderizarCom(comParciais({ kind: 'Aberta' }, []), {
-        fatura: { registrarPagamentoParcial, detalharComParcelas }
-      })
+      const onAtualizada = vi.fn()
+      renderizarCom(
+        comParciais({ kind: 'Aberta' }, []),
+        { fatura: { registrarPagamentoParcial } },
+        onAtualizada
+      )
       const usuario = userEvent.setup({ delay: null })
 
       await usuario.click(screen.getByRole('button', { name: 'Pagamento parcial' }))
@@ -761,7 +758,7 @@ describe('FaturaDetalhe — pagamento parcial', () => {
       })
       expect(await screen.findByText('Pagamento parcial registrado.')).toBeTruthy()
       expect(screen.queryByRole('dialog', { name: 'Registrar pagamento parcial' })).toBeNull()
-      expect(detalharComParcelas).toHaveBeenCalledWith(10)
+      expect(onAtualizada).toHaveBeenCalledTimes(1)
     })
 
     it('o diálogo conhece o que falta pagar, descontados os parciais', async () => {
@@ -799,10 +796,12 @@ describe('FaturaDetalhe — pagamento parcial', () => {
   describe('excluir', () => {
     it('pede confirmação com o valor e a data, e só então chama o main', async () => {
       const excluirPagamentoParcial = vi.fn().mockResolvedValue(undefined)
-      const detalharComParcelas = vi.fn().mockResolvedValue(null)
-      renderizarCom(comParciais({ kind: 'Aberta' }), {
-        fatura: { excluirPagamentoParcial, detalharComParcelas }
-      })
+      const onAtualizada = vi.fn()
+      renderizarCom(
+        comParciais({ kind: 'Aberta' }),
+        { fatura: { excluirPagamentoParcial } },
+        onAtualizada
+      )
 
       const usuario = await abrirMenuDoPagamento()
       await usuario.click(
@@ -818,7 +817,7 @@ describe('FaturaDetalhe — pagamento parcial', () => {
 
       expect(excluirPagamentoParcial).toHaveBeenCalledWith({ pagamentoId: 70 })
       expect(await screen.findByText('Pagamento parcial excluído.')).toBeTruthy()
-      expect(detalharComParcelas).toHaveBeenCalledWith(10)
+      expect(onAtualizada).toHaveBeenCalledTimes(1)
     })
 
     it('cancelar a confirmação não chama o main', async () => {

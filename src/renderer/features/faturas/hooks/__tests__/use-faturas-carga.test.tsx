@@ -113,6 +113,62 @@ describe('useFaturaDetalhe', () => {
     await waitFor(() => expect(result.current.erro).toBeNull())
     expect(result.current.detalhe).toBeNull()
   })
+
+  /**
+   * O painel passou a ficar montado enquanto a fatura seguinte carrega, com o
+   * conteúdo anterior na tela. Antes ele renascia a cada troca, e uma resposta
+   * que chegasse tarde caía num componente que já não existia. Agora ela
+   * cobriria a fatura mais nova — por isso só a resposta do último pedido vale.
+   */
+  describe('resposta atrasada', () => {
+    // Dublê lento de propósito: setembro só responde quando o teste manda.
+    function instalarComSetembroLento() {
+      let entregarSetembro: (detalhe: unknown) => void = () => {}
+      const detalharComParcelas = vi.fn((id: number) =>
+        id === 9
+          ? new Promise((resolve) => {
+              entregarSetembro = resolve
+            })
+          : Promise.resolve({ fatura: { id }, parcelas: [] })
+      )
+      instalarApi({ detalharComParcelas })
+      return { entregarSetembro: (detalhe: unknown) => entregarSetembro(detalhe) }
+    }
+
+    it('a de uma fatura anterior não cobre a mais nova', async () => {
+      const { entregarSetembro } = instalarComSetembroLento()
+      const { result, rerender } = renderHook(({ id }) => useFaturaDetalhe(id), {
+        initialProps: { id: 9 as number | null }
+      })
+
+      rerender({ id: 11 })
+      await waitFor(() =>
+        expect(result.current.detalhe).toEqual({ fatura: { id: 11 }, parcelas: [] })
+      )
+      await act(async () => {
+        entregarSetembro({ fatura: { id: 9 }, parcelas: [] })
+      })
+
+      expect(result.current.detalhe).toEqual({ fatura: { id: 11 }, parcelas: [] })
+      expect(result.current.loading).toBe(false)
+    })
+
+    it('sem fatura em foco, a que estava a caminho é descartada', async () => {
+      const { entregarSetembro } = instalarComSetembroLento()
+      const { result, rerender } = renderHook(({ id }) => useFaturaDetalhe(id), {
+        initialProps: { id: 9 as number | null }
+      })
+
+      rerender({ id: null })
+      await waitFor(() => expect(result.current.loading).toBe(false))
+      await act(async () => {
+        entregarSetembro({ fatura: { id: 9 }, parcelas: [] })
+      })
+
+      expect(result.current.detalhe).toBeNull()
+      expect(result.current.loading).toBe(false)
+    })
+  })
 })
 
 /**
@@ -166,7 +222,7 @@ describe('useCicloFatura', () => {
 
     expect(ok).toBe(true)
     expect(onSucesso).toHaveBeenCalledWith(paga)
-    expect(result.current.erro).toBeNull()
+    expect(result.current.erroDa(7)).toBeNull()
   })
 
   it('a falha devolve false e a mensagem sem o prefixo do Electron', async () => {
@@ -181,6 +237,20 @@ describe('useCicloFatura', () => {
     })
 
     expect(ok).toBe(false)
-    expect(result.current.erro).toBe('Fatura já está paga.')
+    expect(result.current.erroDa(7)).toBe('Fatura já está paga.')
+  })
+
+  // O painel fica montado ao trocar de fatura, e o hook vive nele: o erro
+  // precisa saber de qual fatura é, senão acompanha a navegação.
+  it('o erro pertence à fatura em que a ação falhou', async () => {
+    instalarApi({ pagar: rejeitando('Banco indisponível') })
+    const { result } = renderHook(() => useCicloFatura(vi.fn()))
+
+    await act(async () => {
+      await result.current.pagar(7, '2026-09-29')
+    })
+
+    expect(result.current.erroDa(7)).toBe('Banco indisponível')
+    expect(result.current.erroDa(8)).toBeNull()
   })
 })
