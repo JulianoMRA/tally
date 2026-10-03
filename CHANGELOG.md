@@ -6,6 +6,32 @@ vista técnico.
 
 ---
 
+## v1.21.0 — Faturas: o que a tela perdia ao agir, e o acabamento (out/2026)
+
+---
+
+**O que esta versão é.** O acabamento da tela de Faturas depois da v1.20.0, pedido como uma análise ("procure por inconsistências ou erros visuais e de UX"): 19 achados, 15 no ciclo, em três fases e três PRs (#165, #166 e #167). Nenhuma migration, nenhuma dependência nova, nenhuma mudança no domínio nem no contrato IPC. Cobre **RF-FAT-03**, **RF-FAT-04**, **RF-FAT-06**, **RF-DES-09**, **RF-DES-10** e a nota do **RN-06**. O plano, com os 22 requisitos e as decisões, fica em `docs/design/PLANO-FATURAS-ACABAMENTO.md`.
+
+**A tela desmontava a cada ação.** Registrar um pagamento, editar, excluir, adiantar, fechar, pagar ou reabrir recarregava o resumo dos cartões, e o indicador de carga dessa recarga trocava a tela inteira por "Carregando…". O conteúdo voltava certo — por isso nenhum teste reclamava —, e o que não voltava era o estado de quem usava: o histórico fechava, o filtro voltava para "Todas", a ordenação da tabela voltava à da compra e a página voltava ao topo. "Carregando…" passou a valer só para a primeira carga, cada ação lê o detalhe da fatura uma vez (eram três), e trocar de fatura mantém o painel montado, com o conteúdo anterior até o novo chegar. Manter o painel montado criou duas obrigações que a remontagem resolvia de graça: o erro de uma ação passou a ficar preso à fatura em que ela falhou, e a resposta atrasada da fatura anterior é descartada.
+
+**O foco de teclado sumia em dois lugares.** O anel de foco do design system é uma sombra no `:focus-visible` global, e o cartão selecionado do trilho e a linha do histórico declaravam a própria sombra num CSS que carrega depois: venciam. Uma regra local em cada um devolve o anel. Na seta acionada pelo teclado, o foco passa para a outra quando ela fica desabilitada no fim da lista — e foi o E2E que achou que a primeira versão perdia o foco no app: o Chromium responde `body` em `document.activeElement` na mesma tarefa em que o botão focado é desabilitado, e o jsdom não. Abrir uma fatura pelo histórico leva a vista e o foco ao título do painel; antes, o resultado visível do clique era a linha sumir da lista.
+
+**O histórico e o trilho.** O histórico diz quanto falta pagar ("R$ 150,00 a pagar"), e não mais um número sem rótulo que, em "Todas", somava o que falta com o que já tinha sido quitado; a fatura aberta no painel continua na lista, marcada como "em exibição", e as contagens deixam de mudar com o que está aberto; as linhas viram linhas com divisor, com os valores numa coluna estável e as datas no tempo do calendário ("fechou 25/06/2026 · venceu 05/07/2026"). No trilho, o card em foco oferece a volta para a fatura corrente ("voltar para outubro de 2026"), e o clique nele volta; total e prazo ficam na mesma altura em todos os cards; e os cards encolhem antes de quebrar a fileira, todos com a mesma largura. Em fatura paga com pagamento parcial, o contexto diz só "R$ 200,00 em pagamentos parciais".
+
+**A faixa, as setas e os diálogos.** A faixa de resumo quebra sem escada: valores à esquerda, na margem do selo, e ações à direita. As duas setas ficam juntas antes do título, que muda de largura com o nome do mês e levava a "próxima" junto. "Fechar fatura?" confirma por "Fechar fatura" e diz como voltar atrás; "Excluir despesa?" nomeia a despesa; o diálogo de pagar fala como o de pagamento parcial; os modais de edição dizem o tipo pelo nome e aceitam os 120 caracteres do cadastro; e o painel se chama "Lançamentos", como em Saídas. **Data de pagamento futura continua aceita**, por decisão: cobre o pagamento agendado no banco.
+
+**O que a verificação achou, além do que os testes pediam.**
+
+- **A folha de contato mentia em silêncio.** A captura de foco de teclado saía idêntica, byte a byte, à captura sem foco, nos dois temas: o script focava com `.focus()` logo depois de um clique de mouse, o que não acende o `:focus-visible`. O foco passou a chegar pela tecla Tab, e a folha confere sozinha que ele aparece.
+- **A folha também achou três defeitos nas correções.** O anel da linha do histórico era cortado nas laterais pelo painel (passou a ser desenhado por dentro); a primeira versão do grid do trilho deixava o cartão da segunda fileira 60px mais largo que os de cima, e passava no teste de contagem; e, no cartão arquivado, a volta para a fatura corrente e o selo "Arquivado" não cabiam na mesma linha, e o total descia 24px — o selo passou a sair da vista nesse estado.
+- **Casos de E2E que passavam sem provar nada.** Ver o caso falhar antes só vale contra o estado certo e na asserção que mede o defeito. Um caso caía numa pré-condição que dependia da caixa do texto; outro, do cartão arquivado, passava também contra o código com defeito, porque com dois cards de 300px a volta e o selo cabiam; outro compararia `none` com `none` se o token do anel não existisse; e o da faixa cairia, contra a `main`, antes de chegar à medida. Cada um foi corrigido e visto falhar contra o estado em que o defeito existe.
+
+**Testes.** Unitários de 1884 para **1927**, em 172 arquivos. E2E de 150 para **161 casos**, em 42 arquivos. A suíte inteira rodou ao fim de cada fase, sem retentativa: na F1 ela achou um defeito da própria fase — o foco perdido na última fatura, que só o Chromium mostrava —, corrigido e conferido nos specs de Faturas; na F2 e na F3 passou inteira, com 160 e 161 casos.
+
+**Fora desta versão, anotado.** O "Excluir despesa?" de Saídas segue genérico; o painel de pagamentos parciais esticado; o menu "⋯" sem saída em fatura paga; dizer quantas parcelas dá para adiantar; vazios e erros sem ação; o rótulo do botão "Pagamento parcial"; o mesmo defeito de foco em outras telas, que pede trocar o anel global por `outline`; e os swatches do `ColorPicker`, que o teclado não alcança.
+
+---
+
 ## v1.20.0 — Pagamento parcial: a fatura passa a dizer o que o banco cobra (out/2026)
 
 ---
