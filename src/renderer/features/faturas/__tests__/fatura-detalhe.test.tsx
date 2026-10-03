@@ -185,6 +185,65 @@ describe('FaturaDetalhe — Excluir', () => {
   })
 })
 
+/**
+ * RF-DES-09 — o diálogo era genérico ("A despesa e TODAS as suas parcelas
+ * pendentes serão removidas"), numa tabela densa e para uma ação irreversível.
+ * O de excluir pagamento parcial, mais novo, já repetia valor e data.
+ */
+describe('FaturaDetalhe — confirmar a exclusão da despesa', () => {
+  afterEach(cleanup)
+
+  async function abrirConfirmacao(d: Despesa, p: Parcela, api: ApiExtra = {}) {
+    renderizarCom(comParcela({ kind: 'Aberta' }, d, p, { exclusaoBloqueada: {} }), api)
+    const usuario = userEvent.setup()
+    await usuario.click(await itemDoMenu('Excluir'))
+    return { usuario, dialogo: screen.getByRole('dialog', { name: 'Excluir despesa?' }) }
+  }
+
+  it('compra à vista: nomeia a despesa e o valor', async () => {
+    const { dialogo } = await abrirConfirmacao(
+      despesa({ descricao: 'Mercado', tipo: 'Unica', totalParcelas: null, valorCentavos: 7500 }),
+      parcela({ numero: 1, total: 1, valorCentavos: 7500 })
+    )
+
+    expect(dialogo.textContent).toMatch(/Mercado, R\$\s*75,00\. Esta ação é irreversível\./)
+    expect(dialogo.textContent).not.toMatch(/TODAS/)
+  })
+
+  it('parcelada: o valor da compra e em quantas parcelas', async () => {
+    const { dialogo } = await abrirConfirmacao(despesa(), parcela())
+
+    expect(dialogo.textContent).toMatch(/Notebook, R\$\s*3\.000,00 em 3 parcelas\./)
+    expect(dialogo.textContent).toMatch(/Todas as parcelas dela serão removidas\./)
+  })
+
+  it('assinatura: o valor por mês', async () => {
+    const { dialogo } = await abrirConfirmacao(
+      despesa({
+        descricao: 'iCloud+',
+        tipo: 'Assinatura',
+        totalParcelas: null,
+        valorCentavos: 1290
+      }),
+      parcela({ numero: 31, total: null, valorCentavos: 1290 })
+    )
+
+    expect(dialogo.textContent).toMatch(/iCloud\+, R\$\s*12,90 por mês\./)
+    expect(dialogo.textContent).toMatch(/Todas as ocorrências dela serão removidas\./)
+  })
+
+  it('confirmar exclui a despesa da linha', async () => {
+    const excluir = vi.fn().mockResolvedValue(undefined)
+    const { usuario, dialogo } = await abrirConfirmacao(despesa(), parcela(), {
+      despesa: { excluir }
+    })
+
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Excluir' }))
+
+    expect(excluir).toHaveBeenCalledWith({ despesaId: 5 })
+  })
+})
+
 // RF-DES-10 — numa fatura Fechada, a compra à vista não aceita valor nem data
 // novos; o modal deixava editar e a gravação era recusada.
 describe('FaturaDetalhe — editar compra à vista em fatura fechada', () => {
