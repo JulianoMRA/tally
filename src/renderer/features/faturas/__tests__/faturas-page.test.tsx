@@ -243,6 +243,17 @@ describe('FaturasPage — estados vazios', () => {
   beforeEach(() => vi.clearAllMocks())
   afterEach(cleanup)
 
+  // O painel de baixo se chama "Lançamentos", como em Saídas: o subtítulo
+  // falava em "parcelas" de uma lista que tem compra à vista.
+  it('o subtítulo fala nos lançamentos da fatura em foco', async () => {
+    instalarApi([], {})
+    renderizar()
+
+    expect(
+      await screen.findByText('Situação de cada cartão e os lançamentos da fatura em foco.')
+    ).toBeTruthy()
+  })
+
   it('sem cartão nenhum, diz que não há cartão cadastrado', async () => {
     instalarApi([], {})
     renderizar()

@@ -174,3 +174,20 @@ describe('EditarAssinaturaModal — erro ao salvar', () => {
     expect(screen.queryByText(/Error invoking/)).toBeNull()
   })
 })
+
+// RF-DES-10 — a descrição cortava em 80 caracteres, quando o cadastro aceita
+// 120: uma assinatura cadastrada com descrição longa perdia o fim ao ser editada.
+describe('EditarAssinaturaModal — limite da descrição', () => {
+  afterEach(cleanup)
+
+  it('a descrição aceita os 120 caracteres do cadastro', async () => {
+    renderModal()
+    const usuario = userEvent.setup({ delay: null })
+    const campo = screen.getByLabelText('Descrição') as HTMLInputElement
+
+    await usuario.clear(campo)
+    await usuario.type(campo, 'x'.repeat(130))
+
+    expect(campo.value).toHaveLength(120)
+  })
+})

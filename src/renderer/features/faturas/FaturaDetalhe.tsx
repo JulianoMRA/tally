@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
 import type { PagamentoParcial } from '@domain/entities/pagamento-parcial'
@@ -44,8 +44,47 @@ import { descreverDataDaOcorrencia } from '../saidas/descrever-data-da-ocorrenci
 type DialogoConfirma =
   | { tipo: 'fechar' }
   | { tipo: 'reabrir' }
-  | { tipo: 'excluir'; despesaId: number }
+  | { tipo: 'excluir'; despesaId: number; despesa: Despesa | undefined }
   | { tipo: 'excluir-pagamento'; pagamento: PagamentoParcial }
+
+/**
+ * O que o diálogo de exclusão diz da despesa (RF-DES-09): descrição, valor e,
+ * conforme o tipo, em quantas parcelas ou por mês. Era genérico — "A despesa e
+ * TODAS as suas parcelas pendentes serão removidas" —, numa tabela densa e para
+ * uma ação irreversível, enquanto o de excluir pagamento parcial já repetia
+ * valor e data.
+ */
+function textoDaExclusao(despesa: Despesa | undefined): ReactNode {
+  const irreversivel = 'Esta ação é irreversível.'
+  if (!despesa) return `A despesa e todas as parcelas dela serão removidas. ${irreversivel}`
+
+  const nome = <strong>{despesa.descricao}</strong>
+  const valor = formatBRL(despesa.valorCentavos)
+  switch (despesa.tipo) {
+    case 'Unica':
+      return (
+        <>
+          {nome}, {valor}. {irreversivel}
+        </>
+      )
+    case 'Parcelada': {
+      const total = despesa.totalParcelas
+      const quantas = total ? ` em ${total} ${pluralizar('parcela', total)}` : ''
+      return (
+        <>
+          {nome}, {valor}
+          {quantas}. Todas as parcelas dela serão removidas. {irreversivel}
+        </>
+      )
+    }
+    case 'Assinatura':
+      return (
+        <>
+          {nome}, {valor} por mês. Todas as ocorrências dela serão removidas. {irreversivel}
+        </>
+      )
+  }
+}
 
 /** A parcela com a despesa dela: é o que cada linha da tabela mostra. */
 type Linha = { parcela: Parcela; despesa: Despesa | undefined }
@@ -211,7 +250,7 @@ export function FaturaDetalhe({
     const bloqueio = motivoDoBloqueio(p, detalhe.exclusaoBloqueada?.[p.despesaId])
     acoes.push({
       label: 'Excluir',
-      onClick: () => setDialogo({ tipo: 'excluir', despesaId: p.despesaId }),
+      onClick: () => setDialogo({ tipo: 'excluir', despesaId: p.despesaId, despesa }),
       disabled: bloqueio !== null,
       destrutiva: true,
       title: bloqueio ?? 'Excluir despesa inteira'
@@ -358,142 +397,165 @@ export function FaturaDetalhe({
     <div className={styles.detalhe}>
       {/* A navegação mora junto do título que ela muda. Eram setas de texto
           nas pontas da largura inteira ("← agosto de 2026"), acima do título,
-          e "← sem anterior" era um botão desabilitado com texto. */}
+          e "← sem anterior" era um botão desabilitado com texto.
+
+          As duas ficam juntas, antes do título. A "próxima" vinha depois dele,
+          que muda de largura com o nome do mês: de fevereiro para março ela
+          andava mais que a largura do próprio botão, e quem clicava duas vezes
+          seguidas acertava o vazio. */}
       <div className={styles.cabecalho}>
-        <BotaoSeta
-          ref={setaAnteriorRef}
-          direcao="anterior"
-          rotulo={
-            anterior
-              ? `Fatura anterior: ${formatarMesReferencia(anterior.mesReferencia)}`
-              : 'Sem fatura anterior'
-          }
-          onClick={() => acionarSeta('anterior', anterior)}
-          disabled={!anterior}
-        />
+        <div className={styles.setas}>
+          <BotaoSeta
+            ref={setaAnteriorRef}
+            direcao="anterior"
+            rotulo={
+              anterior
+                ? `Fatura anterior: ${formatarMesReferencia(anterior.mesReferencia)}`
+                : 'Sem fatura anterior'
+            }
+            onClick={() => acionarSeta('anterior', anterior)}
+            disabled={!anterior}
+          />
+          <BotaoSeta
+            ref={setaProximaRef}
+            direcao="proxima"
+            rotulo={
+              proxima
+                ? `Próxima fatura: ${formatarMesReferencia(proxima.mesReferencia)}`
+                : 'Sem próxima fatura'
+            }
+            onClick={() => acionarSeta('proxima', proxima)}
+            disabled={!proxima}
+          />
+        </div>
         <BolinhaDeCor cor={cartaoCor} />
         {/* `tabIndex={-1}`: o título recebe o foco quando a fatura é aberta
             pelo histórico, sem entrar na ordem do Tab. */}
         <h2 ref={tituloRef} tabIndex={-1} className={styles.detalheTitleText}>
           {cartaoNome} · {formatarMesReferencia(fatura.mesReferencia, { capitalizar: true })}
         </h2>
-        <BotaoSeta
-          ref={setaProximaRef}
-          direcao="proxima"
-          rotulo={
-            proxima
-              ? `Próxima fatura: ${formatarMesReferencia(proxima.mesReferencia)}`
-              : 'Sem próxima fatura'
-          }
-          onClick={() => acionarSeta('proxima', proxima)}
-          disabled={!proxima}
-        />
       </div>
 
-      {/* Faixa de resumo acima das parcelas (RF-FAT-03/06). Era um card
+      {/* Faixa de resumo acima dos lançamentos (RF-FAT-03/06). Era um card
           lateral a partir de 1360px e, na janela padrão (1266px), um card
           empilhado DEPOIS da tabela: o total e "Marcar como paga" ficavam
-          abaixo de todas as parcelas. Numa linha só, ela cabe acima delas sem
-          empurrá-las para baixo da dobra. Sai a linha "Mês", que o título já
-          diz, e o total deixa a meta do painel, onde se repetia. */}
-      <section className={styles.faixa} aria-label="Resumo da fatura">
-        <div className={styles.faixaStatus}>
-          <Badge variant={statusVariant(kind)} />
-          {/* Paga diz quando foi paga; as outras dizem o aviso de prazo, no
-              tom do trilho. */}
-          {fatura.status.kind === 'Paga' ? (
-            <span className={styles.avisoPrazo}>
-              Paga em {formatarDataIso(fatura.status.pagaEm)}
-            </span>
-          ) : (
-            aviso && (
-              <span className={styles.avisoPrazo} data-tom={aviso.tom}>
-                {aviso.texto}
-              </span>
-            )
-          )}
-        </div>
+          abaixo de todas as parcelas. Sai a linha "Mês", que o título já diz,
+          e o total deixa a meta do painel, onde se repetia.
 
-        <dl className={styles.faixaDatas}>
-          <div className={styles.faixaData}>
-            <dt className={styles.faixaRotulo}>Fechamento</dt>
-            <dd className={styles.faixaValor}>{formatarDataIso(fatura.dataFechamento)}</dd>
+          Quando não cabe numa linha — com aviso de prazo ou pagamento parcial,
+          na janela padrão —, quebra em duas: status e datas em cima; embaixo,
+          na largura toda, os valores à esquerda e as ações à direita. Ela foi
+          desenhada para uma linha só, e quebrava em escada: a segunda linha
+          ia para a direita, com dois vazios em diagonal. */}
+      <section className={styles.faixa} aria-label="Resumo da fatura">
+        <div className={styles.faixaInicio}>
+          <div className={styles.faixaStatus}>
+            <Badge variant={statusVariant(kind)} />
+            {/* Paga diz quando foi paga; as outras dizem o aviso de prazo, no
+                tom do trilho. */}
+            {fatura.status.kind === 'Paga' ? (
+              <span className={styles.avisoPrazo}>
+                Paga em {formatarDataIso(fatura.status.pagaEm)}
+              </span>
+            ) : (
+              aviso && (
+                <span className={styles.avisoPrazo} data-tom={aviso.tom}>
+                  {aviso.texto}
+                </span>
+              )
+            )}
           </div>
-          <div className={styles.faixaData}>
-            <dt className={styles.faixaRotulo}>Vencimento</dt>
-            <dd className={styles.faixaValor}>{formatarDataIso(fatura.dataVencimento)}</dd>
-          </div>
-        </dl>
+
+          <dl className={styles.faixaDatas}>
+            <div className={styles.faixaData}>
+              <dt className={styles.faixaRotulo}>Fechamento</dt>
+              <dd className={`${styles.faixaValor} tnum`}>
+                {formatarDataIso(fatura.dataFechamento)}
+              </dd>
+            </div>
+            <div className={styles.faixaData}>
+              <dt className={styles.faixaRotulo}>Vencimento</dt>
+              <dd className={`${styles.faixaValor} tnum`}>
+                {formatarDataIso(fatura.dataVencimento)}
+              </dd>
+            </div>
+          </dl>
+        </div>
 
         <div className={styles.faixaFim}>
           {/* Com pagamento parcial (RN-10) o destaque passa do total para o
               que falta pagar: é o número que o banco cobra. O total continua
               na faixa, porque é dele que os lançamentos abaixo dão conta. */}
-          <div className={styles.faixaTotal}>
-            <span className={styles.faixaRotulo}>Total da fatura</span>
-            <span className={`${temParcial ? styles.faixaValor : styles.faixaTotalValor} tnum`}>
-              {formatBRL(totalCentavos)}
-            </span>
+          <div className={styles.faixaValores}>
+            <div className={styles.faixaTotal}>
+              <span className={styles.faixaRotulo}>Total da fatura</span>
+              <span className={`${temParcial ? styles.faixaValor : styles.faixaTotalValor} tnum`}>
+                {formatBRL(totalCentavos)}
+              </span>
+            </div>
+            {temParcial && (
+              <>
+                <div className={styles.faixaTotal}>
+                  <span className={styles.faixaRotulo}>Pagamentos parciais</span>
+                  <span className={`${styles.faixaValor} tnum`}>
+                    {formatBRL(pagoParcialCentavos)}
+                  </span>
+                </div>
+                <div className={styles.faixaTotal}>
+                  <span className={styles.faixaRotulo}>
+                    {kind === 'Paga' ? 'Restante pago' : 'Falta pagar'}
+                  </span>
+                  <span className={`${styles.faixaTotalValor} tnum`}>
+                    {formatBRL(restanteCentavos)}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
-          {temParcial && (
-            <>
-              <div className={styles.faixaTotal}>
-                <span className={styles.faixaRotulo}>Pagamentos parciais</span>
-                <span className={`${styles.faixaValor} tnum`}>
-                  {formatBRL(pagoParcialCentavos)}
-                </span>
-              </div>
-              <div className={styles.faixaTotal}>
-                <span className={styles.faixaRotulo}>
-                  {kind === 'Paga' ? 'Restante pago' : 'Falta pagar'}
-                </span>
-                <span className={`${styles.faixaTotalValor} tnum`}>
-                  {formatBRL(restanteCentavos)}
-                </span>
-              </div>
-            </>
-          )}
-          {kind !== 'Paga' && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setRegistrandoParcial(true)}
-              disabled={ciclo.loading || restanteCentavos === 0}
-              title={restanteCentavos === 0 ? 'Não falta nada a pagar nesta fatura.' : undefined}
-            >
-              Pagamento parcial
-            </Button>
-          )}
-          {kind === 'Aberta' && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setDialogo({ tipo: 'fechar' })}
-              disabled={ciclo.loading}
-            >
-              Fechar fatura
-            </Button>
-          )}
-          {kind === 'Fechada' && (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setPagando(true)}
-              disabled={ciclo.loading}
-            >
-              Marcar como paga
-            </Button>
-          )}
-          {kind === 'Paga' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setDialogo({ tipo: 'reabrir' })}
-              disabled={ciclo.loading}
-            >
-              Reabrir fatura
-            </Button>
-          )}
+
+          <div className={styles.faixaAcoes}>
+            {kind !== 'Paga' && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setRegistrandoParcial(true)}
+                disabled={ciclo.loading || restanteCentavos === 0}
+                title={restanteCentavos === 0 ? 'Não falta nada a pagar nesta fatura.' : undefined}
+              >
+                Pagamento parcial
+              </Button>
+            )}
+            {kind === 'Aberta' && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setDialogo({ tipo: 'fechar' })}
+                disabled={ciclo.loading}
+              >
+                Fechar fatura
+              </Button>
+            )}
+            {kind === 'Fechada' && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setPagando(true)}
+                disabled={ciclo.loading}
+              >
+                Marcar como paga
+              </Button>
+            )}
+            {kind === 'Paga' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDialogo({ tipo: 'reabrir' })}
+                disabled={ciclo.loading}
+              >
+                Reabrir fatura
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Só acontece quando uma despesa é excluída ou reduzida depois do
@@ -552,13 +614,15 @@ export function FaturaDetalhe({
         </Panel>
       )}
 
+      {/* "Lançamentos", como em Saídas: o painel se chamava "Parcelas", contava
+          lançamentos e listava compras à vista. A coluna segue "Parcela". */}
       <Panel
-        title="Parcelas"
+        title="Lançamentos"
         meta={`${parcelas.length} ${pluralizar('lançamento', parcelas.length)}`}
         flush
       >
         {parcelas.length === 0 ? (
-          <EmptyState title="Nenhuma parcela nesta fatura." />
+          <EmptyState title="Nenhum lançamento nesta fatura." />
         ) : (
           // O Panel recorta o que passa da borda; aqui o excesso vira
           // rolagem, como em Saídas.
@@ -707,11 +771,15 @@ export function FaturaDetalhe({
           onCancelar={() => setRegistrandoParcial(false)}
         />
       )}
+      {/* "Fechar fatura", e não "Fechar": ao lado de "Cancelar", "Fechar" se
+          lia como fechar o diálogo, e a janela já tem um botão com esse nome.
+          O texto diz como voltar atrás porque não há desfazer direto: só fatura
+          paga reabre (RF-FAT-05). */}
       {dialogo?.tipo === 'fechar' && (
         <ConfirmDialog
           title="Fechar fatura?"
-          body="Depois de fechada, a fatura não recebe mais adiantamentos, o valor das parcelas dela fica travado e as despesas dela não podem mais ser excluídas."
-          confirmText="Fechar"
+          body="Depois de fechada, a fatura não recebe mais adiantamentos, o valor das parcelas dela fica travado e as despesas dela não podem mais ser excluídas. Só fatura paga reabre: para voltar atrás, marque como paga e depois reabra."
+          confirmText="Fechar fatura"
           onConfirm={() => {
             ciclo.fechar(fatura.id)
             setDialogo(null)
@@ -736,7 +804,7 @@ export function FaturaDetalhe({
       {dialogo?.tipo === 'excluir' && (
         <ConfirmDialog
           title="Excluir despesa?"
-          body="A despesa e TODAS as suas parcelas pendentes serão removidas. Esta ação é irreversível."
+          body={textoDaExclusao(dialogo.despesa)}
           confirmText="Excluir"
           confirmVariant="danger"
           onConfirm={() => confirmarExcluirDespesa(dialogo.despesaId)}

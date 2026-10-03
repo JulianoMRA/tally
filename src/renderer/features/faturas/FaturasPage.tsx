@@ -195,7 +195,7 @@ export default function FaturasPage() {
     <PageContainer>
       <PageHead
         title="Faturas"
-        subtitle="Situação de cada cartão e as parcelas da fatura em foco."
+        subtitle="Situação de cada cartão e os lançamentos da fatura em foco."
       />
 
       <div className={styles.corpo}>

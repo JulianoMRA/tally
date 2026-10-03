@@ -185,6 +185,65 @@ describe('FaturaDetalhe — Excluir', () => {
   })
 })
 
+/**
+ * RF-DES-09 — o diálogo era genérico ("A despesa e TODAS as suas parcelas
+ * pendentes serão removidas"), numa tabela densa e para uma ação irreversível.
+ * O de excluir pagamento parcial, mais novo, já repetia valor e data.
+ */
+describe('FaturaDetalhe — confirmar a exclusão da despesa', () => {
+  afterEach(cleanup)
+
+  async function abrirConfirmacao(d: Despesa, p: Parcela, api: ApiExtra = {}) {
+    renderizarCom(comParcela({ kind: 'Aberta' }, d, p, { exclusaoBloqueada: {} }), api)
+    const usuario = userEvent.setup()
+    await usuario.click(await itemDoMenu('Excluir'))
+    return { usuario, dialogo: screen.getByRole('dialog', { name: 'Excluir despesa?' }) }
+  }
+
+  it('compra à vista: nomeia a despesa e o valor', async () => {
+    const { dialogo } = await abrirConfirmacao(
+      despesa({ descricao: 'Mercado', tipo: 'Unica', totalParcelas: null, valorCentavos: 7500 }),
+      parcela({ numero: 1, total: 1, valorCentavos: 7500 })
+    )
+
+    expect(dialogo.textContent).toMatch(/Mercado, R\$\s*75,00\. Esta ação é irreversível\./)
+    expect(dialogo.textContent).not.toMatch(/TODAS/)
+  })
+
+  it('parcelada: o valor da compra e em quantas parcelas', async () => {
+    const { dialogo } = await abrirConfirmacao(despesa(), parcela())
+
+    expect(dialogo.textContent).toMatch(/Notebook, R\$\s*3\.000,00 em 3 parcelas\./)
+    expect(dialogo.textContent).toMatch(/Todas as parcelas dela serão removidas\./)
+  })
+
+  it('assinatura: o valor por mês', async () => {
+    const { dialogo } = await abrirConfirmacao(
+      despesa({
+        descricao: 'iCloud+',
+        tipo: 'Assinatura',
+        totalParcelas: null,
+        valorCentavos: 1290
+      }),
+      parcela({ numero: 31, total: null, valorCentavos: 1290 })
+    )
+
+    expect(dialogo.textContent).toMatch(/iCloud\+, R\$\s*12,90 por mês\./)
+    expect(dialogo.textContent).toMatch(/Todas as ocorrências dela serão removidas\./)
+  })
+
+  it('confirmar exclui a despesa da linha', async () => {
+    const excluir = vi.fn().mockResolvedValue(undefined)
+    const { usuario, dialogo } = await abrirConfirmacao(despesa(), parcela(), {
+      despesa: { excluir }
+    })
+
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Excluir' }))
+
+    expect(excluir).toHaveBeenCalledWith({ despesaId: 5 })
+  })
+})
+
 // RF-DES-10 — numa fatura Fechada, a compra à vista não aceita valor nem data
 // novos; o modal deixava editar e a gravação era recusada.
 describe('FaturaDetalhe — editar compra à vista em fatura fechada', () => {
@@ -272,6 +331,27 @@ describe('FaturaDetalhe — ciclo da fatura', () => {
     expect(texto).not.toMatch(/só entram via adiantamento/)
     expect(texto).toMatch(/não recebe mais adiantamentos/)
   })
+
+  // RN-06 — "Fechar" ao lado de "Cancelar" se lia como fechar o diálogo, e a
+  // janela já tem um botão com esse nome. E fechar à mão não tem desfazer
+  // direto: só fatura paga reabre (RF-FAT-05).
+  it('o diálogo de fechar confirma por "Fechar fatura" e diz como voltar atrás', async () => {
+    const fechar = vi.fn().mockResolvedValue({
+      ...detalhe({ kind: 'Aberta' }).fatura,
+      status: { kind: 'Fechada' }
+    })
+    renderizarCom(detalhe({ kind: 'Aberta' }), { fatura: { fechar } })
+    const usuario = userEvent.setup()
+
+    await usuario.click(screen.getByRole('button', { name: 'Fechar fatura' }))
+    const dialogo = screen.getByRole('dialog', { name: 'Fechar fatura?' })
+    expect(within(dialogo).queryByRole('button', { name: 'Fechar' })).toBeNull()
+    expect(dialogo.textContent).toMatch(/marque como paga e depois reabra/)
+
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Fechar fatura' }))
+
+    expect(fechar).toHaveBeenCalledWith(10)
+  })
 })
 
 // RN-03 — o aviso repetia a quantidade pedida, mesmo quando o main movia menos.
@@ -358,6 +438,25 @@ describe('FaturaDetalhe — faixa de resumo', () => {
   })
 })
 
+// RF-FAT-03, RF-DES-14 — o painel se chamava "Parcelas", contava "lançamentos"
+// e listava compras à vista. Em Saídas a mesma lista se chama "Lançamentos".
+describe('FaturaDetalhe — painel de lançamentos', () => {
+  afterEach(cleanup)
+
+  it('se chama Lançamentos, como em Saídas', () => {
+    renderizarCom(comParcela({ kind: 'Aberta' }, despesa(), parcela()))
+
+    expect(screen.getByRole('heading', { name: 'Lançamentos' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Parcelas' })).toBeNull()
+  })
+
+  it('sem lançamento, o vazio fala em lançamento, e não em parcela', () => {
+    renderizarCom(detalhe({ kind: 'Aberta' }))
+
+    expect(screen.getByText('Nenhum lançamento nesta fatura.')).toBeTruthy()
+  })
+})
+
 // As setas eram texto solto nas pontas da largura inteira, acima do título que
 // elas mudam; "← sem anterior" era um botão desabilitado com texto.
 describe('FaturaDetalhe — navegação junto do título', () => {
@@ -399,6 +498,20 @@ describe('FaturaDetalhe — navegação junto do título', () => {
     expect(
       (screen.getByRole('button', { name: 'Sem próxima fatura' }) as HTMLButtonElement).disabled
     ).toBe(true)
+  })
+
+  // A "próxima" vinha depois do título, que muda de largura com o nome do mês:
+  // de fevereiro para março ela andava mais que a largura do próprio botão, e o
+  // clique seguinte caía fora dela.
+  it('as duas setas vêm juntas, antes do título', () => {
+    renderizarCom(detalhe({ kind: 'Aberta' }))
+
+    const anterior = screen.getByRole('button', { name: 'Sem fatura anterior' })
+    const proxima = screen.getByRole('button', { name: 'Sem próxima fatura' })
+    const titulo = screen.getByRole('heading', { level: 2 })
+    const segue = Node.DOCUMENT_POSITION_FOLLOWING
+    expect(anterior.compareDocumentPosition(proxima) & segue).toBeTruthy()
+    expect(proxima.compareDocumentPosition(titulo) & segue).toBeTruthy()
   })
 })
 
@@ -722,7 +835,8 @@ describe('FaturaDetalhe — pagamento parcial', () => {
       const antes = Node.DOCUMENT_POSITION_FOLLOWING
       expect(faixa().compareDocumentPosition(painel()) & antes).toBeTruthy()
       expect(
-        painel().compareDocumentPosition(screen.getByRole('heading', { name: 'Parcelas' })) & antes
+        painel().compareDocumentPosition(screen.getByRole('heading', { name: 'Lançamentos' })) &
+          antes
       ).toBeTruthy()
     })
 

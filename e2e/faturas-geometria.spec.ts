@@ -53,8 +53,16 @@ async function altura(alvo: Locator): Promise<number> {
   return caixa.height
 }
 
+async function caixa(alvo: Locator): Promise<{ x: number; y: number; height: number }> {
+  const medida = await alvo.boundingBox()
+  if (!medida) throw new Error('elemento sem caixa')
+  return medida
+}
+
 for (const largura of [1024, 1280, 1760] as const) {
-  test(`faixa, parcelas e histórico terminam na mesma borda em ${largura}px`, async ({ app }) => {
+  test(`faixa, lançamentos e histórico terminam na mesma borda em ${largura}px`, async ({
+    app
+  }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
@@ -74,12 +82,12 @@ for (const largura of [1024, 1280, 1760] as const) {
     await focarCartao(page, 'Inter Borda E2E')
 
     const faixa = page.getByRole('region', { name: 'Resumo da fatura' })
-    const parcelas = painel(page, 'Parcelas')
+    const lancamentos = painel(page, 'Lançamentos')
     const historico = painel(page, 'Histórico deste cartão')
     await expect(faixa).toBeVisible()
     await expect(historico).toBeVisible()
 
-    const referencia = await bordaDireita(parcelas)
+    const referencia = await bordaDireita(lancamentos)
     expect(Math.abs((await bordaDireita(faixa)) - referencia)).toBeLessThanOrEqual(1)
     expect(Math.abs((await bordaDireita(historico)) - referencia)).toBeLessThanOrEqual(1)
 
@@ -92,7 +100,7 @@ for (const largura of [1024, 1280, 1760] as const) {
 
   /**
    * Com pagamento parcial (RF-FAT-07) a faixa ganha dois valores e um botão, e
-   * entra um painel entre ela e as parcelas. É a faixa mais cheia que a tela
+   * entra um painel entre ela e os lançamentos. É a faixa mais cheia que a tela
    * monta, e o que ela precisa provar é que o conteúdo cabe DENTRO dela.
    *
    * A borda da faixa e a rolagem da página não bastam: sem a quebra de linha no
@@ -127,12 +135,12 @@ for (const largura of [1024, 1280, 1760] as const) {
 
     const faixa = page.getByRole('region', { name: 'Resumo da fatura' })
     const pagamentos = page.getByRole('region', { name: 'Pagamentos parciais' })
-    const parcelas = painel(page, 'Parcelas')
+    const lancamentos = painel(page, 'Lançamentos')
     const historico = painel(page, 'Histórico deste cartão')
     await expect(faixa).toContainText(/Falta pagar\s*R\$\s*10\.000,00/)
     await expect(pagamentos).toBeVisible()
 
-    const referencia = await bordaDireita(parcelas)
+    const referencia = await bordaDireita(lancamentos)
     const bordaDaFaixa = await bordaDireita(faixa)
     expect(Math.abs(bordaDaFaixa - referencia)).toBeLessThanOrEqual(1)
     expect(Math.abs((await bordaDireita(pagamentos)) - referencia)).toBeLessThanOrEqual(1)
@@ -153,6 +161,31 @@ for (const largura of [1024, 1280, 1760] as const) {
         `o rótulo "${rotulo}" quebrou de linha`
       ).toBeLessThanOrEqual(umaLinha + 1)
     }
+
+    // A faixa sem escada (R15). Quando ela quebra, a segunda linha ocupa a
+    // largura toda, com os valores na margem do selo de status. O bloco do fim
+    // ia para a direita, e a faixa ficava com dois vazios em diagonal.
+    const selo = await caixa(faixa.getByText('Aberta', { exact: true }))
+    const primeiroValor = await caixa(faixa.getByText('Total da fatura', { exact: true }))
+    const quebrou = primeiroValor.y >= selo.y + selo.height
+    // Nas duas larguras menores a faixa cheia não cabe numa linha: sem a quebra
+    // o caso não mediria nada.
+    if (largura < 1760) expect(quebrou, 'a faixa não quebrou').toBe(true)
+    if (quebrou) {
+      expect(
+        Math.abs(primeiroValor.x - selo.x),
+        'os valores não começam na margem do selo'
+      ).toBeLessThanOrEqual(1)
+    }
+
+    // Os três rótulos dividem a linha de base: o bloco centralizava grupos com
+    // números de tamanhos diferentes, e "Falta pagar" ficava abaixo dos outros.
+    const bases: number[] = []
+    for (const rotulo of ['Total da fatura', 'Pagamentos parciais', 'Falta pagar']) {
+      const r = await caixa(faixa.getByText(rotulo, { exact: true }))
+      bases.push(r.y + r.height)
+    }
+    expect(folga(bases), 'os rótulos não dividem a linha de base').toBeLessThanOrEqual(0.5)
 
     const rolagem = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth
@@ -431,5 +464,67 @@ test.describe('Faturas — geometria do trilho', () => {
       Math.abs((await altura(trilho(page))) - alturaAntes),
       'o trilho mudou de altura'
     ).toBeLessThanOrEqual(1)
+  })
+})
+
+/**
+ * As setas de navegação entre faturas (R16 do plano de acabamento de Faturas).
+ *
+ * A "próxima" vinha depois do título, que muda de largura com o nome do mês: de
+ * fevereiro para março ela andava uns 35px, mais que os 34px do botão, e o
+ * segundo clique seguido caía no vazio.
+ */
+test.describe('Faturas — navegação entre faturas', () => {
+  test('a seta "próxima" fica no mesmo lugar, qualquer que seja o mês', async ({ app }) => {
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+    await page.evaluate(async () => {
+      const api = (window as unknown as { api: ApiTrilho }).api
+      const hoje = new Date()
+      const alvo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 3)
+      const mesQueVem = `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, '0')}-03`
+      const categoria = await api.categoria.create({ nome: 'Mercado Setas E2E', cor: '#5b7a5e' })
+      const cartao = await api.cartao.create({
+        nome: 'Inter Setas E2E',
+        diaFechamento: 5,
+        diaVencimento: 12,
+        cor: '#a88454'
+      })
+      // Três faturas seguidas, a partir da corrente.
+      await api.despesa.criarParceladaCredito({
+        descricao: 'Parcelada em três',
+        categoriaId: categoria.id,
+        cartaoId: cartao.id,
+        totalParcelas: 3,
+        valorTotalCentavos: 30000,
+        dataCompra: mesQueVem
+      })
+    })
+    await recarregar(page)
+    await irPara(page, 'Faturas')
+
+    const titulo = page.getByRole('heading', { level: 2 })
+    const proxima = page.getByRole('button', { name: /^(Próxima fatura|Sem próxima fatura)/ })
+    await expect(titulo).toContainText('Inter Setas E2E')
+
+    const posicoes: number[] = []
+    const larguras: number[] = []
+    for (let mes = 0; mes < 3; mes++) {
+      const seta = await proxima.boundingBox()
+      const nome = await titulo.boundingBox()
+      if (!seta || !nome) throw new Error('seta ou título sem caixa')
+      posicoes.push(seta.x)
+      larguras.push(nome.width)
+      if (mes < 2) {
+        const antes = (await titulo.textContent()) ?? ''
+        await proxima.click()
+        await expect(titulo).not.toHaveText(antes)
+      }
+    }
+
+    // Sem o título mudar de largura o caso não mediria nada: a seta não teria
+    // por que andar nem no código antigo.
+    expect(folga(larguras), 'o título não mudou de largura').toBeGreaterThan(5)
+    expect(folga(posicoes), 'a seta "próxima" andou').toBeLessThanOrEqual(1)
   })
 })

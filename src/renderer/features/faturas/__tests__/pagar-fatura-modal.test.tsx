@@ -23,8 +23,8 @@ function renderizar(over: Partial<Parameters<typeof PagarFaturaModal>[0]> = {}) 
   return onConfirmar
 }
 
-function dataDePagamento(): HTMLInputElement {
-  return screen.getByLabelText('Data de pagamento') as HTMLInputElement
+function dataDoPagamento(): HTMLInputElement {
+  return screen.getByLabelText('Data do pagamento') as HTMLInputElement
 }
 
 /**
@@ -48,14 +48,14 @@ describe('PagarFaturaModal', () => {
 
     expect(screen.getByRole('dialog', { name: 'Marcar fatura como paga' })).toBeTruthy()
     expect(screen.getByText(/Inter · Setembro de 2026/)).toBeTruthy()
-    expect(dataDePagamento().value).toBe('2026-09-29')
+    expect(dataDoPagamento().value).toBe('2026-09-29')
   })
 
   it('confirma com a data escolhida', async () => {
     const onConfirmar = renderizar()
     const usuario = userEvent.setup()
 
-    fireEvent.change(dataDePagamento(), { target: { value: '2026-09-27' } })
+    fireEvent.change(dataDoPagamento(), { target: { value: '2026-09-27' } })
     await usuario.click(screen.getByRole('button', { name: 'Confirmar pagamento' }))
 
     expect(onConfirmar).toHaveBeenCalledWith('2026-09-27')
@@ -64,10 +64,21 @@ describe('PagarFaturaModal', () => {
   it('sem data, não deixa confirmar', () => {
     renderizar()
 
-    fireEvent.change(dataDePagamento(), { target: { value: '' } })
+    fireEvent.change(dataDoPagamento(), { target: { value: '' } })
 
     const confirmar = screen.getByRole('button', { name: 'Confirmar pagamento' })
     expect((confirmar as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  // RF-FAT-04 — só o botão desabilitado não dizia o que estava errado. O
+  // diálogo de pagamento parcial já dizia, e os dois agora falam igual.
+  it('com a data apagada, diz que ela é inválida', () => {
+    renderizar()
+    expect(screen.queryByText('Data inválida.')).toBeNull()
+
+    fireEvent.change(dataDoPagamento(), { target: { value: '' } })
+
+    expect(screen.getByText('Data inválida.')).toBeTruthy()
   })
 
   it('mostra o erro dentro do diálogo', () => {

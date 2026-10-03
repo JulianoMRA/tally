@@ -9,7 +9,7 @@ import {
 import type { ElectronApplication, Page } from '@playwright/test'
 
 /**
- * Guarda de geometria para as ações da tabela de Parcelas do detalhe de fatura.
+ * Guarda de geometria para as ações da tabela de lançamentos do detalhe de fatura.
  *
  * Contexto: a tabela de Saídas teve suas ações decepadas pelo `overflow: hidden`
  * do Panel e precisou de um container rolável. O detalhe da fatura não tem

@@ -4,12 +4,21 @@ import type { Fatura } from '../../domain/entities/fatura'
 import type { Parcela, StatusParcela } from '../../domain/entities/parcela'
 import { dataIsoSchema } from './date-schema'
 
+/**
+ * Teto da descrição de uma despesa, no cadastro e na edição. Os modais de edição
+ * cortavam em 80 enquanto o cadastro aceitava 120, e a descrição longa perdia o
+ * fim ao ser editada.
+ */
+export const MAX_DESCRICAO_DESPESA = 120
+
+const MENSAGEM_DESCRICAO_LONGA = `Descrição deve ter no máximo ${MAX_DESCRICAO_DESPESA} caracteres`
+
 export const despesaUnicaCreditoInputSchema = z.object({
   descricao: z
     .string()
     .trim()
     .min(1, 'Descrição é obrigatória')
-    .max(120, 'Descrição deve ter no máximo 120 caracteres'),
+    .max(MAX_DESCRICAO_DESPESA, MENSAGEM_DESCRICAO_LONGA),
   categoriaId: z
     .number({ message: 'Categoria é obrigatória' })
     .int()
@@ -29,7 +38,7 @@ export const despesaUnicaForaCartaoInputSchema = z.object({
     .string()
     .trim()
     .min(1, 'Descrição é obrigatória')
-    .max(120, 'Descrição deve ter no máximo 120 caracteres'),
+    .max(MAX_DESCRICAO_DESPESA, MENSAGEM_DESCRICAO_LONGA),
   categoriaId: z
     .number({ message: 'Categoria é obrigatória' })
     .int()
@@ -66,7 +75,7 @@ export const despesaParceladaCreditoInputSchema = z.object({
     .string()
     .trim()
     .min(1, 'Descrição é obrigatória')
-    .max(120, 'Descrição deve ter no máximo 120 caracteres'),
+    .max(MAX_DESCRICAO_DESPESA, MENSAGEM_DESCRICAO_LONGA),
   categoriaId: z
     .number({ message: 'Categoria é obrigatória' })
     .int()
@@ -119,7 +128,7 @@ export const despesaAssinaturaCreditoInputSchema = z.object({
     .string()
     .trim()
     .min(1, 'Descrição é obrigatória')
-    .max(120, 'Descrição deve ter no máximo 120 caracteres'),
+    .max(MAX_DESCRICAO_DESPESA, MENSAGEM_DESCRICAO_LONGA),
   categoriaId: z
     .number({ message: 'Categoria é obrigatória' })
     .int()
@@ -144,7 +153,7 @@ export const despesaAssinaturaForaCartaoInputSchema = z.object({
     .string()
     .trim()
     .min(1, 'Descrição é obrigatória')
-    .max(120, 'Descrição deve ter no máximo 120 caracteres'),
+    .max(MAX_DESCRICAO_DESPESA, MENSAGEM_DESCRICAO_LONGA),
   categoriaId: z
     .number({ message: 'Categoria é obrigatória' })
     .int()
@@ -272,7 +281,7 @@ export const atualizarDespesaInputSchema = z.object({
     .string()
     .trim()
     .min(1, 'Descrição é obrigatória')
-    .max(120, 'Descrição deve ter no máximo 120 caracteres'),
+    .max(MAX_DESCRICAO_DESPESA, MENSAGEM_DESCRICAO_LONGA),
   categoriaId: z.number().int().positive(),
   valorCentavos: z.number().int().min(1, 'Valor deve ser maior que zero'),
   dataCompra: dataIsoSchema.optional()

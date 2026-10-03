@@ -2,10 +2,22 @@ import { useEffect, useState } from 'react'
 import { categoriasParaEdicao, rotuloDeCategoria } from '../../lib/categorias'
 import { centavosParaReais, ehValorValido, parseCentavos } from '../../lib/dinheiro'
 import type { Categoria } from '@domain/entities/categoria'
-import type { Despesa } from '@domain/entities/despesa'
+import type { Despesa, TipoDespesa } from '@domain/entities/despesa'
+import { MAX_DESCRICAO_DESPESA } from '@shared/ipc/despesa'
 import { Button, Field, Input, Modal, Select } from '../../components/ui'
 import { mensagemErro } from '../../lib/mensagem-erro'
 import styles from './faturas.module.css'
+
+/**
+ * Como o modal chama cada tipo. Ele mostrava o valor cru ("Tipo: Unica.").
+ * Assinatura tem modal próprio e não chega aqui; está no mapa para ele ser
+ * completo.
+ */
+const ROTULO_DO_TIPO: Record<TipoDespesa, string> = {
+  Unica: 'Compra à vista.',
+  Parcelada: 'Compra parcelada.',
+  Assinatura: 'Assinatura.'
+}
 
 type Props = {
   despesa: Despesa
@@ -84,10 +96,9 @@ export function EditarDespesaModal({
       titulo="Editar despesa"
       descricao={
         <>
-          Tipo: <strong>{despesa.tipo}</strong>.{' '}
-          {despesa.tipo === 'Parcelada'
-            ? 'Mudar o valor recalcula as parcelas em faturas abertas; as demais ficam como estão.'
-            : 'Edição direta.'}
+          {ROTULO_DO_TIPO[despesa.tipo]}
+          {despesa.tipo === 'Parcelada' &&
+            ' Mudar o valor recalcula as parcelas em faturas abertas; as demais ficam como estão.'}
         </>
       }
       onFechar={onCancelar}
@@ -107,7 +118,7 @@ export function EditarDespesaModal({
           type="text"
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
-          maxLength={80}
+          maxLength={MAX_DESCRICAO_DESPESA}
         />
       </Field>
 

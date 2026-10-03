@@ -161,3 +161,38 @@ describe('EditarDespesaModal — erro ao salvar', () => {
     expect(screen.getByText(/recalcula as parcelas em faturas abertas/)).toBeTruthy()
   })
 })
+
+// RF-DES-10 — a linha de apoio mostrava o valor cru do tipo ("Tipo: Unica.
+// Edição direta."), e a descrição cortava em 80 caracteres, quando o cadastro
+// aceita 120. O modal é o mesmo em Saídas e em Faturas.
+describe('EditarDespesaModal — texto e limite da descrição', () => {
+  afterEach(cleanup)
+
+  function textoDoModal(): string {
+    return screen.getByRole('dialog', { name: 'Editar despesa' }).textContent ?? ''
+  }
+
+  it('compra à vista diz "Compra à vista.", sem o nome interno do tipo', () => {
+    renderModal()
+
+    expect(textoDoModal()).toMatch(/Compra à vista\./)
+    expect(textoDoModal()).not.toMatch(/Tipo:|Unica|Edição direta/)
+  })
+
+  it('parcelada diz "Compra parcelada." antes do aviso do recálculo', () => {
+    renderModal({ tipo: 'Parcelada', totalParcelas: 3 })
+
+    expect(textoDoModal()).toMatch(/Compra parcelada\. Mudar o valor recalcula as parcelas/)
+  })
+
+  it('a descrição aceita os 120 caracteres do cadastro', async () => {
+    renderModal()
+    const usuario = userEvent.setup({ delay: null })
+    const campo = screen.getByLabelText('Descrição') as HTMLInputElement
+
+    await usuario.clear(campo)
+    await usuario.type(campo, 'x'.repeat(130))
+
+    expect(campo.value).toHaveLength(120)
+  })
+})
