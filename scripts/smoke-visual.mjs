@@ -706,6 +706,27 @@ try {
   await capturar('estado-modal-pagar-fatura')
   await page.keyboard.press('Escape')
 
+  // Os dois diálogos de confirmação do painel: o de fechar diz como voltar
+  // atrás (RN-06), e o de excluir nomeia a despesa (RF-DES-09). Na fatura
+  // corrente do Inter, que está Aberta e tem a compra parcelada da semente.
+  await page.getByRole('button', { name: /^Inter/ }).click({ timeout: 5000 })
+  await page.waitForTimeout(400)
+  await page
+    .getByRole('region', { name: 'Resumo da fatura' })
+    .getByRole('button', { name: 'Fechar fatura' })
+    .click({ timeout: 5000 })
+  await page.waitForTimeout(300)
+  await capturar('estado-confirm-fechar-fatura')
+  await page.keyboard.press('Escape')
+  await page
+    .getByRole('row', { name: /Notebook em doze vezes/ })
+    .getByRole('button', { name: /^Mais ações/ })
+    .click({ timeout: 5000 })
+  await page.getByRole('menu').getByRole('menuitem', { name: 'Excluir', exact: true }).click()
+  await page.waitForTimeout(300)
+  await capturar('estado-confirm-excluir-despesa')
+  await page.keyboard.press('Escape')
+
   // Foco de teclado nos dois elementos de Faturas que têm sombra própria: era
   // ela que cancelava o anel. Sai do cartão e volta pela tecla — o clique o
   // deixa focado, mas sem `:focus-visible`.
