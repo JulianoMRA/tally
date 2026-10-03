@@ -272,6 +272,27 @@ describe('FaturaDetalhe — ciclo da fatura', () => {
     expect(texto).not.toMatch(/só entram via adiantamento/)
     expect(texto).toMatch(/não recebe mais adiantamentos/)
   })
+
+  // RN-06 — "Fechar" ao lado de "Cancelar" se lia como fechar o diálogo, e a
+  // janela já tem um botão com esse nome. E fechar à mão não tem desfazer
+  // direto: só fatura paga reabre (RF-FAT-05).
+  it('o diálogo de fechar confirma por "Fechar fatura" e diz como voltar atrás', async () => {
+    const fechar = vi.fn().mockResolvedValue({
+      ...detalhe({ kind: 'Aberta' }).fatura,
+      status: { kind: 'Fechada' }
+    })
+    renderizarCom(detalhe({ kind: 'Aberta' }), { fatura: { fechar } })
+    const usuario = userEvent.setup()
+
+    await usuario.click(screen.getByRole('button', { name: 'Fechar fatura' }))
+    const dialogo = screen.getByRole('dialog', { name: 'Fechar fatura?' })
+    expect(within(dialogo).queryByRole('button', { name: 'Fechar' })).toBeNull()
+    expect(dialogo.textContent).toMatch(/marque como paga e depois reabra/)
+
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Fechar fatura' }))
+
+    expect(fechar).toHaveBeenCalledWith(10)
+  })
 })
 
 // RN-03 — o aviso repetia a quantidade pedida, mesmo quando o main movia menos.

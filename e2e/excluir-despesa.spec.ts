@@ -115,7 +115,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
 
     // Fecha e paga a fatura
     await page.getByRole('button', { name: 'Fechar fatura' }).click()
-    await confirmar(page, 'Fechar')
+    await confirmar(page, 'Fechar fatura')
     await page.getByRole('button', { name: 'Marcar como paga' }).click()
     await page.getByRole('button', { name: 'Confirmar pagamento' }).click()
 

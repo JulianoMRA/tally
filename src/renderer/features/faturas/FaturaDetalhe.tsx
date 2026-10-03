@@ -709,11 +709,15 @@ export function FaturaDetalhe({
           onCancelar={() => setRegistrandoParcial(false)}
         />
       )}
+      {/* "Fechar fatura", e não "Fechar": ao lado de "Cancelar", "Fechar" se
+          lia como fechar o diálogo, e a janela já tem um botão com esse nome.
+          O texto diz como voltar atrás porque não há desfazer direto: só fatura
+          paga reabre (RF-FAT-05). */}
       {dialogo?.tipo === 'fechar' && (
         <ConfirmDialog
           title="Fechar fatura?"
-          body="Depois de fechada, a fatura não recebe mais adiantamentos, o valor das parcelas dela fica travado e as despesas dela não podem mais ser excluídas."
-          confirmText="Fechar"
+          body="Depois de fechada, a fatura não recebe mais adiantamentos, o valor das parcelas dela fica travado e as despesas dela não podem mais ser excluídas. Só fatura paga reabre: para voltar atrás, marque como paga e depois reabra."
+          confirmText="Fechar fatura"
           onConfirm={() => {
             ciclo.fechar(fatura.id)
             setDialogo(null)
