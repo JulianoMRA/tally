@@ -469,11 +469,15 @@ export function FaturaDetalhe({
           <dl className={styles.faixaDatas}>
             <div className={styles.faixaData}>
               <dt className={styles.faixaRotulo}>Fechamento</dt>
-              <dd className={styles.faixaValor}>{formatarDataIso(fatura.dataFechamento)}</dd>
+              <dd className={`${styles.faixaValor} tnum`}>
+                {formatarDataIso(fatura.dataFechamento)}
+              </dd>
             </div>
             <div className={styles.faixaData}>
               <dt className={styles.faixaRotulo}>Vencimento</dt>
-              <dd className={styles.faixaValor}>{formatarDataIso(fatura.dataVencimento)}</dd>
+              <dd className={`${styles.faixaValor} tnum`}>
+                {formatarDataIso(fatura.dataVencimento)}
+              </dd>
             </div>
           </dl>
         </div>

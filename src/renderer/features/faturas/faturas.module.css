@@ -474,10 +474,15 @@ button.faturaItem:hover {
 }
 
 /* Aviso de prazo e data do pagamento, ao lado do selo. Os tons são os do
-   trilho: o prazo que passou em vermelho, o que está chegando em âmbar. */
+   trilho: o prazo que passou em vermelho, o que está chegando em âmbar.
+
+   Mono, como as datas da faixa, o prazo do trilho e as linhas do histórico: a
+   faixa era o único lugar da tela que dava datas e prazos na fonte de texto,
+   e a mesma data aparecia com duas caras a poucos centímetros. */
 .avisoPrazo {
   font-size: var(--text-2);
   color: var(--ink-3);
+  font-family: var(--font-mono);
 }
 
 .avisoPrazo[data-tom='alerta'] {
