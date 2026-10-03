@@ -436,110 +436,122 @@ export function FaturaDetalhe({
         </h2>
       </div>
 
-      {/* Faixa de resumo acima das parcelas (RF-FAT-03/06). Era um card
+      {/* Faixa de resumo acima dos lançamentos (RF-FAT-03/06). Era um card
           lateral a partir de 1360px e, na janela padrão (1266px), um card
           empilhado DEPOIS da tabela: o total e "Marcar como paga" ficavam
-          abaixo de todas as parcelas. Numa linha só, ela cabe acima delas sem
-          empurrá-las para baixo da dobra. Sai a linha "Mês", que o título já
-          diz, e o total deixa a meta do painel, onde se repetia. */}
-      <section className={styles.faixa} aria-label="Resumo da fatura">
-        <div className={styles.faixaStatus}>
-          <Badge variant={statusVariant(kind)} />
-          {/* Paga diz quando foi paga; as outras dizem o aviso de prazo, no
-              tom do trilho. */}
-          {fatura.status.kind === 'Paga' ? (
-            <span className={styles.avisoPrazo}>
-              Paga em {formatarDataIso(fatura.status.pagaEm)}
-            </span>
-          ) : (
-            aviso && (
-              <span className={styles.avisoPrazo} data-tom={aviso.tom}>
-                {aviso.texto}
-              </span>
-            )
-          )}
-        </div>
+          abaixo de todas as parcelas. Sai a linha "Mês", que o título já diz,
+          e o total deixa a meta do painel, onde se repetia.
 
-        <dl className={styles.faixaDatas}>
-          <div className={styles.faixaData}>
-            <dt className={styles.faixaRotulo}>Fechamento</dt>
-            <dd className={styles.faixaValor}>{formatarDataIso(fatura.dataFechamento)}</dd>
+          Quando não cabe numa linha — com aviso de prazo ou pagamento parcial,
+          na janela padrão —, quebra em duas: status e datas em cima; embaixo,
+          na largura toda, os valores à esquerda e as ações à direita. Ela foi
+          desenhada para uma linha só, e quebrava em escada: a segunda linha
+          ia para a direita, com dois vazios em diagonal. */}
+      <section className={styles.faixa} aria-label="Resumo da fatura">
+        <div className={styles.faixaInicio}>
+          <div className={styles.faixaStatus}>
+            <Badge variant={statusVariant(kind)} />
+            {/* Paga diz quando foi paga; as outras dizem o aviso de prazo, no
+                tom do trilho. */}
+            {fatura.status.kind === 'Paga' ? (
+              <span className={styles.avisoPrazo}>
+                Paga em {formatarDataIso(fatura.status.pagaEm)}
+              </span>
+            ) : (
+              aviso && (
+                <span className={styles.avisoPrazo} data-tom={aviso.tom}>
+                  {aviso.texto}
+                </span>
+              )
+            )}
           </div>
-          <div className={styles.faixaData}>
-            <dt className={styles.faixaRotulo}>Vencimento</dt>
-            <dd className={styles.faixaValor}>{formatarDataIso(fatura.dataVencimento)}</dd>
-          </div>
-        </dl>
+
+          <dl className={styles.faixaDatas}>
+            <div className={styles.faixaData}>
+              <dt className={styles.faixaRotulo}>Fechamento</dt>
+              <dd className={styles.faixaValor}>{formatarDataIso(fatura.dataFechamento)}</dd>
+            </div>
+            <div className={styles.faixaData}>
+              <dt className={styles.faixaRotulo}>Vencimento</dt>
+              <dd className={styles.faixaValor}>{formatarDataIso(fatura.dataVencimento)}</dd>
+            </div>
+          </dl>
+        </div>
 
         <div className={styles.faixaFim}>
           {/* Com pagamento parcial (RN-10) o destaque passa do total para o
               que falta pagar: é o número que o banco cobra. O total continua
               na faixa, porque é dele que os lançamentos abaixo dão conta. */}
-          <div className={styles.faixaTotal}>
-            <span className={styles.faixaRotulo}>Total da fatura</span>
-            <span className={`${temParcial ? styles.faixaValor : styles.faixaTotalValor} tnum`}>
-              {formatBRL(totalCentavos)}
-            </span>
+          <div className={styles.faixaValores}>
+            <div className={styles.faixaTotal}>
+              <span className={styles.faixaRotulo}>Total da fatura</span>
+              <span className={`${temParcial ? styles.faixaValor : styles.faixaTotalValor} tnum`}>
+                {formatBRL(totalCentavos)}
+              </span>
+            </div>
+            {temParcial && (
+              <>
+                <div className={styles.faixaTotal}>
+                  <span className={styles.faixaRotulo}>Pagamentos parciais</span>
+                  <span className={`${styles.faixaValor} tnum`}>
+                    {formatBRL(pagoParcialCentavos)}
+                  </span>
+                </div>
+                <div className={styles.faixaTotal}>
+                  <span className={styles.faixaRotulo}>
+                    {kind === 'Paga' ? 'Restante pago' : 'Falta pagar'}
+                  </span>
+                  <span className={`${styles.faixaTotalValor} tnum`}>
+                    {formatBRL(restanteCentavos)}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
-          {temParcial && (
-            <>
-              <div className={styles.faixaTotal}>
-                <span className={styles.faixaRotulo}>Pagamentos parciais</span>
-                <span className={`${styles.faixaValor} tnum`}>
-                  {formatBRL(pagoParcialCentavos)}
-                </span>
-              </div>
-              <div className={styles.faixaTotal}>
-                <span className={styles.faixaRotulo}>
-                  {kind === 'Paga' ? 'Restante pago' : 'Falta pagar'}
-                </span>
-                <span className={`${styles.faixaTotalValor} tnum`}>
-                  {formatBRL(restanteCentavos)}
-                </span>
-              </div>
-            </>
-          )}
-          {kind !== 'Paga' && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setRegistrandoParcial(true)}
-              disabled={ciclo.loading || restanteCentavos === 0}
-              title={restanteCentavos === 0 ? 'Não falta nada a pagar nesta fatura.' : undefined}
-            >
-              Pagamento parcial
-            </Button>
-          )}
-          {kind === 'Aberta' && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setDialogo({ tipo: 'fechar' })}
-              disabled={ciclo.loading}
-            >
-              Fechar fatura
-            </Button>
-          )}
-          {kind === 'Fechada' && (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setPagando(true)}
-              disabled={ciclo.loading}
-            >
-              Marcar como paga
-            </Button>
-          )}
-          {kind === 'Paga' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setDialogo({ tipo: 'reabrir' })}
-              disabled={ciclo.loading}
-            >
-              Reabrir fatura
-            </Button>
-          )}
+
+          <div className={styles.faixaAcoes}>
+            {kind !== 'Paga' && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setRegistrandoParcial(true)}
+                disabled={ciclo.loading || restanteCentavos === 0}
+                title={restanteCentavos === 0 ? 'Não falta nada a pagar nesta fatura.' : undefined}
+              >
+                Pagamento parcial
+              </Button>
+            )}
+            {kind === 'Aberta' && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setDialogo({ tipo: 'fechar' })}
+                disabled={ciclo.loading}
+              >
+                Fechar fatura
+              </Button>
+            )}
+            {kind === 'Fechada' && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setPagando(true)}
+                disabled={ciclo.loading}
+              >
+                Marcar como paga
+              </Button>
+            )}
+            {kind === 'Paga' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDialogo({ tipo: 'reabrir' })}
+                disabled={ciclo.loading}
+              >
+                Reabrir fatura
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Só acontece quando uma despesa é excluída ou reduzida depois do

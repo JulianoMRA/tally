@@ -367,9 +367,9 @@ button.faturaItem:hover {
   gap: 4px;
 }
 
-/* Faixa de resumo (RF-FAT-03/06): status, prazo e datas à esquerda; total e
-   ação do ciclo à direita. Quebra em duas linhas quando falta largura, com o
-   total e a ação juntos. */
+/* Faixa de resumo (RF-FAT-03/06): status, prazo e datas no começo; valores e
+   ações no fim. Quando não cabe numa linha, quebra em duas: o começo em cima;
+   embaixo, na largura toda, os valores à esquerda e as ações à direita. */
 .faixa {
   display: flex;
   flex-wrap: wrap;
@@ -380,6 +380,20 @@ button.faturaItem:hover {
   border: 1px solid var(--rule);
   border-radius: var(--r-3);
   box-shadow: var(--shadow-1);
+}
+
+/* O começo leva quase toda a sobra da linha: com a faixa numa linha só, isso
+   empurra o fim para a direita, como o `margin-left: auto` que ele tinha.
+   Quando a faixa quebra, o fim fica sozinho na segunda linha e leva a largura
+   toda, porque o fator de crescimento só se compara entre itens da mesma
+   linha. Com o `margin-left: auto`, o fim ia para a direita também quando
+   quebrava, e a faixa ficava em escada. */
+.faixaInicio {
+  flex: 1000 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
 }
 
 .faixaStatus {
@@ -419,14 +433,30 @@ button.faturaItem:hover {
 /* `flex-wrap`: com pagamento parcial o bloco ganha dois valores e um botão, e
    na janela estreita não cabe numa linha. Sem quebrar, em 1024px os rótulos se
    partiam palavra por palavra ("TOTAL / DA / FATURA") e o último botão saía
-   28px para fora da faixa; quebrando, os itens descem alinhados à direita.
-   `faturas-geometria.spec.ts` cobra as duas coisas. */
+   28px para fora da faixa. `faturas-geometria.spec.ts` cobra as duas coisas. */
 .faixaFim {
-  display: inline-flex;
+  flex: 1 1 auto;
+  display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
   align-items: center;
   gap: 8px 16px;
+}
+
+/* Os valores dividem a linha de base. O bloco centralizava cada grupo, e como
+   "Falta pagar" leva o número maior, o rótulo dele ficava abaixo dos outros. */
+.faixaValores {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+}
+
+/* `margin-left: auto`: na linha dos valores, as ações vão para a ponta
+   direita; sozinhas numa linha, na janela estreita, também. */
+.faixaAcoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-left: auto;
 }
 

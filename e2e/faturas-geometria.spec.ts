@@ -53,6 +53,12 @@ async function altura(alvo: Locator): Promise<number> {
   return caixa.height
 }
 
+async function caixa(alvo: Locator): Promise<{ x: number; y: number; height: number }> {
+  const medida = await alvo.boundingBox()
+  if (!medida) throw new Error('elemento sem caixa')
+  return medida
+}
+
 for (const largura of [1024, 1280, 1760] as const) {
   test(`faixa, lançamentos e histórico terminam na mesma borda em ${largura}px`, async ({
     app
@@ -155,6 +161,31 @@ for (const largura of [1024, 1280, 1760] as const) {
         `o rótulo "${rotulo}" quebrou de linha`
       ).toBeLessThanOrEqual(umaLinha + 1)
     }
+
+    // A faixa sem escada (R15). Quando ela quebra, a segunda linha ocupa a
+    // largura toda, com os valores na margem do selo de status. O bloco do fim
+    // ia para a direita, e a faixa ficava com dois vazios em diagonal.
+    const selo = await caixa(faixa.getByText('Aberta', { exact: true }))
+    const primeiroValor = await caixa(faixa.getByText('Total da fatura', { exact: true }))
+    const quebrou = primeiroValor.y >= selo.y + selo.height
+    // Nas duas larguras menores a faixa cheia não cabe numa linha: sem a quebra
+    // o caso não mediria nada.
+    if (largura < 1760) expect(quebrou, 'a faixa não quebrou').toBe(true)
+    if (quebrou) {
+      expect(
+        Math.abs(primeiroValor.x - selo.x),
+        'os valores não começam na margem do selo'
+      ).toBeLessThanOrEqual(1)
+    }
+
+    // Os três rótulos dividem a linha de base: o bloco centralizava grupos com
+    // números de tamanhos diferentes, e "Falta pagar" ficava abaixo dos outros.
+    const bases: number[] = []
+    for (const rotulo of ['Total da fatura', 'Pagamentos parciais', 'Falta pagar']) {
+      const r = await caixa(faixa.getByText(rotulo, { exact: true }))
+      bases.push(r.y + r.height)
+    }
+    expect(folga(bases), 'os rótulos não dividem a linha de base').toBeLessThanOrEqual(0.5)
 
     const rolagem = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth
