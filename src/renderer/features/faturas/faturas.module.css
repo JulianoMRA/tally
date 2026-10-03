@@ -361,6 +361,12 @@ button.faturaItem:hover {
   gap: 10px;
 }
 
+/* As duas setas formam um par, mais juntas entre si do que do título. */
+.setas {
+  display: flex;
+  gap: 4px;
+}
+
 /* Faixa de resumo (RF-FAT-03/06): status, prazo e datas à esquerda; total e
    ação do ciclo à direita. Quebra em duas linhas quando falta largura, com o
    total e a ação juntos. */

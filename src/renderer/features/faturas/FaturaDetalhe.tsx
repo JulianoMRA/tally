@@ -397,36 +397,43 @@ export function FaturaDetalhe({
     <div className={styles.detalhe}>
       {/* A navegação mora junto do título que ela muda. Eram setas de texto
           nas pontas da largura inteira ("← agosto de 2026"), acima do título,
-          e "← sem anterior" era um botão desabilitado com texto. */}
+          e "← sem anterior" era um botão desabilitado com texto.
+
+          As duas ficam juntas, antes do título. A "próxima" vinha depois dele,
+          que muda de largura com o nome do mês: de fevereiro para março ela
+          andava mais que a largura do próprio botão, e quem clicava duas vezes
+          seguidas acertava o vazio. */}
       <div className={styles.cabecalho}>
-        <BotaoSeta
-          ref={setaAnteriorRef}
-          direcao="anterior"
-          rotulo={
-            anterior
-              ? `Fatura anterior: ${formatarMesReferencia(anterior.mesReferencia)}`
-              : 'Sem fatura anterior'
-          }
-          onClick={() => acionarSeta('anterior', anterior)}
-          disabled={!anterior}
-        />
+        <div className={styles.setas}>
+          <BotaoSeta
+            ref={setaAnteriorRef}
+            direcao="anterior"
+            rotulo={
+              anterior
+                ? `Fatura anterior: ${formatarMesReferencia(anterior.mesReferencia)}`
+                : 'Sem fatura anterior'
+            }
+            onClick={() => acionarSeta('anterior', anterior)}
+            disabled={!anterior}
+          />
+          <BotaoSeta
+            ref={setaProximaRef}
+            direcao="proxima"
+            rotulo={
+              proxima
+                ? `Próxima fatura: ${formatarMesReferencia(proxima.mesReferencia)}`
+                : 'Sem próxima fatura'
+            }
+            onClick={() => acionarSeta('proxima', proxima)}
+            disabled={!proxima}
+          />
+        </div>
         <BolinhaDeCor cor={cartaoCor} />
         {/* `tabIndex={-1}`: o título recebe o foco quando a fatura é aberta
             pelo histórico, sem entrar na ordem do Tab. */}
         <h2 ref={tituloRef} tabIndex={-1} className={styles.detalheTitleText}>
           {cartaoNome} · {formatarMesReferencia(fatura.mesReferencia, { capitalizar: true })}
         </h2>
-        <BotaoSeta
-          ref={setaProximaRef}
-          direcao="proxima"
-          rotulo={
-            proxima
-              ? `Próxima fatura: ${formatarMesReferencia(proxima.mesReferencia)}`
-              : 'Sem próxima fatura'
-          }
-          onClick={() => acionarSeta('proxima', proxima)}
-          disabled={!proxima}
-        />
       </div>
 
       {/* Faixa de resumo acima das parcelas (RF-FAT-03/06). Era um card

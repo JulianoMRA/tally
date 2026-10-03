@@ -499,6 +499,20 @@ describe('FaturaDetalhe — navegação junto do título', () => {
       (screen.getByRole('button', { name: 'Sem próxima fatura' }) as HTMLButtonElement).disabled
     ).toBe(true)
   })
+
+  // A "próxima" vinha depois do título, que muda de largura com o nome do mês:
+  // de fevereiro para março ela andava mais que a largura do próprio botão, e o
+  // clique seguinte caía fora dela.
+  it('as duas setas vêm juntas, antes do título', () => {
+    renderizarCom(detalhe({ kind: 'Aberta' }))
+
+    const anterior = screen.getByRole('button', { name: 'Sem fatura anterior' })
+    const proxima = screen.getByRole('button', { name: 'Sem próxima fatura' })
+    const titulo = screen.getByRole('heading', { level: 2 })
+    const segue = Node.DOCUMENT_POSITION_FOLLOWING
+    expect(anterior.compareDocumentPosition(proxima) & segue).toBeTruthy()
+    expect(proxima.compareDocumentPosition(titulo) & segue).toBeTruthy()
+  })
 })
 
 /**

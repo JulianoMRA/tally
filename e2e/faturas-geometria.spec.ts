@@ -435,3 +435,65 @@ test.describe('Faturas — geometria do trilho', () => {
     ).toBeLessThanOrEqual(1)
   })
 })
+
+/**
+ * As setas de navegação entre faturas (R16 do plano de acabamento de Faturas).
+ *
+ * A "próxima" vinha depois do título, que muda de largura com o nome do mês: de
+ * fevereiro para março ela andava uns 35px, mais que os 34px do botão, e o
+ * segundo clique seguido caía no vazio.
+ */
+test.describe('Faturas — navegação entre faturas', () => {
+  test('a seta "próxima" fica no mesmo lugar, qualquer que seja o mês', async ({ app }) => {
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+    await page.evaluate(async () => {
+      const api = (window as unknown as { api: ApiTrilho }).api
+      const hoje = new Date()
+      const alvo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 3)
+      const mesQueVem = `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, '0')}-03`
+      const categoria = await api.categoria.create({ nome: 'Mercado Setas E2E', cor: '#5b7a5e' })
+      const cartao = await api.cartao.create({
+        nome: 'Inter Setas E2E',
+        diaFechamento: 5,
+        diaVencimento: 12,
+        cor: '#a88454'
+      })
+      // Três faturas seguidas, a partir da corrente.
+      await api.despesa.criarParceladaCredito({
+        descricao: 'Parcelada em três',
+        categoriaId: categoria.id,
+        cartaoId: cartao.id,
+        totalParcelas: 3,
+        valorTotalCentavos: 30000,
+        dataCompra: mesQueVem
+      })
+    })
+    await recarregar(page)
+    await irPara(page, 'Faturas')
+
+    const titulo = page.getByRole('heading', { level: 2 })
+    const proxima = page.getByRole('button', { name: /^(Próxima fatura|Sem próxima fatura)/ })
+    await expect(titulo).toContainText('Inter Setas E2E')
+
+    const posicoes: number[] = []
+    const larguras: number[] = []
+    for (let mes = 0; mes < 3; mes++) {
+      const seta = await proxima.boundingBox()
+      const nome = await titulo.boundingBox()
+      if (!seta || !nome) throw new Error('seta ou título sem caixa')
+      posicoes.push(seta.x)
+      larguras.push(nome.width)
+      if (mes < 2) {
+        const antes = (await titulo.textContent()) ?? ''
+        await proxima.click()
+        await expect(titulo).not.toHaveText(antes)
+      }
+    }
+
+    // Sem o título mudar de largura o caso não mediria nada: a seta não teria
+    // por que andar nem no código antigo.
+    expect(folga(larguras), 'o título não mudou de largura').toBeGreaterThan(5)
+    expect(folga(posicoes), 'a seta "próxima" andou').toBeLessThanOrEqual(1)
+  })
+})
