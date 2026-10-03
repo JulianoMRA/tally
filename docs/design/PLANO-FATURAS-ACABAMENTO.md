@@ -1,7 +1,7 @@
 # Plano — Faturas: o que a tela perde ao agir, e acabamento (out/2026)
 
-> **Aprovado em 02/10/2026**, com as decisões A a F como estão. F1 (#165) e F2 (#166)
-> mergeadas. F3 em andamento na branch `fix/faturas-faixa`.
+> **Aprovado em 02/10/2026**, com as decisões A a F como estão. As três fases estão
+> mergeadas (PRs #165, #166 e #167) e saem na v1.21.0.
 
 Origem: análise de 02/10/2026, pedida logo depois da v1.20.0 ("analise profundamente a tela
 e procure por inconsistências ou erros visuais e de UX"). Mesmo fluxo dos dois ciclos
