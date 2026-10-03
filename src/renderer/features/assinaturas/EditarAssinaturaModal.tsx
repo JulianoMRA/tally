@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
+import { MAX_DESCRICAO_DESPESA } from '@shared/ipc/despesa'
 import { Button, Field, Input, Modal, SegmentedControl, Select } from '../../components/ui'
 import type { OpcaoSegmentada } from '../../components/ui'
 import { categoriasParaEdicao, rotuloDeCategoria } from '../../lib/categorias'
@@ -104,7 +105,7 @@ export function EditarAssinaturaModal({
           type="text"
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
-          maxLength={80}
+          maxLength={MAX_DESCRICAO_DESPESA}
           autoFocus
         />
       </Field>
