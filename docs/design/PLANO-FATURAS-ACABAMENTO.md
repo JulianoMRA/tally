@@ -1,7 +1,7 @@
 # Plano — Faturas: o que a tela perde ao agir, e acabamento (out/2026)
 
-> **Aprovado em 02/10/2026**, com as decisões A a F como estão. F1 mergeada (#165). F2 em
-> andamento na branch `fix/faturas-historico`.
+> **Aprovado em 02/10/2026**, com as decisões A a F como estão. F1 (#165) e F2 (#166)
+> mergeadas. F3 em andamento na branch `fix/faturas-faixa`.
 
 Origem: análise de 02/10/2026, pedida logo depois da v1.20.0 ("analise profundamente a tela
 e procure por inconsistências ou erros visuais e de UX"). Mesmo fluxo dos dois ciclos
@@ -271,7 +271,13 @@ linha só".
 Aceite: em `faturas-geometria.spec.ts`, nas três larguras e com pagamento parcial — quando
 há quebra, a borda esquerda do primeiro valor é a do selo de status; a base dos três rótulos
 coincide; os aceites que já existem continuam valendo (botões dentro da faixa, rótulos em
-uma linha, sem rolagem horizontal).
+uma linha, sem rolagem horizontal). Em 1024px e 1280px o caso exige que a faixa quebre: sem
+quebra ele não mediria nada.
+
+Feito com dois grupos dentro do fim da faixa — valores e ações — e um fator de crescimento
+muito maior no começo (status e datas): numa linha só ele empurra o fim para a direita;
+quando a faixa quebra, o fim fica sozinho na segunda linha e leva a largura toda. Em 1024px,
+com pagamento parcial, as ações descem para uma terceira linha, à direita.
 
 **R16 — Setas paradas** (RF-FAT-06, decisão B). As duas setas ficam juntas antes do título:
 `[←][→] ● Inter · Outubro de 2026`. Hoje a "próxima" vem depois do título, que muda de
@@ -280,8 +286,9 @@ fevereiro para março ela anda uns 35px, mais que os 34px do botão. Nome acess�
 seta desabilitada sem vizinha não mudam.
 
 Aceite: E2E escrito antes — a posição da seta "próxima" é a mesma, com 1px de tolerância,
-antes e depois de navegar entre dois meses de nomes de tamanhos diferentes. Teste de
-componente para a ordem das setas em relação ao título.
+ao navegar por três faturas seguidas. O caso confere também que o título mudou de largura no
+caminho: sem isso a seta não teria por que andar nem no código antigo. Teste de componente
+para a ordem das setas em relação ao título.
 
 **R17 — Tipografia da faixa** (RF-FAT-03). As datas e o aviso de prazo da faixa passam para
 mono tabular, como no trilho, no histórico e nas tabelas. Prova: folha de contato — é o
@@ -308,6 +315,11 @@ do campo, como o de pagamento parcial; hoje só desabilita o botão.
 
 Aceite: `pagar-fatura-modal.test.tsx`.
 
+**Data futura continua aceita** nos dois diálogos (decisão de 02/10/2026): cobre o pagamento
+agendado no banco. A pergunta veio da folha de contato da F2, em que a semente pagava uma
+fatura com data que ainda não tinha chegado; o domínio só confere o formato, e o PRD não
+dizia nada. Fica registrado em RF-FAT-04.
+
 **R21 — Modal de edição** (RF-DES-10). A linha de apoio deixa de mostrar o valor cru do tipo
 ("Tipo: Unica. Edição direta.") e passa a "Compra à vista." ou "Compra parcelada." seguida do
 aviso que já existe. O campo Descrição aceita os 120 caracteres do cadastro — hoje corta em
@@ -315,6 +327,10 @@ aviso que já existe. O campo Descrição aceita os 120 caracteres do cadastro �
 vale lá.
 
 Aceite: `editar-despesa-modal.test.tsx` e o teste do modal de assinatura.
+
+O teto vira uma constante só, `MAX_DESCRICAO_DESPESA`, em `src/shared/ipc/despesa.ts`: os
+esquemas do cadastro e da edição e os dois modais passam a ler dela. Os 80 dos modais eram
+uma cópia que divergiu.
 
 **R22 — Painel "Lançamentos"** (RF-FAT-03, RF-DES-14). O painel "Parcelas" passa a se chamar
 "Lançamentos", como o de Saídas; o vazio vira "Nenhum lançamento nesta fatura." e o
@@ -416,6 +432,9 @@ Da análise:
 - **Vazios e erros sem ação** (achado 19), e o nome de cartão truncado no trilho sem dica.
 - **Rótulo do botão "Pagamento parcial"** e **vencimento junto do aviso no trilho** (seção
   3, item 4).
+- **O "Excluir despesa?" de Saídas segue genérico** ("A despesa e TODAS as parcelas
+  pendentes serão removidas"). O R19 nomeia a despesa no de Faturas; o de Saídas é outro
+  diálogo, com texto próprio, e fica para quando a tela for mexida.
 
 Achado ao detalhar:
 
