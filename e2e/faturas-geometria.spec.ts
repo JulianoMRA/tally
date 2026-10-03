@@ -54,7 +54,9 @@ async function altura(alvo: Locator): Promise<number> {
 }
 
 for (const largura of [1024, 1280, 1760] as const) {
-  test(`faixa, parcelas e histórico terminam na mesma borda em ${largura}px`, async ({ app }) => {
+  test(`faixa, lançamentos e histórico terminam na mesma borda em ${largura}px`, async ({
+    app
+  }) => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
@@ -74,12 +76,12 @@ for (const largura of [1024, 1280, 1760] as const) {
     await focarCartao(page, 'Inter Borda E2E')
 
     const faixa = page.getByRole('region', { name: 'Resumo da fatura' })
-    const parcelas = painel(page, 'Parcelas')
+    const lancamentos = painel(page, 'Lançamentos')
     const historico = painel(page, 'Histórico deste cartão')
     await expect(faixa).toBeVisible()
     await expect(historico).toBeVisible()
 
-    const referencia = await bordaDireita(parcelas)
+    const referencia = await bordaDireita(lancamentos)
     expect(Math.abs((await bordaDireita(faixa)) - referencia)).toBeLessThanOrEqual(1)
     expect(Math.abs((await bordaDireita(historico)) - referencia)).toBeLessThanOrEqual(1)
 
@@ -92,7 +94,7 @@ for (const largura of [1024, 1280, 1760] as const) {
 
   /**
    * Com pagamento parcial (RF-FAT-07) a faixa ganha dois valores e um botão, e
-   * entra um painel entre ela e as parcelas. É a faixa mais cheia que a tela
+   * entra um painel entre ela e os lançamentos. É a faixa mais cheia que a tela
    * monta, e o que ela precisa provar é que o conteúdo cabe DENTRO dela.
    *
    * A borda da faixa e a rolagem da página não bastam: sem a quebra de linha no
@@ -127,12 +129,12 @@ for (const largura of [1024, 1280, 1760] as const) {
 
     const faixa = page.getByRole('region', { name: 'Resumo da fatura' })
     const pagamentos = page.getByRole('region', { name: 'Pagamentos parciais' })
-    const parcelas = painel(page, 'Parcelas')
+    const lancamentos = painel(page, 'Lançamentos')
     const historico = painel(page, 'Histórico deste cartão')
     await expect(faixa).toContainText(/Falta pagar\s*R\$\s*10\.000,00/)
     await expect(pagamentos).toBeVisible()
 
-    const referencia = await bordaDireita(parcelas)
+    const referencia = await bordaDireita(lancamentos)
     const bordaDaFaixa = await bordaDireita(faixa)
     expect(Math.abs(bordaDaFaixa - referencia)).toBeLessThanOrEqual(1)
     expect(Math.abs((await bordaDireita(pagamentos)) - referencia)).toBeLessThanOrEqual(1)

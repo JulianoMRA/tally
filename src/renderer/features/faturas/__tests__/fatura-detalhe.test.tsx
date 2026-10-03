@@ -358,6 +358,25 @@ describe('FaturaDetalhe — faixa de resumo', () => {
   })
 })
 
+// RF-FAT-03, RF-DES-14 — o painel se chamava "Parcelas", contava "lançamentos"
+// e listava compras à vista. Em Saídas a mesma lista se chama "Lançamentos".
+describe('FaturaDetalhe — painel de lançamentos', () => {
+  afterEach(cleanup)
+
+  it('se chama Lançamentos, como em Saídas', () => {
+    renderizarCom(comParcela({ kind: 'Aberta' }, despesa(), parcela()))
+
+    expect(screen.getByRole('heading', { name: 'Lançamentos' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Parcelas' })).toBeNull()
+  })
+
+  it('sem lançamento, o vazio fala em lançamento, e não em parcela', () => {
+    renderizarCom(detalhe({ kind: 'Aberta' }))
+
+    expect(screen.getByText('Nenhum lançamento nesta fatura.')).toBeTruthy()
+  })
+})
+
 // As setas eram texto solto nas pontas da largura inteira, acima do título que
 // elas mudam; "← sem anterior" era um botão desabilitado com texto.
 describe('FaturaDetalhe — navegação junto do título', () => {
@@ -722,7 +741,8 @@ describe('FaturaDetalhe — pagamento parcial', () => {
       const antes = Node.DOCUMENT_POSITION_FOLLOWING
       expect(faixa().compareDocumentPosition(painel()) & antes).toBeTruthy()
       expect(
-        painel().compareDocumentPosition(screen.getByRole('heading', { name: 'Parcelas' })) & antes
+        painel().compareDocumentPosition(screen.getByRole('heading', { name: 'Lançamentos' })) &
+          antes
       ).toBeTruthy()
     })
 

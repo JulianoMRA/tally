@@ -552,13 +552,15 @@ export function FaturaDetalhe({
         </Panel>
       )}
 
+      {/* "Lançamentos", como em Saídas: o painel se chamava "Parcelas", contava
+          lançamentos e listava compras à vista. A coluna segue "Parcela". */}
       <Panel
-        title="Parcelas"
+        title="Lançamentos"
         meta={`${parcelas.length} ${pluralizar('lançamento', parcelas.length)}`}
         flush
       >
         {parcelas.length === 0 ? (
-          <EmptyState title="Nenhuma parcela nesta fatura." />
+          <EmptyState title="Nenhum lançamento nesta fatura." />
         ) : (
           // O Panel recorta o que passa da borda; aqui o excesso vira
           // rolagem, como em Saídas.
