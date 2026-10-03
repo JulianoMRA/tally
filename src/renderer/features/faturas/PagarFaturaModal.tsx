@@ -79,11 +79,15 @@ export function PagarFaturaModal({
         </>
       }
     >
-      <Field label="Data de pagamento">
+      {/* Mesmo rótulo e mesma mensagem do diálogo de pagamento parcial. Este
+          dizia "Data de pagamento" e, com a data apagada, só desabilitava o
+          botão, sem dizer o que estava errado. */}
+      <Field label="Data do pagamento" error={dataValida ? undefined : 'Data inválida.'}>
         <Input
           type="date"
           value={dataPagamento}
           onChange={(e) => setDataPagamento(e.target.value)}
+          error={!dataValida}
         />
       </Field>
 
