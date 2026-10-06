@@ -42,7 +42,7 @@ import { mesAtualReferencia } from '../../lib/mes-atual'
 import { hojeIsoLocal } from '@shared/datas-locais'
 import { useOrdenacao } from '../../lib/use-ordenacao'
 import { DespesaForm } from '../despesas/DespesaForm'
-import { motivoDoBloqueioDeExclusao } from '../despesas/acoes-da-despesa'
+import { motivoDoBloqueioDeExclusao, travaDeValorEData } from '../despesas/acoes-da-despesa'
 import { DialogoExcluirDespesa } from '../despesas/DialogoExcluirDespesa'
 import { EditarDespesaModal } from '../faturas/EditarDespesaModal'
 import { EditarAssinaturaModal } from '../assinaturas/EditarAssinaturaModal'
@@ -129,6 +129,9 @@ export default function SaidasPage() {
   const [cadastroAberto, setCadastroAberto] = useState(false)
   const [notaTags, setNotaTags] = useState<DespesaComTags | null>(null)
   const [editandoDespesa, setEditandoDespesa] = useState<Despesa | null>(null)
+  // RF-DES-10: por que valor e data não mudam, vindo da ocorrência que abriu o
+  // modal. A despesa-mestre não sabe em que fatura a compra caiu.
+  const [travaDaEdicao, setTravaDaEdicao] = useState<string | undefined>(undefined)
   const [editandoAssinatura, setEditandoAssinatura] = useState<Despesa | null>(null)
   const [confirmacao, setConfirmacao] = useState<Confirmacao | null>(null)
   const toast = useToast()
@@ -283,7 +286,13 @@ export default function SaidasPage() {
     if (ehAssinatura) {
       if (d.ativa) acoes.push({ label: 'Editar', onClick: () => setEditandoAssinatura(d) })
     } else {
-      acoes.push({ label: 'Editar', onClick: () => setEditandoDespesa(d) })
+      acoes.push({
+        label: 'Editar',
+        onClick: () => {
+          setTravaDaEdicao(travaDeValorEData(d.tipo, o.statusFatura))
+          setEditandoDespesa(d)
+        }
+      })
     }
 
     if (o.faturaId === null) {
@@ -933,6 +942,7 @@ export default function SaidasPage() {
         <EditarDespesaModal
           despesa={editandoDespesa}
           categorias={categorias}
+          travaValorEData={travaDaEdicao}
           onConfirmar={handleEditarDespesaConfirmar}
           onCancelar={() => setEditandoDespesa(null)}
         />

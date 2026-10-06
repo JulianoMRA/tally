@@ -521,3 +521,38 @@ describe('SaidasPage — excluir despesa', () => {
     expect(dialogo.textContent).not.toMatch(/TODAS|bloqueia se houver/)
   })
 })
+
+/**
+ * RF-DES-10 em Saídas. O modal de edição, aberto daqui, deixava mudar valor e
+ * data da compra à vista cuja fatura já tinha fechado, e a gravação era
+ * recusada. Aberto de Faturas, ele já travava os dois e dizia por quê.
+ */
+describe('SaidasPage — editar compra à vista em fatura fechada', () => {
+  beforeEach(() => vi.clearAllMocks())
+  afterEach(cleanup)
+
+  async function abrirEdicao(o: OcorrenciaDoMes): Promise<HTMLElement> {
+    instalarApi([o], [despesaDa(o, { valorCentavos: 5000 })])
+    renderizar()
+    const linha = await screen.findByRole('row', { name: new RegExp(o.descricao) })
+    await userEvent.setup().click(await within(linha).findByRole('button', { name: 'Editar' }))
+    return screen.getByRole('dialog', { name: 'Editar despesa' })
+  }
+
+  it('abre com valor e data travados, e diz por quê', async () => {
+    const modal = await abrirEdicao(ocorrencia({ descricao: 'Almoço', statusFatura: 'Fechada' }))
+
+    expect((within(modal).getByLabelText('Valor (R$)') as HTMLInputElement).disabled).toBe(true)
+    expect((within(modal).getByLabelText('Data da compra') as HTMLInputElement).disabled).toBe(true)
+    expect(modal.textContent).toMatch(/fatura desta compra está fechada/)
+  })
+
+  it('em fatura Aberta, valor e data seguem editáveis', async () => {
+    const modal = await abrirEdicao(ocorrencia({ descricao: 'Almoço', statusFatura: 'Aberta' }))
+
+    expect((within(modal).getByLabelText('Valor (R$)') as HTMLInputElement).disabled).toBe(false)
+    expect((within(modal).getByLabelText('Data da compra') as HTMLInputElement).disabled).toBe(
+      false
+    )
+  })
+})

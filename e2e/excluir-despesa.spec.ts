@@ -239,4 +239,21 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await expect(excluir).toHaveAttribute('title', /fatura fechada/)
     await page.keyboard.press('Escape')
   })
+
+  // RF-DES-10. Aberto de Saídas, o modal de edição deixava mudar valor e data
+  // da compra à vista cuja fatura já tinha fechado, e a gravação era recusada.
+  // Aberto de Faturas, ele já travava os dois e dizia por quê.
+  test('em Saídas, compra à vista em fatura fechada abre a edição com valor e data travados', async ({
+    app
+  }) => {
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+    const linha = await compraEmFaturaFechadaEmSaidas(page, 'Saidas Trava E2E')
+
+    await linha.getByRole('button', { name: 'Editar', exact: true }).click()
+    const modal = page.getByRole('dialog', { name: 'Editar despesa' })
+    await expect(modal.getByLabel('Valor (R$)')).toBeDisabled()
+    await expect(modal.getByLabel('Data da compra')).toBeDisabled()
+    await expect(modal).toContainText('A fatura desta compra está fechada')
+  })
 })
