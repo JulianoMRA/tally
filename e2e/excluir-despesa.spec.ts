@@ -37,6 +37,40 @@ async function itemExcluirDaParcela(page: Page) {
   return page.getByRole('menu').getByRole('menuitem', { name: 'Excluir', exact: true })
 }
 
+/**
+ * Lança uma compra à vista em junho/2026, que a tela de Faturas fecha ao abrir
+ * (RN-06: a data de fechamento já passou), e volta para Saídas em junho, com a
+ * linha na tela. Devolve a linha.
+ */
+async function compraEmFaturaFechadaEmSaidas(page: Page, sufixo: string) {
+  const descricao = `Compra ${sufixo}`
+  await criarCartao(page, `Inter ${sufixo}`)
+  await criarCategoria(page, `Mercado ${sufixo}`)
+
+  await irPara(page, 'Saídas')
+  await abrirCadastroDeSaida(page)
+  await page.getByLabel('Descrição').fill(descricao)
+  await page.getByLabel(/^Categoria/).selectOption({ label: `Mercado ${sufixo}` })
+  await page.getByLabel('Cartão').selectOption({ label: `Inter ${sufixo}` })
+  await page.getByLabel('Valor (R$)').fill('50,00')
+  await page.getByLabel('Data da compra').fill('2026-06-03')
+  await page.getByRole('button', { name: 'Registrar despesa' }).click()
+  await expect(page.getByRole('cell', { name: descricao })).toBeVisible()
+
+  await irPara(page, 'Faturas')
+  await focarCartao(page, `Inter ${sufixo}`)
+  const resumo = page.getByRole('region', { name: 'Resumo da fatura' })
+  await expect(resumo.getByText('Fechada', { exact: true })).toBeVisible()
+
+  // O mês vai direto no campo (exact: true — "Mês anterior" e "Próximo mês"
+  // também casariam), nunca por cliques relativos ao mês corrente.
+  await irPara(page, 'Saídas')
+  await page.getByLabel('Mês', { exact: true }).fill('2026-06')
+  const linha = page.getByRole('row').filter({ hasText: descricao })
+  await expect(linha).toBeVisible()
+  return linha
+}
+
 test.describe('Excluir despesa (RF-DES-09)', () => {
   test('cria assinatura, exclui pela tela Saídas e confirma que sumiu', async ({ app }) => {
     const page = await app.firstWindow()
@@ -186,5 +220,23 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await expect(excluir).toHaveAttribute('title', /fatura fechada/)
     await page.keyboard.press('Escape')
     await expect(page.getByRole('cell', { name: 'Compra Vencida E2E' })).toBeVisible()
+  })
+
+  // Saídas oferecia Excluir em toda linha, e o diálogo avisava que a ação
+  // "bloqueia se houver parcela já paga": a recusa vinha depois do
+  // "irreversível". Faturas sabe do bloqueio desde a v1.19.0; Saídas passou a
+  // receber o mesmo do main.
+  test('em Saídas, compra em fatura fechada não oferece Excluir, e diz por quê', async ({
+    app
+  }) => {
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+    const linha = await compraEmFaturaFechadaEmSaidas(page, 'Saidas Bloqueio E2E')
+
+    await linha.getByRole('button', { name: /^Mais ações/ }).click()
+    const excluir = page.getByRole('menu').getByRole('menuitem', { name: 'Excluir', exact: true })
+    await expect(excluir).toBeDisabled()
+    await expect(excluir).toHaveAttribute('title', /fatura fechada/)
+    await page.keyboard.press('Escape')
   })
 })
