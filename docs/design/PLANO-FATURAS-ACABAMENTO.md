@@ -434,7 +434,8 @@ Da análise:
   3, item 4).
 - **O "Excluir despesa?" de Saídas segue genérico** ("A despesa e TODAS as parcelas
   pendentes serão removidas"). O R19 nomeia a despesa no de Faturas; o de Saídas é outro
-  diálogo, com texto próprio, e fica para quando a tela for mexida.
+  diálogo, com texto próprio, e fica para quando a tela for mexida. **Resolvido depois do
+  ciclo**, junto com os dois defeitos gêmeos abaixo: as duas telas usam o mesmo diálogo.
 
 Achado ao detalhar:
 
@@ -453,4 +454,5 @@ Achado ao detalhar:
 Herdados do handoff de 01/10: capturas do README, a linha do mutation testing no README, UTC
 em `e2e/marcar-ocorrencia-paga.spec.ts` e os dois defeitos gêmeos em Saídas (Excluir
 oferecido onde a regra bloqueia, e o modal sem a trava para compra à vista em fatura
-fechada).
+fechada). Os dois gêmeos foram resolvidos depois do ciclo, em out/2026: a lista do mês
+passou a trazer do main o bloqueio de exclusão e o status da fatura de cada ocorrência.
