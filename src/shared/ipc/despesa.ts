@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import type { Despesa, FormaPagamento, TipoDespesa } from '../../domain/entities/despesa'
-import type { Fatura } from '../../domain/entities/fatura'
+import type { Fatura, StatusFatura } from '../../domain/entities/fatura'
 import type { Parcela, StatusParcela } from '../../domain/entities/parcela'
+import type { MotivoBloqueioExclusao } from '../../domain/services/regras-despesa'
 import { dataIsoSchema } from './date-schema'
 
 /**
@@ -396,6 +397,18 @@ export type OcorrenciaDoMes = {
   origemCentavos: number | null
   rotuloParcela: string
   progressoPct: number | null
+  /**
+   * Status da fatura da ocorrência; ausente fora de fatura. Trava valor e data da
+   * compra à vista cuja fatura já fechou (RF-DES-10), como na tela de Faturas.
+   */
+  statusFatura?: StatusFatura['kind']
+  /**
+   * Por que a despesa não pode ser excluída (RF-DES-09); ausente quando pode. A
+   * regra olha todas as parcelas da despesa, e o mês só conhece as dele: quem
+   * responde é o main. Só a lista do mês traz — a busca não oferece ações de
+   * linha, e calcular o bloqueio de um intervalo inteiro seria trabalho perdido.
+   */
+  motivoBloqueioExclusao?: MotivoBloqueioExclusao
 }
 
 export type DespesaApi = {
