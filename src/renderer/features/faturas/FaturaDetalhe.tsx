@@ -1,11 +1,10 @@
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import type { Categoria } from '@domain/entities/categoria'
 import type { Despesa } from '@domain/entities/despesa'
 import type { PagamentoParcial } from '@domain/entities/pagamento-parcial'
 import type { Parcela } from '@domain/entities/parcela'
 import { quitadaPorParciais } from '@domain/services/pagamento-parcial'
 import type { FaturaDetalhada } from '@shared/ipc/fatura'
-import type { MotivoBloqueioExclusao } from '@domain/services/regras-despesa'
 import { hojeIsoLocal } from '@shared/datas-locais'
 import { useCicloFatura } from './hooks/use-faturas'
 import { AdiantarParcelasModal } from './AdiantarParcelasModal'
@@ -39,6 +38,8 @@ import { alfabetico, porData, porNumero, type Comparador } from '../../lib/compa
 import { useOrdenacao } from '../../lib/use-ordenacao'
 import { EditarAssinaturaModal } from '../assinaturas/EditarAssinaturaModal'
 import { RotuloCategoria } from '../categorias/RotuloCategoria'
+import { motivoDoBloqueioDeExclusao, travaDeValorEData } from '../despesas/acoes-da-despesa'
+import { DialogoExcluirDespesa } from '../despesas/DialogoExcluirDespesa'
 import { descreverDataDaOcorrencia } from '../saidas/descrever-data-da-ocorrencia'
 
 type DialogoConfirma =
@@ -46,45 +47,6 @@ type DialogoConfirma =
   | { tipo: 'reabrir' }
   | { tipo: 'excluir'; despesaId: number; despesa: Despesa | undefined }
   | { tipo: 'excluir-pagamento'; pagamento: PagamentoParcial }
-
-/**
- * O que o diálogo de exclusão diz da despesa (RF-DES-09): descrição, valor e,
- * conforme o tipo, em quantas parcelas ou por mês. Era genérico — "A despesa e
- * TODAS as suas parcelas pendentes serão removidas" —, numa tabela densa e para
- * uma ação irreversível, enquanto o de excluir pagamento parcial já repetia
- * valor e data.
- */
-function textoDaExclusao(despesa: Despesa | undefined): ReactNode {
-  const irreversivel = 'Esta ação é irreversível.'
-  if (!despesa) return `A despesa e todas as parcelas dela serão removidas. ${irreversivel}`
-
-  const nome = <strong>{despesa.descricao}</strong>
-  const valor = formatBRL(despesa.valorCentavos)
-  switch (despesa.tipo) {
-    case 'Unica':
-      return (
-        <>
-          {nome}, {valor}. {irreversivel}
-        </>
-      )
-    case 'Parcelada': {
-      const total = despesa.totalParcelas
-      const quantas = total ? ` em ${total} ${pluralizar('parcela', total)}` : ''
-      return (
-        <>
-          {nome}, {valor}
-          {quantas}. Todas as parcelas dela serão removidas. {irreversivel}
-        </>
-      )
-    }
-    case 'Assinatura':
-      return (
-        <>
-          {nome}, {valor} por mês. Todas as ocorrências dela serão removidas. {irreversivel}
-        </>
-      )
-  }
-}
 
 /** A parcela com a despesa dela: é o que cada linha da tabela mostra. */
 type Linha = { parcela: Parcela; despesa: Despesa | undefined }
@@ -111,22 +73,6 @@ function CelulaDeCompra({ linha }: { linha: Linha }) {
     return <span className="tnum">{formatarDataIso(linha.parcela.dataReferencia)}</span>
   const { texto, apoio } = descreverDataDaOcorrencia(linha.despesa)
   return <span className={apoio ? styles.compraApoio : 'tnum'}>{texto}</span>
-}
-
-/**
- * Por que Excluir está desabilitado nesta linha, ou null quando não está
- * (RF-DES-09). O bloqueio vem do main, que olha todas as parcelas da despesa;
- * antes a tela só conferia a parcela da linha e oferecia Excluir onde ele
- * sempre falharia, depois do diálogo "irreversível".
- */
-function motivoDoBloqueio(p: Parcela, bloqueio: MotivoBloqueioExclusao | undefined): string | null {
-  if (p.status === 'Paga' || bloqueio === 'has-parcela-paga') {
-    return 'Não dá para excluir: a despesa tem parcela paga.'
-  }
-  if (bloqueio === 'has-parcela-em-fatura-fechada') {
-    return 'Não dá para excluir: a despesa tem parcela em fatura fechada ou paga.'
-  }
-  return null
 }
 
 /** A fatura vizinha para onde uma seta do título leva (RF-FAT-06). */
@@ -247,7 +193,7 @@ export function FaturaDetalhe({
       })
     }
 
-    const bloqueio = motivoDoBloqueio(p, detalhe.exclusaoBloqueada?.[p.despesaId])
+    const bloqueio = motivoDoBloqueioDeExclusao(p.status, detalhe.exclusaoBloqueada?.[p.despesaId])
     acoes.push({
       label: 'Excluir',
       onClick: () => setDialogo({ tipo: 'excluir', despesaId: p.despesaId, despesa }),
@@ -714,11 +660,7 @@ export function FaturaDetalhe({
         <EditarDespesaModal
           despesa={despesaEditar}
           categorias={categorias}
-          travaValorEData={
-            despesaEditar.tipo === 'Unica' && kind !== 'Aberta'
-              ? 'A fatura desta compra está fechada: valor e data não mudam mais.'
-              : undefined
-          }
+          travaValorEData={travaDeValorEData(despesaEditar.tipo, kind)}
           onConfirmar={handleConfirmarEditarDespesa}
           onCancelar={() => setDespesaEditar(null)}
         />
@@ -802,13 +744,10 @@ export function FaturaDetalhe({
         />
       )}
       {dialogo?.tipo === 'excluir' && (
-        <ConfirmDialog
-          title="Excluir despesa?"
-          body={textoDaExclusao(dialogo.despesa)}
-          confirmText="Excluir"
-          confirmVariant="danger"
-          onConfirm={() => confirmarExcluirDespesa(dialogo.despesaId)}
-          onCancel={() => setDialogo(null)}
+        <DialogoExcluirDespesa
+          despesa={dialogo.despesa}
+          onConfirmar={() => confirmarExcluirDespesa(dialogo.despesaId)}
+          onCancelar={() => setDialogo(null)}
         />
       )}
       {dialogo?.tipo === 'excluir-pagamento' && (
