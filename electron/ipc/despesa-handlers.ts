@@ -164,7 +164,9 @@ export function registerDespesaHandlers(db: Database, ipcMain: IpcMain): void {
         impactoCentavos,
         origemCentavos,
         rotuloParcela,
-        progressoPct
+        progressoPct,
+        // Fora de fatura o campo fica ausente, e não null: é opcional no contrato.
+        ...(l.fatura_status === null ? {} : { statusFatura: l.fatura_status })
       }
     })
   }
@@ -173,7 +175,15 @@ export function registerDespesaHandlers(db: Database, ipcMain: IpcMain): void {
     DESPESA_IPC_CHANNELS.listarOcorrenciasDoMes,
     (_event, payload: unknown): OcorrenciaDoMes[] => {
       const { mesReferencia } = listarOcorrenciasInputSchema.parse(payload)
-      return enriquecer(repo.listarOcorrenciasDoMes(mesReferencia))
+      const ocorrencias = enriquecer(repo.listarOcorrenciasDoMes(mesReferencia))
+      // RF-DES-09: o bloqueio é da despesa, e a regra olha todas as parcelas
+      // dela. Saídas oferecia Excluir em toda linha e só descobria o bloqueio
+      // depois do diálogo "irreversível", como Faturas antes da v1.19.0.
+      const bloqueios = repo.bloqueiosDeExclusao(ocorrencias.map((o) => o.despesaId))
+      return ocorrencias.map((o) => {
+        const motivo = bloqueios.get(o.despesaId)
+        return motivo ? { ...o, motivoBloqueioExclusao: motivo } : o
+      })
     }
   )
 

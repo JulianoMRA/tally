@@ -3,7 +3,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, cleanup, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import type { OcorrenciaDoMes } from '@shared/ipc/despesa'
+import type { DespesaComTags, OcorrenciaDoMes } from '@shared/ipc/despesa'
 import { ToastProvider } from '../../../components/ui'
 import { formatBRL } from '../../../lib/format-brl'
 import { formatarMesReferencia } from '../../../lib/formatar-data'
@@ -20,9 +20,13 @@ const TRANSPORTE = categoria({ id: 3, nome: 'Transporte' })
  * Dublê do `window.api` com o que a tela carrega ao abrir. Cada teste passa as
  * ocorrências — uma lista para qualquer mês, ou uma função do mês quando o
  * teste navega; o resto é o cenário comum: um cartão, duas categorias ativas e
- * uma arquivada.
+ * uma arquivada. As despesas-mestre só entram quando o teste usa as ações da
+ * linha, que operam nelas.
  */
-function instalarApi(ocorrencias: OcorrenciaDoMes[] | ((mes: string) => OcorrenciaDoMes[])) {
+function instalarApi(
+  ocorrencias: OcorrenciaDoMes[] | ((mes: string) => OcorrenciaDoMes[]),
+  despesas: DespesaComTags[] = []
+) {
   const api = {
     cartao: { list: vi.fn().mockResolvedValue([INTER]) },
     // Como o repositório: as arquivadas só vêm quando pedidas.
@@ -35,7 +39,7 @@ function instalarApi(ocorrencias: OcorrenciaDoMes[] | ((mes: string) => Ocorrenc
       listarOcorrenciasDoMes: vi.fn(async ({ mesReferencia }: { mesReferencia: string }) =>
         typeof ocorrencias === 'function' ? ocorrencias(mesReferencia) : ocorrencias
       ),
-      listarComTags: vi.fn().mockResolvedValue([])
+      listarComTags: vi.fn().mockResolvedValue(despesas)
     }
   }
   vi.stubGlobal('window', Object.assign(window, { api }))
@@ -441,5 +445,114 @@ describe('SaidasPage — agrupar por (RF-DES-14)', () => {
     expect(colunas()).toEqual(expect.arrayContaining(['Categoria', 'Origem']))
     expect(within(screen.getByRole('row', { name: /Feira/ })).getByText('Pix')).toBeTruthy()
     expect(within(screen.getByRole('row', { name: /Mercado/ })).getByText('Inter')).toBeTruthy()
+  })
+})
+
+/** A despesa-mestre de uma ocorrência, para as ações da linha. */
+function despesaDa(o: OcorrenciaDoMes, over: Partial<DespesaComTags> = {}): DespesaComTags {
+  return {
+    id: o.despesaId,
+    descricao: o.descricao,
+    categoriaId: o.categoriaId,
+    tipo: o.tipo,
+    formaPagamento: o.formaPagamento,
+    cartaoId: o.cartaoId,
+    valorCentavos: o.impactoCentavos,
+    totalParcelas: null,
+    dataCompra: o.dataCompra,
+    diaCobranca: null,
+    recorreAte: null,
+    nota: o.nota,
+    ativa: o.ativa,
+    createdAt: '',
+    updatedAt: '',
+    tags: o.tags,
+    ...over
+  }
+}
+
+/** Abre o menu "⋯" da linha e devolve o item Excluir. */
+async function itemExcluirDaLinha(descricao: string) {
+  const usuario = userEvent.setup()
+  const linha = await screen.findByRole('row', { name: new RegExp(descricao) })
+  const gatilho = await within(linha).findByRole('button', { name: /^Mais ações/ })
+  await usuario.click(gatilho)
+  const excluir = within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Excluir' })
+  return { usuario, excluir: excluir as HTMLButtonElement }
+}
+
+/**
+ * RF-DES-09 em Saídas. A tela oferecia Excluir em toda linha, e o diálogo
+ * avisava que a ação "bloqueia se houver parcela já paga": quem confirmava podia
+ * receber "Exclusão bloqueada" depois do "irreversível". Faturas sabe do
+ * bloqueio desde a v1.19.0; Saídas passa a receber o mesmo do main.
+ */
+describe('SaidasPage — excluir despesa', () => {
+  beforeEach(() => vi.clearAllMocks())
+  afterEach(cleanup)
+
+  it('fica desabilitado, com o motivo, quando a despesa tem parcela em fatura fechada', async () => {
+    const tv = ocorrencia({
+      descricao: 'TV',
+      tipo: 'Parcelada',
+      rotuloParcela: '2/3',
+      motivoBloqueioExclusao: 'has-parcela-em-fatura-fechada'
+    })
+    instalarApi([tv], [despesaDa(tv, { totalParcelas: 3 })])
+    renderizar()
+
+    const { excluir } = await itemExcluirDaLinha('TV')
+
+    expect(excluir.disabled).toBe(true)
+    expect(excluir.getAttribute('title')).toMatch(/fatura fechada/)
+  })
+
+  it('sem bloqueio, o diálogo diz o que sai, sem avisar que pode falhar', async () => {
+    const tv = ocorrencia({ descricao: 'TV', tipo: 'Parcelada', rotuloParcela: '2/3' })
+    instalarApi([tv], [despesaDa(tv, { totalParcelas: 3, valorCentavos: 300000 })])
+    renderizar()
+
+    const { usuario, excluir } = await itemExcluirDaLinha('TV')
+    expect(excluir.disabled).toBe(false)
+    await usuario.click(excluir)
+
+    const dialogo = screen.getByRole('dialog', { name: 'Excluir despesa?' })
+    expect(dialogo.textContent).toMatch(/TV, R\$\s*3\.000,00 em 3 parcelas\./)
+    expect(dialogo.textContent).not.toMatch(/TODAS|bloqueia se houver/)
+  })
+})
+
+/**
+ * RF-DES-10 em Saídas. O modal de edição, aberto daqui, deixava mudar valor e
+ * data da compra à vista cuja fatura já tinha fechado, e a gravação era
+ * recusada. Aberto de Faturas, ele já travava os dois e dizia por quê.
+ */
+describe('SaidasPage — editar compra à vista em fatura fechada', () => {
+  beforeEach(() => vi.clearAllMocks())
+  afterEach(cleanup)
+
+  async function abrirEdicao(o: OcorrenciaDoMes): Promise<HTMLElement> {
+    instalarApi([o], [despesaDa(o, { valorCentavos: 5000 })])
+    renderizar()
+    const linha = await screen.findByRole('row', { name: new RegExp(o.descricao) })
+    await userEvent.setup().click(await within(linha).findByRole('button', { name: 'Editar' }))
+    return screen.getByRole('dialog', { name: 'Editar despesa' })
+  }
+
+  it('abre com valor e data travados, e diz por quê', async () => {
+    const modal = await abrirEdicao(ocorrencia({ descricao: 'Almoço', statusFatura: 'Fechada' }))
+
+    expect((within(modal).getByLabelText('Valor (R$)') as HTMLInputElement).disabled).toBe(true)
+    expect((within(modal).getByLabelText('Data da compra') as HTMLInputElement).disabled).toBe(true)
+    expect(modal.textContent).toMatch(/fatura desta compra está fechada/)
+  })
+
+  it('em fatura Aberta, valor e data seguem editáveis', async () => {
+    const modal = await abrirEdicao(ocorrencia({ descricao: 'Almoço', statusFatura: 'Aberta' }))
+
+    expect((within(modal).getByLabelText('Valor (R$)') as HTMLInputElement).disabled).toBe(false)
+    expect((within(modal).getByLabelText('Data da compra') as HTMLInputElement).disabled).toBe(
+      false
+    )
   })
 })

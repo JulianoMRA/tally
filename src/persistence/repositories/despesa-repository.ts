@@ -1,6 +1,6 @@
 import type { Database } from '../database'
 import type { Despesa, FormaPagamento, TipoDespesa } from '../../domain/entities/despesa'
-import type { Fatura } from '../../domain/entities/fatura'
+import type { Fatura, StatusFatura } from '../../domain/entities/fatura'
 import type { Parcela, StatusParcela } from '../../domain/entities/parcela'
 import type { Repository } from './types'
 import { CartaoRepository } from './cartao-repository'
@@ -45,6 +45,7 @@ export type OcorrenciaRow = {
   mes_referencia: string
   status: StatusParcela
   fatura_id: number | null
+  fatura_status: StatusFatura['kind'] | null
   despesa_id: number
   descricao: string
   categoria_id: number
@@ -686,6 +687,7 @@ export class DespesaRepository implements Repository {
            p.data_referencia   AS data_referencia,
            p.status            AS status,
            p.fatura_id         AS fatura_id,
+           f.status            AS fatura_status,
            d.id                AS despesa_id,
            d.descricao         AS descricao,
            d.categoria_id      AS categoria_id,

@@ -42,6 +42,8 @@ import { mesAtualReferencia } from '../../lib/mes-atual'
 import { hojeIsoLocal } from '@shared/datas-locais'
 import { useOrdenacao } from '../../lib/use-ordenacao'
 import { DespesaForm } from '../despesas/DespesaForm'
+import { motivoDoBloqueioDeExclusao, travaDeValorEData } from '../despesas/acoes-da-despesa'
+import { DialogoExcluirDespesa } from '../despesas/DialogoExcluirDespesa'
 import { EditarDespesaModal } from '../faturas/EditarDespesaModal'
 import { EditarAssinaturaModal } from '../assinaturas/EditarAssinaturaModal'
 import { RotuloCategoria } from '../categorias/RotuloCategoria'
@@ -127,6 +129,9 @@ export default function SaidasPage() {
   const [cadastroAberto, setCadastroAberto] = useState(false)
   const [notaTags, setNotaTags] = useState<DespesaComTags | null>(null)
   const [editandoDespesa, setEditandoDespesa] = useState<Despesa | null>(null)
+  // RF-DES-10: por que valor e data não mudam, vindo da ocorrência que abriu o
+  // modal. A despesa-mestre não sabe em que fatura a compra caiu.
+  const [travaDaEdicao, setTravaDaEdicao] = useState<string | undefined>(undefined)
   const [editandoAssinatura, setEditandoAssinatura] = useState<Despesa | null>(null)
   const [confirmacao, setConfirmacao] = useState<Confirmacao | null>(null)
   const toast = useToast()
@@ -281,7 +286,13 @@ export default function SaidasPage() {
     if (ehAssinatura) {
       if (d.ativa) acoes.push({ label: 'Editar', onClick: () => setEditandoAssinatura(d) })
     } else {
-      acoes.push({ label: 'Editar', onClick: () => setEditandoDespesa(d) })
+      acoes.push({
+        label: 'Editar',
+        onClick: () => {
+          setTravaDaEdicao(travaDeValorEData(d.tipo, o.statusFatura))
+          setEditandoDespesa(d)
+        }
+      })
     }
 
     if (o.faturaId === null) {
@@ -302,10 +313,17 @@ export default function SaidasPage() {
       })
     }
 
+    // RF-DES-09: o bloqueio vem do main, que olha todas as parcelas da despesa.
+    // Excluir era oferecido em toda linha, e o diálogo avisava que a ação
+    // "bloqueia se houver parcela já paga": a falha vinha depois do
+    // "irreversível". Como em Faturas, o item fica desabilitado e diz por quê.
+    const bloqueio = motivoDoBloqueioDeExclusao(o.statusParcela, o.motivoBloqueioExclusao)
     acoes.push({
       label: 'Excluir',
       onClick: () => setConfirmacao({ tipo: 'excluir', despesa: d }),
-      destrutiva: true
+      disabled: bloqueio !== null,
+      destrutiva: true,
+      title: bloqueio ?? 'Excluir despesa inteira'
     })
 
     return acoes
@@ -924,6 +942,7 @@ export default function SaidasPage() {
         <EditarDespesaModal
           despesa={editandoDespesa}
           categorias={categorias}
+          travaValorEData={travaDaEdicao}
           onConfirmar={handleEditarDespesaConfirmar}
           onCancelar={() => setEditandoDespesa(null)}
         />
@@ -953,14 +972,13 @@ export default function SaidasPage() {
           onCancel={() => setConfirmacao(null)}
         />
       )}
+      {/* O mesmo diálogo de Faturas, que nomeia a despesa. Este dizia "TODAS"
+          em caixa alta e avisava que a ação podia falhar depois de confirmada. */}
       {confirmacao?.tipo === 'excluir' && (
-        <ConfirmDialog
-          title={`Excluir "${confirmacao.despesa.descricao}"?`}
-          body="A despesa e TODAS as parcelas pendentes serão removidas. Esta ação é irreversível e bloqueia se houver parcela já paga."
-          confirmText="Excluir"
-          confirmVariant="danger"
-          onConfirm={() => confirmarExcluir(confirmacao.despesa)}
-          onCancel={() => setConfirmacao(null)}
+        <DialogoExcluirDespesa
+          despesa={confirmacao.despesa}
+          onConfirmar={() => confirmarExcluir(confirmacao.despesa)}
+          onCancelar={() => setConfirmacao(null)}
         />
       )}
     </PageContainer>
