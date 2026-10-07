@@ -6,6 +6,20 @@ vista técnico.
 
 ---
 
+## v1.21.1 — Saídas: excluir e editar a despesa como em Faturas (out/2026)
+
+---
+
+**O que esta versão é.** Os dois "defeitos gêmeos" de Saídas, anotados desde a v1.19.0, numa PR (#169). Nenhuma migration, nenhuma dependência nova; dois campos opcionais novos na lista de ocorrências do mês. Cobre **RF-DES-09** e **RF-DES-10**.
+
+**A tela de Faturas sabia, e Saídas não.** Desde a v1.19.0 Faturas desabilita Excluir onde a regra bloqueia — parcela paga ou em fatura fechada, olhando todas as parcelas da despesa — e trava valor e data da compra à vista cuja fatura já fechou. Saídas oferecia as duas ações para recusar depois: o diálogo de excluir avisava que a ação "é irreversível e bloqueia se houver parcela já paga", e o modal de edição deixava mudar o que a gravação ia recusar. A linha do mês não tinha como saber: ela conhece só a parcela daquele mês, e não em que fatura ela está.
+
+**O que muda.** A lista do mês passa a trazer do main, para cada ocorrência, o status da fatura e — quando a despesa não pode ser excluída — o motivo, calculado com a mesma consulta de Faturas. A busca por período traz só o status: ela não oferece ações de linha, e calcular o bloqueio de um intervalo inteiro seria trabalho perdido. Em Saídas, o item Excluir fica desabilitado com o motivo, o diálogo é o mesmo de Faturas (nomeia a despesa, o valor e em quantas parcelas ou por mês), e o modal de edição trava valor e data da compra à vista em fatura fechada. As três regras saíram do detalhe da fatura para um lugar comum, e as duas telas leem delas.
+
+**Testes.** Unitários de 1927 para **1944**, em 174 arquivos, com um teste novo na fronteira do IPC. E2E de 161 para **163 casos**, em 42 arquivos, com a suíte inteira verde e sem retentativa; os dois casos novos foram vistos falhar contra a `main`, na asserção que mede cada defeito.
+
+---
+
 ## v1.21.0 — Faturas: o que a tela perdia ao agir, e o acabamento (out/2026)
 
 ---
