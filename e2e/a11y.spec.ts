@@ -200,7 +200,7 @@ test.describe('Acessibilidade (axe-core) — pagamento parcial', () => {
     const { page } = await semear(app)
     await page.getByRole('link', { name: 'Faturas' }).click()
 
-    await page.getByRole('button', { name: 'Pagamento parcial' }).click()
+    await page.getByRole('button', { name: 'Registrar pagamento parcial' }).click()
     await expect(page.getByRole('dialog', { name: 'Registrar pagamento parcial' })).toBeVisible()
 
     await varrer(page, 'RegistrarPagamentoParcialModal')

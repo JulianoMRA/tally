@@ -331,7 +331,7 @@ describe('FaturasPage — pagamento parcial', () => {
     const usuario = userEvent.setup({ delay: null })
 
     await screen.findByRole('heading', { name: 'Inter · Setembro de 2026' })
-    await usuario.click(screen.getByRole('button', { name: 'Pagamento parcial' }))
+    await usuario.click(screen.getByRole('button', { name: 'Registrar pagamento parcial' }))
     const dialogo = screen.getByRole('dialog', { name: 'Registrar pagamento parcial' })
     await usuario.type(within(dialogo).getByLabelText('Valor (R$)'), '200,00')
     await usuario.click(within(dialogo).getByRole('button', { name: 'Registrar pagamento' }))
@@ -396,7 +396,7 @@ describe('FaturasPage — recarregar depois de uma ação', () => {
   }
 
   async function registrarParcial(usuario: ReturnType<typeof userEvent.setup>) {
-    await usuario.click(screen.getByRole('button', { name: 'Pagamento parcial' }))
+    await usuario.click(screen.getByRole('button', { name: 'Registrar pagamento parcial' }))
     const dialogo = screen.getByRole('dialog', { name: 'Registrar pagamento parcial' })
     await usuario.type(within(dialogo).getByLabelText('Valor (R$)'), '200,00')
     await usuario.click(within(dialogo).getByRole('button', { name: 'Registrar pagamento' }))

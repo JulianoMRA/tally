@@ -127,7 +127,7 @@ for (const largura of [1024, 1280, 1760] as const) {
     await irPara(page, 'Faturas')
     await focarCartao(page, 'Inter Borda E2E')
 
-    await page.getByRole('button', { name: 'Pagamento parcial' }).click()
+    await page.getByRole('button', { name: 'Registrar pagamento parcial' }).click()
     const dialogo = page.getByRole('dialog', { name: 'Registrar pagamento parcial' })
     await dialogo.getByLabel('Valor (R$)').fill('2.345,67')
     await dialogo.getByRole('button', { name: 'Registrar pagamento' }).click()
@@ -146,7 +146,7 @@ for (const largura of [1024, 1280, 1760] as const) {
     expect(Math.abs((await bordaDireita(pagamentos)) - referencia)).toBeLessThanOrEqual(1)
     expect(Math.abs((await bordaDireita(historico)) - referencia)).toBeLessThanOrEqual(1)
 
-    for (const nome of ['Pagamento parcial', 'Fechar fatura']) {
+    for (const nome of ['Registrar pagamento parcial', 'Fechar fatura']) {
       expect(
         await bordaDireita(faixa.getByRole('button', { name: nome })),
         `"${nome}" passou da borda da faixa`
