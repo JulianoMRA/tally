@@ -6,6 +6,20 @@ vista técnico.
 
 ---
 
+## v1.21.4 — "Registrar pagamento parcial" (out/2026)
+
+---
+
+**O que esta versão é.** O rótulo do botão da faixa de resumo de Faturas, que o plano de Faturas tinha deixado fora do ciclo, numa PR (#175). Nenhuma migration, nenhuma dependência nova, nenhuma mudança no domínio nem no contrato IPC. Cobre a redação do **RF-FAT-07**.
+
+**O que muda.** Entre as ações da faixa — "Fechar fatura", "Marcar como paga", "Reabrir fatura" —, "Pagamento parcial" era o único substantivo. O botão passa a se chamar **"Registrar pagamento parcial"**, o mesmo nome do diálogo que ele abre e do RF-FAT-07. Em 1024px, onde a faixa já quebrava, as ações continuam numa linha própria, à direita; em 1280px tudo cabe numa linha.
+
+**A armadilha anotada no plano não pegou.** O nome novo contém "Registrar pagamento", o botão de confirmar do diálogo, e um seletor por substring casaria os dois. Todo spec procura esse botão dentro do diálogo, e o nome mais longo não casa com o mais curto. O caso da fatura Paga, que confere a ausência do botão, passaria calado com o nome velho, e também foi atualizado.
+
+**Testes.** Os nove unitários que acham o botão pelo nome foram vistos falhar antes da troca. Unitários seguem em **1957**, em 176 arquivos; E2E em **180 casos**, em 43 arquivos, com a suíte inteira verde e sem retentativa.
+
+---
+
 ## v1.21.3 — Seletor de cor pelo teclado (out/2026)
 
 ---
