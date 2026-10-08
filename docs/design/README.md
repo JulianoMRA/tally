@@ -223,7 +223,10 @@ badge "Paga" exige uma fatura fechada **e** paga, que o seed nunca criava. Ver
   **Substituiu sete implementações** quase idênticas espalhadas pelas features
 - `ColorPicker` — swatches da paleta de sugestão + entrada livre. `COR_PADRAO` é o default
   dos formulários, no lugar do `#000000` do input nativo. As cores vivem em TS, não em CSS,
-  porque são dado gravado no banco — e assim o guard `cores-tokenizadas` segue satisfeito
+  porque são dado gravado no banco — e assim o guard `cores-tokenizadas` segue satisfeito.
+  Teclado como o `SegmentedControl`: o grupo é uma parada de Tab, e setas, Home e End andam
+  e escolhem (`indiceDaTecla`, em `lib/navegacao-por-setas.ts`, serve aos dois). Com a cor
+  livre nenhum swatch fica marcado, e a parada de Tab é a primeira sugestão
 - `FileDropzone` — área de upload com arrastar-e-soltar. O `<input type="file">` continua no
   DOM, transparente sobre a zona: mantém semântica, teclado e o `setInputFiles` do Playwright
 - `RowActions` — ações de uma linha de tabela/lista: as primeiras `visiveis` viram botões e o
