@@ -6,6 +6,20 @@ vista técnico.
 
 ---
 
+## v1.21.3 — Seletor de cor pelo teclado (out/2026)
+
+---
+
+**O que esta versão é.** O seletor de cor do cadastro de cartão e de categoria, que o plano de Faturas tinha anotado como fora do teclado, numa PR (#173). Nenhuma migration, nenhuma dependência nova, nenhuma mudança no domínio nem no contrato IPC.
+
+**Dois defeitos.** O grupo de cores se anunciava como `radiogroup`, mas só a cor escolhida era parada de Tab e as setas não faziam nada: as outras nove cores só se escolhiam pelo mouse. E, com uma cor fora da paleta, escolhida em "Outra…", nenhuma cor ficava marcada — e por isso nenhuma era parada de Tab: o grupo inteiro sumia do teclado. O segundo apareceu ao corrigir o primeiro.
+
+**O que muda.** O seletor segue o padrão do `SegmentedControl`: o grupo é uma parada de Tab, e setas, Home e End andam e já escolhem a cor — nada é gravado até o Salvar. Com a cor livre, a parada é a primeira sugestão, e a seta anda a partir da cor focada. A lógica das setas saiu do `SegmentedControl` para uma função pequena que serve aos dois.
+
+**Testes.** Unitários de 1944 para **1957**, em 176 arquivos: a função das setas e o seletor, que não tinha nenhum. E2E de 178 para **180 casos**, em 43 arquivos, com a suíte inteira verde e sem retentativa. Os casos novos foram vistos falhar contra a `main`, cada um na asserção que mede o seu defeito.
+
+---
+
 ## v1.21.2 — Anel de foco por outline (out/2026)
 
 ---
