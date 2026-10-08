@@ -236,6 +236,11 @@ badge "Paga" exige uma fatura fechada **e** paga, que o seed nunca criava. Ver
   menu posicionado dentro deles — e inverte para cima quando não cabe abaixo do gatilho. O
   `contexto` da linha rotula o **menu**, não o gatilho: `aria-label` de descendente entra no
   nome acessível da célula, e a descrição ali dentro colidia com a célula de descrição.
+  **Item indisponível explica**: o `title` da ação desabilitada aparece escrito, embaixo do
+  rótulo, como descrição acessível, e o item segue focável (`aria-disabled`): as setas
+  passam por ele, como no padrão de menu do WAI-ARIA. O foco abre no primeiro item
+  disponível, ou no primeiro, se nenhum estiver. Até out/2026 o menu de uma fatura paga, só
+  com o Excluir indisponível, abria sem que o teclado alcançasse nada
 - `SidePanel` — painel lateral sobreposto para cadastro sob demanda, com `useFocusTrap` e
   `useEscapeKey` (mesmo par do `ConfirmDialog`). Quem controla a abertura é o pai,
   renderizando ou não o componente: montar só quando visível garante formulário limpo a
