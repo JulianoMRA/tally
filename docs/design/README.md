@@ -251,9 +251,22 @@ gatilho ao fechar — sem ele o `ConfirmDialog` abria com o foco ainda na linha 
 Helper `aoTeclarComoBotao` (`lib/teclado.ts`) para elementos com `role="button"`: o padrão
 WAI-ARIA exige Enter **e** Espaço.
 
-**Foco visível.** O token `--focus-ring` e a regra `:focus-visible` em `global.css` valem
-para tudo que recebe foco por teclado. Antes não existia nenhuma: o app usava o outline
-default do Chromium (0,8px laranja) sobre fundo creme.
+**Foco visível.** A regra `:focus-visible` em `global.css` vale para tudo que recebe foco
+por teclado: um `outline` de `--focus-ring-width` na cor `--focus-ring-color`, a
+`--focus-ring-offset` do elemento. Antes não existia nenhuma: o app usava o outline default
+do Chromium (0,8px laranja) sobre fundo creme.
+
+- **O anel segue o raio do próprio elemento.** O foco não muda a forma de ninguém.
+- **Por dentro onde a borda corta** (`--focus-ring-offset-inset`): a linha do histórico de
+  Faturas no painel, o cabeçalho ordenável na tabela, o gatilho do menu e os controles da
+  janela na borda de cima.
+- **Input e Select ficam fora do anel**: o foco deles é a borda da marca com o halo. O
+  outline deles é transparente, e é o que o tema de contraste do Windows pinta, porque o
+  tema apaga a cor da borda e o halo.
+- **Até out/2026 o anel era um `box-shadow`.** A sombra própria de um elemento o apagava, o
+  raio forçado no foco tirava o arredondamento do botão e do item da sidebar, e o tema de
+  contraste do Windows, que não pinta `box-shadow`, deixava o foco sem indicação nenhuma.
+  `e2e/anel-de-foco.spec.ts` varre as telas pelo Tab atrás dos três.
 
 ## Fontes
 

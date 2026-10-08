@@ -37,6 +37,12 @@
   color: var(--ink);
 }
 
+/* O botão ocupa a célula inteira, e a célula encosta na borda de quem recorta:
+   o painel nas laterais, a rolagem da tabela em cima. O anel vai por dentro. */
+.botao:focus-visible {
+  outline-offset: var(--focus-ring-offset-inset);
+}
+
 .indicador {
   font-size: 0.9em;
 }

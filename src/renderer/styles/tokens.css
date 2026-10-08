@@ -153,24 +153,29 @@
      por baixo faz o painel parecer cortado, e não coberto. */
   --shadow-up: 0 -8px 24px -10px rgba(15, 26, 20, 0.14);
 
-  /* Anel de foco. Não existia: o app usava o outline default do Chromium
-     (0,8px laranja) sobre fundo creme, e Input/Select ainda faziam
-     `outline: none`. Navegar por teclado era praticamente invisível.
+  /* Anel de foco, um `outline` no `:focus-visible` global. Não existia: o app
+     usava o outline default do Chromium (0,8px laranja) sobre fundo creme, e
+     Input/Select ainda faziam `outline: none`. Navegar por teclado era
+     praticamente invisível.
 
-     O halo interno usa --bg, mas boa parte do que recebe foco está sobre
-     --bg-elev ou --bg-sunk: nesses casos ele não some no fundo, apenas não
-     o acompanha. Trocar por `outline` + `outline-offset` resolveria de vez
-     (o outline pinta sobre o que estiver atrás, sem supor cor), mas muda
-     pixel, e este passe existe justamente para não mudar nenhum. Fica
-     anotado para depois. */
-  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--brand);
+     Até out/2026 era um `box-shadow`, e três defeitos vinham daí: a sombra
+     própria de um elemento apagava o anel (o cartão selecionado e a linha do
+     histórico de Faturas), o raio forçado no foco mudava a forma de quem tinha
+     raio próprio, e o tema de contraste do Windows, que não pinta
+     `box-shadow`, deixava o foco sem indicação nenhuma. O espaço entre o
+     elemento e o anel era pintado com --bg e destoava sobre --bg-elev e
+     --bg-sunk; o do outline é transparente. Composto de var(--brand), o anel
+     acompanha o tema sozinho. */
+  --focus-ring-width: 2px;
+  --focus-ring-color: var(--brand);
+  --focus-ring-offset: 2px;
 
   /* O anel por dentro, para o elemento que encosta na borda de um recipiente
-     que recorta o que passa dela — uma linha de lista dentro de um painel, por
-     exemplo. O anel de fora sai cortado nas laterais: foi assim que a linha do
-     histórico de Faturas apareceu na folha de contato. Composto de var(--brand),
-     acompanha o tema sozinho, como o de cima. */
-  --focus-ring-inset: inset 0 0 0 2px var(--brand);
+     que recorta o que passa dela: a linha do histórico de Faturas no painel, o
+     cabeçalho ordenável na tabela, os controles da janela na borda de cima. O
+     anel de fora saía cortado — foi assim que a linha do histórico apareceu na
+     folha de contato. */
+  --focus-ring-offset-inset: calc(-1 * var(--focus-ring-width));
 
   /* Véu dos modais (Modal, ConfirmDialog, SidePanel). Era rgba(0,0,0,0.4)
      repetido nos três. O guard de cores só varre hex, então rgba passava
@@ -307,8 +312,8 @@
   --focus-halo: 0 0 0 3px rgba(201, 167, 107, 0.16);
   --error-halo: 0 0 0 3px rgba(221, 149, 131, 0.18);
 
-  /* --focus-ring não aparece aqui: ele é composto de var(--bg) e var(--brand),
-     então acompanha o tema sozinho. */
+  /* O anel de foco não aparece aqui: --focus-ring-color é var(--brand), e
+     acompanha o tema sozinho. */
 
   /* Faz o Chromium desenhar no tom certo o que não é nosso: calendário do
      type="date", popup do <select>, checkbox, e a barra de rolagem. Sem isto

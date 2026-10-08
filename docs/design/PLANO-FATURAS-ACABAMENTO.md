@@ -444,7 +444,10 @@ Achado ao detalhar:
   na folha de contato da F1 e mostra o anel; as outras telas não foram varridas. A saída
   que resolve por construção é a que `tokens.css` já anota: trocar o anel global por
   `outline` com `outline-offset`, que muda pixel no app inteiro e por isso pede ciclo
-  próprio.
+  próprio. **Resolvido depois do ciclo**, em out/2026: o anel virou `outline`, e uma
+  varredura pelo Tab nas telas passou a conferir que ele aparece inteiro e sem mudar a
+  forma de ninguém. Ela achou mais três casos: os cabeçalhos ordenáveis e os controles da
+  janela com o anel cortado, e a zona de arquivo de Importar sem foco visível.
 - **Os outros swatches do `ColorPicker` não são alcançáveis pelo teclado.** Só o escolhido
   é parada de `Tab`, e o grupo não trata as setas. Visto ao trocar a captura de foco para a
   tecla.

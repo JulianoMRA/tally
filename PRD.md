@@ -245,7 +245,7 @@ prevista; entram no escopo quando forem priorizadas.
   - **Ao abrir, a tela aplica o fechamento automático** (RN-06), como a Visão mensal: a fatura nasce sempre Aberta, inclusive a de um lançamento retroativo, e até set/2026 seguia Aberta em Faturas até o boot ou o timer de uma hora — sem aviso de vencida e oferecendo "Fechar fatura" — enquanto a Visão mensal já a mostrava Fechada.
   - **A tela não desmonta ao agir nem ao trocar de fatura.** Registrar ou excluir um pagamento parcial, editar, excluir, adiantar, fechar, pagar e reabrir recarregam o conteúdo no lugar: o histórico aberto e a aba dele, a ordenação da tabela, a posição na página e o foco de teclado ficam como estavam. "Carregando…" só aparece na primeira carga. Trocar de fatura mantém o painel na tela, com o conteúdo anterior até o novo chegar: a seta acionada segue com o foco — na última fatura, em que ela fica desabilitada, o foco passa para a outra —, e a ordenação escolhida vale para a fatura seguinte. Trocar de cartão troca o painel inteiro. **Abrir uma fatura pelo histórico leva a vista e o foco ao título do painel**, que fica acima da lista. E o cartão selecionado do trilho e as linhas do histórico mostram o anel de foco do teclado, como o resto do app.
 
-    > Até out/2026 toda ação desmontava o trilho, o painel e o histórico: o indicador de carga da tela incluía a recarga do resumo, que toda ação dispara. O conteúdo voltava certo — e por isso nenhum teste reclamava —, mas o histórico fechava, o filtro voltava para "Todas", a tabela voltava à ordem da compra, a página voltava ao topo e o foco de teclado caía fora da tela. Cada ação ainda lia o detalhe três vezes. Trocar de fatura desmontava só o painel, o bastante para a seta perder o foco a cada mês. E o anel de foco, que é um `box-shadow` no `:focus-visible` global, era cancelado pela sombra própria do cartão selecionado e das linhas do histórico: quem navegava por teclado não via onde estava.
+    > Até out/2026 toda ação desmontava o trilho, o painel e o histórico: o indicador de carga da tela incluía a recarga do resumo, que toda ação dispara. O conteúdo voltava certo — e por isso nenhum teste reclamava —, mas o histórico fechava, o filtro voltava para "Todas", a tabela voltava à ordem da compra, a página voltava ao topo e o foco de teclado caía fora da tela. Cada ação ainda lia o detalhe três vezes. Trocar de fatura desmontava só o painel, o bastante para a seta perder o foco a cada mês. E o anel de foco, que era um `box-shadow` no `:focus-visible` global, era cancelado pela sombra própria do cartão selecionado e das linhas do histórico: quem navegava por teclado não via onde estava.
 
   - **Deep-link** `?cartaoId=&faturaId=` mantém o formato, então links salvos continuam válidos. `faturaId` passa a significar qual fatura o painel exibe. Link para fatura inexistente **abre a fatura corrente do cartão e avisa**, em vez de exibir estado vazio — não há mais lista atrás para onde voltar.
 
@@ -681,7 +681,8 @@ do mantenedor, na ordem abaixo, antes de abrir PR:
 3. Test (`vitest run --coverage` — thresholds RNF-06 são gate)
 4. Build (Electron build)
 5. E2E (`playwright test`), incluindo varredura de acessibilidade (axe-core) nas
-   telas principais — violações serious/critical quebram a suíte
+   telas principais — violações serious/critical quebram a suíte — e a varredura
+   do anel de foco pelo Tab, que o axe não mede
 6. Mutation testing com Stryker no domain layer (lento; ao mexer em regra de
    negócio)
 7. `npm audit --omit=dev --audit-level=high`

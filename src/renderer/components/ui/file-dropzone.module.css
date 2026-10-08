@@ -32,6 +32,12 @@
   cursor: pointer;
 }
 
+/* Transparente, o input leva o anel junto: quem mostra o foco é a zona. */
+.zona:has(> .input:focus-visible) {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
 .texto {
   font-size: var(--text-3);
   color: var(--ink-3);

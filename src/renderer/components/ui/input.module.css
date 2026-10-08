@@ -8,7 +8,6 @@
   background: var(--bg-elev);
   border: 1px solid var(--rule-strong);
   border-radius: var(--r-2);
-  outline: none;
   transition:
     border-color 0.12s,
     box-shadow 0.12s;
@@ -18,9 +17,16 @@
   color: var(--ink-4);
 }
 
+/* O campo tem foco próprio, a borda da marca e o halo, e fica fora do anel do
+   design system. O outline transparente não aparece no uso normal: é ele que o
+   tema de contraste do Windows pinta, porque o tema apaga a cor da borda e o
+   halo. Com duas classes, a regra vence o `:focus-visible` global em qualquer
+   ordem do bundle — o `outline: none` que ficava na base perdia para ele. */
 .input:focus {
   border-color: var(--brand);
   box-shadow: var(--focus-halo);
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-offset);
 }
 
 .input:disabled {
