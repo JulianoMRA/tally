@@ -587,8 +587,8 @@ await page.evaluate(async () => {
   await api.despesa.excluir({ despesaId: passagem.despesa.id })
 
   // Quitada por parciais: fatura Aberta aceita o pagamento que cobre tudo, e
-  // depois fecha. Fica Fechada sem nada a pagar — "Pagamento parcial"
-  // desabilitado, sem aviso de prazo, e só "Marcar como paga" a fazer.
+  // depois fecha. Fica Fechada sem nada a pagar — "Registrar pagamento
+  // parcial" desabilitado, sem aviso de prazo, e só "Marcar como paga" a fazer.
   const curso = await api.despesa.criarUnicaCredito({
     descricao: 'Curso de idiomas',
     categoriaId: cats.Transporte.id,
@@ -693,7 +693,7 @@ try {
 
   // O diálogo de pagamento parcial (RF-FAT-07), na fatura do Inter, que já tem
   // um parcial da semente: a descrição mostra o que falta, não o total.
-  await page.getByRole('button', { name: 'Pagamento parcial' }).click({ timeout: 5000 })
+  await page.getByRole('button', { name: 'Registrar pagamento parcial' }).click({ timeout: 5000 })
   await page.getByLabel('Valor (R$)').fill('100,00')
   await page.waitForTimeout(300)
   await capturar('estado-modal-pagamento-parcial')

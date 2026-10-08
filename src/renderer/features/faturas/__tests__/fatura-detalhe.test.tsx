@@ -743,11 +743,11 @@ describe('FaturaDetalhe — pagamento parcial', () => {
 
   describe('botão', () => {
     it.each([{ kind: 'Aberta' }, { kind: 'Fechada' }] as const)(
-      'fatura $kind oferece "Pagamento parcial"',
+      'fatura $kind oferece "Registrar pagamento parcial"',
       (status) => {
         renderizarCom(comParciais(status, []))
 
-        const botao = within(faixa()).getByRole('button', { name: 'Pagamento parcial' })
+        const botao = within(faixa()).getByRole('button', { name: 'Registrar pagamento parcial' })
         expect((botao as HTMLButtonElement).disabled).toBe(false)
       }
     )
@@ -756,7 +756,7 @@ describe('FaturaDetalhe — pagamento parcial', () => {
     it('fatura Paga não oferece', () => {
       renderizarCom(comParciais({ kind: 'Paga', pagaEm: '2026-09-20' }, []))
 
-      expect(screen.queryByRole('button', { name: 'Pagamento parcial' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Registrar pagamento parcial' })).toBeNull()
     })
 
     // Sem nada a pagar não existe valor aceitável: oferecer o diálogo seria
@@ -764,7 +764,7 @@ describe('FaturaDetalhe — pagamento parcial', () => {
     it('sem nada a pagar, fica desabilitado e diz por quê', () => {
       renderizarCom(comParciais({ kind: 'Aberta' }, [], 0))
 
-      const botao = within(faixa()).getByRole('button', { name: 'Pagamento parcial' })
+      const botao = within(faixa()).getByRole('button', { name: 'Registrar pagamento parcial' })
       expect((botao as HTMLButtonElement).disabled).toBe(true)
       expect(botao.getAttribute('title')).toMatch(/Não falta nada a pagar/)
     })
@@ -860,7 +860,7 @@ describe('FaturaDetalhe — pagamento parcial', () => {
       )
       const usuario = userEvent.setup({ delay: null })
 
-      await usuario.click(screen.getByRole('button', { name: 'Pagamento parcial' }))
+      await usuario.click(screen.getByRole('button', { name: 'Registrar pagamento parcial' }))
       const dialogo = screen.getByRole('dialog', { name: 'Registrar pagamento parcial' })
       await usuario.type(within(dialogo).getByLabelText('Valor (R$)'), '200,00')
       await usuario.click(within(dialogo).getByRole('button', { name: 'Registrar pagamento' }))
@@ -879,7 +879,7 @@ describe('FaturaDetalhe — pagamento parcial', () => {
       renderizarCom(comParciais({ kind: 'Aberta' }))
       const usuario = userEvent.setup({ delay: null })
 
-      await usuario.click(screen.getByRole('button', { name: 'Pagamento parcial' }))
+      await usuario.click(screen.getByRole('button', { name: 'Registrar pagamento parcial' }))
 
       const dialogo = screen.getByRole('dialog', { name: 'Registrar pagamento parcial' })
       expect(dialogo.textContent).toMatch(/falta pagar R\$\s*600,00/)
@@ -896,7 +896,7 @@ describe('FaturaDetalhe — pagamento parcial', () => {
       renderizarCom(comParciais({ kind: 'Aberta' }, []), { fatura: { registrarPagamentoParcial } })
       const usuario = userEvent.setup({ delay: null })
 
-      await usuario.click(screen.getByRole('button', { name: 'Pagamento parcial' }))
+      await usuario.click(screen.getByRole('button', { name: 'Registrar pagamento parcial' }))
       const dialogo = screen.getByRole('dialog', { name: 'Registrar pagamento parcial' })
       await usuario.type(within(dialogo).getByLabelText('Valor (R$)'), '200,00')
       await usuario.click(within(dialogo).getByRole('button', { name: 'Registrar pagamento' }))

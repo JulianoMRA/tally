@@ -431,7 +431,10 @@ Da análise:
   quando não há nenhuma, pede dado novo no detalhe da fatura.
 - **Vazios e erros sem ação** (achado 19), e o nome de cartão truncado no trilho sem dica.
 - **Rótulo do botão "Pagamento parcial"** e **vencimento junto do aviso no trilho** (seção
-  3, item 4).
+  3, item 4). **O rótulo foi resolvido depois do ciclo**, em out/2026: o botão virou
+  "Registrar pagamento parcial", como o diálogo que ele abre. A colisão por substring com o
+  "Registrar pagamento" do diálogo não pegou, porque todo spec procura esse botão dentro
+  do diálogo.
 - **O "Excluir despesa?" de Saídas segue genérico** ("A despesa e TODAS as parcelas
   pendentes serão removidas"). O R19 nomeia a despesa no de Faturas; o de Saídas é outro
   diálogo, com texto próprio, e fica para quando a tela for mexida. **Resolvido depois do

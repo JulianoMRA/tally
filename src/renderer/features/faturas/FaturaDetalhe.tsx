@@ -468,7 +468,7 @@ export function FaturaDetalhe({
                 disabled={ciclo.loading || restanteCentavos === 0}
                 title={restanteCentavos === 0 ? 'Não falta nada a pagar nesta fatura.' : undefined}
               >
-                Pagamento parcial
+                Registrar pagamento parcial
               </Button>
             )}
             {kind === 'Aberta' && (

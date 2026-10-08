@@ -55,7 +55,7 @@ function pagamentos(page: Page) {
 }
 
 async function registrar(page: Page, valor: string) {
-  await page.getByRole('button', { name: 'Pagamento parcial' }).click()
+  await page.getByRole('button', { name: 'Registrar pagamento parcial' }).click()
   const dialogo = page.getByRole('dialog', { name: 'Registrar pagamento parcial' })
   await expect(dialogo).toBeVisible()
   await dialogo.getByLabel('Valor (R$)').fill(valor)
@@ -165,7 +165,7 @@ test.describe('Faturas — pagamento parcial (RF-FAT-07)', () => {
     // Paga: o pagamento parcial segue na lista, e não pode mais ser excluído.
     await expect(page.getByRole('button', { name: 'Reabrir fatura' })).toBeVisible()
     await expect(faixa(page)).toContainText(/Restante pago\s*R\$\s*70,00/)
-    await expect(page.getByRole('button', { name: 'Pagamento parcial' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Registrar pagamento parcial' })).toHaveCount(0)
     const linha = pagamentos(page).getByRole('row').filter({ hasText: hojePorExtenso() })
     await linha.getByRole('button', { name: /^Mais ações/ }).click()
     await expect(
