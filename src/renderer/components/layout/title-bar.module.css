@@ -52,6 +52,13 @@
   color: var(--ink);
 }
 
+/* A barra encosta na borda de cima da janela, que corta o que passa dela: o
+   anel do gatilho e dos controles vai por dentro. */
+.barra .gatilho:focus-visible,
+.controle:focus-visible {
+  outline-offset: var(--focus-ring-offset-inset);
+}
+
 .chevron {
   opacity: 0.55;
 }
