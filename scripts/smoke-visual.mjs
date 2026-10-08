@@ -216,7 +216,8 @@ async function tabAte(alvo, limite = 40) {
  * que ela pode ter.
  */
 async function capturarFoco(nome) {
-  // A sombra do anel entra com transição; sem a espera a captura sai no meio.
+  // O estado de foco pode ter transição (o fundo do item de menu, por
+  // exemplo); sem a espera a captura sai no meio.
   await page.waitForTimeout(300)
   const comFoco = await page.screenshot({ path: join(SAIDA, `${nome}.png`) })
   await page.evaluate(() => document.activeElement?.blur())
@@ -794,6 +795,24 @@ try {
   await tabAte(page.getByRole('radio', { name: 'Verde escuro' }))
   await capturarFoco('estado-foco-de-teclado')
   await page.keyboard.press('Escape')
+
+  // O checkbox nativo não declara raio, e o anel segue a caixa dele: reto.
+  await tabAte(page.getByRole('checkbox', { name: 'Mostrar arquivados' }))
+  await capturarFoco('estado-foco-checkbox')
+
+  // Alto contraste do Windows, emulado: o tema não pinta `box-shadow`, e o
+  // anel de sombra que vigorou até out/2026 sumia nele.
+  await page.emulateMedia({ forcedColors: 'active' })
+  await tabAte(page.getByRole('button', { name: '+ Novo cartão' }))
+  await capturarFoco('estado-foco-alto-contraste')
+  // No campo, o tema pinta o outline transparente no lugar do halo.
+  // `capturar`, e não `capturarFoco`: o tema repinta o cursor de texto que a
+  // captura esconde, e só o cursor já faria as duas fotos diferirem.
+  await ir('#/busca')
+  await page.getByLabel('Descrição contém').focus()
+  await page.waitForTimeout(300)
+  await capturar('estado-foco-alto-contraste-campo')
+  await page.emulateMedia({ forcedColors: 'none' })
 
   // A dica da pizza (RF-VIS-08) só existe sob o mouse. "Outros" é o caso mais
   // comprido dela, porque lista as categorias agrupadas. Em 1024 de propósito:

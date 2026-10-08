@@ -54,15 +54,6 @@
   box-shadow: inset 0 0 0 1px var(--brand);
 }
 
-/* O anel de foco do design system é um `box-shadow` no `:focus-visible` global.
-   O cartão selecionado declara a própria sombra com a mesma especificidade,
-   num CSS que carrega depois: vencia, e como o global zera o `outline`, o foco
-   de teclado no cartão em foco não tinha indicação nenhuma. Dois seletores de
-   classe aqui, para a regra valer contra `.trilhoItemAtivo` em qualquer ordem. */
-.trilhoItem:focus-visible {
-  box-shadow: var(--focus-ring);
-}
-
 /* As duas primeiras linhas do card têm a altura de um selo, com ou sem selo
    nelas: é o que põe o total na mesma altura em todos os cards da fileira. O
    selo "Arquivado" engrossava a linha do mês e empurrava o total 7px só no
@@ -243,19 +234,15 @@ button.faturaItem:hover {
   background: var(--bg-sunk);
 }
 
-/* O anel de foco vai por dentro (`--focus-ring-inset`): a linha encosta na
-   borda do painel, que recorta o que passa dela, e o anel de fora saía cortado
-   nas laterais. `border-radius: 0` desfaz o raio que o `:focus-visible` global
-   aplica — a linha é reta. */
+/* O anel de foco vai por dentro: a linha encosta na borda do painel, que
+   recorta o que passa dela, e o anel de fora saía cortado nas laterais. */
 .faturaItem:focus-visible {
-  box-shadow: var(--focus-ring-inset);
-  border-radius: 0;
+  outline-offset: var(--focus-ring-offset-inset);
 }
 
-/* A última linha acompanha os cantos de baixo do painel, com ou sem foco:
-   sem isso o painel cortaria os dois cantos do anel. */
-.linhaHistorico:last-child .faturaItem,
-.linhaHistorico:last-child .faturaItem:focus-visible {
+/* A última linha acompanha os cantos de baixo do painel: sem isso o painel
+   cortaria os dois cantos do anel. */
+.linhaHistorico:last-child .faturaItem {
   border-radius: 0 0 calc(var(--r-3) - 1px) calc(var(--r-3) - 1px);
 }
 

@@ -115,17 +115,13 @@ textarea {
 }
 
 /* Foco visível do design system, aplicado a tudo que recebe foco por teclado.
-   `:focus-visible` (e não `:focus`) para o anel não aparecer em clique de mouse. */
-:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-  border-radius: var(--r-1);
-}
+   `:focus-visible` (e não `:focus`) para o anel não aparecer em clique de mouse.
 
-/* Input e Select têm raio próprio: sem isto o anel ficaria quadrado sobre um
-   controle arredondado. */
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  border-radius: var(--r-2);
+   O outline segue o raio do próprio elemento: o foco não muda a forma de
+   ninguém. Até out/2026 esta regra forçava 4px de raio e, por carregar depois
+   dos componentes do bundle principal, tirava no foco o arredondamento do
+   botão (8px), do item da sidebar (6px) e do gatilho de menu. */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
 }
