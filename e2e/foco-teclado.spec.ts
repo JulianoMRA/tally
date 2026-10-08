@@ -24,6 +24,18 @@ async function foco(page: Page) {
   })
 }
 
+/**
+ * Abre o cadastro de cartão, onde mora o seletor de cor. O grupo de cores é
+ * procurado dentro do painel: a página por baixo continua montada.
+ */
+async function abrirCadastroDeCartao(page: Page) {
+  await irPara(page, 'Cartões')
+  await page.getByRole('button', { name: '+ Novo cartão' }).click()
+  const painel = page.getByRole('dialog', { name: 'Novo cartão' })
+  await expect(painel).toBeVisible()
+  return { painel, grupo: painel.getByRole('radiogroup', { name: 'Cor' }) }
+}
+
 test.describe('Navegação por teclado', () => {
   /**
    * Até out/2026 o anel de foco era um `box-shadow` no `:focus-visible` global.
@@ -178,5 +190,43 @@ test.describe('Navegação por teclado', () => {
       'aria-checked',
       'true'
     )
+  })
+
+  // Até out/2026 só a cor escolhida era parada de Tab e o grupo não tratava as
+  // setas: as outras nove cores só se escolhiam pelo mouse.
+  test('o seletor de cor é uma parada de Tab e escolhe com as setas', async ({ app }) => {
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+    const { painel, grupo } = await abrirCadastroDeCartao(page)
+
+    await painel.getByLabel('Dia de vencimento').focus()
+    await page.keyboard.press('Tab')
+    await expect(grupo.getByRole('radio', { name: 'Verde escuro' })).toBeFocused()
+
+    await page.keyboard.press('ArrowRight')
+    const salvia = grupo.getByRole('radio', { name: 'Verde sálvia' })
+    await expect(salvia).toHaveAttribute('aria-checked', 'true')
+    await expect(salvia).toBeFocused()
+
+    // O grupo inteiro é uma parada só: o Tab seguinte já sai para "Outra…".
+    await page.keyboard.press('Tab')
+    await expect(painel.getByLabel('Outra…')).toBeFocused()
+  })
+
+  // Com uma cor fora da paleta nenhum swatch fica marcado — e, até out/2026,
+  // nenhum era parada de Tab: o grupo sumia do teclado. Separado do caso acima
+  // para ser visto falhar sozinho.
+  test('com a cor livre, o seletor de cor continua alcançável pelo Tab', async ({ app }) => {
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+    const { painel, grupo } = await abrirCadastroDeCartao(page)
+
+    const outra = painel.getByLabel('Outra…')
+    await outra.fill('#123456')
+    await expect(grupo.getByRole('radio', { checked: true })).toHaveCount(0)
+
+    await outra.focus()
+    await page.keyboard.press('Shift+Tab')
+    await expect(grupo.getByRole('radio', { name: 'Verde escuro' })).toBeFocused()
   })
 })

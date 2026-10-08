@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { indiceDaTecla } from '../../lib/navegacao-por-setas'
 import styles from './color-picker.module.css'
 
 /**
@@ -38,13 +39,31 @@ interface ColorPickerProps {
 export function ColorPicker({ value, onChange, label, id }: ColorPickerProps) {
   const generatedId = useId()
   const inputId = id ?? generatedId
-  const normalizado = value.toLowerCase()
+  const escolhida = SUGESTOES.findIndex((cor) => cor.hex === value.toLowerCase())
+  // Com a cor livre nenhum swatch está marcado, e o grupo precisa de uma parada
+  // de Tab mesmo assim: a primeira, como manda o padrão de radiogroup. Sem ela,
+  // o grupo inteiro sumia do teclado.
+  const paradaDeTab = escolhida === -1 ? 0 : escolhida
+
+  // Roving tabindex, como no SegmentedControl: o grupo é uma parada de Tab, e as
+  // setas andam e escolhem. Andam a partir do swatch focado, e não do escolhido:
+  // com a cor livre, o foco entra no primeiro, que não está marcado.
+  function navegar(e: React.KeyboardEvent<HTMLDivElement>) {
+    const swatches = [...e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]')]
+    const atual = swatches.indexOf(e.target as HTMLButtonElement)
+    const proximo = indiceDaTecla(e.key, atual, swatches.length)
+    if (atual === -1 || proximo === null) return
+    e.preventDefault()
+
+    onChange(SUGESTOES[proximo].hex)
+    swatches[proximo].focus()
+  }
 
   return (
     <div className={styles.root}>
-      <div className={styles.swatches} role="radiogroup" aria-label={label}>
-        {SUGESTOES.map((cor) => {
-          const ativa = cor.hex === normalizado
+      <div className={styles.swatches} role="radiogroup" aria-label={label} onKeyDown={navegar}>
+        {SUGESTOES.map((cor, indice) => {
+          const ativa = indice === escolhida
           return (
             <button
               key={cor.hex}
@@ -53,7 +72,7 @@ export function ColorPicker({ value, onChange, label, id }: ColorPickerProps) {
               aria-checked={ativa}
               aria-label={cor.nome}
               title={cor.nome}
-              tabIndex={ativa ? 0 : -1}
+              tabIndex={indice === paradaDeTab ? 0 : -1}
               className={`${styles.swatch} ${ativa ? styles.ativa : ''}`}
               style={{ background: cor.hex }}
               onClick={() => onChange(cor.hex)}

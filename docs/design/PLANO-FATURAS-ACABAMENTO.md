@@ -450,7 +450,9 @@ Achado ao detalhar:
   janela com o anel cortado, e a zona de arquivo de Importar sem foco visível.
 - **Os outros swatches do `ColorPicker` não são alcançáveis pelo teclado.** Só o escolhido
   é parada de `Tab`, e o grupo não trata as setas. Visto ao trocar a captura de foco para a
-  tecla.
+  tecla. **Resolvido depois do ciclo**, em out/2026: o grupo segue o padrão do
+  `SegmentedControl`. A correção achou um segundo defeito: com uma cor fora da paleta,
+  nenhum swatch era parada de `Tab`, e o grupo inteiro sumia do teclado.
 - **Fechar uma fatura à mão não tem desfazer direto.** Oferecer "Reabrir" numa fatura
   Fechada antes da data mudaria RF-FAT-05 e RN-06; o R18 só passa a dizer isso no diálogo.
 
