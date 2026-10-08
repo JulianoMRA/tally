@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { indiceDaTecla } from '../../lib/navegacao-por-setas'
 import styles from './segmented-control.module.css'
 
 export type OpcaoSegmentada<T extends string | number> = {
@@ -50,19 +51,10 @@ export function SegmentedControl<T extends string | number>({
 
   // Setas navegam entre as opções, como manda o padrão de radiogroup/tablist.
   function navegar(e: React.KeyboardEvent<HTMLDivElement>) {
-    const teclas = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End']
-    if (!teclas.includes(e.key)) return
-    e.preventDefault()
     const atual = opcoes.findIndex((o) => o.valor === valor)
-    const ultimo = opcoes.length - 1
-    const proximo =
-      e.key === 'Home'
-        ? 0
-        : e.key === 'End'
-          ? ultimo
-          : e.key === 'ArrowRight' || e.key === 'ArrowDown'
-            ? (atual + 1) % opcoes.length
-            : (atual - 1 + opcoes.length) % opcoes.length
+    const proximo = indiceDaTecla(e.key, atual, opcoes.length)
+    if (proximo === null) return
+    e.preventDefault()
 
     onChange(opcoes[proximo].valor)
     const botoes = rootRef.current?.querySelectorAll('button')
