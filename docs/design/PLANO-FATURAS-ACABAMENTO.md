@@ -426,7 +426,11 @@ Da análise:
 - **Painel "Pagamentos parciais" esticado** (achado 14). É decisão recém-tomada e está no
   PRD (RF-FAT-03); só vale reabrir se incomodar no uso.
 - **Menu "⋯" sem saída em fatura Paga** (achado 16). Esconder o gatilho mexe no tratamento
-  que RF-DES-09 descreve e que specs conferem, para um ganho pequeno.
+  que RF-DES-09 descreve e que specs conferem, para um ganho pequeno. **Resolvido depois do
+  ciclo**, em out/2026, sem esconder nada: o item indisponível passou a mostrar o motivo
+  escrito e a receber foco pelas setas. O menu sem saída não era só da Paga: a Fechada, com o
+  Editar na linha, e a despesa bloqueada também abriam um menu só com o Excluir
+  indisponível, e pelo teclado nenhum deles alcançava o item.
 - **Adiantar** (achado 18). Dizer quantas parcelas dá para adiantar, e não oferecer a ação
   quando não há nenhuma, pede dado novo no detalhe da fatura.
 - **Vazios e erros sem ação** (achado 19), e o nome de cartão truncado no trilho sem dica.

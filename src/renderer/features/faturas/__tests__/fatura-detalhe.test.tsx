@@ -9,6 +9,7 @@ import type { Parcela } from '@domain/entities/parcela'
 import type { FaturaDetalhada } from '@shared/ipc/fatura'
 import { ToastProvider } from '../../../components/ui'
 import { FaturaDetalhe } from '../FaturaDetalhe'
+import { descricaoAcessivel } from '../../../components/ui/__tests__/__fixtures__/descricao-acessivel'
 
 function detalhe(status: StatusFatura, dataVencimento = '2026-10-01'): FaturaDetalhada {
   return {
@@ -173,15 +174,15 @@ describe('FaturaDetalhe — Excluir', () => {
     )
 
     const excluir = await itemDoMenu('Excluir')
-    expect((excluir as HTMLButtonElement).disabled).toBe(true)
-    expect(excluir.getAttribute('title')).toMatch(/fatura fechada/)
+    expect(excluir.getAttribute('aria-disabled')).toBe('true')
+    expect(descricaoAcessivel(excluir)).toMatch(/fatura fechada/)
   })
 
   it('segue habilitado quando nada bloqueia', async () => {
     renderizarCom(comParcela({ kind: 'Aberta' }, despesa(), parcela(), { exclusaoBloqueada: {} }))
 
     const excluir = await itemDoMenu('Excluir')
-    expect((excluir as HTMLButtonElement).disabled).toBe(false)
+    expect(excluir.getAttribute('aria-disabled')).toBeNull()
   })
 })
 
@@ -957,8 +958,8 @@ describe('FaturaDetalhe — pagamento parcial', () => {
       await abrirMenuDoPagamento()
 
       const excluir = within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Excluir' })
-      expect((excluir as HTMLButtonElement).disabled).toBe(true)
-      expect(excluir.getAttribute('title')).toMatch(/Reabra a fatura/)
+      expect(excluir.getAttribute('aria-disabled')).toBe('true')
+      expect(descricaoAcessivel(excluir)).toMatch(/Reabra a fatura/)
     })
 
     it('a falha do main vira aviso legível', async () => {
