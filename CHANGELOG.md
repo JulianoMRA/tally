@@ -6,6 +6,20 @@ vista técnico.
 
 ---
 
+## v1.21.5 — O menu que diz por quê (out/2026)
+
+---
+
+**O que esta versão é.** O menu "⋯" das linhas, que o plano de Faturas anotou como "sem saída em fatura Paga", numa PR (#177). Nenhuma migration, nenhuma dependência nova, nenhuma mudança no domínio nem no contrato IPC. Cobre a redação do **RF-DES-09**.
+
+**O defeito ia além da fatura Paga.** O menu abria só com itens indisponíveis em três situações: em toda linha de fatura Paga, de lançamento ou de pagamento parcial; em toda linha de fatura Fechada, onde o Editar fica na linha e o menu sobra só com o Excluir; e na despesa bloqueada que não é parcelada. O motivo só existia como dica do mouse. Pelo teclado era pior: o foco ficava no gatilho, e as setas não alcançavam nada.
+
+**O que muda.** O item indisponível passa a explicar, em vez de sumir: o motivo aparece escrito, embaixo do rótulo, como descrição acessível — em Faturas e em Saídas. E ele segue o padrão de menu do WAI-ARIA: continua focável, não aciona, o foco abre no primeiro item disponível (ou no primeiro, se nenhum estiver) e as setas passam também pelos indisponíveis. O anel do item focado foi para dentro: o de fora caía sobre a borda do menu.
+
+**Testes.** Unitários de 1957 para **1960**, em 176 arquivos; os que conferiam o item pelo atributo `disabled` e pela dica passam a conferir o que a tela mostra. E2E de 180 para **181 casos**, em 43 arquivos, com a suíte inteira verde e sem retentativa. O caso novo, que abre pelo teclado o menu de uma fatura Fechada, foi visto falhar contra a `main`: o foco não chegava ao Excluir.
+
+---
+
 ## v1.21.4 — "Registrar pagamento parcial" (out/2026)
 
 ---
