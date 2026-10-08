@@ -6,6 +6,22 @@ vista técnico.
 
 ---
 
+## v1.21.2 — Anel de foco por outline (out/2026)
+
+---
+
+**O que esta versão é.** O anel de foco global, que o plano de Faturas tinha deixado para um ciclo próprio, numa PR (#171). Nenhuma migration, nenhuma dependência nova, nenhuma mudança no domínio nem no contrato IPC: só CSS e testes.
+
+**O anel era uma sombra, e três defeitos vinham daí.** Era um `box-shadow` no `:focus-visible` global, com `outline: none` e raio de 4px forçado. A sombra própria de um elemento apagava o anel — a v1.21.0 tinha corrigido dois casos em Faturas com regra local, e as outras telas nunca tinham sido varridas. O raio forçado carregava depois dos componentes do bundle principal e vencia o deles: no foco de teclado, o botão perdia o arredondamento de 8px, e o item da sidebar o de 6px. E o tema de contraste do Windows não pinta `box-shadow`: quem usa o tema não via foco nenhum, em lugar nenhum.
+
+**O que muda.** O anel é um `outline` de 2px na cor da marca, a 2px do elemento, e segue o raio dele: o foco não muda a forma de ninguém. Input e Select continuam com o foco próprio, a borda da marca e o halo, e ganham um outline transparente, que só o alto contraste pinta. Onde a borda de um recipiente corta, o anel vai por dentro: na linha do histórico de Faturas, no cabeçalho ordenável, no gatilho do menu e nos controles da janela. As duas regras locais de Faturas saíram.
+
+**O que a varredura achou.** Um spec novo percorre pelo Tab a moldura e doze estados de tela e confere, em cada elemento focado, que o anel aparece inteiro e sem mudar a forma. Além do raio forçado, ele achou o anel cortado no menu do app e nos controles da janela, pela borda de cima da janela, e nos cabeçalhos ordenáveis, pela borda do painel e da tabela. Achou também a zona de arquivo de Importar dados sem foco visível: o input cobre a zona com `opacity: 0` e levava o anel junto. Os três foram corrigidos.
+
+**Testes.** E2E de 163 para **178 casos**, em 43 arquivos, com a suíte inteira verde e sem retentativa. A varredura foi vista falhar contra a `main` nas três categorias, e contra o estado só com a troca do mecanismo apenas nos cortes e na zona de arquivo. Os dois casos de alto contraste comparam a faixa em volta do elemento com e sem foco e também foram vistos falhar contra a `main`. A primeira versão comparava o recorte inteiro e passava sem anel nenhum, porque o alto contraste repinta o cursor de texto que a captura esconde. Unitários sem mudança: 1944, em 174 arquivos.
+
+---
+
 ## v1.21.1 — Saídas: excluir e editar a despesa como em Faturas (out/2026)
 
 ---
