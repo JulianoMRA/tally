@@ -2,6 +2,7 @@ import {
   Fragment,
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -10,6 +11,7 @@ import {
 import { createPortal } from 'react-dom'
 import { Button } from './Button'
 import { useEscapeKey } from '../../hooks/use-escape-key'
+import { indiceDaTecla } from '../../lib/navegacao-por-setas'
 import styles from './row-actions.module.css'
 
 export type AcaoLinha = {
@@ -18,6 +20,10 @@ export type AcaoLinha = {
   /** Marca a ação como destrutiva: só muda a cor dentro do menu. */
   destrutiva?: boolean
   disabled?: boolean
+  /**
+   * Dica da ação. Na ação indisponível, é o motivo: dentro do menu ele aparece
+   * escrito, embaixo do rótulo, e não como dica.
+   */
   title?: string
 }
 
@@ -78,6 +84,7 @@ export function RowActions({
   const [alturaMenu, setAlturaMenu] = useState(0)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+  const idBase = useId()
 
   // Ação destrutiva nunca vira botão solto na linha, mesmo que seja a única
   // disponível — é o caso de uma parcela já paga, cuja lista tem só "Excluir".
@@ -164,32 +171,33 @@ export function RowActions({
     }
   }, [aberto, fechar])
 
+  // O foco abre no primeiro item disponível; sem nenhum, no primeiro item.
+  // Até out/2026 ficava no gatilho, e o menu de uma fatura paga — só com o
+  // Excluir indisponível — abria sem que o teclado alcançasse nada.
   useEffect(() => {
     if (!aberto) return
-    const primeiro = menuRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')
+    const itens = [
+      ...(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [])
+    ]
+    const primeiro = itens.find((b) => b.getAttribute('aria-disabled') !== 'true') ?? itens[0]
     primeiro?.focus()
   }, [aberto])
 
+  // As setas passam também pelos itens indisponíveis, como manda o padrão de
+  // menu do WAI-ARIA: é assim que o teclado chega ao motivo deles.
   function navegarComTeclado(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Home' && e.key !== 'End') return
     e.preventDefault()
     const itens = [
-      ...(menuRef.current?.querySelectorAll<HTMLButtonElement>('button') ?? [])
-    ].filter((b) => !b.disabled)
-    if (itens.length === 0) return
+      ...(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [])
+    ]
     const atual = itens.indexOf(document.activeElement as HTMLButtonElement)
-    const proximo =
-      e.key === 'Home'
-        ? 0
-        : e.key === 'End'
-          ? itens.length - 1
-          : e.key === 'ArrowDown'
-            ? (atual + 1) % itens.length
-            : (atual - 1 + itens.length) % itens.length
-    itens[proximo]?.focus()
+    const proximo = indiceDaTecla(e.key, atual, itens.length)
+    if (proximo !== null) itens[proximo]?.focus()
   }
 
   function acionar(acao: AcaoLinha) {
+    if (acao.disabled) return
     fechar()
     acao.onClick()
   }
@@ -239,6 +247,11 @@ export function RowActions({
           >
             {noMenu.map((acao, i) => {
               const abreBlocoDestrutivo = acao.destrutiva && i > 0 && !noMenu[i - 1]?.destrutiva
+              // O item indisponível segue focável (`aria-disabled`, e não
+              // `disabled`) e diz por quê, escrito. O motivo vai como
+              // descrição: o nome continua sendo só o rótulo.
+              const motivo = acao.disabled ? acao.title : undefined
+              const idMotivo = `${idBase}-motivo-${i}`
               return (
                 // Fragment, não <div>: menuitem precisa ser filho direto de
                 // role="menu" (aria-required-children), e o separador tem
@@ -249,11 +262,18 @@ export function RowActions({
                     type="button"
                     role="menuitem"
                     className={`${styles.item} ${acao.destrutiva ? styles.destrutivo : ''}`}
-                    disabled={acao.disabled}
-                    title={acao.title}
+                    aria-disabled={acao.disabled ? true : undefined}
+                    aria-label={motivo ? acao.label : undefined}
+                    aria-describedby={motivo ? idMotivo : undefined}
+                    title={acao.disabled ? undefined : acao.title}
                     onClick={() => acionar(acao)}
                   >
-                    {acao.label}
+                    <span className={styles.rotulo}>{acao.label}</span>
+                    {motivo && (
+                      <span id={idMotivo} className={styles.motivo}>
+                        {motivo}
+                      </span>
+                    )}
                   </button>
                 </Fragment>
               )

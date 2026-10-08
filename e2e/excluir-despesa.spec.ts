@@ -39,10 +39,10 @@ async function itemExcluirDaParcela(page: Page) {
 
 /**
  * Lança uma compra à vista em junho/2026, que a tela de Faturas fecha ao abrir
- * (RN-06: a data de fechamento já passou), e volta para Saídas em junho, com a
- * linha na tela. Devolve a linha.
+ * (RN-06: a data de fechamento já passou), e para em Faturas, com a fatura
+ * Fechada no painel. Devolve a descrição da compra.
  */
-async function compraEmFaturaFechadaEmSaidas(page: Page, sufixo: string) {
+async function compraEmFaturaFechada(page: Page, sufixo: string): Promise<string> {
   const descricao = `Compra ${sufixo}`
   await criarCartao(page, `Inter ${sufixo}`)
   await criarCategoria(page, `Mercado ${sufixo}`)
@@ -61,6 +61,12 @@ async function compraEmFaturaFechadaEmSaidas(page: Page, sufixo: string) {
   await focarCartao(page, `Inter ${sufixo}`)
   const resumo = page.getByRole('region', { name: 'Resumo da fatura' })
   await expect(resumo.getByText('Fechada', { exact: true })).toBeVisible()
+  return descricao
+}
+
+/** A mesma compra, vista em Saídas, em junho. Devolve a linha. */
+async function compraEmFaturaFechadaEmSaidas(page: Page, sufixo: string) {
+  const descricao = await compraEmFaturaFechada(page, sufixo)
 
   // O mês vai direto no campo (exact: true — "Mês anterior" e "Próximo mês"
   // também casariam), nunca por cliques relativos ao mês corrente.
@@ -217,7 +223,7 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     // (RF-DES-09): o item fica desabilitado e diz por quê.
     const excluir = await itemExcluirDaParcela(page)
     await expect(excluir).toBeDisabled()
-    await expect(excluir).toHaveAttribute('title', /fatura fechada/)
+    await expect(excluir).toHaveAccessibleDescription(/fatura fechada/)
     await page.keyboard.press('Escape')
     await expect(page.getByRole('cell', { name: 'Compra Vencida E2E' })).toBeVisible()
   })
@@ -236,8 +242,30 @@ test.describe('Excluir despesa (RF-DES-09)', () => {
     await linha.getByRole('button', { name: /^Mais ações/ }).click()
     const excluir = page.getByRole('menu').getByRole('menuitem', { name: 'Excluir', exact: true })
     await expect(excluir).toBeDisabled()
-    await expect(excluir).toHaveAttribute('title', /fatura fechada/)
+    await expect(excluir).toHaveAccessibleDescription(/fatura fechada/)
     await page.keyboard.press('Escape')
+  })
+
+  // Na fatura Fechada o Editar fica na linha, e o menu "⋯" sobrava só com o
+  // Excluir indisponível. Pelo teclado ele abria sem que nada fosse alcançável:
+  // o foco ficava no gatilho, e o motivo só existia como dica do mouse.
+  test('em fatura fechada, o teclado entra no menu e lê por que não dá para excluir', async ({
+    app
+  }) => {
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+    const descricao = await compraEmFaturaFechada(page, 'Teclado Bloqueio E2E')
+
+    await page
+      .getByRole('row')
+      .filter({ hasText: descricao })
+      .getByRole('button', { name: /^Mais ações/ })
+      .focus()
+    await page.keyboard.press('Enter')
+
+    const excluir = page.getByRole('menu').getByRole('menuitem', { name: 'Excluir', exact: true })
+    await expect(excluir).toBeFocused()
+    await expect(excluir).toHaveAccessibleDescription(/fatura fechada/)
   })
 
   // RF-DES-10. Aberto de Saídas, o modal de edição deixava mudar valor e data

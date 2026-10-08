@@ -756,6 +756,20 @@ try {
   await page.waitForTimeout(500)
   await capturar('estado-faturas-paga-com-parcial')
 
+  // Na fatura paga o menu da linha só tem o Excluir, indisponível: ele diz por
+  // quê, escrito, e o teclado chega até ele. Aberto pelo Enter, para a captura
+  // mostrar onde o foco cai.
+  await page
+    .getByRole('table')
+    .filter({ has: page.getByRole('columnheader', { name: /Parcela/ }) })
+    .getByRole('button', { name: /^Mais ações/ })
+    .first()
+    .focus()
+  await page.keyboard.press('Enter')
+  await page.waitForTimeout(300)
+  await capturar('estado-menu-item-indisponivel')
+  await page.keyboard.press('Escape')
+
   // O cartão de nome comprido abre na fatura longa, com pago a mais.
   await page.getByRole('button', { name: /^Ourocard/ }).click({ timeout: 5000 })
   await page.waitForTimeout(500)

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RowActions, type AcaoLinha } from '../RowActions'
+import { descricaoAcessivel } from './__fixtures__/descricao-acessivel'
 
 function acoes(overrides: Partial<AcaoLinha>[] = []): AcaoLinha[] {
   const base: AcaoLinha[] = [
@@ -67,15 +68,63 @@ describe('RowActions', () => {
     expect(document.activeElement).toBe(gatilho)
   })
 
-  it('navega entre os itens com as setas, pulando os desabilitados', async () => {
+  // O foco abre no primeiro item disponível, mas as setas passam também pelos
+  // indisponíveis: é o padrão de menu do WAI-ARIA, e é como quem usa o teclado
+  // chega ao motivo. Até out/2026 as setas pulavam o item desabilitado, e o
+  // motivo dele só existia no `title`, que o teclado não alcança.
+  it('abre no primeiro item disponível, e as setas passam também pelos indisponíveis', async () => {
     const user = userEvent.setup()
-    render(<RowActions acoes={acoes([{}, { disabled: true }, {}])} />)
+    render(<RowActions acoes={acoes([{}, { disabled: true, title: 'Motivo' }, {}])} />)
 
     await user.click(screen.getByRole('button', { name: 'Mais ações' }))
-    // Duplicar está desabilitado, então o foco inicial já é Excluir.
     expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Excluir' }))
 
     await user.keyboard('{ArrowDown}')
+    expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Duplicar' }))
+  })
+
+  it('item indisponível mostra o motivo escrito, fora do nome e como descrição', async () => {
+    const user = userEvent.setup()
+    const motivo = 'Não dá para excluir: a despesa tem parcela paga.'
+    render(<RowActions acoes={acoes([{}, {}, { disabled: true, title: motivo }])} />)
+
+    await user.click(screen.getByRole('button', { name: 'Mais ações' }))
+    const excluir = screen.getByRole('menuitem', { name: 'Excluir' })
+
+    expect(excluir.getAttribute('aria-disabled')).toBe('true')
+    expect(descricaoAcessivel(excluir)).toBe(motivo)
+    expect(screen.getByText(motivo)).toBeTruthy()
+  })
+
+  it('item indisponível não aciona nem fecha o menu', async () => {
+    const user = userEvent.setup()
+    const lista = acoes([{}, {}, { disabled: true, title: 'Motivo' }])
+    render(<RowActions acoes={lista} />)
+
+    await user.click(screen.getByRole('button', { name: 'Mais ações' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Excluir' }))
+    screen.getByRole('menuitem', { name: 'Excluir' }).focus()
+    await user.keyboard('{Enter}')
+
+    expect(lista[2].onClick).not.toHaveBeenCalled()
+    expect(screen.getByRole('menu')).toBeTruthy()
+  })
+
+  // Era o menu sem saída: com nenhum item disponível, o foco ficava no gatilho
+  // e as setas não alcançavam nada.
+  it('com todos os itens indisponíveis, o teclado entra no menu', async () => {
+    const user = userEvent.setup()
+    render(
+      <RowActions
+        acoes={[
+          { label: 'Excluir', onClick: vi.fn(), destrutiva: true, disabled: true, title: 'Motivo' }
+        ]}
+      />
+    )
+
+    screen.getByRole('button', { name: 'Mais ações' }).focus()
+    await user.keyboard('{Enter}')
+
     expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Excluir' }))
   })
 

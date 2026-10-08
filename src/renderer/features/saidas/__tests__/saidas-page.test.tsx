@@ -10,6 +10,7 @@ import { formatarMesReferencia } from '../../../lib/formatar-data'
 import { mesAtualReferencia } from '../../../lib/mes-atual'
 import { cartao, categoria, ocorrencia } from '../../../__tests__/__fixtures__/builders'
 import SaidasPage from '../SaidasPage'
+import { descricaoAcessivel } from '../../../components/ui/__tests__/__fixtures__/descricao-acessivel'
 
 const INTER = cartao({ id: 1, nome: 'Inter' })
 const MORADIA = categoria({ id: 1, nome: 'Moradia' })
@@ -503,8 +504,8 @@ describe('SaidasPage — excluir despesa', () => {
 
     const { excluir } = await itemExcluirDaLinha('TV')
 
-    expect(excluir.disabled).toBe(true)
-    expect(excluir.getAttribute('title')).toMatch(/fatura fechada/)
+    expect(excluir.getAttribute('aria-disabled')).toBe('true')
+    expect(descricaoAcessivel(excluir)).toMatch(/fatura fechada/)
   })
 
   it('sem bloqueio, o diálogo diz o que sai, sem avisar que pode falhar', async () => {
@@ -513,7 +514,7 @@ describe('SaidasPage — excluir despesa', () => {
     renderizar()
 
     const { usuario, excluir } = await itemExcluirDaLinha('TV')
-    expect(excluir.disabled).toBe(false)
+    expect(excluir.getAttribute('aria-disabled')).toBeNull()
     await usuario.click(excluir)
 
     const dialogo = screen.getByRole('dialog', { name: 'Excluir despesa?' })
