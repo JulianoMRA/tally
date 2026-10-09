@@ -183,11 +183,34 @@ describe('TrilhoCartoes — prazo', () => {
     expect(aviso.getAttribute('data-tom')).toBe('alerta')
   })
 
+  // Com aviso, o card perdia a data: "vencida há 19 dias" não dizia quando
+  // venceu. A data vem depois do aviso, em tom neutro: o alerta é o aviso.
+  it('com aviso, o prazo diz também a data do vencimento, sem o tom do aviso', () => {
+    renderUm(faturaEm({ kind: 'Fechada' }, '2026-09-10'))
+
+    const data = within(card('Inter')).getByText('· 10/09')
+    expect(data.getAttribute('data-tom')).toBeNull()
+    expect(data.closest('[data-tom]')).toBeNull()
+    expect(within(card('Inter')).getByText('vencida há 19 dias')).toBeTruthy()
+  })
+
+  // A data é a do evento que o aviso nomeia: na fatura que fecha, o fechamento.
+  it('aviso de fechamento leva a data do fechamento', () => {
+    const aberta = faturaEm({ kind: 'Aberta' }, '2026-10-12')
+    renderUm({ ...aberta, fatura: { ...aberta.fatura, dataFechamento: '2026-10-02' } })
+
+    expect(within(card('Inter')).getByText('fecha em 3 dias')).toBeTruthy()
+    expect(within(card('Inter')).getByText('· 02/10')).toBeTruthy()
+    expect(within(card('Inter')).queryByText('· 12/10')).toBeNull()
+  })
+
   it('prazo distante fica neutro', () => {
     renderUm(faturaEm({ kind: 'Fechada' }, '2026-10-20'))
 
     const prazo = within(card('Inter')).getByText('vence 20/10')
     expect(prazo.getAttribute('data-tom')).toBeNull()
+    // Sem aviso, a data já está no texto: nada se repete depois dela.
+    expect(within(card('Inter')).queryByText(/^· /)).toBeNull()
   })
 
   it('fatura paga diz quando foi paga, e não quando vence', () => {

@@ -132,21 +132,25 @@ describe('avisoDePrazo', () => {
   it('fatura vencida é alerta', () => {
     expect(avisoDePrazo(fechada(), '2026-07-30')).toEqual({
       texto: 'vencida há 3 dias',
-      tom: 'alerta'
+      tom: 'alerta',
+      data: '2026-07-27'
     })
   })
 
   it('vencimento próximo é atenção', () => {
     expect(avisoDePrazo(fechada(), '2026-07-25')).toEqual({
       texto: 'vence em 2 dias',
-      tom: 'atencao'
+      tom: 'atencao',
+      data: '2026-07-27'
     })
   })
 
+  // A data é a do evento que o aviso nomeia: o fechamento, e não o vencimento.
   it('fechamento próximo é atenção', () => {
     expect(avisoDePrazo(fatura(), '2026-07-16')).toEqual({
       texto: 'fecha em 4 dias',
-      tom: 'atencao'
+      tom: 'atencao',
+      data: '2026-07-20'
     })
   })
 
@@ -184,14 +188,16 @@ describe('prazo de fatura sem nada a pagar', () => {
   it('fatura Aberta segue avisando o fechamento', () => {
     expect(avisoDePrazo(fatura(), '2026-07-16', NADA_A_PAGAR)).toEqual({
       texto: 'fecha em 4 dias',
-      tom: 'atencao'
+      tom: 'atencao',
+      data: '2026-07-20'
     })
   })
 
   it('com valor a pagar, os avisos seguem como sempre', () => {
     expect(avisoDePrazo(fechada(), '2026-07-30', false)).toEqual({
       texto: 'vencida há 3 dias',
-      tom: 'alerta'
+      tom: 'alerta',
+      data: '2026-07-27'
     })
     expect(rotuloVencida(fechada(), '2026-07-30', false)).toBe('vencida há 3 dias')
   })
