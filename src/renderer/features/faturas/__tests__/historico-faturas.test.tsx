@@ -100,6 +100,25 @@ describe('HistoricoFaturas', () => {
     expect(screen.queryByText('3', { exact: true })).toBeNull()
   })
 
+  // Como o "Limpar filtros" de Saídas: o vazio de uma aba dizia que não havia
+  // nada, e a saída era achar a outra aba sozinho.
+  it('aba vazia oferece ver todas', async () => {
+    const pagas = [fatura('2026-07', { kind: 'Paga', pagaEm: '2026-07-11' }), FATURAS[3]!]
+    renderizar(pagas)
+    const usuario = userEvent.setup()
+    await usuario.click(within(abas()).getByRole('radio', { name: /^A pagar/ }))
+    expect(screen.getByText('Nenhuma fatura neste filtro.')).toBeTruthy()
+
+    await usuario.click(screen.getByRole('button', { name: 'Ver todas' }))
+
+    expect(
+      within(abas())
+        .getByRole('radio', { name: /^Todas/ })
+        .getAttribute('aria-checked')
+    ).toBe('true')
+    expect(screen.getByText('Julho de 2026')).toBeTruthy()
+  })
+
   it('escolher uma aba abre a lista', async () => {
     renderizar()
     const usuario = userEvent.setup()

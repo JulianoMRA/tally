@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useCartoesDaTela, useFaturaDetalhe, useFaturasDeTodosCartoes } from './hooks/use-faturas'
 import { cartoesDoTrilho } from './cartoes-do-trilho'
 import { FaturaDetalhe } from './FaturaDetalhe'
@@ -7,7 +7,7 @@ import { HistoricoFaturas } from './HistoricoFaturas'
 import { TrilhoCartoes } from './TrilhoCartoes'
 import { PageContainer } from '../../components/layout/PageContainer'
 import { PageHead } from '../../components/layout/PageHead'
-import { EmptyState } from '../../components/ui'
+import { Button, EmptyState } from '../../components/ui'
 import { mesAtualReferencia } from '../../lib/mes-atual'
 import { buildFaturasSearch, parseFaturasSearch } from './faturas-search'
 import { escolherFaturaCorrente, resolverFaturaDoDeepLink } from './escolher-fatura-corrente'
@@ -34,7 +34,13 @@ export default function FaturasPage() {
   const [faturaId, setFaturaId] = useState<number | null>(pedido.faturaId)
   const [linkQuebrado, setLinkQuebrado] = useState(false)
 
-  const { cartoes, loading: loadingCartoes, erro: erroCartoes } = useCartoesDaTela()
+  const navigate = useNavigate()
+  const {
+    cartoes,
+    loading: loadingCartoes,
+    erro: erroCartoes,
+    recarregar: recarregarCartoes
+  } = useCartoesDaTela()
   const {
     grupos: todosOsGrupos,
     erro: erroGrupos,
@@ -201,12 +207,22 @@ export default function FaturasPage() {
       <div className={styles.corpo}>
         {carregando && <p className={styles.empty}>Carregando…</p>}
 
-        {!carregando && erroDaPagina && <p className={styles.erro}>{erroDaPagina}</p>}
+        {!carregando && erroDaPagina && (
+          <ErroDeCarga
+            mensagem={erroDaPagina}
+            onTentarDeNovo={erroCartoes ? recarregarCartoes : () => void refetchGrupos()}
+          />
+        )}
 
         {!carregando && !erroDaPagina && cartoes.length === 0 && (
           <EmptyState
             title="Nenhum cartão cadastrado"
             description="Cadastre um cartão para que as faturas comecem a ser geradas."
+            action={
+              <Button variant="secondary" size="sm" onClick={() => navigate('/cartoes')}>
+                Cadastrar cartão
+              </Button>
+            }
           />
         )}
 
@@ -214,6 +230,11 @@ export default function FaturasPage() {
           <EmptyState
             title="Nenhum cartão ativo"
             description="Cartões arquivados só aparecem aqui enquanto têm fatura a pagar."
+            action={
+              <Button variant="secondary" size="sm" onClick={() => navigate('/cartoes')}>
+                Ver cartões
+              </Button>
+            }
           />
         )}
 
@@ -236,6 +257,11 @@ export default function FaturasPage() {
               <EmptyState
                 title="Nenhuma fatura neste cartão"
                 description="Registre uma despesa no crédito para gerar a primeira fatura."
+                action={
+                  <Button variant="secondary" size="sm" onClick={() => navigate('/saidas')}>
+                    Registrar despesa
+                  </Button>
+                }
               />
             )}
 
@@ -244,7 +270,7 @@ export default function FaturasPage() {
             )}
 
             {faturaId !== null && !loadingDetalhe && erroDetalhe && (
-              <p className={styles.erro}>{erroDetalhe}</p>
+              <ErroDeCarga mensagem={erroDetalhe} onTentarDeNovo={() => void refetchDetalhe()} />
             )}
 
             {/* Sem condição de loading: o painel fica montado enquanto a
@@ -284,5 +310,26 @@ export default function FaturasPage() {
         )}
       </div>
     </PageContainer>
+  )
+}
+
+/**
+ * Falha de leitura, com a saída dela. Era só o texto em vermelho: quem caía
+ * aqui precisava sair da tela e voltar para tentar de novo.
+ */
+function ErroDeCarga({
+  mensagem,
+  onTentarDeNovo
+}: {
+  mensagem: string
+  onTentarDeNovo: () => void
+}) {
+  return (
+    <div className={styles.erroDeCarga}>
+      <p className={styles.erro}>{mensagem}</p>
+      <Button variant="secondary" size="sm" onClick={onTentarDeNovo}>
+        Tentar de novo
+      </Button>
+    </div>
   )
 }

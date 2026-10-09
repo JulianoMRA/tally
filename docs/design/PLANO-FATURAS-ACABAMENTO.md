@@ -434,6 +434,9 @@ Da análise:
 - **Adiantar** (achado 18). Dizer quantas parcelas dá para adiantar, e não oferecer a ação
   quando não há nenhuma, pede dado novo no detalhe da fatura.
 - **Vazios e erros sem ação** (achado 19), e o nome de cartão truncado no trilho sem dica.
+  **Resolvido depois do ciclo**, em out/2026: cada vazio ganhou o botão que a descrição
+  pedia, levando à tela certa; os erros de carga, "Tentar de novo"; a aba vazia do
+  histórico, "Ver todas"; e o nome cortado, a dica com o nome inteiro.
 - **Rótulo do botão "Pagamento parcial"** e **vencimento junto do aviso no trilho** (seção
   3, item 4). **O rótulo foi resolvido depois do ciclo**, em out/2026: o botão virou
   "Registrar pagamento parcial", como o diálogo que ele abre. A colisão por substring com o

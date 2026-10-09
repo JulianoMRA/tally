@@ -340,6 +340,14 @@ button.faturaItem:hover {
   margin: 0;
 }
 
+/* O erro de carga e a nova tentativa, na mesma linha. */
+.erroDeCarga {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  column-gap: 12px;
+}
+
 /* Detalhe da fatura: cabeçalho com as setas, faixa de resumo e parcelas, na
    largura inteira do corpo — a mesma do trilho e do histórico. Era um grid de
    duas colunas a partir de 1360px, com teto de 880px empilhado e 1280px lado a

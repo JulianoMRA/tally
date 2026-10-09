@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, cleanup, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import type { Cartao } from '@domain/entities/cartao'
 import type { StatusFatura } from '@domain/entities/fatura'
 import type { PagamentoParcial } from '@domain/entities/pagamento-parcial'
@@ -131,6 +131,89 @@ function renderizar(url = '/faturas') {
 function trilho() {
   return screen.getByRole('group', { name: 'Cartões' })
 }
+
+/** A tela dentro de rotas de verdade: os botões dos vazios navegam. */
+function renderizarComRotas() {
+  render(
+    <MemoryRouter initialEntries={['/faturas']}>
+      <ToastProvider>
+        <Routes>
+          <Route path="/faturas" element={<FaturasPage />} />
+          <Route path="/cartoes" element={<p>tela de cartões</p>} />
+          <Route path="/saidas" element={<p>tela de saídas</p>} />
+        </Routes>
+      </ToastProvider>
+    </MemoryRouter>
+  )
+}
+
+// Os vazios diziam o que fazer e não ofereciam como, e os erros de carga
+// eram um texto vermelho sem saída: a leitura dos cartões nem tinha como ser
+// refeita.
+describe('FaturasPage — vazios e erros com saída', () => {
+  beforeEach(() => vi.clearAllMocks())
+  afterEach(cleanup)
+
+  it('sem cartão nenhum, oferece cadastrar um cartão', async () => {
+    instalarApi([], {})
+    renderizarComRotas()
+
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Cadastrar cartão' }))
+
+    expect(await screen.findByText('tela de cartões')).toBeTruthy()
+  })
+
+  it('só com arquivados sem nada a pagar, oferece ver os cartões', async () => {
+    instalarApi([ANTIGO], { 2: [fatura(20, 2, '2026-08', { kind: 'Paga', pagaEm: '2026-08-10' })] })
+    renderizarComRotas()
+
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Ver cartões' }))
+
+    expect(await screen.findByText('tela de cartões')).toBeTruthy()
+  })
+
+  it('cartão sem fatura oferece registrar uma despesa', async () => {
+    instalarApi([INTER], { 1: [] })
+    renderizarComRotas()
+
+    expect(await screen.findByText('Nenhuma fatura neste cartão')).toBeTruthy()
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Registrar despesa' }))
+
+    expect(await screen.findByText('tela de saídas')).toBeTruthy()
+  })
+
+  it('falha ao carregar os cartões oferece tentar de novo', async () => {
+    const api = instalarApi([INTER], { 1: [fatura(10, 1, '2026-09', { kind: 'Aberta' })] })
+    api.cartao.list.mockRejectedValueOnce(new Error('banco ocupado'))
+    renderizar()
+
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Tentar de novo' }))
+
+    expect(await screen.findByRole('group', { name: 'Cartões' })).toBeTruthy()
+    expect(within(trilho()).getByRole('button', { name: /^Inter/ })).toBeTruthy()
+  })
+
+  it('falha ao carregar as faturas oferece tentar de novo', async () => {
+    const api = instalarApi([INTER], { 1: [fatura(10, 1, '2026-09', { kind: 'Aberta' })] })
+    api.fatura.listarResumoPorCartao.mockRejectedValueOnce(new Error('banco ocupado'))
+    renderizar()
+
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Tentar de novo' }))
+
+    expect(await screen.findByRole('group', { name: 'Cartões' })).toBeTruthy()
+  })
+
+  it('falha ao carregar a fatura em foco oferece tentar de novo', async () => {
+    const api = instalarApi([INTER], { 1: [fatura(10, 1, '2026-09', { kind: 'Aberta' })] })
+    api.fatura.detalharComParcelas.mockRejectedValueOnce(new Error('banco ocupado'))
+    renderizar()
+
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Tentar de novo' }))
+
+    expect(await screen.findByRole('heading', { name: /^Inter · / })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
+  })
+})
 
 describe('FaturasPage — cartão arquivado (RF-CAR-02)', () => {
   beforeEach(() => {

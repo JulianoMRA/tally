@@ -96,7 +96,10 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
           >
             <span className={styles.trilhoTopo}>
               <BolinhaDeCor cor={cartao.cor} />
-              <span className={styles.trilhoNome}>{cartao.nome}</span>
+              {/* O nome comprido sai cortado: a dica o mostra inteiro. */}
+              <span className={styles.trilhoNome} title={cartao.nome}>
+                {cartao.nome}
+              </span>
               {corrente && <Badge variant={statusVariant(corrente.fatura.status.kind)} />}
             </span>
 
