@@ -61,13 +61,18 @@ export function useCartoesDaTela() {
   const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [loading, setLoading] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
+  // Cada nova tentativa refaz a leitura. Ela era feita uma vez só, e a falha
+  // deixava a tela num erro sem saída.
+  const [tentativa, setTentativa] = useState(0)
 
   useEffect(() => {
     let ativo = true
     window.api.cartao
       .list({ incluirArquivados: true })
       .then((data) => {
-        if (ativo) setCartoes(data)
+        if (!ativo) return
+        setCartoes(data)
+        setErro(null)
       })
       .catch((e: unknown) => {
         if (ativo) setErro(mensagemErro(e, 'Erro ao listar cartões.'))
@@ -78,9 +83,14 @@ export function useCartoesDaTela() {
     return () => {
       ativo = false
     }
+  }, [tentativa])
+
+  const recarregar = useCallback(() => {
+    setLoading(true)
+    setTentativa((n) => n + 1)
   }, [])
 
-  return { cartoes, loading, erro }
+  return { cartoes, loading, erro, recarregar }
 }
 
 // Casa cada cartão com a sua lista de faturas pelo índice (alinhado ao

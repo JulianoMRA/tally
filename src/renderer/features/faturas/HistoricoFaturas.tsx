@@ -142,7 +142,19 @@ export function HistoricoFaturas({ faturas, mesAtual, faturaAbertaId, cartaoCor,
         </ul>
       )}
 
-      {passadas.length === 0 && <EmptyState title="Nenhuma fatura neste filtro." />}
+      {/* Como o "Limpar filtros" de Saídas: a saída de uma aba vazia era achar
+          a outra sozinho. Aqui o filtro nunca é "Todas" — sem fatura passada
+          nenhuma, o painel nem aparece. */}
+      {passadas.length === 0 && (
+        <EmptyState
+          title="Nenhuma fatura neste filtro."
+          action={
+            <Button variant="secondary" size="sm" onClick={() => escolherFiltro('todas')}>
+              Ver todas
+            </Button>
+          }
+        />
+      )}
     </Panel>
   )
 }

@@ -113,6 +113,15 @@ describe('TrilhoCartoes', () => {
 
   // O teto de largura da fileira sai desta conta no CSS. Sem o número, ele cai
   // no padrão de um cartão e espreme a fileira inteira em 300px.
+  // O nome comprido sai cortado ("Ourocard corpora…"), e não havia como lê-lo
+  // inteiro sem abrir Cartões.
+  it('o nome do cartão leva a dica com o nome inteiro', () => {
+    renderTrilho(null)
+
+    const nome = within(card('Inter')).getByText('Inter')
+    expect(nome.getAttribute('title')).toBe('Inter')
+  })
+
   it('informa ao CSS quantos cartões a fileira tem', () => {
     renderTrilho(MES_CORRENTE)
 
