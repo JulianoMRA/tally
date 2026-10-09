@@ -6,6 +6,20 @@ vista técnico.
 
 ---
 
+## v1.21.6 — A data junto do aviso no trilho (out/2026)
+
+---
+
+**O que esta versão é.** O último item de texto que o plano de Faturas tinha deixado fora do ciclo, numa PR (#179). Nenhuma migration, nenhuma dependência nova, nenhuma mudança no domínio nem no contrato IPC. Cobre a redação do **RF-FAT-06**.
+
+**O que muda.** Com aviso de prazo, o card do trilho perdia a data: "vencida há 28 dias" não dizia quando venceu, e "fecha em 2 dias" não dizia em que dia — enquanto a faixa do painel e o card de faturas da Visão mensal mostravam as duas coisas. O card passa a dizer a data do evento que o aviso nomeia, depois dele e em tom neutro: "vencida há 28 dias · 10/09", "vence em 3 dias · 11/10", "fecha em 2 dias · 25/10". O vermelho e o âmbar ficam só no aviso. Quando aviso e data não cabem numa linha, a data sai e o aviso fica: a linha do prazo nunca quebra, e o prazo segue alinhado com o dos vizinhos.
+
+**O que o caminho ensinou.** O caso novo de geometria falhou de início em todas as rodadas, inclusive no estado final, por defeito do próprio teste: ele procurava o aviso pelo texto e pegava a linha do prazo, que começa igual e vem antes no documento. As provas de falha, contra a `main` e contra o estado sem o recurso que esconde a data, só foram aceitas depois da correção, cada uma na asserção que mede o defeito.
+
+**Testes.** Unitários de 1960 para **1962**, em 176 arquivos. E2E de 181 para **182 casos**, em 43 arquivos: a suíte inteira passou nos outros 181, e o caso novo, corrigido, passou com faturas-geometria e fatura-vencida (13 de 13).
+
+---
+
 ## v1.21.5 — O menu que diz por quê (out/2026)
 
 ---
