@@ -80,8 +80,12 @@ test.describe('Marcar ocorrência sem fatura como paga (RF-DES-21)', () => {
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
 
-    // Fecha dia 28 para a compra de hoje cair na fatura DESTE mês, e portanto
-    // aparecer na lista do mês corrente.
+    // Data fixa, como no caso de cima: a compra de 03/10/2026 cai na fatura de
+    // outubro (RN-01: dia 3 < fechamento 28), e a lista abre nesse mês. Era a
+    // compra "de hoje" em UTC, num cartão que fecha no dia 28: do dia 28 ao fim
+    // do mês ela caía na fatura seguinte, e das 21h à meia-noite do último dia
+    // "hoje" em UTC já era o mês seguinte — nos dois casos a linha não aparecia
+    // no mês corrente, e o teste falhava sem defeito nenhum no app.
     await criarCartao(page, 'Cartao RF21', '28', '5')
     await criarCategoria(page, 'Casa Credito RF21')
     await irPara(page, 'Saídas')
@@ -92,9 +96,10 @@ test.describe('Marcar ocorrência sem fatura como paga (RF-DES-21)', () => {
     await painel.getByLabel(/^Categoria/).selectOption({ label: 'Casa Credito RF21' })
     await painel.getByLabel('Cartão').selectOption({ label: 'Cartao RF21' })
     await painel.getByLabel('Valor (R$)').fill('500,00')
-    await painel.getByLabel('Data da compra').fill(new Date().toISOString().slice(0, 10))
+    await painel.getByLabel('Data da compra').fill('2026-10-03')
     await painel.getByRole('button', { name: 'Registrar despesa' }).click()
 
+    await page.getByLabel('Mês', { exact: true }).fill('2026-10')
     await expect(page.getByRole('cell', { name: 'Notebook Credito RF21' })).toBeVisible()
 
     await abrirMenuDaLinha(page, 'Notebook Credito RF21')
