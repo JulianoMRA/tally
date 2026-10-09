@@ -6,6 +6,18 @@ vista técnico.
 
 ---
 
+## v1.21.7 — Faturas: vazios e erros com saída (out/2026)
+
+---
+
+**O que esta versão é.** O último item de acabamento da tela de Faturas que o plano tinha deixado fora do ciclo, numa PR (#181). Nenhuma migration, nenhuma dependência nova, nenhuma mudança no domínio nem no contrato IPC. Cobre a redação do **RF-FAT-06**.
+
+**O que muda.** Os estados vazios diziam o que fazer e não ofereciam como, e o erro de carga era um texto vermelho sem saída — a leitura dos cartões nem tinha como ser refeita. Agora "Nenhum cartão cadastrado" oferece **Cadastrar cartão**, como o aviso igual de Saídas; "Nenhum cartão ativo", **Ver cartões**; e "Nenhuma fatura neste cartão", **Registrar despesa**, cada um levando à tela certa. A falha ao carregar os cartões, o trilho ou a fatura oferece **Tentar de novo**, que refaz só a leitura que falhou. A aba vazia do histórico oferece **Ver todas**, como o "Limpar filtros" de Saídas, e o nome de cartão cortado no trilho leva a dica com o nome inteiro.
+
+**Testes.** Unitários de 1962 para **1970**, em 176 arquivos: oito novos, um por saída, vistos falhar antes da mudança; os de erro falham a primeira leitura e conferem que a segunda, pedida pelo botão, põe a tela de pé. E2E segue em **182 casos**, em 43 arquivos, com a suíte inteira verde e sem retentativa — sem caso novo, porque não há layout novo a medir.
+
+---
+
 ## v1.21.6 — A data junto do aviso no trilho (out/2026)
 
 ---
