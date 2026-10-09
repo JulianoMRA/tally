@@ -96,21 +96,31 @@
 /* `margin-top: auto`: o prazo fica no pé do card. Os cards de uma fileira têm
    a mesma altura, então os prazos se alinham mesmo quando só um deles tem a
    linha de contexto do pagamento parcial acima. */
+/* Aviso e data numa linha só. Sem espaço para os dois, a data desce para a
+   segunda linha, que a altura de uma linha esconde: o aviso fica, e o prazo
+   segue na mesma altura em todos os cards da fileira. */
 .trilhoPrazo {
   margin-top: auto;
+  align-self: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 1ch;
+  max-height: 1lh;
+  overflow: hidden;
+  white-space: nowrap;
   font-size: var(--text-2);
   color: var(--ink-3);
   font-family: var(--font-mono);
 }
 
 /* Mesmos tons do card de faturas da Visão mensal: o prazo que passou em
-   vermelho, o que está chegando em âmbar. */
-.trilhoPrazo[data-tom='alerta'] {
+   vermelho, o que está chegando em âmbar. Só no aviso: a data é neutra. */
+.trilhoAviso[data-tom='alerta'] {
   color: var(--expense);
   font-weight: 700;
 }
 
-.trilhoPrazo[data-tom='atencao'] {
+.trilhoAviso[data-tom='atencao'] {
   color: var(--pending);
   font-weight: 700;
 }

@@ -8,7 +8,7 @@ import { hojeIsoLocal } from '@shared/datas-locais'
 import { mesAtualReferencia } from '../../lib/mes-atual'
 import { escolherFaturaCorrente } from './escolher-fatura-corrente'
 import { mesDivergenteDoPainel } from './escopo-do-trilho'
-import { avisoDePrazo, type AvisoDePrazo } from './aviso-fechamento'
+import { avisoDePrazo } from './aviso-fechamento'
 import { contextoDoParcial } from './descrever-parcial'
 import { statusVariant } from './status-variant'
 import { Badge, BolinhaDeCor } from '../../components/ui'
@@ -23,15 +23,15 @@ type Props = {
 }
 
 /**
- * A última linha do card. Fatura paga diz quando foi paga — o vencimento dela
- * não pede mais nada. As outras dizem o aviso de prazo, quando há um, ou o dia
- * do vencimento.
+ * A última linha do card, quando não há aviso de prazo. Fatura paga diz quando
+ * foi paga — o vencimento dela não pede mais nada. As outras dizem o dia do
+ * vencimento.
  */
-function textoDoPrazo(corrente: FaturaComTotal | null, aviso: AvisoDePrazo | null): string {
+function textoDoPrazo(corrente: FaturaComTotal | null): string {
   if (!corrente) return 'sem fatura'
   const { status, dataVencimento } = corrente.fatura
   if (status.kind === 'Paga') return `paga em ${formatarDiaMes(status.pagaEm)}`
-  return aviso?.texto ?? `vence ${formatarDiaMes(dataVencimento)}`
+  return `vence ${formatarDiaMes(dataVencimento)}`
 }
 
 /**
@@ -137,9 +137,20 @@ export function TrilhoCartoes({ grupos, cartaoSelecionadoId, mesDoPainel, onSele
             {parcial && <span className={`${styles.trilhoParcial} tnum`}>{parcial}</span>}
 
             {/* O tom vem só com o aviso: "vencida há 19 dias" no cinza de
-                "vence 05/11" fazia o prazo mais urgente da tela parecer rotina. */}
-            <span className={styles.trilhoPrazo} data-tom={aviso?.tom}>
-              {textoDoPrazo(corrente, aviso)}
+                "vence 05/11" fazia o prazo mais urgente da tela parecer rotina.
+                Depois dele, a data do evento, neutra. Até out/2026 o aviso
+                tomava o lugar da data, e "vencida há 19 dias" não dizia quando. */}
+            <span className={styles.trilhoPrazo}>
+              {aviso ? (
+                <>
+                  <span className={styles.trilhoAviso} data-tom={aviso.tom}>
+                    {aviso.texto}
+                  </span>
+                  <span>· {formatarDiaMes(aviso.data)}</span>
+                </>
+              ) : (
+                textoDoPrazo(corrente)
+              )}
             </span>
           </button>
         )

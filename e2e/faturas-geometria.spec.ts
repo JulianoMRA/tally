@@ -352,6 +352,89 @@ test.describe('Faturas — geometria do trilho', () => {
     await esperarTotalEPrazoAlinhados(cards)
   })
 
+  // Com aviso, o card perdia a data: "vencida há 118 dias" não dizia quando.
+  // A data do evento entra depois do aviso, na mesma linha. Quando os dois não
+  // cabem, a data sai e o aviso fica: a linha do prazo nunca quebra, que é o
+  // que mantém o prazo alinhado com o dos vizinhos.
+  test('com aviso, a data do evento entra na linha do prazo e sai quando não cabe', async ({
+    app
+  }) => {
+    const page = await app.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+    await page.evaluate(async () => {
+      const api = (window as unknown as { api: ApiTrilho }).api
+      const categoria = await api.categoria.create({ nome: 'Mercado Prazo E2E', cor: '#5b7a5e' })
+      const cartao = await api.cartao.create({
+        nome: 'Vencido',
+        diaFechamento: 5,
+        diaVencimento: 12,
+        cor: '#a88454'
+      })
+      // Junho de 2026 já fechou e venceu: a fatura chega Fechada e vencida.
+      await api.despesa.criarUnicaCredito({
+        descricao: 'Compra antiga',
+        categoriaId: categoria.id,
+        cartaoId: cartao.id,
+        valorCentavos: 7500,
+        dataCompra: '2026-06-03'
+      })
+    })
+    await recarregar(page)
+    await redimensionar(app, 1280)
+    await expect.poll(async () => page.evaluate(() => window.innerWidth)).toBeLessThan(1281)
+    await irPara(page, 'Faturas')
+
+    const card = trilho(page).getByRole('button', { name: /^Vencido/ })
+    await expect(card).toContainText(/vencida há \d+ dias?/)
+
+    // A linha do prazo é o pai do aviso; a data é o irmão seguinte dele.
+    const medir = () =>
+      card.evaluate((el) => {
+        // Só as folhas: a linha do prazo também começa com o texto do aviso, e
+        // vem antes dele no documento.
+        const aviso = [...el.querySelectorAll('span')].find(
+          (s) => s.children.length === 0 && /^vencida há/.test((s.textContent ?? '').trim())
+        )
+        const linha = aviso?.parentElement
+        const data = aviso?.nextElementSibling
+        if (!aviso || !linha || !data) throw new Error('prazo sem aviso ou sem data')
+        const r = (e: Element) => e.getBoundingClientRect()
+        return {
+          textoDaData: (data.textContent ?? '').trim(),
+          linha: { base: r(linha).bottom, direita: r(linha).right, altura: r(linha).height },
+          aviso: { direita: r(aviso).right, altura: r(aviso).height },
+          data: { topo: r(data).top, direita: r(data).right }
+        }
+      })
+
+    // Um card só, de 300px: aviso e data cabem.
+    const largo = await medir()
+    expect(largo.textoDaData).toMatch(/^· \d{2}\/\d{2}$/)
+    expect(largo.data.topo, 'a data não está na linha do prazo').toBeLessThan(largo.linha.base)
+    expect(largo.data.direita, 'a data passou da borda').toBeLessThanOrEqual(
+      largo.linha.direita + 0.5
+    )
+    expect(largo.linha.altura, 'o prazo quebrou de linha').toBeLessThanOrEqual(
+      largo.aviso.altura + 1
+    )
+
+    // O card no mínimo do grid, como num trilho cheio de cartões.
+    await page.addStyleTag({
+      content: '[role="group"][aria-label="Cartões"] > button { width: 200px; }'
+    })
+    await expect.poll(async () => (await card.boundingBox())?.width).toBe(200)
+    const estreito = await medir()
+    expect(estreito.aviso.direita, 'o aviso não coube inteiro').toBeLessThanOrEqual(
+      estreito.linha.direita + 0.5
+    )
+    expect(estreito.data.topo, 'a data ficou na linha visível').toBeGreaterThanOrEqual(
+      estreito.linha.base - 0.5
+    )
+    expect(estreito.linha.altura, 'o prazo quebrou de linha').toBeLessThanOrEqual(
+      estreito.aviso.altura + 1
+    )
+  })
+
   // O aviso era uma linha a mais no pé do card: a fileira crescia uns 30px e
   // as setas saíam de baixo do cursor no primeiro clique. Agora é a linha do
   // mês que muda, e o clique no card em foco leva de volta.

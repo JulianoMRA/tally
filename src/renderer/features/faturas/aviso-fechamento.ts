@@ -58,6 +58,12 @@ export type AvisoDePrazo = {
   texto: string
   /** `alerta` é o prazo que passou; `atencao`, o que está chegando. */
   tom: 'alerta' | 'atencao'
+  /**
+   * A data do evento que o aviso nomeia, em ISO: o vencimento para "vencida" e
+   * "vence em", o fechamento para "fecha em". O texto é relativo ("há 3 dias");
+   * a data diz quando.
+   */
+  data: string
 }
 
 /**
@@ -76,7 +82,9 @@ export function avisoDePrazo(
 ): AvisoDePrazo | null {
   if (nadaAPagar && fatura.status.kind === 'Fechada') return null
   const vencida = rotuloVencida(fatura, hoje)
-  if (vencida) return { texto: vencida, tom: 'alerta' }
-  const chegando = rotuloVencimento(fatura, hoje) ?? rotuloFechamento(fatura, hoje)
-  return chegando ? { texto: chegando, tom: 'atencao' } : null
+  if (vencida) return { texto: vencida, tom: 'alerta', data: fatura.dataVencimento }
+  const vencimento = rotuloVencimento(fatura, hoje)
+  if (vencimento) return { texto: vencimento, tom: 'atencao', data: fatura.dataVencimento }
+  const fechamento = rotuloFechamento(fatura, hoje)
+  return fechamento ? { texto: fechamento, tom: 'atencao', data: fatura.dataFechamento } : null
 }
