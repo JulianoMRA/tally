@@ -3,7 +3,11 @@ import { useState } from 'react'
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { ColorPicker, COR_PADRAO } from '../ColorPicker'
+import { ColorPicker } from '../ColorPicker'
+import {
+  COR_PADRAO_DE_CARTAO as COR_PADRAO,
+  CORES_DE_CARTAO as CORES
+} from '../../../features/cartoes/cores-de-cartao'
 
 /** Cor fora da paleta, como a escolhida em "Outra…". */
 const COR_LIVRE = '#123456'
@@ -11,7 +15,7 @@ const COR_LIVRE = '#123456'
 /** O seletor dentro de um formulário de verdade: o valor muda a cada escolha. */
 function SeletorControlado({ inicial }: { inicial: string }) {
   const [cor, setCor] = useState(inicial)
-  return <ColorPicker value={cor} onChange={setCor} label="Cor" />
+  return <ColorPicker value={cor} onChange={setCor} label="Cor" sugestoes={CORES} />
 }
 
 function swatch(nome: string): HTMLElement {
@@ -24,7 +28,7 @@ describe('ColorPicker', () => {
   it('avisa a cor no clique', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
-    render(<ColorPicker value={COR_PADRAO} onChange={onChange} label="Cor" />)
+    render(<ColorPicker value={COR_PADRAO} onChange={onChange} label="Cor" sugestoes={CORES} />)
 
     await user.click(swatch('Bronze'))
 
@@ -32,7 +36,7 @@ describe('ColorPicker', () => {
   })
 
   it('só a cor escolhida é parada de Tab', () => {
-    render(<ColorPicker value="#a88454" onChange={vi.fn()} label="Cor" />)
+    render(<ColorPicker value="#a88454" onChange={vi.fn()} label="Cor" sugestoes={CORES} />)
 
     expect(swatch('Bronze').tabIndex).toBe(0)
     expect(swatch('Verde escuro').tabIndex).toBe(-1)
@@ -42,7 +46,7 @@ describe('ColorPicker', () => {
   // Com a cor escolhida em "Outra…", nenhum swatch estava marcado — e por isso
   // nenhum era parada de Tab: o grupo inteiro sumia do teclado.
   it('com a cor livre, a primeira cor é a parada de Tab', () => {
-    render(<ColorPicker value={COR_LIVRE} onChange={vi.fn()} label="Cor" />)
+    render(<ColorPicker value={COR_LIVRE} onChange={vi.fn()} label="Cor" sugestoes={CORES} />)
 
     const swatches = screen.getAllByRole('radio')
     expect(swatches.map((s) => s.tabIndex)).toEqual([0, ...swatches.slice(1).map(() => -1)])
@@ -94,7 +98,7 @@ describe('ColorPicker', () => {
   it('outra tecla passa sem escolher nada', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
-    render(<ColorPicker value={COR_PADRAO} onChange={onChange} label="Cor" />)
+    render(<ColorPicker value={COR_PADRAO} onChange={onChange} label="Cor" sugestoes={CORES} />)
 
     swatch('Verde escuro').focus()
     await user.keyboard('a')

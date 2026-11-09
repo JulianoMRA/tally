@@ -106,6 +106,10 @@ prevista; entram no escopo quando forem priorizadas.
   >
   > Voltar a ter categoria em renda é feature nova (RF-REN), não a volta deste campo.
 
+  **A cor sugerida funciona nos dois temas.** O seletor de cor da categoria oferece uma paleta própria, separada da do cartão. A categoria guarda uma cor só, que vira fatia da pizza (RF-VIS-08), barra do ranking e bolinha nas listas, sempre sobre card. Por isso toda sugestão passa **3:1 contra o card no tema claro e no escuro** e tem croma suficiente para não se ler como cinza, que é a cor da fatia "Outros". Até nov/2026 as duas telas usavam a mesma lista, e a sugestão padrão era a própria tinta do texto (`#0f1a14`): 1,06:1 contra o card escuro. Cor livre, em "Outra…", continua aceita sem conferência.
+
+  O cartão mantém a lista dele, com o roxo do Nubank e o laranja do Inter. A cor do cartão é a da marca, não uma série de gráfico, e uma categoria com a cor do banco ficaria igual ao cartão em Saídas, onde a Categoria e a Origem aparecem lado a lado.
+
 - **RF-CAT-02** — Editar e arquivar categorias. Despesas vinculadas a categoria arquivada continuam exibindo a categoria com indicador de inativa. Como em RF-CAR-02, arquivar pede confirmação explícita e vive no menu de ações; arquivadas aparecem esmaecidas ao fim da lista.
 
   **Onde o indicador vale.** Até set/2026, Saídas e Busca carregavam só as categorias ativas, e a parcela de uma categoria arquivada aparecia como `#7`. As duas passam a carregar todas e mostram o nome com o selo **"Arquivada"**. Na Busca, as arquivadas entram no fim do filtro de categoria, marcadas "(arquivada)": o que se procura pode estar numa categoria arquivada depois da compra.

@@ -3,31 +3,22 @@ import { indiceDaTecla } from '../../lib/navegacao-por-setas'
 import styles from './color-picker.module.css'
 
 /**
- * Sugestões de cor para cartões e categorias. Ficam em TS, e não no CSS, porque
- * são **dado** — o valor é gravado no banco e aplicado via `style` inline, do
- * mesmo jeito que os chips de cor já faziam. Isso também mantém o guard
- * `cores-tokenizadas` satisfeito, já que nenhum hex entra em CSS de feature.
+ * Uma cor sugerida. As listas ficam em TS, e não no CSS, porque são **dado** —
+ * o valor é gravado no banco e aplicado via `style` inline, do mesmo jeito que
+ * os chips de cor já faziam. Isso também mantém o guard `cores-tokenizadas`
+ * satisfeito, já que nenhum hex entra em CSS de feature.
  */
-const SUGESTOES: readonly { hex: string; nome: string }[] = [
-  { hex: '#0f1a14', nome: 'Verde escuro' },
-  { hex: '#5b7a5e', nome: 'Verde sálvia' },
-  { hex: '#3f6e47', nome: 'Verde' },
-  { hex: '#a88454', nome: 'Bronze' },
-  { hex: '#a87b2c', nome: 'Âmbar' },
-  { hex: '#8c3b2e', nome: 'Terracota' },
-  { hex: '#5a4a8a', nome: 'Roxo' },
-  { hex: '#820ad1', nome: 'Roxo vivo' },
-  { hex: '#ff7a00', nome: 'Laranja' },
-  { hex: '#1f6f8b', nome: 'Azul' }
-]
-
-/** Padrão dos formulários: a primeira sugestão, em vez do `#000000` do input nativo. */
-export const COR_PADRAO = SUGESTOES[0].hex
+export interface SugestaoDeCor {
+  hex: string
+  nome: string
+}
 
 interface ColorPickerProps {
   value: string
   onChange: (hex: string) => void
   label: string
+  /** Cartão e categoria têm listas próprias: a cor do cartão é a do banco. */
+  sugestoes: readonly SugestaoDeCor[]
   id?: string
 }
 
@@ -36,10 +27,10 @@ interface ColorPickerProps {
  * `<input type="color">` cru, que era o único controle do app sem tratamento
  * visual e vinha com `#000000` — uma cor que não existe na paleta.
  */
-export function ColorPicker({ value, onChange, label, id }: ColorPickerProps) {
+export function ColorPicker({ value, onChange, label, sugestoes, id }: ColorPickerProps) {
   const generatedId = useId()
   const inputId = id ?? generatedId
-  const escolhida = SUGESTOES.findIndex((cor) => cor.hex === value.toLowerCase())
+  const escolhida = sugestoes.findIndex((cor) => cor.hex === value.toLowerCase())
   // Com a cor livre nenhum swatch está marcado, e o grupo precisa de uma parada
   // de Tab mesmo assim: a primeira, como manda o padrão de radiogroup. Sem ela,
   // o grupo inteiro sumia do teclado.
@@ -55,14 +46,14 @@ export function ColorPicker({ value, onChange, label, id }: ColorPickerProps) {
     if (atual === -1 || proximo === null) return
     e.preventDefault()
 
-    onChange(SUGESTOES[proximo].hex)
+    onChange(sugestoes[proximo].hex)
     swatches[proximo].focus()
   }
 
   return (
     <div className={styles.root}>
       <div className={styles.swatches} role="radiogroup" aria-label={label} onKeyDown={navegar}>
-        {SUGESTOES.map((cor, indice) => {
+        {sugestoes.map((cor, indice) => {
           const ativa = indice === escolhida
           return (
             <button

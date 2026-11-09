@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { CORES_DE_CATEGORIA } from '../../features/categorias/cores-de-categoria'
 
 /**
  * Guard de contraste: todo par texto/superfície que o axe mede precisa passar
@@ -206,4 +207,64 @@ describe('contraste da paleta', () => {
       })
     })
   }
+})
+
+/**
+ * Croma em OKLCH. Abaixo de 0,10 a cor se lê como cinza: deixa de identificar a
+ * categoria e se confunde com a fatia "Outros" da pizza, que é cinza de propósito.
+ */
+function croma(hex: string): number {
+  const s = hex.replace('#', '')
+  const [r, g, b] = [0, 2, 4].map((i) => {
+    const c = parseInt(s.slice(i, i + 2), 16) / 255
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  })
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
+  const k = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
+  const a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * k
+  const bb = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * k
+  return Math.hypot(a, bb)
+}
+
+/**
+ * A categoria guarda UMA cor para os dois temas, e ela vira fatia da pizza,
+ * barra do ranking e bolinha nas listas — sempre sobre card. Até nov/2026 a
+ * sugestão padrão era `#0f1a14`, a própria tinta do texto, que no tema escuro
+ * fazia 1,06:1 contra o card e sumia.
+ */
+describe('sugestões de cor de categoria', () => {
+  for (const [nomeDoTema, tokens] of lerTemas()) {
+    it(`toda sugestão passa 3:1 sobre o card no tema ${nomeDoTema}`, () => {
+      const card = tokens.get('--bg-elev')
+      expect(card, `--bg-elev não está definido no tema ${nomeDoTema}`).toMatch(HEX_PURO)
+
+      const reprovadas = CORES_DE_CATEGORIA.map((cor) => ({
+        ...cor,
+        razao: razaoDeContraste(cor.hex, card!)
+      }))
+        .filter((cor) => cor.razao < 3)
+        .map((cor) => `${cor.nome} ${cor.hex}: ${cor.razao.toFixed(2)}:1`)
+
+      expect(
+        reprovadas,
+        `Sugestões abaixo de 3:1 sobre o card ${card} no tema ${nomeDoTema}:\n` +
+          reprovadas.join('\n')
+      ).toEqual([])
+    })
+  }
+
+  it('nenhuma sugestão se lê como cinza', () => {
+    const cinzas = CORES_DE_CATEGORIA.filter((cor) => croma(cor.hex) < 0.1).map(
+      (cor) => `${cor.nome} ${cor.hex}: croma ${croma(cor.hex).toFixed(3)}`
+    )
+
+    expect(cinzas, `Sugestões com croma abaixo de 0,10:\n${cinzas.join('\n')}`).toEqual([])
+  })
+
+  it('não repete cor', () => {
+    const hexes = CORES_DE_CATEGORIA.map((cor) => cor.hex.toLowerCase())
+
+    expect(new Set(hexes).size).toBe(hexes.length)
+  })
 })
