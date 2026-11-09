@@ -6,6 +6,20 @@ vista técnico.
 
 ---
 
+## v1.22.0 — Paleta de cor da categoria (nov/2026)
+
+---
+
+**O que esta versão é.** Uma paleta de cor própria para a categoria, numa PR (#185). Nenhuma migration, nenhuma dependência nova, nenhuma mudança no domínio nem no contrato IPC. Cobre a redação do **RF-CAT-01**.
+
+**O que muda.** O seletor de cor era o mesmo no cartão e na categoria, e a sugestão padrão era `#0f1a14`, a própria tinta do texto: 1,06:1 contra o card escuro. Seis das dez sugestões ficavam abaixo de 3:1 no tema escuro, e o laranja ficava abaixo de 3:1 no claro. A categoria passa a oferecer onze cores em ordem de matiz, de Ferrugem a Rosa. Todas passam 3:1 contra o card nos dois temas e têm croma suficiente para não se ler como cinza, que é a cor da fatia "Outros" da pizza. O cartão mantém a lista dele, com o roxo do Nubank e o laranja do Inter, porque a cor do cartão é a da marca.
+
+**Minor, e não patch:** muda o que o usuário vê ao cadastrar uma categoria.
+
+**Testes.** Unitários de 1970 para **1978**, em 178 arquivos. O guard de contraste passou a conferir as sugestões de categoria (contraste nos dois temas, croma, sem repetição) e foi visto falhar contra a paleta antiga, com as cores reprovadas na mensagem. Os dois formulários ganharam testes. O E2E segue com **182 casos**, sem caso novo; os quatro specs que passam pelo seletor e pela acessibilidade rodaram, 68 de 68.
+
+---
+
 ## v1.21.7 — Faturas: vazios e erros com saída (out/2026)
 
 ---
