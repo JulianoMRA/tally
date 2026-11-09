@@ -1,9 +1,9 @@
-import { COR_PADRAO } from '../../components/ui'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { Cartao } from '@domain/entities/cartao'
 import { cartaoInputSchema, type CartaoInput } from '@shared/ipc/cartao'
 import { Button, ColorPicker, Field, Input } from '../../components/ui'
+import { COR_PADRAO_DE_CARTAO, CORES_DE_CARTAO } from './cores-de-cartao'
 import styles from './cartoes.module.css'
 
 type Props = {
@@ -28,7 +28,7 @@ export function CartaoForm({ cartaoInicial, onSalvar, onCancelar }: Props) {
           diaVencimento: cartaoInicial.diaVencimento,
           cor: cartaoInicial.cor
         }
-      : { cor: COR_PADRAO }
+      : { cor: COR_PADRAO_DE_CARTAO }
   })
 
   return (
@@ -63,6 +63,7 @@ export function CartaoForm({ cartaoInicial, onSalvar, onCancelar }: Props) {
           value={watch('cor')}
           onChange={(hex) => setValue('cor', hex, { shouldDirty: true, shouldValidate: true })}
           label="Cor"
+          sugestoes={CORES_DE_CARTAO}
         />
       </Field>
 

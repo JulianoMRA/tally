@@ -1,9 +1,9 @@
-import { COR_PADRAO } from '../../components/ui'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { Categoria } from '@domain/entities/categoria'
 import { categoriaInputSchema, type CategoriaInput } from '@shared/ipc/categoria'
 import { Button, ColorPicker, Field, Input } from '../../components/ui'
+import { COR_PADRAO_DE_CATEGORIA, CORES_DE_CATEGORIA } from './cores-de-categoria'
 import styles from './categorias.module.css'
 
 type Props = {
@@ -26,7 +26,7 @@ export function CategoriaForm({ categoriaInicial, onSalvar, onCancelar }: Props)
           nome: categoriaInicial.nome,
           cor: categoriaInicial.cor
         }
-      : { cor: COR_PADRAO }
+      : { cor: COR_PADRAO_DE_CATEGORIA }
   })
 
   return (
@@ -40,6 +40,7 @@ export function CategoriaForm({ categoriaInicial, onSalvar, onCancelar }: Props)
           value={watch('cor')}
           onChange={(hex) => setValue('cor', hex, { shouldDirty: true, shouldValidate: true })}
           label="Cor"
+          sugestoes={CORES_DE_CATEGORIA}
         />
       </Field>
 
