@@ -221,8 +221,11 @@ badge "Paga" exige uma fatura fechada **e** paga, que o seed nunca criava. Ver
 - `SegmentedControl` — escolha única em pílula, com `radiogroup`/`radio` (padrão) ou
   `tablist`/`tab` quando troca o conteúdo da tela. Setas, Home/End e roving tabindex.
   **Substituiu sete implementações** quase idênticas espalhadas pelas features
-- `ColorPicker` — swatches da paleta de sugestão + entrada livre. `COR_PADRAO` é o default
-  dos formulários, no lugar do `#000000` do input nativo. As cores vivem em TS, não em CSS,
+- `ColorPicker` — swatches de uma lista de sugestões, recebida pela prop `sugestoes`, + entrada
+  livre. Cada cadastro tem a sua: `CORES_DE_CARTAO` traz as cores dos bancos, e
+  `CORES_DE_CATEGORIA` passa 3:1 contra o card nos dois temas, com croma de 0,10 para cima
+  (guard em `styles/__tests__/contraste.test.ts`). A primeira sugestão de cada lista é o default
+  do formulário, no lugar do `#000000` do input nativo. As cores vivem em TS, não em CSS,
   porque são dado gravado no banco — e assim o guard `cores-tokenizadas` segue satisfeito.
   Teclado como o `SegmentedControl`: o grupo é uma parada de Tab, e setas, Home e End andam
   e escolhem (`indiceDaTecla`, em `lib/navegacao-por-setas.ts`, serve aos dois). Com a cor
